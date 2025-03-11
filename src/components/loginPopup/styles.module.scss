@@ -1,0 +1,217 @@
+.background {
+	position: fixed;
+	width: 100%;
+	height: 100%;
+	z-index: 9;
+	background-color: black;
+	opacity: 0;
+	cursor: pointer;
+	pointer-events: none;
+	transition: 0.15s;
+
+	&.active {
+		opacity: 0.9;
+		pointer-events: auto;
+	}
+}
+
+.popup {
+	flex-direction: column;
+	position: fixed;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	min-width: calc(500px - 60px);
+	width: fit-content;
+	height: fit-content;
+	padding: 30px;
+	border-radius: 10px;
+	background-color: white;
+	flex-direction: column;
+	z-index: 10;
+	opacity: 0;
+	pointer-events: none;
+	transition: 0.15;
+	gap: 10px;
+
+	&.active {
+		opacity: 1;
+		pointer-events: auto;
+	}
+
+	.titleBlock {
+		justify-content: center;
+		.title {
+			font-size: 30px;
+			font-weight: 600;
+		}
+	}
+
+	form.inputsBlock,
+	.inputsBlock {
+		display: flex;
+		position: relative;
+		flex-direction: column;
+		align-items: center;
+		gap: 10px;
+
+		.inputBlock {
+			width: 100%;
+			max-width: 300px;
+			flex-direction: column;
+			align-items: center;
+
+			&.error {
+				input {
+					background-color: #fab8b8;
+				}
+			}
+			input {
+				width: calc(100% - 40px);
+				font-family: Montserrat;
+				height: 20px;
+				line-height: 1;
+				font-size: 20px;
+				text-align: center;
+				border: none;
+				border-radius: 50px;
+				background-color: #f3f3f3;
+				padding: 20px 20px;
+				// border-bottom: 1px solid #3d3d3d;
+
+				&:focus {
+					outline: none;
+				}
+			}
+
+			.noPassword {
+				align-self: center;
+				margin: 5px 0px 0px 0px;
+			}
+		}
+
+		.button {
+			align-self: center;
+			&:hover {
+				background-color: rgb(61, 61, 61);
+			}
+		}
+
+		.additionalButton {
+			width: fit-content;
+			font-size: 14px;
+			font-weight: 600;
+			text-transform: uppercase;
+			border-bottom: 1px solid black;
+			cursor: pointer;
+
+			&.noPassword {
+				align-self: center;
+				margin: 0px 0px 0px 0px;
+			}
+
+			&.backButton {
+				align-self: flex-center;
+				margin: 0px 0px 10px 0px;
+			}
+		}
+	}
+
+	.additionalBlock {
+		flex-direction: column;
+		align-items: center;
+		margin: 10px 0px 0px 0px;
+
+		.additionalText {
+			font-size: 14px;
+		}
+
+		.additionalButton {
+			font-size: 14px;
+			font-weight: 600;
+			text-transform: uppercase;
+			color: rgba(176, 203, 31, 1);
+			text-decoration: underline;
+			cursor: pointer;
+		}
+	}
+
+	.errorMessage {
+		font-size: 14px;
+		font-weight: 600;
+		color: #ff3a3a;
+	}
+
+	.successMessage {
+		font-size: 20px;
+		font-weight: 600;
+		color: #2bb94a;
+		text-align: center;
+	}
+
+	.closeIcon {
+		position: absolute;
+		right: 0;
+		top: 0;
+		transform: translate(calc(100% + 10px), calc(-100% - 10px));
+		width: 30px;
+		height: 30px;
+		justify-content: center;
+		align-items: center;
+		border: 2px solid white;
+		border-radius: 50%;
+		cursor: pointer;
+
+		.line {
+			position: absolute;
+			width: 20px;
+			height: 2px;
+			background-color: white;
+
+			&:nth-child(1) {
+				transform: rotate(45deg);
+			}
+			&:nth-child(2) {
+				transform: rotate(-45deg);
+			}
+		}
+	}
+}
+
+.orderPopup {
+	.photoBlock {
+		gap: 5px;
+		align-items: flex-end;
+		cursor: pointer;
+	}
+	.photoIcon {
+		width: 17px;
+		height: 17px;
+		background-image: url("/images/downloadIcon.svg");
+		background-position: center;
+		background-repeat: no-repeat;
+		background-size: contain;
+	}
+	.photoText {
+		font-size: 11px;
+		text-transform: uppercase;
+		letter-spacing: 1px;
+	}
+
+	.autoExpandTextarea {
+		resize: none; /* Убираем возможность ручного изменения размера */
+		overflow: hidden; /* Скрываем скроллбар */
+		min-height: 30px; /* Минимальная высота */
+		max-height: 300px; /* Ограничение по высоте (можно изменить) */
+	}
+}
+
+@media (max-width: 768px) {
+	.background {
+		z-index: 11;
+	}
+
+	.popup {
+		z-index: 11;
+	}
+}

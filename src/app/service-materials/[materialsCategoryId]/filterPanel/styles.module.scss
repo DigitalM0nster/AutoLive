@@ -1,0 +1,83 @@
+.filterPanel {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+	background: #f8f8f8;
+	padding: 20px;
+	border-radius: 8px;
+}
+
+.filterBlock {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+.filterName {
+	font-weight: bold;
+}
+
+.sliderWrapper {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	width: 100%;
+	position: relative;
+}
+
+.slider {
+	width: 80%;
+	-webkit-appearance: none;
+	appearance: none;
+	height: 5px;
+	background: #ccc;
+	border-radius: 5px;
+	outline: none;
+	cursor: pointer;
+	transition: background 0.2s;
+}
+
+.slider:hover {
+	background: #888;
+}
+
+.slider::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	appearance: none;
+	width: 15px;
+	height: 15px;
+	background: #007bff;
+	border-radius: 50%;
+	cursor: pointer;
+	transition: 0.2s;
+}
+
+.minPrice,
+.maxPrice {
+	font-size: 14px;
+	color: #333;
+	width: 50px;
+	text-align: center;
+}
+
+.priceInputWrapper {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.priceInput {
+	width: 80px;
+	padding: 5px;
+	border: 1px solid #ccc;
+	border-radius: 5px;
+	text-align: center;
+	font-size: 14px;
+	outline: none;
+}
+
+.resetButton {
+}
+
+.resetButton:hover {
+	background: #3d3d3d;
+}

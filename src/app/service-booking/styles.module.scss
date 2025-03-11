@@ -1,0 +1,83 @@
+.screen {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	flex-direction: column;
+}
+
+.screenContent {
+	width: 100%;
+	max-width: 600px;
+}
+
+.screenBlock {
+	flex-direction: column;
+	gap: 10px;
+	background: #fff;
+	padding: 20px;
+	border-radius: 10px;
+	box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.bookingForm {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 50px;
+
+	input,
+	select,
+	textarea {
+		width: calc(100% - 22px);
+		padding: 10px;
+		border: 1px solid #ccc;
+		border-radius: 5px;
+		font-size: 16px;
+	}
+
+	select {
+		width: 100%;
+	}
+
+	textarea {
+		resize: none;
+		min-height: 60px;
+	}
+}
+
+.blockDescription {
+	width: 100%;
+	max-width: 350px;
+	min-height: 40px;
+}
+
+.timeBlock {
+	flex-direction: column;
+	gap: 10px;
+	overflow: hidden;
+}
+
+.inputsBlock {
+	flex-direction: column;
+	gap: 10px;
+	width: 100%;
+	max-width: 350px;
+}
+
+.button {
+	&:hover {
+		background-color: #3d3d3d;
+	}
+}
+
+.calendarWrapper {
+	width: 100%;
+	overflow-x: auto;
+}
+
+@media (max-width: 640px) {
+	.screenBlock {
+		background: transparent;
+		box-shadow: none;
+		padding: 0;
+	}
+}

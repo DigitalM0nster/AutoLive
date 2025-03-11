@@ -1,0 +1,83 @@
+.navigationMenu {
+	flex-direction: column;
+	gap: 15px;
+	margin: 0px 0px 50px 0px;
+}
+
+.navLine {
+	justify-content: space-between;
+	align-items: center;
+	gap: 70px;
+
+	&.crumbs {
+		justify-content: flex-start;
+		gap: 30px;
+	}
+}
+
+.backButtonBlock {
+	cursor: pointer;
+	&:hover {
+		text-decoration: underline;
+	}
+}
+
+.navs {
+	gap: 3px 0px;
+}
+
+.nav {
+	cursor: pointer;
+	&:hover {
+		text-decoration: underline;
+	}
+
+	&.separator {
+		white-space: pre;
+		cursor: default;
+		&:hover {
+			text-decoration: none;
+		}
+	}
+}
+
+.currentPage {
+	font-size: 30px;
+	font-weight: 600;
+	min-width: fit-content;
+}
+
+.pages {
+	gap: 10px;
+}
+
+.pageButton {
+	height: fit-content;
+
+	&:hover {
+		background-color: #3d3d3d;
+	}
+	&.active {
+		background-color: #3d3d3d;
+	}
+}
+
+@media (max-width: 1440px) {
+	.navLine {
+		flex-wrap: wrap;
+		gap: 10px 70px;
+	}
+	.pages {
+		flex-wrap: wrap;
+	}
+	.pageButton {
+		font-size: 18px;
+		min-width: fit-content;
+	}
+}
+
+@media (max-width: 480px) {
+	.pages {
+		display: none;
+	}
+}

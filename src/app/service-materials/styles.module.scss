@@ -1,0 +1,87 @@
+.screenBlock {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr); // 4 колонки равной ширины
+	gap: 20px; // Одинаковые отступы между карточками (горизонтальные и вертикальные)
+	width: 100%; // Родительский контейнер занимает всю ширину
+}
+
+.categoryItem {
+	display: flex;
+	position: relative;
+	justify-content: flex-start;
+	align-items: flex-start;
+	background-color: #f4f4f4;
+	color: inherit;
+	text-decoration: none;
+	padding: 30px 20px 65px 20px;
+	height: calc(180px - 30px - 65px);
+	cursor: pointer;
+
+	&:hover {
+		.categoryTitleBlock {
+			.title {
+				// text-decoration: underline;
+			}
+		}
+
+		.button {
+			text-decoration: underline;
+		}
+	}
+
+	.categoryTitleBlock {
+		flex-direction: column;
+		gap: 15px;
+
+		.title {
+			font-size: 24px;
+			font-weight: 600;
+			margin: 0;
+		}
+	}
+
+	.categoryImageBlock {
+		justify-content: center;
+		position: absolute;
+		bottom: 0;
+		right: 0;
+		width: 100px;
+		height: 65px;
+		cursor: pointer;
+
+		.background {
+			width: 100%;
+			height: 100%;
+			background-color: #b0cb1f;
+			border-radius: 40px 0px 0px 0px;
+		}
+
+		.image {
+			position: absolute;
+			bottom: 10px;
+			width: 80px;
+			height: 80px;
+		}
+	}
+}
+
+@media (max-width: 1280px) {
+	.screenBlock {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr); // 3 колонки равной ширины
+	}
+}
+
+@media (max-width: 980px) {
+	.screenBlock {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr); // 2 колонки равной ширины
+	}
+}
+
+@media (max-width: 480px) {
+	.screenBlock {
+		display: grid;
+		grid-template-columns: repeat(1, 1fr); // 1 колонка
+	}
+}
