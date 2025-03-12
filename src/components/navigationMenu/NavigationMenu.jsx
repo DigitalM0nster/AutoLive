@@ -4,12 +4,13 @@ import { useEffect, useState, useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import styles from "./styles.module.scss";
 
-export default function NavigationMenu() {
+export default function NavigationMenu({ productId }) {
 	const pathname = usePathname();
 	const router = useRouter();
 	const [categories, setCategories] = useState([]);
+	const [product, setProduct] = useState([]);
 
-	// Список стандартных страниц
+	// Страницы и их названия
 	const pages = {
 		"/discounts": "Акции",
 		"/service-materials": "Материалы для ТО",
@@ -18,51 +19,56 @@ export default function NavigationMenu() {
 		"/catalog": "Запчасти",
 	};
 
-	// Получаем категории при первом рендере
+	// Получение списка категорий
 	useEffect(() => {
-		const fetchCategories = async () => {
-			try {
-				const res = await fetch("/api/categories/get-categories");
-				const data = await res.json();
-				setCategories(data);
-			} catch {
-				setCategories([]);
-			}
-		};
-		fetchCategories();
+		fetch("/api/categories/get-categories")
+			.then((res) => res.json())
+			.then(setCategories)
+			.catch(() => setCategories([]));
 	}, []);
 
-	// Функция получения названия категории по `id`
+	// Получение списка продуктов
+	useEffect(() => {
+		if (productId) {
+			fetch(`/api/products/${productId}/get-product`)
+				.then((res) => res.json())
+				.then(setProduct)
+				.catch(() => setProduct([]));
+		}
+	}, []);
+
+	useEffect(() => {
+		console.log(categories);
+	}, [categories]);
+
+	// Функция для получения названия категории по ID
 	const getCategoryName = (categoryId) => {
-		const category = categories.find((categoryItem) => categoryItem.id.toString() === categoryId);
-		return category ? category.name : " ";
+		const category = categories?.find((c) => c.id.toString() === categoryId);
+		return category ? category.name : categoryId;
 	};
 
-	// Определяем название категории, если путь начинается с `/service-materials/`
-	const categoryName = (() => {
-		if (pathname.startsWith("/service-materials/")) {
-			const categoryId = pathname.split("/")[2];
-			return getCategoryName(categoryId);
-		}
-		return "";
-	})();
-
-	// Функция генерации хлебных крошек
+	// Генерация хлебных крошек
 	const generateBreadcrumbs = () => {
-		const pathSegments = pathname.split("/").filter(Boolean);
-		return pathSegments.map((segment, index) => {
-			const fullPath = "/" + pathSegments.slice(0, index + 1).join("/");
-			const name =
-				fullPath === "/service-materials"
-					? "Материалы для ТО"
-					: fullPath.startsWith("/service-materials/") && categoryName
-					? categoryName
-					: pages[fullPath] || decodeURIComponent(segment);
+		const segments = pathname.split("/").filter(Boolean);
+		return segments.map((segment, index) => {
+			const fullPath = "/" + segments.slice(0, index + 1).join("/");
+			let name = pages[fullPath] || decodeURIComponent(segment);
+
+			// Если путь относится к "Материалам для ТО"
+			if (segments[0] === "service-materials") {
+				if (index === 1) {
+					// name = getCategoryName(segment);
+				}
+				if (index === 2 && product && productId) {
+					name = product?.product?.name; // Получаем имя продукта
+				}
+			}
+
 			return { name, path: fullPath };
 		});
 	};
 
-	const breadcrumbs = useMemo(generateBreadcrumbs, [pathname, categoryName]);
+	const breadcrumbs = useMemo(generateBreadcrumbs, [pathname, categories, product]);
 
 	return (
 		<div className={styles.navigationMenu}>

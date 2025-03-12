@@ -11,6 +11,7 @@ export default function CategoryPageClient({ categoryData }) {
 	const [filteredProducts, setFilteredProducts] = useState(categoryData.category.products);
 	const [sortOption, setSortOption] = useState("name");
 	const [itemsPerPage, setItemsPerPage] = useState(10);
+	console.log(categoryData);
 
 	return (
 		<div className={styles.materialContainer}>
@@ -23,7 +24,7 @@ export default function CategoryPageClient({ categoryData }) {
 				<FilterPanel products={categoryData.category.products} filters={categoryData.category.filters} setFilteredProducts={setFilteredProducts} />
 
 				{/* Список товаров */}
-				<ProductsList products={filteredProducts} sortOption={sortOption} itemsPerPage={itemsPerPage} />
+				<ProductsList products={filteredProducts} sortOption={sortOption} itemsPerPage={itemsPerPage} categoryData={categoryData} />
 			</div>
 		</div>
 	);

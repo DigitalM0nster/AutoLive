@@ -19,6 +19,9 @@ export async function GET(req) {
 			[categoryId]
 		);
 
+		// Получаем нужную категорию
+		const [categories] = await db.execute("SELECT name FROM categories WHERE id = ?", [categoryId]);
+
 		// Получаем все доступные фильтры для этой категории
 		const [filters] = await db.query(
 			`
@@ -67,7 +70,7 @@ export async function GET(req) {
 			JSON.stringify({
 				category: {
 					id: categoryId,
-					name: "Категория",
+					name: categories[0].name,
 					products: structuredProducts,
 					filters: Object.values(structuredFilters),
 				},

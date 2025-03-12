@@ -5,18 +5,20 @@ import styles from "./styles.module.scss";
 
 export default function FilterPanel({ products = [], filters = [], setFilteredProducts }) {
 	// Минимальная и максимальная цена из товаров
-	const minPrice = products.length > 0 ? Math.min(...products.map((p) => p.price)) : 0;
+	const minPriceDefault = products.length > 0 ? Math.min(...products.map((p) => p.price)) : 0;
 	const maxPriceDefault = products.length > 0 ? Math.max(...products.map((p) => p.price)) : 0;
 
 	// Текущее состояние фильтров
 	const [selectedFilters, setSelectedFilters] = useState({});
+	const [minPrice, setMinPrice] = useState(minPriceDefault);
 	const [maxPrice, setMaxPrice] = useState(maxPriceDefault);
-	const [inputPrice, setInputPrice] = useState(maxPriceDefault); // Поле ввода для цены
+	const [inputMinPrice, setInputMinPrice] = useState(minPriceDefault);
+	const [inputMaxPrice, setInputMaxPrice] = useState(maxPriceDefault);
 
 	// Применение фильтров при изменении значений
 	useEffect(() => {
 		applyFilters();
-	}, [selectedFilters, maxPrice]);
+	}, [selectedFilters, minPrice, maxPrice]);
 
 	// Применение фильтрации товаров
 	const applyFilters = () => {
@@ -31,69 +33,114 @@ export default function FilterPanel({ products = [], filters = [], setFilteredPr
 		setFilteredProducts(filtered);
 	};
 
-	// Обновление `maxPrice` через input
-	const handleInputChange = (e) => {
-		const newPrice = Number(e.target.value);
-		if (!isNaN(newPrice) && newPrice >= minPrice && newPrice <= maxPriceDefault) {
-			setInputPrice(newPrice);
-			setMaxPrice(newPrice);
+	// Обновление минимальной цены
+	const handleMinPriceChange = (e) => {
+		const newMinPrice = Number(e.target.value);
+		if (!isNaN(newMinPrice) && newMinPrice >= minPriceDefault && newMinPrice <= maxPrice) {
+			setMinPrice(newMinPrice);
+			setInputMinPrice(newMinPrice);
+		}
+	};
+
+	// Обновление максимальной цены
+	const handleMaxPriceChange = (e) => {
+		const newMaxPrice = Number(e.target.value);
+		if (!isNaN(newMaxPrice) && newMaxPrice >= minPrice && newMaxPrice <= maxPriceDefault) {
+			setMaxPrice(newMaxPrice);
+			setInputMaxPrice(newMaxPrice);
 		}
 	};
 
 	// Сброс фильтров
 	const resetFilters = () => {
 		setSelectedFilters({});
+		setMinPrice(minPriceDefault);
 		setMaxPrice(maxPriceDefault);
-		setInputPrice(maxPriceDefault);
+		setInputMinPrice(minPriceDefault);
+		setInputMaxPrice(maxPriceDefault);
 		setFilteredProducts(products);
 	};
 
 	return (
 		<div className={styles.filterPanel}>
-			{/* Фильтр цены с полем ввода */}
-			{products.length > 0 && (
-				<div className={styles.filterBlock}>
-					<div className={styles.filterName}>Цена</div>
-					<div className={styles.priceInputWrapper}>
-						<input type="number" value={inputPrice} onChange={handleInputChange} className={styles.priceInput} min={minPrice} max={maxPriceDefault} />
-					</div>
-					<div className={styles.sliderWrapper}>
-						<span className={styles.minPrice}>{minPrice} руб.</span>
-						<input
-							type="range"
-							min={minPrice}
-							max={maxPriceDefault}
-							step={0.01}
-							value={maxPrice}
-							onChange={(e) => {
-								setMaxPrice(Number(e.target.value));
-								setInputPrice(Number(e.target.value));
-							}}
-							className={styles.slider}
-						/>
-						<span className={styles.maxPrice}>{maxPriceDefault} руб.</span>
-					</div>
-				</div>
-			)}
+			<div className={styles.filterContent}>
+				{/* Фильтр цены с полем ввода */}
+				{products.length > 0 && (
+					<div className={styles.filterBlock}>
+						<div className={styles.filterName}>Цена</div>
 
-			{/* Фильтры */}
-			{filters.length > 0 &&
-				filters.map((filter) => (
-					<div key={filter.id} className={styles.filterBlock}>
-						<div className={styles.filterName}>{filter.name}</div>
-						<select value={selectedFilters[filter.id] || ""} onChange={(e) => setSelectedFilters({ ...selectedFilters, [filter.id]: e.target.value })}>
-							<option value="">Все</option>
-							{filter.values.map((value) => (
-								<option key={value.id} value={value.id}>
-									{value.value}
-								</option>
-							))}
-						</select>
+						<div className={styles.priceInputs}>
+							<input
+								type="number"
+								value={inputMinPrice}
+								onChange={(e) => setInputMinPrice(e.target.value)}
+								onBlur={handleMinPriceChange}
+								className={styles.priceInput}
+								min={minPriceDefault}
+								max={maxPrice}
+							/>
+							<span>-</span>
+							<input
+								type="number"
+								value={inputMaxPrice}
+								onChange={(e) => setInputMaxPrice(e.target.value)}
+								onBlur={handleMaxPriceChange}
+								className={styles.priceInput}
+								min={minPrice}
+								max={maxPriceDefault}
+							/>
+						</div>
+
+						<div className={styles.sliderWrapper}>
+							<input
+								type="range"
+								min={minPriceDefault}
+								max={maxPriceDefault}
+								step={0.01}
+								value={minPrice}
+								onChange={handleMinPriceChange}
+								className={styles.slider}
+							/>
+							<input
+								type="range"
+								min={minPriceDefault}
+								max={maxPriceDefault}
+								step={0.01}
+								value={maxPrice}
+								onChange={handleMaxPriceChange}
+								className={styles.slider}
+							/>
+						</div>
+						<div className={styles.priceLabels}>
+							<span>{minPriceDefault} руб.</span>
+							<span>{maxPriceDefault} руб.</span>
+						</div>
 					</div>
-				))}
+				)}
+
+				{/* Фильтры */}
+				{filters.length > 0 &&
+					filters.map((filter) => (
+						<div key={filter.id} className={styles.filterBlock}>
+							<div className={styles.filterName}>{filter.name}</div>
+							<select value={selectedFilters[filter.id] || ""} onChange={(e) => setSelectedFilters({ ...selectedFilters, [filter.id]: e.target.value })}>
+								<option value="">Все</option>
+								{filter.values.map((value) => (
+									<option key={value.id} value={value.id}>
+										{value.value}
+									</option>
+								))}
+							</select>
+						</div>
+					))}
+			</div>
 
 			{/* Кнопка "Сбросить фильтры" */}
-			<button className={`button ${styles.resetButton}`} onClick={resetFilters} disabled={Object.keys(selectedFilters).length === 0 && maxPrice === maxPriceDefault}>
+			<button
+				className={`button ${styles.resetButton}`}
+				onClick={resetFilters}
+				disabled={Object.keys(selectedFilters).length === 0 && minPrice === minPriceDefault && maxPrice === maxPriceDefault}
+			>
 				Сбросить фильтры
 			</button>
 		</div>

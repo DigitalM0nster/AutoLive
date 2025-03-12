@@ -2,8 +2,10 @@
 export async function getProductsByCategory(categoryId) {
 	try {
 		const response = await fetch(`http://localhost:3000/api/products/get-products-by-category?category=${categoryId}`, {
-			cache: "no-store",
+			next: { revalidate: 3600 }, // Данные обновляются раз в 1 час
 		});
+
+		console.log(response);
 
 		if (!response.ok) {
 			console.error("Ошибка при загрузке данных:", response.status, response.statusText);
@@ -15,6 +17,26 @@ export async function getProductsByCategory(categoryId) {
 		return data;
 	} catch (error) {
 		console.error("Ошибка запроса:", error);
+		return null;
+	}
+}
+
+// Получаем товар
+export async function getProductById(productId) {
+	const response = await fetch(`http://localhost:3000/api/products/${productId}/get-product`, {
+		// cache: "no-store", // Данные обновляются при каждом запросе - плохо для СЕО
+		next: { revalidate: 3600 }, // Данные обновляются раз в 1 час - хорошо для СЕО
+	});
+
+	if (!response.ok) {
+		console.error("Ошибка при загрузке данных:", response.status, response.statusText);
+		return null;
+	}
+
+	try {
+		return await response.json();
+	} catch (error) {
+		console.error("Ошибка парсинга JSON:", error);
 		return null;
 	}
 }

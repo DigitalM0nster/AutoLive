@@ -1,0 +1,32 @@
+.productItem {
+	gap: 30px;
+}
+
+.leftBlock {
+	width: 50%;
+}
+
+.imageBlock {
+	width: 350px;
+	height: 300px;
+	background-color: #f8f8f8;
+}
+
+.rightBlock {
+	flex-direction: column;
+	justify-content: space-between;
+}
+
+.descriptionBlock {
+	flex-direction: column;
+	gap: 10px;
+}
+
+.descriptionTitle,
+.filtersTitle {
+	font-size: 18px;
+	font-weight: 600;
+}
+
+.description {
+}
