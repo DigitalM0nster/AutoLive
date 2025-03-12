@@ -7,11 +7,9 @@ import SortingPanel from "./sortingPanel/ProductsList";
 import ProductsList from "./productsList/ProductsList";
 
 export default function CategoryPageClient({ categoryData }) {
-	// ✅ Теперь `useState` в клиентском компоненте
 	const [filteredProducts, setFilteredProducts] = useState(categoryData.category.products);
 	const [sortOption, setSortOption] = useState("name");
 	const [itemsPerPage, setItemsPerPage] = useState(10);
-	console.log(categoryData);
 
 	return (
 		<div className={styles.materialContainer}>

@@ -37,9 +37,9 @@ export default function NavigationMenu({ productId }) {
 		}
 	}, []);
 
-	useEffect(() => {
-		console.log(categories);
-	}, [categories]);
+	// useEffect(() => {
+	// 	console.log(categories);
+	// }, [categories]);
 
 	// Функция для получения названия категории по ID
 	const getCategoryName = (categoryId) => {
@@ -57,7 +57,7 @@ export default function NavigationMenu({ productId }) {
 			// Если путь относится к "Материалам для ТО"
 			if (segments[0] === "service-materials") {
 				if (index === 1) {
-					// name = getCategoryName(segment);
+					name = getCategoryName(segment);
 				}
 				if (index === 2 && product && productId) {
 					name = product?.product?.name; // Получаем имя продукта

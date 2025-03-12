@@ -5,15 +5,12 @@ export async function getProductsByCategory(categoryId) {
 			next: { revalidate: 3600 }, // Данные обновляются раз в 1 час
 		});
 
-		console.log(response);
-
 		if (!response.ok) {
 			console.error("Ошибка при загрузке данных:", response.status, response.statusText);
 			return null;
 		}
 
 		const data = await response.json();
-		console.log("Полученные данные:", data); // Отладка
 		return data;
 	} catch (error) {
 		console.error("Ошибка запроса:", error);

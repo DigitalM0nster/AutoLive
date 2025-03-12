@@ -13,7 +13,7 @@ export default async function productPage({ params }) {
 	}
 
 	const productData = await getProductById(productId);
-	console.log(productData.product);
+	console.log("Получаем данные продукта по ID", productData);
 
 	if (!productData || productData.error) {
 		return <div className="text-center">Ошибка загрузки данных</div>;
@@ -23,27 +23,17 @@ export default async function productPage({ params }) {
 		<div className={`screen ${styles.screen}`}>
 			<div className="screenContent">
 				<NavigationMenu productId={productId} />
-				<h1 className={`pageTitle ${styles.pageTitle}`}>{productData?.product?.name}</h1>
-				{productData.product && (
+				{productData.product ? (
 					<div className={styles.productItem}>
-						<div className={styles.leftBlock}>
-							<div className={styles.imageBlock}>
-								<img src={productData.product.image_url} alt={productData.product.name} />
-							</div>
+						<div className={styles.imageBlock}>
+							<img src={productData.product.image_url} alt={productData.product.name} />
 						</div>
-						<div className={styles.rightBlock}>
-							<div className={styles.descriptionBlock}>
-								<div className={styles.descriptionTitle}>Описание</div>
-								<div className={styles.description}>
-									Очень длинное описание. Очень длинное описание. Очень длинное описание. Очень длинное описаниею. Очень длинное описание . Очень длинное
-									описаниеОчень длинное описаниеОчень длинное описание .Очень длинное описание
-								</div>
-							</div>
-							<div className={styles.filtersBlock}>
-								<div className={styles.filtersTitle}>Свойства:</div>
+						<div className={styles.filtersBlock}>
+							<div className={styles.filtersTitle}>Свойства:</div>
+							<div className={styles.filtersList}>
 								{productData?.product?.filters?.map((filter, filterIndex) => {
 									return (
-										<div key={`filter${filterIndex}`} className="filter">
+										<div key={`filter${filterIndex}`} className={styles.filterItem}>
 											<div className={styles.name}>{filter.name}</div>
 											<div className={styles.values}>
 												{filter.selected_values.map((value, valueIndex) => {
@@ -59,7 +49,30 @@ export default async function productPage({ params }) {
 								})}
 							</div>
 						</div>
+						<div className={styles.descriptionBlock}>
+							<div className={styles.textBlock}>
+								<h1 className={`pageTitle ${styles.pageTitle}`}>{productData?.product?.name}</h1>
+								<div className={styles.description}>
+									Очень длинное описание. Очень длинное описание. Очень длинное описание. Очень длинное описаниею. Очень длинное описание . Очень длинное
+									описаниеОчень длинное описаниеОчень длинное описание .Очень длинное описание
+								</div>
+							</div>
+							<div className={styles.buttonBlock}>
+								<div className={styles.column}>
+									<div className={styles.price}>Цена: {productData.product.price}₽</div>
+									<div className="button">В корзину</div>
+								</div>
+							</div>
+						</div>
+						<div className={`${styles.buttonBlock} ${styles.mobile}`}>
+							<div className={styles.column}>
+								<div className={styles.price}>Цена: {productData.product.price}₽</div>
+								<div className="button">В корзину</div>
+							</div>
+						</div>
 					</div>
+				) : (
+					<div className="noProduct">Такого товара не существует...</div>
 				)}
 			</div>
 		</div>

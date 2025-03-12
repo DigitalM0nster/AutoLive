@@ -11,7 +11,7 @@ export async function GET(req) {
 	try {
 		const db = await getDatabaseConnection();
 
-		// Запрашиваем товары
+		// Получаем товары категории
 		const [products] = await db.query(
 			`
 			SELECT id, name, price, image_url FROM products WHERE category_id = ?
@@ -19,16 +19,17 @@ export async function GET(req) {
 			[categoryId]
 		);
 
-		// Получаем нужную категорию
+		// Получаем категорию
 		const [categories] = await db.execute("SELECT name FROM categories WHERE id = ?", [categoryId]);
 
-		// Получаем все доступные фильтры для этой категории
+		// Получаем только используемые фильтры и их значения для этой категории
 		const [filters] = await db.query(
 			`
-			SELECT f.id AS filter_id, f.name AS filter_name, fv.id AS value_id, fv.value
-			FROM filters f
-			LEFT JOIN filter_values fv ON fv.filter_id = f.id
-			WHERE f.category_id = ?
+			SELECT DISTINCT f.id AS filter_id, f.name AS filter_name, fv.id AS value_id, fv.value
+			FROM product_filters pf
+			JOIN filters f ON pf.filter_id = f.id
+			JOIN filter_values fv ON pf.filter_value_id = fv.id
+			WHERE pf.product_id IN (SELECT id FROM products WHERE category_id = ?)
 		`,
 			[categoryId]
 		);
@@ -44,7 +45,7 @@ export async function GET(req) {
 			[categoryId]
 		);
 
-		// Формируем объект фильтров
+		// Структурируем фильтры
 		const structuredFilters = filters.reduce((acc, row) => {
 			const { filter_id, filter_name, value_id, value } = row;
 			if (!acc[filter_id]) {
@@ -70,7 +71,7 @@ export async function GET(req) {
 			JSON.stringify({
 				category: {
 					id: categoryId,
-					name: categories[0].name,
+					name: categories[0]?.name || "Неизвестная категория",
 					products: structuredProducts,
 					filters: Object.values(structuredFilters),
 				},

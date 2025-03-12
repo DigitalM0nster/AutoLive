@@ -12,7 +12,7 @@ export default async function MaterialPageByCategory({ params }) {
 	}
 
 	const categoryData = await getProductsByCategory(categoryId);
-	console.log(categoryData);
+	console.log("Получаем товары по выбранной категории: ", categoryData);
 
 	if (!categoryData || categoryData.error) {
 		return <div className="text-center">Ошибка загрузки данных</div>;
