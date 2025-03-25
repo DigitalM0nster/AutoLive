@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getDatabaseConnection } from "@/app/lib/db";
+import { getDatabaseConnection } from "@/lib/db";
 import bcrypt from "bcrypt";
 
 const generateCode = () => Math.floor(1000 + Math.random() * 9000).toString();

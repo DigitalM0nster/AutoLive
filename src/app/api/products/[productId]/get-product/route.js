@@ -1,4 +1,6 @@
-import { getDatabaseConnection } from "@/app/lib/db";
+// src\app\api\products\[productId]\get-product\route.js
+
+import { getDatabaseConnection } from "@/lib/db";
 
 export async function GET(req, context) {
 	const { productId } = context.params; // Получаем productId из URL

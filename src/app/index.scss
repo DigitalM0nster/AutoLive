@@ -92,6 +92,18 @@ button,
 	div {
 		button {
 			border: 2px solid white;
+			border-radius: 8px;
+			color: #3d3d3d;
+			font-size: 14px;
+
+			&.react-calendar__navigation__label {
+				font-size: 14px;
+				padding: 0;
+			}
+
+			&.react-calendar__navigation__arrow {
+				padding: 0;
+			}
 		}
 	}
 
@@ -136,6 +148,12 @@ button,
 	/* Заблокированные дни (например, прошедшие даты) */
 	.react-calendar__tile--disabled {
 	}
+}
+
+option {
+}
+
+select {
 }
 
 @media (max-width: 1440px) {

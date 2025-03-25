@@ -1,6 +1,6 @@
 import Link from "next/link";
 import styles from "./styles.module.scss";
-import CONFIG from "@/app/lib/config";
+import CONFIG from "@/lib/config";
 import OrderPopupButton from "@/components/orderPopup/OrderPopupButton";
 
 // ✅ Динамическая генерация метаданных

@@ -1,4 +1,5 @@
-import { getDatabaseConnection } from "@/app/lib/db";
+// src\app\api\products\get-products-by-category\route.js
+import { getDatabaseConnection } from "@/lib/db";
 
 export async function GET(req) {
 	const { searchParams } = new URL(req.url);
