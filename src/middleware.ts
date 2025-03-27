@@ -1,22 +1,25 @@
+// src\middleware.ts
+
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export const config = {
-	matcher: ["/admin/:path*"], // только для /admin и вложенных
+	matcher: ["/admin/:path*"], // работает на все /admin/...
 };
 
 export function middleware(request: NextRequest) {
 	const { pathname } = request.nextUrl;
 
-	// Только для роутов начинающихся с /admin
-	if (pathname.startsWith("/admin")) {
-		const token = request.cookies.get("authToken")?.value;
+	// 👇 Разрешаем доступ только на корень /admin (форма логина)
+	if (pathname === "/admin") {
+		return NextResponse.next();
+	}
 
-		// Если токена нет — редирект на login
-		if (!token) {
-			const loginUrl = new URL("/login", request.url);
-			return NextResponse.redirect(loginUrl);
-		}
+	// Всё остальное в /admin требует токена
+	const token = request.cookies.get("authToken")?.value;
+
+	if (!token) {
+		return NextResponse.redirect(new URL("/admin", request.url));
 	}
 
 	return NextResponse.next();

@@ -1,0 +1,197 @@
+// prisma/schema.prisma
+
+// ------------------------------
+// 🔐 Пользователи и роли
+// ------------------------------
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "mysql"
+    url      = env("DATABASE_URL")
+}
+
+model User {
+    id         Int        @id @default(autoincrement())
+    first_name String
+    last_name  String
+    phone      String     @unique
+    password   String
+    role       Role
+    status     UserStatus @default(unverified)
+    createdAt  DateTime   @default(now())
+
+    // 👇 Менеджер принадлежит админу
+    adminId  Int?
+    admin    User?  @relation("AdminManagers", fields: [adminId], references: [id])
+    managers User[] @relation("AdminManagers")
+
+    // 👇 Менеджер имеет заказы
+    managerOrders Order[] @relation("ManagerOrders")
+    clientOrders  Order[] @relation("ClientOrders")
+}
+
+enum Role {
+    superadmin
+    admin
+    manager
+    client
+}
+
+enum UserStatus {
+    unverified
+    verified
+}
+
+// ------------------------------
+// 📦 Товары и разделы
+// ------------------------------
+
+model Category {
+    id          Int      @id @default(autoincrement())
+    title       String
+    slug        String   @unique
+    description String?
+    image       String?
+    createdAt   DateTime @default(now())
+
+    products Product[] // 👈 товары, привязанные к разделу
+    Filter   Filter[]
+}
+
+model Product {
+    id          Int      @id @default(autoincrement())
+    title       String
+    sku         String   @unique
+    price       Float
+    description String?
+    image       String?
+    createdAt   DateTime @default(now())
+
+    categoryId Int
+    category   Category @relation(fields: [categoryId], references: [id])
+
+    productFilterValues ProductFilterValue[]
+
+    analogsFrom     ProductAnalog[]  @relation("ProductToAnalog") // 👈 товары, у которых этот товар — оригинал
+    analogsTo       ProductAnalog[]  @relation("AnalogToProduct") // 👈 товары, у которых этот товар — аналог
+    OrderItem       OrderItem[]
+    serviceKitItems ServiceKitItem[] @relation("KitItemProduct")
+    analogInKits    ServiceKitItem[] @relation("KitItemAnalog")
+}
+
+// ------------------------------
+// 🧩 Фильтры
+// ------------------------------
+model Filter {
+    id         Int           @id @default(autoincrement())
+    title      String
+    type       FilterType    @default(select)
+    categoryId Int
+    category   Category      @relation(fields: [categoryId], references: [id])
+    values     FilterValue[]
+}
+
+enum FilterType {
+    select
+    multi
+    range
+    boolean
+}
+
+model FilterValue {
+    id       Int    @id @default(autoincrement())
+    value    String
+    filterId Int
+    filter   Filter @relation(fields: [filterId], references: [id])
+
+    productFilterValues ProductFilterValue[] // 👈 связь через промежуточную модель
+}
+
+model ProductFilterValue {
+    id            Int @id @default(autoincrement())
+    productId     Int
+    filterValueId Int
+
+    product     Product     @relation(fields: [productId], references: [id])
+    filterValue FilterValue @relation(fields: [filterValueId], references: [id])
+
+    @@unique([productId, filterValueId]) // 👈 запрет на дубли
+}
+
+// ------------------------------
+// 🔄 Аналоги
+// ------------------------------
+model ProductAnalog {
+    id        Int @id @default(autoincrement())
+    productId Int
+    analogId  Int
+
+    product Product @relation("ProductToAnalog", fields: [productId], references: [id])
+    analog  Product @relation("AnalogToProduct", fields: [analogId], references: [id])
+
+    @@unique([productId, analogId])
+}
+
+// ------------------------------
+// 🛠 Комплекты ТО
+// ------------------------------
+model ServiceKit {
+    id          Int      @id @default(autoincrement())
+    title       String
+    description String?
+    image       String?
+    price       Float
+    createdAt   DateTime @default(now())
+
+    kitItems ServiceKitItem[]
+}
+
+model ServiceKitItem {
+    id              Int  @id @default(autoincrement())
+    kitId           Int
+    productId       Int
+    analogProductId Int?
+
+    kit           ServiceKit @relation(fields: [kitId], references: [id])
+    product       Product    @relation("KitItemProduct", fields: [productId], references: [id])
+    analogProduct Product?   @relation("KitItemAnalog", fields: [analogProductId], references: [id])
+}
+
+// ------------------------------
+// 📑 Заказы
+// ------------------------------
+model Order {
+    id          Int         @id @default(autoincrement())
+    title       String
+    description String?
+    status      OrderStatus @default(pending)
+    createdAt   DateTime    @default(now())
+
+    managerId Int
+    manager   User @relation("ManagerOrders", fields: [managerId], references: [id])
+
+    clientId Int
+    client   User @relation("ClientOrders", fields: [clientId], references: [id])
+
+    orderItems OrderItem[]
+}
+
+model OrderItem {
+    id        Int @id @default(autoincrement())
+    orderId   Int
+    productId Int
+    quantity  Int @default(1)
+
+    order   Order   @relation(fields: [orderId], references: [id])
+    product Product @relation(fields: [productId], references: [id])
+}
+
+enum OrderStatus {
+    pending
+    confirmed
+    shipped
+    delivered
+    cancelled
+}

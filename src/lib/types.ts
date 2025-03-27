@@ -2,12 +2,12 @@
 
 export type Category = {
 	id: number;
-	name: string;
+	title?: string;
 	products?: Product[];
-	image_url: string;
+	image?: string | null;
 	filters?: {
 		id: number;
-		name: string;
+		title: string;
 		values: {
 			id: number;
 			value: string;
@@ -17,20 +17,20 @@ export type Category = {
 
 export type Product = {
 	id: number;
-	name: string;
+	title: string;
 	price: number;
-	image_url: string;
+	image?: string | null;
 	filters: {
-		filter_id: number;
-		value_id: number;
+		filterId: number;
+		valueId: number;
 		value: string;
 	}[];
 };
 
 export type ProductFilter = {
 	id: number;
-	name: string;
-	selected_values: {
+	title: string;
+	selectedValues: {
 		id: number;
 		value: string;
 	}[];
@@ -38,7 +38,7 @@ export type ProductFilter = {
 
 export type ProductResponse = {
 	product?: Omit<Product, "filters"> & {
-		category_id: number;
+		categoryId: number;
 		filters?: ProductFilter[];
 	};
 	error?: string;
@@ -46,19 +46,43 @@ export type ProductResponse = {
 
 export type ServiceKit = {
 	id: number;
-	name: string;
+	title: string;
 	image?: string;
 	description?: string;
 	price?: number;
 	parts?: {
-		name: string;
-		analogs: string[];
+		title: string;
+		analogs: Product[];
 	}[];
 };
 
-export type Discount = {
+export type Promotion = {
 	id: number;
 	title: string;
 	description: string;
 	image: string;
+};
+
+export type FilterType = "select" | "multi" | "range" | "boolean";
+
+export type FilterValue = {
+	id: number;
+	value: string;
+};
+
+export type Filter = {
+	id: number;
+	title: string;
+	type: FilterType;
+	values: FilterValue[];
+};
+
+export type EditableFilter = {
+	id?: number;
+	title: string;
+	type: FilterType;
+	values: {
+		id?: number;
+		value: string;
+	}[];
 };

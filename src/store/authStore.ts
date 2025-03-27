@@ -1,12 +1,14 @@
+// src\store\authStore.ts
+
 import { create } from "zustand";
 
-type Role = "manager" | "admin" | "superadmin"; // 👈 если знаешь другие роли — добавь
+type Role = "superadmin" | "admin" | "manager" | "user"; // 👈 если знаешь другие роли — добавь
 type User = {
 	id: number;
-	name: string;
+	first_name: string;
+	last_name: string;
 	phone: string;
 	role: Role;
-	// добавь сюда другие поля, если знаешь
 };
 
 type AuthStore = {
@@ -27,20 +29,17 @@ export const useAuthStore = create<AuthStore>((set) => ({
 	role: null,
 
 	initAuth: async () => {
-		const token = localStorage.getItem("token");
-		if (!token) return;
-
 		try {
 			const response = await fetch("/api/user/get-user-data", {
 				method: "GET",
-				headers: { Authorization: `Bearer ${token}` },
+				credentials: "include", // ⬅ важно!
 			});
 			const data = await response.json();
 
 			if (response.ok) {
-				set({ isLogined: true, token, user: data, role: data.role });
+				set({ isLogined: true, user: data, role: data.role });
 			} else {
-				localStorage.removeItem("token");
+				set({ isLogined: false, user: null, role: null });
 			}
 		} catch (error) {
 			console.error("Ошибка авторизации:", error);
@@ -53,13 +52,13 @@ export const useAuthStore = create<AuthStore>((set) => ({
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ phone, password }),
+				credentials: "include", // ⬅ важно!
 			});
-			const data = await response.json();
 
 			if (response.ok) {
-				localStorage.setItem("token", data.token);
-				useAuthStore.getState().initAuth();
+				await useAuthStore.getState().initAuth();
 			} else {
+				const data = await response.json();
 				throw new Error(data.code || "UNKNOWN_ERROR");
 			}
 		} catch (error: any) {
@@ -68,8 +67,11 @@ export const useAuthStore = create<AuthStore>((set) => ({
 		}
 	},
 
-	logout: () => {
-		localStorage.removeItem("token");
-		set({ isLogined: false, token: null, user: null, role: null });
+	logout: async () => {
+		await fetch("/api/user/auth/logout", {
+			method: "POST",
+			credentials: "include",
+		});
+		set({ isLogined: false, user: null, role: null });
 	},
 }));

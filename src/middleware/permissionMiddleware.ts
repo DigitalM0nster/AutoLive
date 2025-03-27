@@ -1,3 +1,5 @@
+// src\middleware\permissionMiddleware.ts
+
 import { hasPermission, Role, Permission } from "@/lib/rolesConfig";
 import { getUserFromRequest } from "@/middleware/authMiddleware";
 import { NextRequest, NextResponse } from "next/server";

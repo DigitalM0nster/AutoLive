@@ -1,24 +1,29 @@
 // src\lib\api.ts
 
+import { prisma } from "./prisma";
 import { Category, ProductResponse, ServiceKit } from "./types";
 
 // Получаем товары
-export async function getProductsByCategory(categoryId: string): Promise<{ category: Category } | null> {
+export async function getProductsByCategory(categoryId: string): Promise<{ category: Category } | { error: string }> {
 	try {
-		const response = await fetch(`http://localhost:3000/api/products/get-products-by-category?category=${categoryId}`, {
+		const res = await fetch(`http://localhost:3000/api/products/get-products-by-category?category=${categoryId}`, {
 			next: { revalidate: 3600 },
 		});
 
-		if (!response.ok) {
-			console.error("Ошибка при загрузке данных:", response.status, response.statusText);
-			return null;
+		if (!res.ok) {
+			return { error: `Ошибка загрузки: ${res.status}` };
 		}
 
-		const data = await response.json();
-		return data;
+		const data = await res.json();
+
+		if (!data || !data.category) {
+			return { error: "Категория не найдена" };
+		}
+
+		return { category: data.category };
 	} catch (error) {
 		console.error("Ошибка запроса:", error);
-		return null;
+		return { error: "Ошибка запроса" };
 	}
 }
 
@@ -43,21 +48,20 @@ export async function getProductById(productId: string): Promise<ProductResponse
 
 // Получаем категории
 export async function getCategories(): Promise<Category[]> {
-	console.log("Получаем категории товаров");
-	const res = await fetch("http://localhost:3000/api/categories/get-categories", {
-		next: { revalidate: 3600 },
-	});
-
-	if (!res.ok) {
-		console.error("Ошибка при загрузке данных:", res.status, res.statusText);
-		return [];
-	}
-
 	try {
-		const categories = await res.json();
+		const categories = await prisma.category.findMany({
+			select: {
+				id: true,
+				title: true,
+				image: true,
+			},
+			orderBy: {
+				id: "asc",
+			},
+		});
 		return categories;
 	} catch (error) {
-		console.error("Ошибка парсинга JSON:", error);
+		console.error("Ошибка при получении категорий:", error);
 		return [];
 	}
 }
