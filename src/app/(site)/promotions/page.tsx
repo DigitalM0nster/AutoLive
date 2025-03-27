@@ -2,22 +2,13 @@ import Link from "next/link";
 import NavigationMenu from "@/components/user/navigationMenu/NavigationMenu";
 import styles from "./styles.module.scss";
 import CONFIG from "@/lib/config";
-import { Promotion } from "@/lib/types"; // ✅ Добавим тип
+import { getPromotions } from "@/lib/api";
 
 export const metadata = {
 	title: `Скидки и акции в ${CONFIG.STORE_NAME} | ${CONFIG.CITY}`,
 	description: `Актуальные скидки на автозапчасти и техническое обслуживание в ${CONFIG.STORE_NAME} (${CONFIG.CITY}). Успейте воспользоваться выгодными предложениями на ${CONFIG.DOMAIN}.`,
 	keywords: `скидки на автозапчасти ${CONFIG.CITY}, акции ${CONFIG.STORE_NAME}, ТО со скидкой ${CONFIG.CITY}, автосервис ${CONFIG.CITY}, ${CONFIG.DOMAIN}`,
 };
-
-// ✅ Типизация возвращаемых данных
-async function getPromotions(): Promise<Promotion[]> {
-	const res = await fetch("http://localhost:3000/api/promotions", {
-		next: { revalidate: 3600 },
-	});
-	const promotions = await res.json();
-	return promotions;
-}
 
 export default async function Promotions() {
 	const promotions = await getPromotions();
@@ -27,6 +18,7 @@ export default async function Promotions() {
 			<div className="screenContent">
 				<NavigationMenu />
 				<h1 className={`pageTitle ${styles.pageTitle}`}>Акции</h1>
+
 				<div className={`screenBlock ${styles.screenBlock}`}>
 					{promotions.length === 0 ? (
 						<div className={styles.loading}>Загрузка...</div>
@@ -34,16 +26,18 @@ export default async function Promotions() {
 						promotions.map((promotion) => (
 							<div key={promotion.id} className={styles.promotionItem}>
 								<div className={styles.photo}>
-									<img src={promotion.image} alt={promotion.title} />
+									{promotion.image ? <img src={promotion.image} alt={promotion.title} /> : <img src="/images/no-image.png" alt="" />}
 								</div>
 								<div className={styles.contentBlock}>
 									<div className={styles.textContent}>
 										<div className={styles.title}>{promotion.title}</div>
 										<div className={styles.description}>{promotion.description}</div>
 									</div>
-									<Link href="/service-booking" className={`button ${styles.button}`}>
-										Записаться на ТО
-									</Link>
+									{(promotion.buttonLink || promotion.buttonText) && (
+										<Link href={promotion.buttonLink || ""} className={`button ${styles.button}`}>
+											{promotion.buttonText || "Подробнее"}
+										</Link>
+									)}
 								</div>
 							</div>
 						))

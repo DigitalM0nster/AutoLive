@@ -24,7 +24,6 @@ export default function NavigationMenu({ productId }: NavigationMenuProps) {
 	const [categories, setCategories] = useState<Category[]>([]);
 	const [product, setProduct] = useState<Product | null>(null);
 
-	// Страницы и их заголовки
 	const pages: Record<string, string> = {
 		"/promotions": "Акции",
 		"/service-materials": "Материалы для ТО",
@@ -33,31 +32,29 @@ export default function NavigationMenu({ productId }: NavigationMenuProps) {
 		"/catalog": "Запчасти",
 	};
 
-	// Загружаем категории
+	// 🔄 Обновлённый fetch категорий
 	useEffect(() => {
-		fetch("/api/categories/get-categories")
+		fetch("/api/categories")
 			.then((res) => res.json())
 			.then(setCategories)
 			.catch(() => setCategories([]));
 	}, []);
 
-	// Загружаем продукт по ID
+	// 🔄 Обновлённый fetch продукта
 	useEffect(() => {
 		if (productId) {
-			fetch(`/api/products/${productId}/get-product`)
+			fetch(`/api/products/${productId}`)
 				.then((res) => res.json())
-				.then((data) => setProduct(data.product))
+				.then(setProduct)
 				.catch(() => setProduct(null));
 		}
 	}, [productId]);
 
-	// Получение названия категории по ID
 	const getCategoryTitle = (id: string | number): string | undefined => {
 		const found = categories.find((cat) => cat.id.toString() === id.toString());
 		return found?.title;
 	};
 
-	// Генерация хлебных крошек
 	const breadcrumbs = useMemo(() => {
 		const segments = pathname.split("/").filter(Boolean);
 
@@ -67,21 +64,7 @@ export default function NavigationMenu({ productId }: NavigationMenuProps) {
 
 				let name: string = pages[fullPath] ?? decodeURIComponent(segment);
 
-				// 🎯 Для service-materials
-				if (segments[0] === "service-materials") {
-					if (index === 1) {
-						const categoryTitle = getCategoryTitle(segment);
-						if (!categoryTitle) return null; // пока нет категории — не показываем
-						name = categoryTitle;
-					}
-					if (index === 2) {
-						if (!product?.title) return null; // пока нет товара — не показываем
-						name = product.title;
-					}
-				}
-
-				// 🎯 Для catalog
-				if (segments[0] === "catalog") {
+				if (segments[0] === "service-materials" || segments[0] === "catalog") {
 					if (index === 1) {
 						const categoryTitle = getCategoryTitle(segment);
 						if (!categoryTitle) return null;
@@ -95,7 +78,7 @@ export default function NavigationMenu({ productId }: NavigationMenuProps) {
 
 				return { name, path: fullPath };
 			})
-			.filter(Boolean); // удаляем все null
+			.filter(Boolean);
 	}, [pathname, categories, product]);
 
 	return (

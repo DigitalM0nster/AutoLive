@@ -2,30 +2,40 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-export async function POST(req: Request) {
+export async function POST(request: Request) {
 	try {
-		const body = await req.json();
-		const ids: string[] = body.ids;
+		const body = await request.json();
+		const ids: string[] = body?.ids || [];
+		const segments: string[] = body?.segments || [];
 
-		const results: Record<string, string> = {};
+		const labels: Record<string, string> = {};
 
-		// Категории
-		const categoryIds = ids.filter((id) => /^\d+$/.test(id));
-		if (categoryIds.length) {
-			const categories = await prisma.category.findMany({
-				where: { id: { in: categoryIds.map(Number) } },
-				select: { id: true, title: true },
-			});
-			for (const cat of categories) {
-				results[String(cat.id)] = cat.title;
+		for (let i = 0; i < segments.length; i++) {
+			const seg = segments[i];
+
+			if (/^\d+$/.test(seg)) {
+				const prev = segments[i - 1];
+
+				if (prev === "promotions") {
+					const promo = await prisma.promotion.findUnique({ where: { id: Number(seg) } });
+					if (promo) labels[seg] = promo.title;
+				}
+
+				if (prev === "categories" || prev === "category") {
+					const cat = await prisma.category.findUnique({ where: { id: Number(seg) } });
+					if (cat) labels[seg] = cat.title;
+				}
+
+				if (["products", "items"].includes(prev)) {
+					const product = await prisma.product.findUnique({ where: { id: Number(seg) } });
+					if (product) labels[seg] = product.title;
+				}
 			}
 		}
 
-		// (добавим другие сущности тут — товары, пользователи и т.д.)
-
-		return NextResponse.json({ labels: results });
-	} catch (err) {
-		console.error(err);
-		return NextResponse.json({ error: "Ошибка загрузки" }, { status: 500 });
+		return NextResponse.json({ labels });
+	} catch (error) {
+		console.error("Ошибка при получении динамических заголовков:", error);
+		return new NextResponse("Ошибка сервера", { status: 500 });
 	}
 }

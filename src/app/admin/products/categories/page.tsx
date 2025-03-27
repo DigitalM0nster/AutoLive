@@ -1,11 +1,11 @@
 // src/app/admin/products/categories/page.tsx
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { Settings } from "lucide-react";
+import CategoryList from "./CategoryList";
 
 export default async function CategoriesPage() {
 	const categories = await prisma.category.findMany({
-		orderBy: { title: "asc" },
+		orderBy: { order: "asc" },
 	});
 
 	return (
@@ -20,32 +20,7 @@ export default async function CategoriesPage() {
 				</Link>
 			</div>
 
-			<div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-				{categories.map((cat) => (
-					<div
-						key={cat.id}
-						className="group p-6 rounded-2xl border bg-white/80 backdrop-blur shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 hover:bg-white"
-					>
-						<div className="flex items-center gap-3 mb-4">
-							<div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-400 to-purple-600 text-white flex items-center justify-center shadow">
-								<Settings className="w-5 h-5" />
-							</div>
-							<h3 className="text-xl font-semibold text-gray-800 group-hover:text-blue-600 transition">{cat.title}</h3>
-						</div>
-
-						<div className="flex justify-between items-center text-sm">
-							<Link href={`/admin/products/categories/${cat.id}`} className="text-blue-600 hover:underline font-medium">
-								Редактировать
-							</Link>
-							<form action={`/api/categories/${cat.id}/delete`} method="POST">
-								<button type="submit" className="text-red-600 hover:underline font-medium">
-									Удалить
-								</button>
-							</form>
-						</div>
-					</div>
-				))}
-			</div>
+			<CategoryList initialCategories={categories.map((c) => ({ id: c.id, title: c.title }))} />
 		</div>
 	);
 }

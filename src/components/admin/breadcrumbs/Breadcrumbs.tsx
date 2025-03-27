@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
+import Loading from "@/components/loading/Loading";
 
 const staticMap: Record<string, string> = {
 	admin: "Админка",
@@ -17,7 +18,7 @@ const staticMap: Record<string, string> = {
 	homepage: "Главная",
 	contacts: "Контакты",
 	promotions: "Акции",
-	products: "Товары",
+	products: "Категории и товары",
 	categories: "Категории",
 	items: "Товары",
 	kits: "Комплекты ТО",
@@ -44,7 +45,7 @@ export default function Breadcrumbs() {
 				const res = await fetch("/api/breadcrumbs/resolve", {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ ids }),
+					body: JSON.stringify({ ids, segments }),
 				});
 				const data = await res.json();
 				setDynamicLabels(data.labels || {});
@@ -59,7 +60,6 @@ export default function Breadcrumbs() {
 	}, [pathname]);
 
 	if (!segments.includes("admin")) return null;
-	if (loading) return null;
 
 	const breadcrumbs = segments
 		.map((segment, idx) => {
@@ -72,21 +72,25 @@ export default function Breadcrumbs() {
 	return (
 		<div className="bg-gray-50 border-b border-gray-200 w-full">
 			<div className="px-6 py-2 text-sm text-gray-600 max-w-7xl mx-auto">
-				<ol className="flex items-center flex-wrap gap-x-1">
-					<li>
-						<Link href="/admin" className="hover:underline text-blue-600">
-							Админка
-						</Link>
-					</li>
-					{breadcrumbs.slice(1).map((crumb, i) => (
-						<li key={crumb!.href} className="flex items-center space-x-1">
-							<ChevronRight className="w-4 h-4 text-gray-400 mx-1" />
-							<Link href={crumb!.href} className={`hover:underline ${i === breadcrumbs.length - 2 ? "text-gray-800 font-medium" : "text-blue-600"}`}>
-								{crumb!.label}
+				{loading ? (
+					<Loading />
+				) : (
+					<ol className="flex items-center flex-wrap gap-x-1">
+						<li>
+							<Link href="/admin" className="hover:underline text-blue-600">
+								Админка
 							</Link>
 						</li>
-					))}
-				</ol>
+						{breadcrumbs.slice(1).map((crumb, i) => (
+							<li key={crumb!.href} className="flex items-center space-x-1">
+								<ChevronRight className="w-4 h-4 text-gray-400 mx-1" />
+								<Link href={crumb!.href} className={`hover:underline ${i === breadcrumbs.length - 2 ? "text-gray-800 font-medium" : "text-blue-600"}`}>
+									{crumb!.label}
+								</Link>
+							</li>
+						))}
+					</ol>
+				)}
 			</div>
 		</div>
 	);

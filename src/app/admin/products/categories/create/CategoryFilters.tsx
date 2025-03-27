@@ -1,8 +1,8 @@
-// src\app\admin\categories\[id]\edit\CategoryFiltersManager.tsx
+// src/app/admin/products/categories/CategoryFilters.tsx
 "use client";
 
 import { Filter } from "@/lib/types";
-import { useState } from "react";
+import { useState, forwardRef, useImperativeHandle, Dispatch, SetStateAction } from "react";
 import FilterItem from "./FilterItem";
 import { SlidersHorizontal } from "lucide-react";
 
@@ -29,20 +29,23 @@ interface LocalFilter {
 type Props = {
 	categoryId: number;
 	initialFilters: Filter[];
+	overrideState?: [LocalFilter[], Dispatch<SetStateAction<LocalFilter[]>>];
+	errors: { [key: string]: string };
 };
 
-export default function CategoryFiltersManager({ categoryId, initialFilters }: Props) {
-	const [filters, setFilters] = useState<LocalFilter[]>(
+// 👇 добавляем forwardRef и реф-хендлинг
+const CategoryFilters = forwardRef(function CategoryFilters({ categoryId, initialFilters, overrideState, errors }: Props, ref) {
+	const [localState, setLocalState] = useState<LocalFilter[]>(
 		initialFilters.map((f) => ({
 			...f,
 			changed: false,
 			values: f.values.map((v) => ({ ...v })),
 		}))
 	);
-	const [message, setMessage] = useState("");
-	const [newTitle, setNewTitle] = useState("");
 
-	const validate = () => {
+	const [filters, setFilters] = overrideState || [localState, setLocalState];
+
+	const validate = (): boolean => {
 		let hasError = false;
 		const titles = new Set<string>();
 
@@ -96,13 +99,15 @@ export default function CategoryFiltersManager({ categoryId, initialFilters }: P
 		return !hasError;
 	};
 
+	useImperativeHandle(ref, () => ({
+		validateFilters: validate,
+	}));
+
 	const handleFilterChange = (index: number, updated: LocalFilter) => {
-		setMessage("");
 		setFilters((prev) => prev.map((f, i) => (i === index ? updated : f)));
 	};
 
 	const handleFilterDelete = (index: number) => {
-		setMessage("");
 		setFilters((prev) => {
 			const f = prev[index];
 			if (f.isNew) {
@@ -115,27 +120,7 @@ export default function CategoryFiltersManager({ categoryId, initialFilters }: P
 	};
 
 	const addFilter = () => {
-		setMessage("");
-		if (!newTitle.trim()) return;
-		setFilters((prev) => [...prev, { title: newTitle, type: "select", values: [], isNew: true }]);
-		setNewTitle("");
-	};
-
-	const saveAll = async () => {
-		if (!validate()) return;
-
-		const res = await fetch("/api/filters/save-filters", {
-			method: "PATCH",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ categoryId, filters }),
-		});
-
-		const data = await res.json();
-		if (res.ok) {
-			setMessage("Изменения сохранены");
-		} else {
-			setMessage(data.error || "Ошибка при сохранении");
-		}
+		setFilters((prev) => [...prev, { title: "", type: "select", values: [], isNew: true }]);
 	};
 
 	return (
@@ -152,29 +137,18 @@ export default function CategoryFiltersManager({ categoryId, initialFilters }: P
 
 			{filters.map(
 				(filter, i) =>
-					!filter.markedForDelete && <FilterItem key={i} filter={filter} onChange={(updated) => handleFilterChange(i, updated)} onDelete={() => handleFilterDelete(i)} />
+					!filter.markedForDelete && (
+						<FilterItem key={i} filter={filter} onChange={(updated) => handleFilterChange(i, updated)} onDelete={() => handleFilterDelete(i)} errors={errors} />
+					)
 			)}
 
 			<div className="flex gap-3 items-center pt-4">
-				<input
-					type="text"
-					value={newTitle}
-					onChange={(e) => setNewTitle(e.target.value)}
-					placeholder="Название нового фильтра"
-					className="border px-3 py-2 rounded w-full shadow-sm focus:ring-2 focus:ring-blue-400"
-				/>
-				<button onClick={addFilter} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow text-sm">
+				<button type="button" onClick={addFilter} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow text-sm">
 					Добавить
 				</button>
 			</div>
-
-			<div className="flex justify-end border-t pt-6">
-				<button onClick={saveAll} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg shadow transition">
-					💾 Сохранить изменения
-				</button>
-			</div>
-
-			{message && <div className="bg-green-100 border border-green-300 text-green-800 px-4 py-2 rounded text-sm shadow-sm">{message}</div>}
 		</div>
 	);
-}
+});
+
+export default CategoryFilters;

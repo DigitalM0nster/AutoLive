@@ -1,6 +1,7 @@
 // components/admin/header/Header.tsx
 "use client";
 
+import Loading from "@/components/loading/Loading";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -44,7 +45,7 @@ export default function Header() {
 							👋 Здравствуйте, <span className="text-blue-600">{admin.name}</span> ({admin.role})
 						</span>
 					) : (
-						<span>Загрузка...</span>
+						<Loading />
 					)}
 				</div>
 				<button onClick={handleLogout} disabled={loading} className="bg-red-500 hover:bg-red-600 text-white px-4 py-1.5 rounded shadow text-sm">

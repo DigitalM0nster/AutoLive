@@ -1,8 +1,5 @@
-// prisma/schema.prisma
+// prisma\schema.prisma
 
-// ------------------------------
-// 🔐 Пользователи и роли
-// ------------------------------
 generator client {
     provider = "prisma-client-js"
 }
@@ -12,24 +9,27 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
+// ------------------------------
+// 🔐 Пользователи и роли
+// ------------------------------
 model User {
-    id         Int        @id @default(autoincrement())
-    first_name String
-    last_name  String
-    phone      String     @unique
-    password   String
-    role       Role
-    status     UserStatus @default(unverified)
-    createdAt  DateTime   @default(now())
+    id         Int        @id @default(autoincrement()) @map("id")
+    first_name String     @map("first_name")
+    last_name  String     @map("last_name")
+    phone      String     @unique @map("phone")
+    password   String     @map("password")
+    role       Role       @map("role")
+    status     UserStatus @default(unverified) @map("status")
+    createdAt  DateTime   @default(now()) @map("created_at")
 
-    // 👇 Менеджер принадлежит админу
-    adminId  Int?
+    adminId  Int?   @map("admin_id")
     admin    User?  @relation("AdminManagers", fields: [adminId], references: [id])
     managers User[] @relation("AdminManagers")
 
-    // 👇 Менеджер имеет заказы
     managerOrders Order[] @relation("ManagerOrders")
     clientOrders  Order[] @relation("ClientOrders")
+
+    @@map("user")
 }
 
 enum Role {
@@ -45,52 +45,58 @@ enum UserStatus {
 }
 
 // ------------------------------
-// 📦 Товары и разделы
+// 📦 Категории и товары
 // ------------------------------
-
 model Category {
-    id          Int      @id @default(autoincrement())
-    title       String
-    slug        String   @unique
-    description String?
-    image       String?
-    createdAt   DateTime @default(now())
+    id          Int      @id @default(autoincrement()) @map("id")
+    title       String   @map("title")
+    description String?  @map("description")
+    image       String?  @map("image")
+    createdAt   DateTime @default(now()) @map("created_at")
 
-    products Product[] // 👈 товары, привязанные к разделу
+    products Product[]
     Filter   Filter[]
+
+    order Int @default(0) @map("order")
+
+    @@map("category")
 }
 
 model Product {
-    id          Int      @id @default(autoincrement())
-    title       String
-    sku         String   @unique
-    price       Float
-    description String?
-    image       String?
-    createdAt   DateTime @default(now())
+    id          Int      @id @default(autoincrement()) @map("id")
+    title       String   @map("title")
+    sku         String   @unique @map("sku")
+    price       Float    @map("price")
+    description String?  @map("description")
+    image       String?  @map("image")
+    createdAt   DateTime @default(now()) @map("created_at")
 
-    categoryId Int
-    category   Category @relation(fields: [categoryId], references: [id])
+    categoryId Int?      @map("category_id")
+    category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
     productFilterValues ProductFilterValue[]
 
-    analogsFrom     ProductAnalog[]  @relation("ProductToAnalog") // 👈 товары, у которых этот товар — оригинал
-    analogsTo       ProductAnalog[]  @relation("AnalogToProduct") // 👈 товары, у которых этот товар — аналог
+    analogsFrom     ProductAnalog[]  @relation("ProductToAnalog")
+    analogsTo       ProductAnalog[]  @relation("AnalogToProduct")
     OrderItem       OrderItem[]
     serviceKitItems ServiceKitItem[] @relation("KitItemProduct")
     analogInKits    ServiceKitItem[] @relation("KitItemAnalog")
+
+    @@map("product")
 }
 
 // ------------------------------
 // 🧩 Фильтры
 // ------------------------------
 model Filter {
-    id         Int           @id @default(autoincrement())
-    title      String
-    type       FilterType    @default(select)
-    categoryId Int
+    id         Int           @id @default(autoincrement()) @map("id")
+    title      String        @map("title")
+    type       FilterType    @default(select) @map("type")
+    categoryId Int           @map("category_id")
     category   Category      @relation(fields: [categoryId], references: [id])
     values     FilterValue[]
+
+    @@map("filter")
 }
 
 enum FilterType {
@@ -101,91 +107,103 @@ enum FilterType {
 }
 
 model FilterValue {
-    id       Int    @id @default(autoincrement())
-    value    String
-    filterId Int
+    id       Int    @id @default(autoincrement()) @map("id")
+    value    String @map("value")
+    filterId Int    @map("filter_id")
     filter   Filter @relation(fields: [filterId], references: [id])
 
-    productFilterValues ProductFilterValue[] // 👈 связь через промежуточную модель
+    productFilterValues ProductFilterValue[]
+
+    @@map("filter_value")
 }
 
 model ProductFilterValue {
-    id            Int @id @default(autoincrement())
-    productId     Int
-    filterValueId Int
+    id            Int @id @default(autoincrement()) @map("id")
+    productId     Int @map("product_id")
+    filterValueId Int @map("filter_value_id")
 
     product     Product     @relation(fields: [productId], references: [id])
     filterValue FilterValue @relation(fields: [filterValueId], references: [id])
 
-    @@unique([productId, filterValueId]) // 👈 запрет на дубли
+    @@unique([productId, filterValueId])
+    @@map("product_filter_value")
 }
 
 // ------------------------------
 // 🔄 Аналоги
 // ------------------------------
 model ProductAnalog {
-    id        Int @id @default(autoincrement())
-    productId Int
-    analogId  Int
+    id        Int @id @default(autoincrement()) @map("id")
+    productId Int @map("product_id")
+    analogId  Int @map("analog_id")
 
     product Product @relation("ProductToAnalog", fields: [productId], references: [id])
     analog  Product @relation("AnalogToProduct", fields: [analogId], references: [id])
 
     @@unique([productId, analogId])
+    @@map("product_analog")
 }
 
 // ------------------------------
 // 🛠 Комплекты ТО
 // ------------------------------
 model ServiceKit {
-    id          Int      @id @default(autoincrement())
-    title       String
-    description String?
-    image       String?
-    price       Float
-    createdAt   DateTime @default(now())
+    id          Int      @id @default(autoincrement()) @map("id")
+    title       String   @map("title")
+    description String?  @map("description")
+    image       String?  @map("image")
+    price       Float    @map("price")
+    createdAt   DateTime @default(now()) @map("created_at")
 
     kitItems ServiceKitItem[]
+
+    @@map("service_kit")
 }
 
 model ServiceKitItem {
-    id              Int  @id @default(autoincrement())
-    kitId           Int
-    productId       Int
-    analogProductId Int?
+    id              Int  @id @default(autoincrement()) @map("id")
+    kitId           Int  @map("kit_id")
+    productId       Int  @map("product_id")
+    analogProductId Int? @map("analog_product_id")
 
     kit           ServiceKit @relation(fields: [kitId], references: [id])
     product       Product    @relation("KitItemProduct", fields: [productId], references: [id])
     analogProduct Product?   @relation("KitItemAnalog", fields: [analogProductId], references: [id])
+
+    @@map("service_kit_item")
 }
 
 // ------------------------------
 // 📑 Заказы
 // ------------------------------
 model Order {
-    id          Int         @id @default(autoincrement())
-    title       String
-    description String?
-    status      OrderStatus @default(pending)
-    createdAt   DateTime    @default(now())
+    id          Int         @id @default(autoincrement()) @map("id")
+    title       String      @map("title")
+    description String?     @map("description")
+    status      OrderStatus @default(pending) @map("status")
+    createdAt   DateTime    @default(now()) @map("created_at")
 
-    managerId Int
+    managerId Int  @map("manager_id")
     manager   User @relation("ManagerOrders", fields: [managerId], references: [id])
 
-    clientId Int
+    clientId Int  @map("client_id")
     client   User @relation("ClientOrders", fields: [clientId], references: [id])
 
     orderItems OrderItem[]
+
+    @@map("order")
 }
 
 model OrderItem {
-    id        Int @id @default(autoincrement())
-    orderId   Int
-    productId Int
-    quantity  Int @default(1)
+    id        Int @id @default(autoincrement()) @map("id")
+    orderId   Int @map("order_id")
+    productId Int @map("product_id")
+    quantity  Int @default(1) @map("quantity")
 
     order   Order   @relation(fields: [orderId], references: [id])
     product Product @relation(fields: [productId], references: [id])
+
+    @@map("order_item")
 }
 
 enum OrderStatus {
@@ -194,4 +212,21 @@ enum OrderStatus {
     shipped
     delivered
     cancelled
+}
+
+// ------------------------------
+// 🎁 Акции
+// ------------------------------
+model Promotion {
+    id          Int      @id @default(autoincrement()) @map("id")
+    image       String   @map("image")
+    title       String   @map("title")
+    description String?  @map("description")
+    buttonText  String?  @map("button_text")
+    buttonLink  String?  @map("button_link")
+    createdAt   DateTime @default(now()) @map("created_at")
+
+    order Int @default(0) @map("order")
+
+    @@map("promotion")
 }

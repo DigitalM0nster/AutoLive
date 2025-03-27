@@ -23,8 +23,8 @@ export async function generateMetadata({ params }: PageParams) {
 	}
 
 	return {
-		title: `${kit.name} – Комплект ТО в ${CONFIG.STORE_NAME} | ${CONFIG.CITY}`,
-		description: `Купить ${kit.name} в ${CONFIG.STORE_NAME}. Состав: ${kit.parts.map((p) => p.name).join(", ")}`,
+		title: `${kit.title} – Комплект ТО в ${CONFIG.STORE_NAME} | ${CONFIG.CITY}`,
+		description: `Купить ${kit.title} в ${CONFIG.STORE_NAME}. Состав: ${kit.parts.map((p) => p.name).join(", ")}`,
 	};
 }
 

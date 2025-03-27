@@ -1,10 +1,14 @@
 .loadingBlock {
+	position: relative;
+	display: flex;
 	gap: 10px;
 	justify-content: flex-start;
 	align-items: center;
 }
 
 .loadingIcon {
+	position: relative;
+	display: flex;
 	justify-content: center;
 	align-items: center;
 	width: 15px;
@@ -30,6 +34,8 @@
 }
 
 .loadingText {
+	position: relative;
+	display: flex;
 	font-size: 20px;
 	// color: #1f64f8;
 }

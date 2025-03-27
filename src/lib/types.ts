@@ -61,6 +61,9 @@ export type Promotion = {
 	title: string;
 	description: string;
 	image: string;
+	order: number;
+	buttonText: string;
+	buttonLink: string;
 };
 
 export type FilterType = "select" | "multi" | "range" | "boolean";

@@ -1,12 +1,12 @@
 // src\lib\api.ts
 
 import { prisma } from "./prisma";
-import { Category, ProductResponse, ServiceKit } from "./types";
+import { Category, ProductResponse, Promotion, ServiceKit } from "./types";
 
 // Получаем товары
 export async function getProductsByCategory(categoryId: string): Promise<{ category: Category } | { error: string }> {
 	try {
-		const res = await fetch(`http://localhost:3000/api/products/get-products-by-category?category=${categoryId}`, {
+		const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/products/get-products-by-category?category=${categoryId}`, {
 			next: { revalidate: 3600 },
 		});
 
@@ -27,48 +27,31 @@ export async function getProductsByCategory(categoryId: string): Promise<{ categ
 	}
 }
 
-export async function getProductById(productId: string): Promise<ProductResponse> {
+// Получить продукт по ID
+export async function getProductById(id: string | number) {
 	try {
-		const res = await fetch(`http://localhost:3000/api/products/${productId}/get-product`, {
-			next: { revalidate: 3600 },
+		const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/products/${id}`, {
+			cache: "no-store",
 		});
-
-		if (!res.ok) {
-			console.error("Ошибка при загрузке:", res.statusText);
-			return { error: "Ошибка загрузки" };
-		}
-
-		const data = await res.json();
-		return data;
+		if (!res.ok) throw new Error("Ошибка загрузки продукта");
+		return await res.json();
 	} catch (error) {
-		console.error("Ошибка запроса:", error);
-		return { error: "Ошибка запроса" };
+		console.error("getProductById:", error);
+		return null;
 	}
 }
 
 // Получаем категории
-export async function getCategories(): Promise<Category[]> {
-	try {
-		const categories = await prisma.category.findMany({
-			select: {
-				id: true,
-				title: true,
-				image: true,
-			},
-			orderBy: {
-				id: "asc",
-			},
-		});
-		return categories;
-	} catch (error) {
-		console.error("Ошибка при получении категорий:", error);
-		return [];
-	}
+export async function getCategories() {
+	const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/categories`);
+	const data = await res.json();
+	// ✅ убедись, что на сервере /api/categories отсортированы по order
+	return data;
 }
 
 // Получаем комплекты ТО
 export async function getServiceKits(): Promise<ServiceKit[]> {
-	const res = await fetch("http://localhost:3000/api/get-kits", {
+	const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/get-kits`, {
 		next: { revalidate: 3600 },
 	});
 	if (!res.ok) {
@@ -80,7 +63,7 @@ export async function getServiceKits(): Promise<ServiceKit[]> {
 
 export async function getServiceKitById(kitId: string): Promise<ServiceKit | null> {
 	try {
-		const res = await fetch(`http://localhost:3000/api/service-kits/${kitId}`, {
+		const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/service-kits/${kitId}`, {
 			cache: "no-store", // чтобы всегда получать свежие данные
 		});
 		if (!res.ok) return null;
@@ -90,4 +73,15 @@ export async function getServiceKitById(kitId: string): Promise<ServiceKit | nul
 		console.error("Ошибка загрузки комплекта ТО:", err);
 		return null;
 	}
+}
+
+// Получаем Скидки и акции
+export async function getPromotions(): Promise<Promotion[]> {
+	const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/promotions`, {
+		next: { revalidate: 3600 },
+	});
+	const promotions = await res.json();
+
+	// подстрахуемся — сортировка по order
+	return promotions.sort((a: Promotion, b: Promotion) => a.order - b.order);
 }

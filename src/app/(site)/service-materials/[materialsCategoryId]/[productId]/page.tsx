@@ -1,9 +1,6 @@
-// src\app\service-materials\[materialsCategoryId]\[productId]\page.tsx
-
+import { getProductById } from "@/lib/api";
 import styles from "./styles.module.scss";
 import NavigationMenu from "@/components/user/navigationMenu/NavigationMenu";
-import { getProductById } from "@/lib/api";
-import type { Product, ProductResponse } from "@/lib/types";
 
 type PageParams = {
 	params: {
@@ -13,42 +10,34 @@ type PageParams = {
 };
 
 export default async function ProductPage({ params }: PageParams) {
-	const categoryId = decodeURIComponent(params.materialsCategoryId || "");
-	const productId = decodeURIComponent(params.productId || "");
+	// безопасно извлекаем значения
+	const categoryId = params?.materialsCategoryId || "";
+	const productId = params?.productId || "";
 
 	if (!productId) {
 		return <div className="text-center">Загрузка...</div>;
 	}
 
-	const productData: ProductResponse = await getProductById(productId);
-	console.log("Получаем данные продукта по ID", productData);
-
-	if (!productData || productData.error) {
-		return <div className="text-center">Ошибка загрузки данных</div>;
-	}
+	const { product } = await getProductById(productId);
 
 	return (
 		<div className={`screen ${styles.screen}`}>
 			<div className="screenContent">
 				<NavigationMenu productId={productId} />
-				{productData.product ? (
-					<div className={styles.productItem}>
-						<div className={styles.imageBlock}>
-							{productData.product.image ? (
-								<img src={productData.product.image} alt={productData.product.title} />
-							) : (
-								<img className={styles.noImage} src="/images/no-image.png" alt="" />
-							)}
-						</div>
+				<div className={styles.productItem}>
+					<div className={styles.imageBlock}>
+						{product.image ? <img src={product.image} alt={product.title} /> : <img className={styles.noImage} src="/images/no-image.png" alt="" />}
+					</div>
 
+					{product.filters?.length > 0 && (
 						<div className={styles.filtersBlock}>
 							<div className={styles.filtersTitle}>Свойства:</div>
 							<div className={styles.filtersList}>
-								{productData.product.filters?.map((filter, filterIndex) => (
+								{product.filters.map((filter: any, filterIndex: number) => (
 									<div key={`filter${filterIndex}`} className={styles.filterItem}>
 										<div className={styles.name}>{filter.title}</div>
 										<div className={styles.values}>
-											{filter.selected_values.map((value, valueIndex) => (
+											{filter.selected_values.map((value: any, valueIndex: number) => (
 												<div key={`filter${filterIndex}-value${valueIndex}`} className={styles.value}>
 													{value.value}
 												</div>
@@ -58,34 +47,29 @@ export default async function ProductPage({ params }: PageParams) {
 								))}
 							</div>
 						</div>
+					)}
 
-						<div className={styles.descriptionBlock}>
-							<div className={styles.textBlock}>
-								<h1 className={`pageTitle ${styles.pageTitle}`}>{productData.product.title}</h1>
-								<div className={styles.description}>
-									Очень длинное описание. Очень длинное описание. Очень длинное описание. Очень длинное описание. Очень длинное описание. Очень длинное описание.
-									Очень длинное описание.
-								</div>
-							</div>
-
-							<div className={styles.buttonBlock}>
-								<div className={styles.column}>
-									<div className={styles.price}>Цена: {productData.product.price}₽</div>
-									<div className={`button ${styles.button}`}>В корзину</div>
-								</div>
-							</div>
+					<div className={styles.descriptionBlock}>
+						<div className={styles.textBlock}>
+							<h1 className={`pageTitle ${styles.pageTitle}`}>{product.title}</h1>
+							<div className={styles.description}>{product.description || "Описание отсутствует."}</div>
 						</div>
 
-						<div className={`${styles.buttonBlock} ${styles.mobile}`}>
+						<div className={styles.buttonBlock}>
 							<div className={styles.column}>
-								<div className={styles.price}>Цена: {productData.product.price}₽</div>
+								<div className={styles.price}>Цена: {product.price}₽</div>
 								<div className={`button ${styles.button}`}>В корзину</div>
 							</div>
 						</div>
 					</div>
-				) : (
-					<div className="noProduct">Такого товара не существует...</div>
-				)}
+
+					<div className={`${styles.buttonBlock} ${styles.mobile}`}>
+						<div className={styles.column}>
+							<div className={styles.price}>Цена: {product.price}₽</div>
+							<div className={`button ${styles.button}`}>В корзину</div>
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>
 	);
