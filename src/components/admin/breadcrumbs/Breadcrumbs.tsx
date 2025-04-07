@@ -5,30 +5,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
-import Loading from "@/components/loading/Loading";
-
-const staticMap: Record<string, string> = {
-	admin: "Админка",
-	users: "Пользователи",
-	clients: "Клиенты",
-	managers: "Менеджеры",
-	orders: "Заказы",
-	"service-records": "Записи на ТО",
-	content: "Контент сайта",
-	homepage: "Главная",
-	contacts: "Контакты",
-	promotions: "Акции",
-	products: "Категории и товары",
-	categories: "Категории",
-	items: "Товары",
-	kits: "Комплекты ТО",
-	edit: "Редактирование",
-	create: "Создание",
-};
+import { adminRoutesMeta } from "@/lib/adminRoutesMeta";
+import Loading from "@/components/ui/loading/Loading";
 
 export default function Breadcrumbs() {
 	const pathname = usePathname();
 	const segments = pathname.split("/").filter(Boolean);
+
+	const staticMap: Record<string, string> = Object.fromEntries(Object.entries(adminRoutesMeta).map(([key, value]) => [key, value.label]));
 
 	const [dynamicLabels, setDynamicLabels] = useState<Record<string, string>>({});
 	const [loading, setLoading] = useState(true);

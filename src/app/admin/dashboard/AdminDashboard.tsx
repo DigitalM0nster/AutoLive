@@ -1,13 +1,9 @@
 // src\components\admin\dashboard\adminDashboard.tsx
 
 "use client";
-
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useState } from "react";
 import { Role } from "@/lib/rolesConfig";
-import { Users, ShoppingCart, Wrench, FileText, Package } from "lucide-react";
-
+import { adminRoutesMeta } from "@/lib/adminRoutesMeta";
 type Props = {
 	user: {
 		name: string;
@@ -16,50 +12,19 @@ type Props = {
 };
 
 export default function AdminDashboard({ user }: Props) {
-	const router = useRouter();
-	const [loading, setLoading] = useState(false);
-
-	const handleLogout = async () => {
-		setLoading(true);
-		await fetch("/api/admin/auth/logout", {
-			method: "POST",
-		});
-		router.push("/admin/login");
-	};
-
-	const sections = [
-		{
-			href: "/admin/users",
-			label: "Пользователи",
-			icon: Users,
-			bg: "from-indigo-400 to-indigo-600",
-		},
-		{
-			href: "/admin/orders",
-			label: "Заказы",
-			icon: ShoppingCart,
-			bg: "from-emerald-400 to-emerald-600",
-		},
-		{
-			href: "/admin/service-records",
-			label: "Записи на ТО",
-			icon: Wrench,
-			bg: "from-yellow-400 to-yellow-600",
-		},
-		{
-			href: "/admin/content",
-			label: "Контент сайта",
-			icon: FileText,
-			bg: "from-pink-400 to-pink-600",
-		},
-		{
-			href: "/admin/products",
-			label: "Категории и товары",
-			description: "Категории, товары, Комплекты ТО",
-			icon: Package,
-			bg: "from-sky-400 to-sky-600",
-		},
-	];
+	const sections = ["users", "orders", "service-records", "content", "products"]
+		.map((key) => {
+			const meta = adminRoutesMeta[key];
+			if (!meta || !meta.icon || !meta.bg) return null;
+			return {
+				href: `/admin/${key}`,
+				label: meta.label,
+				description: meta.description,
+				icon: meta.icon,
+				bg: meta.bg,
+			};
+		})
+		.filter(Boolean);
 
 	return (
 		<div className="px-6 py-10 max-w-7xl mx-auto">

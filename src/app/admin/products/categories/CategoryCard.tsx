@@ -43,13 +43,9 @@ export default function CategoryCard({ id, title }: Props) {
 
 	return (
 		<div ref={setNodeRef} style={style} className="group p-6 rounded-2xl border bg-white/80 backdrop-blur shadow-md hover:shadow-xl hover:-translate-y-1 hover:bg-white">
-			<div className="flex items-center gap-3 mb-4">
-				{/* Только эта область перетаскивается */}
-				<div
-					{...attributes}
-					{...listeners}
-					className="cursor-grab active:cursor-grabbing w-12 h-12 rounded-xl bg-gradient-to-br from-purple-400 to-purple-600 text-white flex items-center justify-center shadow"
-				>
+			{/* Только эта область перетаскивается */}
+			<div className="cursor-grab active:cursor-grabbing flex items-center gap-3 mb-4" {...attributes} {...listeners}>
+				<div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-400 to-purple-600 text-white flex items-center justify-center shadow">
 					<Settings className="w-5 h-5" />
 				</div>
 

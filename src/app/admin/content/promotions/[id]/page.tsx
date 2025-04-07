@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import ImageUploader from "../imageUploader";
-import Loading from "@/components/loading/Loading";
+import Loading from "@/components/ui/loading/Loading";
 
 export default function EditPromotionPage() {
 	const router = useRouter();

@@ -48,11 +48,10 @@ enum UserStatus {
 // 📦 Категории и товары
 // ------------------------------
 model Category {
-    id          Int      @id @default(autoincrement()) @map("id")
-    title       String   @map("title")
-    description String?  @map("description")
-    image       String?  @map("image")
-    createdAt   DateTime @default(now()) @map("created_at")
+    id        Int      @id @default(autoincrement()) @map("id")
+    title     String   @map("title")
+    image     String?  @map("image")
+    createdAt DateTime @default(now()) @map("created_at")
 
     products Product[]
     Filter   Filter[]

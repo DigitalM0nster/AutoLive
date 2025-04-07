@@ -21,7 +21,6 @@ export async function PUT(req: Request, { params }: Params) {
 			where: { id: Number(params.id) },
 			data: {
 				title: body.title,
-				description: body.description || "",
 				image: body.image,
 			},
 		});

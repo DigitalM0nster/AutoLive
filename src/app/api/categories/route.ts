@@ -17,7 +17,6 @@ export async function POST(req: Request) {
 		const category = await prisma.category.create({
 			data: {
 				title: body.title,
-				description: body.description || "",
 				image: body.image,
 				order: 0,
 			},

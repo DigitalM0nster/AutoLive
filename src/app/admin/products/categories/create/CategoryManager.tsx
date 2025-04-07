@@ -3,15 +3,14 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import CategoryForm from "./CategoryForm";
 import CategoryFilters from "./CategoryFilters";
+import { useToast } from "@/components/ui/toast/ToastProvider";
 
 type Props = {
 	initialCategory?: {
 		id?: number;
 		title: string;
-		description?: string;
 		image?: string;
 	};
 	initialFilters?: any[];
@@ -21,21 +20,20 @@ type Props = {
 export default function CategoryManager({ initialCategory, initialFilters = [], isEdit = false }: Props) {
 	const filtersRef = useRef<{ validateFilters: () => boolean }>(null);
 
-	const router = useRouter();
 	const [categoryId, setCategoryId] = useState<number | undefined>(initialCategory?.id);
 	const [formData, setFormData] = useState({
 		title: initialCategory?.title || "",
-		description: initialCategory?.description || "",
 		image: initialCategory?.image || undefined,
 	});
 	const [imageFile, setImageFile] = useState<File | null>(null);
 	const [filters, setFilters] = useState(initialFilters);
-	const [message, setMessage] = useState("");
+	const toast = useToast();
+
+	const [shouldDeleteImage, setShouldDeleteImage] = useState(false);
 
 	// Ошибки для категории
 	const [categoryErrors, setCategoryErrors] = useState({
 		title: "",
-		description: "",
 		image: "",
 	});
 
@@ -54,7 +52,6 @@ export default function CategoryManager({ initialCategory, initialFilters = [], 
 		let valid = true;
 		const newCategoryErrors = {
 			title: "",
-			description: "",
 			image: "",
 		};
 
@@ -68,11 +65,6 @@ export default function CategoryManager({ initialCategory, initialFilters = [], 
 			valid = false;
 		}
 
-		if (formData.description && formData.description.length > 255) {
-			newCategoryErrors.description = "Описание слишком длинное";
-			valid = false;
-		}
-
 		setCategoryErrors(newCategoryErrors);
 		return valid;
 	};
@@ -81,7 +73,7 @@ export default function CategoryManager({ initialCategory, initialFilters = [], 
 		const formData = new FormData();
 		formData.append("image", file);
 
-		const res = await fetch("/api/upload-image", {
+		const res = await fetch("/api/upload", {
 			method: "POST",
 			body: formData,
 		});
@@ -94,65 +86,71 @@ export default function CategoryManager({ initialCategory, initialFilters = [], 
 		return data.url;
 	};
 
+	const [isSaving, setIsSaving] = useState(false);
+
 	const saveAll = async () => {
-		setMessage("");
+		if (isSaving) return;
+		setIsSaving(true);
 
-		const isFormValid = validateForm();
-		const isFiltersValid = filtersRef.current?.validateFilters() ?? true;
+		try {
+			const isFormValid = validateForm();
+			const isFiltersValid = filtersRef.current?.validateFilters() ?? true;
 
-		if (!isFormValid || !isFiltersValid) {
-			setMessage("Пожалуйста, исправьте ошибки в форме и фильтрах.");
-			return;
-		}
-
-		let imageUrl = formData.image;
-
-		if (imageFile) {
-			try {
-				imageUrl = await uploadImage(imageFile);
-			} catch (error) {
-				setMessage("Ошибка при загрузке изображения");
+			if (!isFormValid || !isFiltersValid) {
+				toast("Пожалуйста, исправьте ошибки в форме и фильтрах.", "error");
 				return;
 			}
+
+			let imageUrl = formData.image;
+
+			if (imageFile) {
+				try {
+					imageUrl = await uploadImage(imageFile);
+				} catch (error) {
+					toast("Ошибка при загрузке изображения", "error");
+					return;
+				}
+			}
+
+			const categoryData = {
+				title: formData.title,
+				image: shouldDeleteImage ? null : imageUrl,
+			};
+
+			const res = await fetch(isEdit ? `/api/categories/${categoryId}` : "/api/categories", {
+				method: isEdit ? "PUT" : "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(categoryData),
+			});
+
+			const data = await res.json();
+
+			if (!res.ok || !data?.id) {
+				toast("Ошибка при сохранении категории", "error");
+				return;
+			}
+
+			const id = data.id || categoryId;
+			setCategoryId(id);
+
+			const filtersRes = await fetch("/api/filters/save-filters", {
+				method: "PATCH",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ categoryId: id, filters }),
+			});
+			const filtersData = await filtersRes.json();
+
+			if (!filtersRes.ok) {
+				toast("Ошибка при сохранении фильтров", "error");
+				return;
+			}
+
+			toast("✅ Все изменения успешно сохранены", "success");
+		} finally {
+			setIsSaving(false);
 		}
-
-		const categoryData = {
-			title: formData.title,
-			description: formData.description,
-			image: imageUrl,
-		};
-
-		const res = await fetch(isEdit ? `/api/categories/${categoryId}` : "/api/categories", {
-			method: isEdit ? "PUT" : "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify(categoryData),
-		});
-
-		const data = await res.json();
-
-		if (!res.ok || !data?.id) {
-			setMessage(data?.error || "Ошибка при сохранении категории");
-			return;
-		}
-
-		const id = data.id || categoryId;
-		setCategoryId(id);
-
-		const filtersRes = await fetch("/api/filters/save-filters", {
-			method: "PATCH",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ categoryId: id, filters }),
-		});
-		const filtersData = await filtersRes.json();
-
-		if (!filtersRes.ok) {
-			setMessage(filtersData.error || "Ошибка при сохранении фильтров");
-			return;
-		}
-
-		setMessage("✅ Все изменения успешно сохранены");
 	};
 
 	return (
@@ -170,20 +168,25 @@ export default function CategoryManager({ initialCategory, initialFilters = [], 
 					submitText={isEdit ? "💾 Сохранить" : "➕ Создать"}
 					isStandalone={false}
 					errors={categoryErrors}
+					onDeleteImage={() => {
+						setFormData((prev) => ({ ...prev, image: undefined }));
+						setImageFile(null);
+						setShouldDeleteImage(true);
+					}}
 				/>
 			</div>
 
-			<div className="bg-white p-6 rounded-xl shadow space-y-6 border">
-				<CategoryFilters ref={filtersRef} categoryId={categoryId} initialFilters={initialFilters} overrideState={[filters, setFilters]} errors={filterErrors} />
-			</div>
+			{categoryId !== undefined && (
+				<div className="bg-white p-6 rounded-xl shadow space-y-6 border">
+					<CategoryFilters ref={filtersRef} categoryId={categoryId} initialFilters={initialFilters} overrideState={[filters, setFilters]} errors={filterErrors} />
+				</div>
+			)}
 
 			<div className="flex justify-end border-t pt-6">
-				<button onClick={saveAll} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg shadow transition">
-					💾 Сохранить
+				<button onClick={saveAll} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg shadow transition">
+					{isSaving ? "⏳ Сохраняем..." : "💾 Сохранить"}
 				</button>
 			</div>
-
-			{message && <div className="text-sm text-center text-green-700 mt-4">{message}</div>}
 		</div>
 	);
 }

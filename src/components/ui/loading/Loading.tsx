@@ -1,4 +1,4 @@
-// src\components\loading\Loading.tsx
+// src\components\ui\loading\Loading.tsx
 
 import styles from "./styles.module.scss";
 

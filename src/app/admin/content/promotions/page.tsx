@@ -8,7 +8,7 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from 
 import { SortableContext, arrayMove, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import PromoCard from "./PromoCard";
-import Loading from "@/components/loading/Loading";
+import Loading from "@/components/ui/loading/Loading";
 
 export default function PromotionsPage() {
 	const [promos, setPromos] = useState<Promotion[]>([]);
