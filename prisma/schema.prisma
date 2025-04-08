@@ -65,6 +65,7 @@ model Product {
     id          Int      @id @default(autoincrement()) @map("id")
     title       String   @map("title")
     sku         String   @unique @map("sku")
+    brand       String   @default("UNKNOWN") @map("brand")
     price       Float    @map("price")
     description String?  @map("description")
     image       String?  @map("image")

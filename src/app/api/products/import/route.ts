@@ -21,8 +21,8 @@ export async function POST(req: Request) {
 		let updated = 0;
 
 		for (const row of rows.slice(1)) {
-			const article = row[columns.article]?.toString().trim();
-			const name = row[columns.name]?.toString().trim();
+			const sku = row[columns.SKU]?.toString().trim();
+			const title = row[columns.title]?.toString().trim();
 			const priceRaw = row[columns.price];
 			const brand = row[columns.brand]?.toString().trim();
 
@@ -31,11 +31,11 @@ export async function POST(req: Request) {
 				categoryTitle = row[columns.category]?.toString().trim();
 			}
 
-			if (!article || !name || !priceRaw || !brand) continue;
+			if (!sku || !title || !priceRaw || !brand) continue;
 
 			const price = typeof priceRaw === "string" ? parseFloat(priceRaw.replace(",", ".")) : priceRaw;
 
-			// Обработка категории
+			// Категория
 			let category = null;
 			if (categoryTitle) {
 				category = await prisma.category.upsert({
@@ -45,16 +45,16 @@ export async function POST(req: Request) {
 				});
 			}
 
-			// Поиск товара по article + brand
+			// Поиск товара по SKU + brand
 			const existing = await prisma.product.findFirst({
-				where: { article, brand },
+				where: { SKU: sku, brand },
 			});
 
 			if (existing) {
 				await prisma.product.update({
 					where: { id: existing.id },
 					data: {
-						name,
+						title,
 						price,
 						categoryId: category?.id || null,
 					},
@@ -63,10 +63,11 @@ export async function POST(req: Request) {
 			} else {
 				await prisma.product.create({
 					data: {
-						article,
-						name,
+						sku,
+						title,
 						brand,
 						price,
+						image: null,
 						categoryId: category?.id || null,
 					},
 				});
