@@ -54,9 +54,10 @@ export default function CategorySelect({ categories, value, onChange }: Props) {
 							}}
 							className="block w-full text-left px-2 py-1 text-sm hover:bg-gray-100"
 						>
-							{cat.title}
+							{cat.title} {cat.productCount !== undefined && <span className="text-gray-400 ml-1">({cat.productCount})</span>}
 						</button>
 					))}
+
 					{filtered.length === 0 && <div className="px-2 py-1 text-sm text-gray-400">Ничего не найдено</div>}
 				</div>
 			)}

@@ -2,7 +2,7 @@
 
 export type Category = {
 	id: number;
-	title?: string;
+	title: string;
 	image?: string | null;
 	products?: Product[];
 	filters?: {

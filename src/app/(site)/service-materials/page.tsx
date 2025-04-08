@@ -10,6 +10,7 @@ import { Category } from "@/lib/types";
 
 export async function generateMetadata(): Promise<Metadata> {
 	const categories = await getCategories();
+	console.log(categories);
 	const { CITY, STORE_NAME, DOMAIN } = CONFIG;
 
 	const categoryNamesWithCity = categories.map((cat) => `${cat.title} ${CITY}`).join(", ");
