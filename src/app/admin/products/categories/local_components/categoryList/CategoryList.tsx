@@ -3,12 +3,16 @@
 
 import { DndContext, closestCenter } from "@dnd-kit/core";
 import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { useState } from "react";
-import type { DragEndEvent } from "@dnd-kit/core"; // 💡 ВАЖНО!
+import { useEffect, useState } from "react";
+import type { DragEndEvent } from "@dnd-kit/core";
 import CategoryCard from "./CategoryCard";
 
 export default function CategoryList({ initialCategories }: { initialCategories: { id: number; title: string }[] }) {
 	const [items, setItems] = useState(initialCategories);
+
+	useEffect(() => {
+		setItems(initialCategories);
+	}, [initialCategories]);
 
 	const handleDragEnd = (event: DragEndEvent) => {
 		const { active, over } = event;
@@ -20,7 +24,6 @@ export default function CategoryList({ initialCategories }: { initialCategories:
 			const newItems = arrayMove(items, oldIndex, newIndex);
 			setItems(newItems);
 
-			// 💾 Можно вызвать API /api/categories/reorder
 			fetch("/api/categories/reorder", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },

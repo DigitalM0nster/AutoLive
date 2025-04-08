@@ -10,10 +10,15 @@ export async function GET(req: NextRequest) {
 	const limit = parseInt(searchParams.get("limit") || "10");
 	const brand = searchParams.get("brand") || undefined;
 	const categoryId = searchParams.get("categoryId") || undefined;
+	const search = searchParams.get("search")?.toLowerCase();
 
 	const where: any = {};
+
 	if (brand) where.brand = brand;
 	if (categoryId) where.categoryId = parseInt(categoryId);
+	if (search) {
+		where.OR = [{ title: { contains: search, mode: "insensitive" } }, { sku: { contains: search, mode: "insensitive" } }, { brand: { contains: search, mode: "insensitive" } }];
+	}
 
 	try {
 		const [products, total] = await Promise.all([
@@ -22,7 +27,7 @@ export async function GET(req: NextRequest) {
 				skip: (page - 1) * limit,
 				take: limit,
 				include: {
-					category: true, // получаем название категории
+					category: true,
 				},
 				orderBy: {
 					createdAt: "desc",

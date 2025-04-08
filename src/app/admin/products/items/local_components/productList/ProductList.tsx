@@ -1,3 +1,5 @@
+// src\app\admin\products\items\local_components\productList\ProductList.tsx
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -39,6 +41,10 @@ export default function ProductList() {
 		fetchCategories();
 	}, []);
 
+	useEffect(() => {
+		setPage(1);
+	}, [search, brandFilter, categoryFilter]);
+
 	// Загружаем товары при изменении фильтров или страницы
 	useEffect(() => {
 		const fetchProducts = async () => {
@@ -48,6 +54,7 @@ export default function ProductList() {
 				page: page.toString(),
 				limit: "10",
 			});
+			if (search.trim()) params.append("search", search.trim());
 			if (brandFilter) params.append("brand", brandFilter);
 			if (categoryFilter) params.append("categoryId", categoryFilter);
 
@@ -55,16 +62,12 @@ export default function ProductList() {
 				const res = await fetch(`/api/products?${params.toString()}`);
 				const data = await res.json();
 
-				const filtered = data.products.filter((p: Product) =>
-					search.trim() ? [p.title, p.sku, p.brand, p.categoryTitle].join(" ").toLowerCase().includes(search.toLowerCase()) : true
-				);
-
-				setProducts(filtered);
 				setTotalPages(data.totalPages);
 
 				// обновляем список брендов по результатам страницы
 				const uniqueBrands = [...new Set(data.products.map((p: Product) => p.brand))];
 				setBrands(uniqueBrands);
+				setProducts(data.products);
 			} catch (error) {
 				console.error("Ошибка при загрузке товаров", error);
 			} finally {
