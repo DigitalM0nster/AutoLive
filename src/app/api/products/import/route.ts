@@ -21,7 +21,7 @@ export async function POST(req: Request) {
 		let updated = 0;
 
 		for (const row of rows.slice(1)) {
-			const sku = row[columns.SKU]?.toString().trim();
+			const sku = row[columns.sku]?.toString().trim();
 			const title = row[columns.title]?.toString().trim();
 			const priceRaw = row[columns.price];
 			const brand = row[columns.brand]?.toString().trim();
@@ -45,9 +45,9 @@ export async function POST(req: Request) {
 				});
 			}
 
-			// Поиск товара по SKU + brand
+			// Поиск товара по sku + brand
 			const existing = await prisma.product.findFirst({
-				where: { SKU: sku, brand },
+				where: { sku, brand },
 			});
 
 			if (existing) {
@@ -68,6 +68,7 @@ export async function POST(req: Request) {
 						brand,
 						price,
 						image: null,
+						description: null,
 						categoryId: category?.id || null,
 					},
 				});
