@@ -1,20 +1,19 @@
-// src\middleware\authMiddleware.ts
+// src/middleware/authMiddleware.ts
 
 import { NextRequest } from "next/server";
 import jwt from "jsonwebtoken";
 
-type Role = "manager" | "admin" | "superadmin";
+type Role = "manager" | "admin" | "superadmin" | "client";
 
 type DecodedToken = {
 	id: number;
 	role: Role;
-	name: string;
+	name?: string;
 	phone: string;
 	iat: number;
 	exp: number;
 };
 
-// ⬇️ Читаем токен ИЗ КУКИ, а не из заголовка!
 export async function getUserFromRequest(req: NextRequest, allowedRoles: Role[] = []): Promise<{ user?: DecodedToken; error?: string; status?: number }> {
 	try {
 		const token = req.cookies.get("authToken")?.value;

@@ -48,5 +48,7 @@ export async function POST(req: NextRequest) {
 		maxAge: 60 * 60 * 24 * 7, // 7 дней
 	});
 
+	console.log("Создаём токен с ролью:", user.role);
+
 	return NextResponse.json({ message: "Успешный вход" });
 }

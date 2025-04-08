@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 
-type Role = "superadmin" | "admin" | "manager" | "user"; // 👈 если знаешь другие роли — добавь
+type Role = "superadmin" | "admin" | "manager" | "client";
 type User = {
 	id: number;
 	first_name: string;

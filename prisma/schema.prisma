@@ -14,8 +14,8 @@ datasource db {
 // ------------------------------
 model User {
     id         Int        @id @default(autoincrement()) @map("id")
-    first_name String     @map("first_name")
-    last_name  String     @map("last_name")
+    first_name String?    @map("first_name")
+    last_name  String?    @map("last_name")
     phone      String     @unique @map("phone")
     password   String     @map("password")
     role       Role       @map("role")
@@ -44,6 +44,18 @@ enum Role {
 enum UserStatus {
     unverified
     verified
+}
+
+// ------------------------------
+// СМС SMS
+// ------------------------------
+model SmsCode {
+    id        Int      @id @default(autoincrement())
+    phone     String
+    code      String
+    expiresAt DateTime
+    used      Boolean  @default(false)
+    createdAt DateTime @default(now())
 }
 
 // ------------------------------

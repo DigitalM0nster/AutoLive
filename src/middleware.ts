@@ -1,4 +1,4 @@
-// src\middleware.ts
+// src/middleware.ts
 
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
@@ -13,15 +13,13 @@ export function middleware(request: NextRequest) {
 
 	// Если пользователь на /admin (форма логина)
 	if (pathname === "/admin") {
-		// Если уже авторизован — перенаправляем в dashboard
 		if (token) {
 			return NextResponse.redirect(new URL("/admin/dashboard", request.url));
 		}
-		// Если не авторизован — показываем логин
 		return NextResponse.next();
 	}
 
-	// Всё остальное требует токен
+	// Остальной админ-доступ — только с токеном
 	if (!token) {
 		return NextResponse.redirect(new URL("/admin", request.url));
 	}
