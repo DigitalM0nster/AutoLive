@@ -1,8 +1,5 @@
-// src/app/api/products/route.ts
-
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-
 import { Prisma } from "@prisma/client";
 
 export async function GET(req: NextRequest) {
@@ -26,10 +23,12 @@ export async function GET(req: NextRequest) {
 		}),
 		...(onlyStale && {
 			updatedAt: {
-				lt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30), // 30 дней назад
+				lt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30), // 30 дней
 			},
 		}),
 	};
+
+	const orderBy: Prisma.ProductOrderByWithRelationInput = sortBy === "categoryTitle" ? { category: { title: order } } : { [sortBy]: order };
 
 	try {
 		const [products, total] = await Promise.all([
@@ -40,9 +39,7 @@ export async function GET(req: NextRequest) {
 				include: {
 					category: true,
 				},
-				orderBy: {
-					[sortBy]: order,
-				},
+				orderBy,
 			}),
 			prisma.product.count({ where }),
 		]);
