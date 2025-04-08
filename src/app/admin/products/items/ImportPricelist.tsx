@@ -3,10 +3,13 @@
 import { useRef, useState } from "react";
 import Loading from "@/components/ui/loading/Loading";
 import { showSuccessToast, showErrorToast } from "@/components/ui/toast/toastService";
+import UploadBox from "./components/importFlow/UploadBox";
+import ColumnMatcher from "./components/importFlow/ColumnMatcher";
 
 export default function ImportPricelist() {
 	const [file, setFile] = useState<File | null>(null);
 	const [preview, setPreview] = useState<any[][] | null>(null);
+	const [errors, setErrors] = useState<Record<string, string>>({});
 	const [columns, setColumns] = useState<Record<string, number>>({
 		sku: -1,
 		title: -1,
@@ -26,6 +29,34 @@ export default function ImportPricelist() {
 		{ label: "Бренд", key: "brand" },
 		{ label: "Категория", key: "category" },
 	];
+
+	const handleColumnChange = (key: string, value: number) => {
+		setColumns((prev) => {
+			const updated = { ...prev, [key]: value };
+
+			// Собираем частоты использования каждой колонки
+			const used: Record<number, string[]> = {};
+			for (const [k, v] of Object.entries(updated)) {
+				if (v === -1) continue;
+				if (!used[v]) used[v] = [];
+				used[v].push(k);
+			}
+
+			// Строим ошибки — только если поле не первое в списке
+			const newErrors: Record<string, string> = {};
+			for (const col in used) {
+				const keys = used[col];
+				if (keys.length > 1) {
+					for (let i = 1; i < keys.length; i++) {
+						newErrors[keys[i]] = "Эта колонка уже выбрана для другого поля.";
+					}
+				}
+			}
+
+			setErrors(newErrors);
+			return updated;
+		});
+	};
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -71,6 +102,19 @@ export default function ImportPricelist() {
 			return;
 		}
 
+		// Проверка на наличие ошибок
+		if (Object.keys(errors).length > 0) {
+			showErrorToast("Исправьте ошибки перед импортом.");
+			return;
+		}
+
+		// Проверка на заполненность всех полей
+		const values = Object.values(columns);
+		if (values.includes(-1)) {
+			showErrorToast("Все поля должны быть сопоставлены.");
+			return;
+		}
+
 		const formData = new FormData();
 		formData.append("file", file);
 		formData.append("columns", JSON.stringify(columns));
@@ -101,55 +145,22 @@ export default function ImportPricelist() {
 			<h2 className="text-lg font-bold mb-4">Загрузка прайс-листа</h2>
 
 			<form onSubmit={handleSubmit} className="space-y-4">
-				<div className="space-y-2">
-					<label
-						htmlFor="file-upload"
-						className={`relative flex border-2 border-dashed rounded-md text-center p-6 transition cursor-pointer min-h-[160px] ${
-							file ? "border-green-400 bg-green-50 hover:bg-green-100" : "border-gray-300 hover:bg-gray-50"
-						}`}
-					>
-						<input ref={fileInputRef} type="file" id="file-upload" accept=".xlsx,.xls" className="hidden" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-
-						{file ? (
-							<div className="flex flex-col items-center gap-2">
-								<span className="text-3xl">📄</span>
-								<p className="font-medium text-green-700">Выбран файл:</p>
-								<p className="text-sm text-green-800">{file.name}</p>
-							</div>
-						) : (
-							<div className="flex flex-col items-center gap-1">
-								<span className="text-4xl text-gray-400">📁</span>
-								<p className="text-gray-600">Перетащите файл сюда или нажмите для выбора</p>
-								<p className="text-sm text-gray-400">Поддерживаются .xlsx, .xls</p>
-							</div>
-						)}
-					</label>
-
-					{file && (
-						<button
-							type="button"
-							onClick={() => {
-								setFile(null);
-								setPreview(null);
-								setTotalRows(null);
-								setColumns({
-									sku: -1,
-									title: -1,
-									price: -1,
-									brand: -1,
-									category: -1,
-								});
-
-								if (fileInputRef.current) {
-									fileInputRef.current.value = "";
-								}
-							}}
-							className="text-xs text-red-500 underline hover:text-red-700"
-						>
-							Очистить файл
-						</button>
-					)}
-				</div>
+				<UploadBox
+					file={file}
+					fileInputRef={fileInputRef}
+					setFile={setFile}
+					setPreview={setPreview}
+					setTotalRows={setTotalRows}
+					resetColumns={() =>
+						setColumns({
+							sku: -1,
+							title: -1,
+							price: -1,
+							brand: -1,
+							category: -1,
+						})
+					}
+				/>
 
 				<button
 					type="submit"
@@ -163,33 +174,7 @@ export default function ImportPricelist() {
 
 			{preview && (
 				<>
-					<div className="mt-6">
-						<h3 className="font-semibold mb-2">Сопоставьте колонки:</h3>
-						<div className="grid grid-cols-1 gap-2 mb-4">
-							{FIELDS.map(({ label, key }) => (
-								<div key={key} className="flex items-center gap-2">
-									<label className="w-32">{label}:</label>
-									<select
-										value={columns[key]}
-										onChange={(e) =>
-											setColumns((prev) => ({
-												...prev,
-												[key]: Number(e.target.value),
-											}))
-										}
-										className="border p-1 rounded"
-									>
-										<option value={-1}>—</option>
-										{preview[0].map((_, idx) => (
-											<option key={idx} value={idx}>
-												Колонка {idx + 1}
-											</option>
-										))}
-									</select>
-								</div>
-							))}
-						</div>
-					</div>
+					<ColumnMatcher preview={preview} columns={columns} errors={errors} setColumns={setColumns} setErrors={setErrors} />
 
 					<div className="mb-4">
 						<h3 className="font-semibold mb-1">Предпросмотр:</h3>
