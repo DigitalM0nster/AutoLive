@@ -1,3 +1,5 @@
+// src\app\admin\products\items\local_components\importPricelist\ImportPricelist.tsx
+
 "use client";
 
 import { useRef, useState } from "react";

@@ -1,4 +1,4 @@
-// src\app\admin\products\categories\CategoryManager.tsx
+// src\app\admin\products\categories\local_components\categoryManager\CategoryManager.tsx
 
 "use client";
 

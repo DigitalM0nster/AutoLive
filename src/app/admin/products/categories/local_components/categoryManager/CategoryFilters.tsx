@@ -1,4 +1,4 @@
-// src\app\admin\products\categories\create\components\categoryManager\CategoryFilters.tsx
+// src\app\admin\products\categories\local_components\categoryManager\CategoryFilters.tsx
 "use client";
 
 import { Filter } from "@/lib/types";

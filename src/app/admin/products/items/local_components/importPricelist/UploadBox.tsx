@@ -1,3 +1,5 @@
+// src\app\admin\products\items\local_components\importPricelist\UploadBox.tsx
+
 "use client";
 
 import { ChangeEvent, Dispatch, RefObject, SetStateAction } from "react";

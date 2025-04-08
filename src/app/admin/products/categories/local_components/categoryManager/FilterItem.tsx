@@ -1,4 +1,4 @@
-// src\app\admin\products\categories\create\components\categoryManager\FilterItem.tsx
+// src\app\admin\products\categories\local_components\categoryManager\FilterItem.tsx
 
 "use client";
 

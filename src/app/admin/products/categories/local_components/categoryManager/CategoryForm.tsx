@@ -1,4 +1,4 @@
-// src\app\admin\products\categories\create\components\categoryManager\CategoryForm.tsx
+// src\app\admin\products\categories\local_components\categoryManager\CategoryForm.tsx
 
 "use client";
 
