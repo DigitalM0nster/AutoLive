@@ -1,0 +1,85 @@
+import { NextResponse } from "next/server";
+import { read, utils } from "xlsx";
+import { prisma } from "@/lib/prisma";
+
+export async function POST(req: Request) {
+	try {
+		const formData = await req.formData();
+		const file = formData.get("file") as File;
+		const columns = JSON.parse(formData.get("columns") as string);
+
+		if (!file) {
+			return NextResponse.json({ error: "Файл не получен" }, { status: 400 });
+		}
+
+		const buffer = Buffer.from(await file.arrayBuffer());
+		const workbook = read(buffer, { type: "buffer" });
+		const sheet = workbook.Sheets[workbook.SheetNames[0]];
+		const rows = utils.sheet_to_json(sheet, { header: 1 }) as any[][];
+
+		let created = 0;
+		let updated = 0;
+
+		for (const row of rows.slice(1)) {
+			const article = row[columns.article]?.toString().trim();
+			const name = row[columns.name]?.toString().trim();
+			const priceRaw = row[columns.price];
+			const brand = row[columns.brand]?.toString().trim();
+
+			let categoryTitle = null;
+			if (columns.category !== -1) {
+				categoryTitle = row[columns.category]?.toString().trim();
+			}
+
+			if (!article || !name || !priceRaw || !brand) continue;
+
+			const price = typeof priceRaw === "string" ? parseFloat(priceRaw.replace(",", ".")) : priceRaw;
+
+			// Обработка категории
+			let category = null;
+			if (categoryTitle) {
+				category = await prisma.category.upsert({
+					where: { title: categoryTitle },
+					update: {},
+					create: { title: categoryTitle },
+				});
+			}
+
+			// Поиск товара по article + brand
+			const existing = await prisma.product.findFirst({
+				where: { article, brand },
+			});
+
+			if (existing) {
+				await prisma.product.update({
+					where: { id: existing.id },
+					data: {
+						name,
+						price,
+						categoryId: category?.id || null,
+					},
+				});
+				updated++;
+			} else {
+				await prisma.product.create({
+					data: {
+						article,
+						name,
+						brand,
+						price,
+						categoryId: category?.id || null,
+					},
+				});
+				created++;
+			}
+		}
+
+		console.log("Создано:", created);
+		console.log("Обновлено:", updated);
+
+		return NextResponse.json({ created, updated });
+	} catch (error) {
+		console.error("Ошибка при импорте товаров:", error);
+		return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
+	}
+}
