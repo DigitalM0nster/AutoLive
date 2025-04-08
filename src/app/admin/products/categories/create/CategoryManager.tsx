@@ -5,7 +5,7 @@
 import { useRef, useState } from "react";
 import CategoryForm from "./CategoryForm";
 import CategoryFilters from "./CategoryFilters";
-import { useToast } from "@/components/ui/toast/ToastProvider";
+import { showSuccessToast, showErrorToast } from "@/components/ui/toast/toastService";
 
 type Props = {
 	initialCategory?: {
@@ -27,27 +27,25 @@ export default function CategoryManager({ initialCategory, initialFilters = [], 
 	});
 	const [imageFile, setImageFile] = useState<File | null>(null);
 	const [filters, setFilters] = useState(initialFilters);
-	const toast = useToast();
 
 	const [shouldDeleteImage, setShouldDeleteImage] = useState(false);
 
-	// Ошибки для категории
 	const [categoryErrors, setCategoryErrors] = useState({
 		title: "",
 		image: "",
 	});
 
-	// Ошибки для фильтров
 	const [filterErrors, setFilterErrors] = useState({
 		title: "",
 		type: "",
 	});
 
+	const [isSaving, setIsSaving] = useState(false);
+
 	const handleFormChange = (key: string, value: any) => {
 		setFormData((prev) => ({ ...prev, [key]: value }));
 	};
 
-	// Валидация формы категории
 	const validateForm = () => {
 		let valid = true;
 		const newCategoryErrors = {
@@ -86,8 +84,6 @@ export default function CategoryManager({ initialCategory, initialFilters = [], 
 		return data.url;
 	};
 
-	const [isSaving, setIsSaving] = useState(false);
-
 	const saveAll = async () => {
 		if (isSaving) return;
 		setIsSaving(true);
@@ -97,7 +93,7 @@ export default function CategoryManager({ initialCategory, initialFilters = [], 
 			const isFiltersValid = filtersRef.current?.validateFilters() ?? true;
 
 			if (!isFormValid || !isFiltersValid) {
-				toast("Пожалуйста, исправьте ошибки в форме и фильтрах.", "error");
+				showErrorToast("Пожалуйста, исправьте ошибки в форме и фильтрах.");
 				return;
 			}
 
@@ -107,7 +103,7 @@ export default function CategoryManager({ initialCategory, initialFilters = [], 
 				try {
 					imageUrl = await uploadImage(imageFile);
 				} catch (error) {
-					toast("Ошибка при загрузке изображения", "error");
+					showErrorToast("Ошибка при загрузке изображения");
 					return;
 				}
 			}
@@ -128,7 +124,7 @@ export default function CategoryManager({ initialCategory, initialFilters = [], 
 			const data = await res.json();
 
 			if (!res.ok || !data?.id) {
-				toast("Ошибка при сохранении категории", "error");
+				showErrorToast("Ошибка при сохранении категории");
 				return;
 			}
 
@@ -140,14 +136,13 @@ export default function CategoryManager({ initialCategory, initialFilters = [], 
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ categoryId: id, filters }),
 			});
-			const filtersData = await filtersRes.json();
 
 			if (!filtersRes.ok) {
-				toast("Ошибка при сохранении фильтров", "error");
+				showErrorToast("Ошибка при сохранении фильтров");
 				return;
 			}
 
-			toast("✅ Все изменения успешно сохранены", "success");
+			showSuccessToast("✅ Все изменения успешно сохранены");
 		} finally {
 			setIsSaving(false);
 		}

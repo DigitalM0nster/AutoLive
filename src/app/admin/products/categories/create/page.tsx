@@ -9,7 +9,6 @@ export default function CreateCategoryPage() {
 			isEdit={false}
 			initialCategory={{
 				title: "",
-				description: "",
 				image: undefined,
 			}}
 			initialFilters={[]}

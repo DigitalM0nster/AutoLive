@@ -4,8 +4,8 @@ import "./globals.css";
 import Footer from "@/components/admin/footer/Footer";
 import Header from "@/components/admin/header/Header";
 import React from "react";
-import { ToastProvider } from "@/components/ui/toast/ToastProvider";
 import AdminPageWrapper from "./AdminPageWrapper";
+import ToastManager from "@/components/ui/toast/ToastManager";
 
 export const metadata = {
 	title: "Админка",
@@ -16,11 +16,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 	return (
 		<html lang="ru">
 			<body>
-				<ToastProvider>
-					<Header />
-					<AdminPageWrapper>{children}</AdminPageWrapper>
-					<Footer />
-				</ToastProvider>
+				<Header />
+				<AdminPageWrapper>{children}</AdminPageWrapper>
+				<Footer />
+				<ToastManager />
 			</body>
 		</html>
 	);

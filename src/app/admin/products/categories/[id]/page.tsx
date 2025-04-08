@@ -24,7 +24,6 @@ export default async function EditCategoryPage({ params }: Props) {
 			initialCategory={{
 				id: category.id,
 				title: category.title,
-				description: category.description ?? "",
 				image: category.image ?? undefined,
 			}}
 			initialFilters={category.Filter}
