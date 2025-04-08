@@ -32,7 +32,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
 		try {
 			const response = await fetch("/api/user/get-user-data", {
 				method: "GET",
-				credentials: "include", // ⬅ важно!
+				credentials: "include",
 			});
 			const data = await response.json();
 
@@ -42,7 +42,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
 				set({ isLogined: false, user: null, role: null });
 			}
 		} catch (error) {
-			console.error("Ошибка авторизации:", error);
+			console.error("Ошибка при получении данных пользователя:", error);
 		}
 	},
 
@@ -57,6 +57,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
 			if (response.ok) {
 				await useAuthStore.getState().initAuth();
+				console.log(response);
 			} else {
 				const data = await response.json();
 				throw new Error(data.code || "UNKNOWN_ERROR");

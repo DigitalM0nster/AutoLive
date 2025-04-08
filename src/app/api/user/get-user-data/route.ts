@@ -18,13 +18,19 @@ export async function GET() {
 	const cookieStore = await cookies();
 	const token = cookieStore.get("authToken")?.value;
 
-	if (!token) return NextResponse.json({ error: "Нет токена" }, { status: 401 });
+	console.log("🔑 Получен токен:", token); // 💬 Проверка: токен вообще есть?
+
+	if (!token) {
+		console.log("⛔️ Нет токена");
+		return NextResponse.json({ error: "Нет токена" }, { status: 401 });
+	}
 
 	try {
 		const user = jwt.verify(token, process.env.JWT_SECRET!) as Decoded;
+		console.log("✅ JWT расшифрован:", user);
 
-		// ✅ допускаем и client, и user, чтобы не ебать мозги
-		if (!["client", "user"].includes(user.role)) {
+		// ✅ допускаем все роли
+		if (!["client", "user", "superadmin", "admin", "manager"].includes(user.role)) {
 			return NextResponse.json({ error: "Недостаточно прав" }, { status: 403 });
 		}
 
@@ -35,6 +41,8 @@ export async function GET() {
 				last_name: true,
 			},
 		});
+
+		console.log("🧑 Пользователь в базе:", dbUser);
 
 		const permissions: Permission[] = ROLE_PERMISSIONS[user.role] || [];
 
@@ -48,7 +56,7 @@ export async function GET() {
 			permissions,
 		});
 	} catch (e) {
-		console.error("Ошибка JWT:", e);
+		console.error("💥 Ошибка JWT:", e);
 		return NextResponse.json({ error: "Невалидный токен" }, { status: 403 });
 	}
 }

@@ -44,14 +44,13 @@ export async function POST(req: NextRequest) {
 			{ expiresIn: "7d" }
 		);
 
-		const cookieStore = await cookies();
-		cookieStore.set("authToken", token, {
+		const response = NextResponse.json({ success: true });
+		response.cookies.set("authToken", token, {
 			httpOnly: true,
 			path: "/",
 			maxAge: 60 * 60 * 24 * 7,
 		});
-
-		return NextResponse.json({ success: true });
+		return response;
 	} catch (error) {
 		console.error("Ошибка логина:", error);
 		return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
