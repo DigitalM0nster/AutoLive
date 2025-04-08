@@ -1,5 +1,6 @@
 // src/app/admin/products/items/page.tsx
 
+import ImportLogs from "./local_components/importPricelist/ImportLogs";
 import ImportPricelist from "./local_components/importPricelist/ImportPricelist";
 import ProductList from "./local_components/productList/ProductList";
 
@@ -9,6 +10,7 @@ export default function ItemsPage() {
 			<h1 className="text-2xl font-bold mb-4">Товары</h1>
 			<ProductList />
 			<ImportPricelist />
+			<ImportLogs />
 		</div>
 	);
 }

@@ -1,5 +1,3 @@
-// src\app\admin\products\items\local_components\importPricelist\UploadBox.tsx
-
 "use client";
 
 import { ChangeEvent, Dispatch, RefObject, SetStateAction } from "react";
@@ -11,11 +9,17 @@ type UploadBoxProps = {
 	setPreview: Dispatch<SetStateAction<any[][] | null>>;
 	setTotalRows: Dispatch<SetStateAction<number | null>>;
 	resetColumns: () => void;
+	handlePreviewUpload: (file: File) => void;
 };
 
-export default function UploadBox({ file, fileInputRef, setFile, setPreview, setTotalRows, resetColumns }: UploadBoxProps) {
+export default function UploadBox({ file, fileInputRef, setFile, setPreview, setTotalRows, resetColumns, handlePreviewUpload }: UploadBoxProps) {
 	const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-		setFile(e.target.files?.[0] || null);
+		const selectedFile = e.target.files?.[0] || null;
+		setFile(selectedFile);
+
+		if (selectedFile) {
+			handlePreviewUpload(selectedFile);
+		}
 	};
 
 	const handleClear = () => {

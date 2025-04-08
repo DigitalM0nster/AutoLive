@@ -22,19 +22,29 @@ export default function ProductList() {
 	const [sortBy, setSortBy] = useState("createdAt");
 	const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
+	// Загружаем категории и бренды один раз
 	useEffect(() => {
-		const fetchCategories = async () => {
-			const res = await fetch("/api/categories");
-			const data = await res.json();
-			setCategories(data);
+		const fetchInitialData = async () => {
+			try {
+				const [catRes, brandRes] = await Promise.all([fetch("/api/categories"), fetch("/api/products/get-all-brands")]);
+				const [catData, brandData] = await Promise.all([catRes.json(), brandRes.json()]);
+
+				setCategories(catData);
+				setBrands(brandData);
+			} catch (error) {
+				console.error("Ошибка при загрузке категорий и брендов", error);
+			}
 		};
-		fetchCategories();
+
+		fetchInitialData();
 	}, []);
 
+	// Сброс страницы при фильтрах
 	useEffect(() => {
 		setPage(1);
 	}, [search, brandFilter, categoryFilter, sortBy, sortOrder, onlyStale]);
 
+	// Загрузка товаров
 	useEffect(() => {
 		const fetchProducts = async () => {
 			setLoading(true);
@@ -56,9 +66,6 @@ export default function ProductList() {
 
 				setTotalPages(data.totalPages);
 				setProducts(data.products);
-
-				const brandSet = new Set<string>(data.products.map((p: Product) => p.brand));
-				setBrands([...brandSet]);
 			} catch (error) {
 				console.error("Ошибка при загрузке товаров", error);
 			} finally {

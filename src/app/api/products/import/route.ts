@@ -35,7 +35,6 @@ export async function POST(req: Request) {
 
 			const price = typeof priceRaw === "string" ? parseFloat(priceRaw.replace(",", ".")) : priceRaw;
 
-			// Категория
 			let category = null;
 			if (categoryTitle) {
 				category = await prisma.category.upsert({
@@ -45,7 +44,6 @@ export async function POST(req: Request) {
 				});
 			}
 
-			// Поиск товара по sku + brand
 			const existing = await prisma.product.findFirst({
 				where: { sku, brand },
 			});
@@ -76,8 +74,15 @@ export async function POST(req: Request) {
 			}
 		}
 
-		console.log("Создано:", created);
-		console.log("Обновлено:", updated);
+		// ✅ Записываем лог
+		await prisma.importLog.create({
+			data: {
+				userId: 1, // заменить позже на ID текущего пользователя
+				fileName: file.name,
+				created,
+				updated,
+			},
+		});
 
 		return NextResponse.json({ created, updated });
 	} catch (error) {

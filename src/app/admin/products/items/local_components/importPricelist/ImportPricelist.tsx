@@ -1,5 +1,3 @@
-// src\app\admin\products\items\local_components\importPricelist\ImportPricelist.tsx
-
 "use client";
 
 import { useRef, useState } from "react";
@@ -25,15 +23,9 @@ export default function ImportPricelist() {
 
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-	const handleSubmit = async (e: React.FormEvent) => {
-		e.preventDefault();
-		if (!file) {
-			showErrorToast("Выберите файл для загрузки");
-			return;
-		}
-
+	const handlePreviewUpload = async (selectedFile: File) => {
 		const allowedTypes = ["application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"];
-		if (!allowedTypes.includes(file.type)) {
+		if (!allowedTypes.includes(selectedFile.type)) {
 			showErrorToast("Неверный формат файла. Поддерживаются только .xls и .xlsx");
 			return;
 		}
@@ -42,7 +34,7 @@ export default function ImportPricelist() {
 		setTotalRows(null);
 
 		const formData = new FormData();
-		formData.append("file", file);
+		formData.append("file", selectedFile);
 
 		try {
 			const res = await fetch("/api/products/import-preview", {
@@ -69,15 +61,12 @@ export default function ImportPricelist() {
 			return;
 		}
 
-		// Проверка на наличие ошибок
 		if (Object.keys(errors).length > 0) {
 			showErrorToast("Исправьте ошибки перед импортом.");
 			return;
 		}
 
-		// Проверка на заполненность всех полей
-		const values = Object.values(columns);
-		if (values.includes(-1)) {
+		if (Object.values(columns).includes(-1)) {
 			showErrorToast("Все поля должны быть сопоставлены.");
 			return;
 		}
@@ -111,33 +100,23 @@ export default function ImportPricelist() {
 
 			<h2 className="text-lg font-bold mb-4">Загрузка прайс-листа</h2>
 
-			<form onSubmit={handleSubmit} className="space-y-4">
-				<UploadBox
-					file={file}
-					fileInputRef={fileInputRef}
-					setFile={setFile}
-					setPreview={setPreview}
-					setTotalRows={setTotalRows}
-					resetColumns={() =>
-						setColumns({
-							sku: -1,
-							title: -1,
-							price: -1,
-							brand: -1,
-							category: -1,
-						})
-					}
-				/>
-
-				<button
-					type="submit"
-					disabled={loading}
-					className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition flex items-center justify-center gap-2 disabled:opacity-50"
-				>
-					{loading && <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />}
-					{loading ? "Загрузка..." : "Загрузить"}
-				</button>
-			</form>
+			<UploadBox
+				file={file}
+				fileInputRef={fileInputRef}
+				setFile={setFile}
+				setPreview={setPreview}
+				setTotalRows={setTotalRows}
+				resetColumns={() =>
+					setColumns({
+						sku: -1,
+						title: -1,
+						price: -1,
+						brand: -1,
+						category: -1,
+					})
+				}
+				handlePreviewUpload={handlePreviewUpload}
+			/>
 
 			{preview && (
 				<>

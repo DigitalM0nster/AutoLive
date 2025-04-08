@@ -29,6 +29,8 @@ model User {
     managerOrders Order[] @relation("ManagerOrders")
     clientOrders  Order[] @relation("ClientOrders")
 
+    importLogs ImportLog[]
+
     @@map("user")
 }
 
@@ -248,4 +250,18 @@ model PriceFormat {
     supplier   Supplier @relation(fields: [supplierId], references: [id])
     columns    Json
     createdAt  DateTime @default(now())
+}
+
+// ------------------------------
+// ЛОГИРОВАНИЕ
+// ------------------------------
+
+model ImportLog {
+    id        Int      @id @default(autoincrement())
+    fileName  String
+    created   Int
+    updated   Int
+    createdAt DateTime @default(now())
+    userId    Int
+    user      User     @relation(fields: [userId], references: [id])
 }
