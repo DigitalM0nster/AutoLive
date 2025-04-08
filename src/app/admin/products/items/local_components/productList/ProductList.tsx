@@ -3,21 +3,7 @@
 import { useEffect, useState } from "react";
 import ProductFilterPanel from "./ProductFilterPanel";
 import ProductTable from "./ProductTable";
-
-type Product = {
-	id: number;
-	sku: string;
-	title: string;
-	price: number;
-	brand: string;
-	categoryTitle: string;
-	updatedAt: string;
-};
-
-type Category = {
-	id: number;
-	title: string;
-};
+import type { Product, Category } from "@/lib/types";
 
 export default function ProductList() {
 	const [products, setProducts] = useState<Product[]>([]);

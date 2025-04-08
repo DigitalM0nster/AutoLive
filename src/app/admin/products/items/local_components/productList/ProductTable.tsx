@@ -1,4 +1,4 @@
-import { Product } from "./ProductList";
+import { Product } from "@/lib/types";
 import ProductRow from "./ProductRow";
 import { ArrowDown, ArrowUp, ArrowDownWideNarrow } from "lucide-react";
 
@@ -38,7 +38,9 @@ export default function ProductTable({ products, loading, sortBy, sortOrder, han
 					<th className="border px-2 py-1 cursor-pointer w-1/6" onClick={() => handleSort("brand")}>
 						Бренд {renderSortIcon("brand")}
 					</th>
-					<th className="border px-2 py-1 w-1/6">Категория</th>
+					<th className="border px-2 py-1 cursor-pointer w-1/6" onClick={() => handleSort("categoryTitle")}>
+						Категория {renderSortIcon("categoryTitle")}
+					</th>
 					<th className="border px-2 py-1 text-center w-1/6">Действия</th>
 				</tr>
 			</thead>

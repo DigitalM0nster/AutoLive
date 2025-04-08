@@ -6,8 +6,20 @@ import { NextResponse } from "next/server";
 export async function GET() {
 	const categories = await prisma.category.findMany({
 		orderBy: { order: "asc" },
+		include: {
+			products: {
+				select: { id: true }, // только id
+			},
+		},
 	});
-	return NextResponse.json(categories);
+
+	const result = categories.map((cat) => ({
+		id: cat.id,
+		title: cat.title,
+		productCount: cat.products.length,
+	}));
+
+	return NextResponse.json(result);
 }
 
 // POST /api/categories

@@ -3,8 +3,8 @@
 export type Category = {
 	id: number;
 	title?: string;
-	products?: Product[];
 	image?: string | null;
+	products?: Product[];
 	filters?: {
 		id: number;
 		title: string;
@@ -13,13 +13,18 @@ export type Category = {
 			value: string;
 		}[];
 	}[];
+	productCount?: number;
 };
 
 export type Product = {
 	id: number;
+	sku: string;
 	title: string;
 	price: number;
 	image?: string | null;
+	brand: string;
+	updatedAt: string;
+	categoryTitle?: string;
 	filters: {
 		filterId: number;
 		valueId: number;

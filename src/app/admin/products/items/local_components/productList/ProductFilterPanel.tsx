@@ -1,4 +1,7 @@
-import { Category } from "./ProductList";
+"use client";
+
+import type { Category } from "@/lib/types";
+import CategorySelect from "./CategorySelect";
 
 type Props = {
 	categories: Category[];
@@ -39,14 +42,7 @@ export default function ProductFilterPanel({
 		<div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
 			<input type="text" placeholder="Поиск по названию, артикулу, бренду..." value={search} onChange={(e) => setSearch(e.target.value)} className="border p-2 rounded" />
 
-			<select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="border p-2 rounded">
-				<option value="">Все категории</option>
-				{categories.map((cat) => (
-					<option key={cat.id} value={cat.id.toString()}>
-						{cat.title}
-					</option>
-				))}
-			</select>
+			<CategorySelect categories={categories} value={categoryFilter} onChange={setCategoryFilter} />
 
 			<select value={brandFilter} onChange={(e) => setBrandFilter(e.target.value)} className="border p-2 rounded">
 				<option value="">Все бренды</option>
