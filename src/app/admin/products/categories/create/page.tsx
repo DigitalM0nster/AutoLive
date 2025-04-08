@@ -1,7 +1,7 @@
 // src/app/admin/products/categories/create/page.tsx
 "use client";
 
-import CategoryManager from "./components/categoryManager/CategoryManager";
+import CategoryManager from "../local_components/categoryManager/CategoryManager";
 
 export default function CreateCategoryPage() {
 	return (

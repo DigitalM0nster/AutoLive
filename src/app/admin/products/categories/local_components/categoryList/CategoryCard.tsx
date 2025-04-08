@@ -1,4 +1,4 @@
-// components/admin/CategoryCard.tsx
+// src\app\admin\products\categories\components\categoryList\CategoryCard.tsx
 "use client";
 
 import { useSortable } from "@dnd-kit/sortable";

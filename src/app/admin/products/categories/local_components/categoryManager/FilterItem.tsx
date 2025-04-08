@@ -27,8 +27,9 @@ interface LocalFilterValue {
 
 type FilterItemProps = {
 	filter: LocalFilter;
-	onChange: (filter: LocalFilter) => void;
+	onChange: (updated: LocalFilter) => void;
 	onDelete: () => void;
+	errors: { [key: string]: string };
 };
 
 export default function FilterItem({ filter, onChange, onDelete }: FilterItemProps) {

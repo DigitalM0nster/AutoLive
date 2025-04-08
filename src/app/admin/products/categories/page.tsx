@@ -1,7 +1,7 @@
 // src/app/admin/products/categories/page.tsx
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import CategoryList from "./CategoryList";
+import CategoryList from "./local_components/categoryList/CategoryList";
 
 export default async function CategoriesPage() {
 	const categories = await prisma.category.findMany({

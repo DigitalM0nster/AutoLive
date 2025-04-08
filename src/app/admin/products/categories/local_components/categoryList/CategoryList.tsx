@@ -1,4 +1,4 @@
-// components/admin/CategoryList.tsx
+// src\app\admin\products\categories\components\categoryList\CategoryList.tsx
 "use client";
 
 import { DndContext, closestCenter } from "@dnd-kit/core";
