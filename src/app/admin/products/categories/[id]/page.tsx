@@ -1,7 +1,7 @@
 // src/app/admin/products/categories/[id]/page.tsx
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
-import CategoryManager from "../create/CategoryManager"; // 👈 заменили импорт
+import CategoryManager from "../create/components/categoryManager/CategoryManager"; // 👈 заменили импорт
 
 type Props = {
 	params: { id: string };

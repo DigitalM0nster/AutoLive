@@ -3,8 +3,9 @@
 import { useRef, useState } from "react";
 import Loading from "@/components/ui/loading/Loading";
 import { showSuccessToast, showErrorToast } from "@/components/ui/toast/toastService";
-import UploadBox from "./components/importFlow/UploadBox";
-import ColumnMatcher from "./components/importFlow/ColumnMatcher";
+import UploadBox from "./UploadBox";
+import ColumnMatcher from "./ColumnMatcher";
+import PreviewTable from "./PreviewTable";
 
 export default function ImportPricelist() {
 	const [file, setFile] = useState<File | null>(null);
@@ -21,42 +22,6 @@ export default function ImportPricelist() {
 	const [totalRows, setTotalRows] = useState<number | null>(null);
 
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
-
-	const FIELDS = [
-		{ label: "Артикул (SKU)", key: "sku" },
-		{ label: "Название", key: "title" },
-		{ label: "Цена", key: "price" },
-		{ label: "Бренд", key: "brand" },
-		{ label: "Категория", key: "category" },
-	];
-
-	const handleColumnChange = (key: string, value: number) => {
-		setColumns((prev) => {
-			const updated = { ...prev, [key]: value };
-
-			// Собираем частоты использования каждой колонки
-			const used: Record<number, string[]> = {};
-			for (const [k, v] of Object.entries(updated)) {
-				if (v === -1) continue;
-				if (!used[v]) used[v] = [];
-				used[v].push(k);
-			}
-
-			// Строим ошибки — только если поле не первое в списке
-			const newErrors: Record<string, string> = {};
-			for (const col in used) {
-				const keys = used[col];
-				if (keys.length > 1) {
-					for (let i = 1; i < keys.length; i++) {
-						newErrors[keys[i]] = "Эта колонка уже выбрана для другого поля.";
-					}
-				}
-			}
-
-			setErrors(newErrors);
-			return updated;
-		});
-	};
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -176,33 +141,7 @@ export default function ImportPricelist() {
 				<>
 					<ColumnMatcher preview={preview} columns={columns} errors={errors} setColumns={setColumns} setErrors={setErrors} />
 
-					<div className="mb-4">
-						<h3 className="font-semibold mb-1">Предпросмотр:</h3>
-						<table className="table-auto border border-gray-300 text-sm w-full">
-							<thead>
-								<tr>
-									{preview[0].map((_, idx) => (
-										<th key={idx} className="border px-2 py-1 bg-gray-100 text-gray-600 font-semibold">
-											#{idx + 1}
-										</th>
-									))}
-								</tr>
-							</thead>
-							<tbody>
-								{preview.slice(0, 10).map((row, rowIndex) => (
-									<tr key={rowIndex}>
-										{row.map((cell, cellIndex) => (
-											<td key={cellIndex} className="border px-2 py-1">
-												{cell}
-											</td>
-										))}
-									</tr>
-								))}
-							</tbody>
-						</table>
-
-						{totalRows !== null && <p className="text-sm text-gray-500 mt-2">Всего строк: {totalRows}</p>}
-					</div>
+					<PreviewTable preview={preview} totalRows={totalRows} />
 
 					<button className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition" onClick={handleImport} disabled={loading}>
 						{loading ? "Импорт..." : "Импортировать товары"}

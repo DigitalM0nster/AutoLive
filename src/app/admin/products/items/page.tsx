@@ -1,6 +1,6 @@
 // src/app/admin/products/items/page.tsx
 
-import ImportPricelist from "./ImportPricelist";
+import ImportPricelist from "./components/importPricelist/ImportPricelist";
 
 export default function ItemsPage() {
 	return (
