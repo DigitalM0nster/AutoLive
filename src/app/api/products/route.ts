@@ -1,34 +1,51 @@
 // src/app/api/products/route.ts
+
 import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-// GET /api/products
-export async function GET() {
-	const products = await prisma.product.findMany();
-	return NextResponse.json(products);
-}
+export async function GET(req: NextRequest) {
+	const { searchParams } = new URL(req.url);
 
-// POST /api/products
-export async function POST(req: Request) {
+	const page = parseInt(searchParams.get("page") || "1");
+	const limit = parseInt(searchParams.get("limit") || "10");
+	const brand = searchParams.get("brand") || undefined;
+	const categoryId = searchParams.get("categoryId") || undefined;
+
+	const where: any = {};
+	if (brand) where.brand = brand;
+	if (categoryId) where.categoryId = parseInt(categoryId);
+
 	try {
-		const body = await req.json();
-
-		const product = await prisma.product.create({
-			data: {
-				title: body.title,
-				description: body.description,
-				price: body.price,
-				image: body.image,
-				sku: body.sku,
-				category: {
-					connect: { id: body.categoryId },
+		const [products, total] = await Promise.all([
+			prisma.product.findMany({
+				where,
+				skip: (page - 1) * limit,
+				take: limit,
+				include: {
+					category: true, // получаем название категории
 				},
-			},
-		});
+				orderBy: {
+					createdAt: "desc",
+				},
+			}),
+			prisma.product.count({ where }),
+		]);
 
-		return NextResponse.json(product);
+		return NextResponse.json({
+			products: products.map((p) => ({
+				id: p.id,
+				sku: p.sku,
+				title: p.title,
+				price: p.price,
+				brand: p.brand,
+				categoryTitle: p.category?.title || "—",
+			})),
+			total,
+			totalPages: Math.ceil(total / limit),
+			page,
+		});
 	} catch (error) {
-		console.error("Ошибка при создании продукта:", error);
+		console.error("Ошибка получения товаров:", error);
 		return new NextResponse("Ошибка сервера", { status: 500 });
 	}
 }
