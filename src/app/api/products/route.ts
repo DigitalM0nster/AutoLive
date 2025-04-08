@@ -3,8 +3,14 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
+import { Prisma } from "@prisma/client";
+
 export async function GET(req: NextRequest) {
 	const { searchParams } = new URL(req.url);
+
+	const sortBy = searchParams.get("sortBy") || "createdAt";
+	const order = searchParams.get("order") === "asc" ? "asc" : "desc";
+	const onlyStale = searchParams.get("onlyStale") === "true";
 
 	const page = parseInt(searchParams.get("page") || "1");
 	const limit = parseInt(searchParams.get("limit") || "10");
@@ -12,13 +18,18 @@ export async function GET(req: NextRequest) {
 	const categoryId = searchParams.get("categoryId") || undefined;
 	const search = searchParams.get("search")?.toLowerCase();
 
-	const where: any = {};
-
-	if (brand) where.brand = brand;
-	if (categoryId) where.categoryId = parseInt(categoryId);
-	if (search) {
-		where.OR = [{ title: { contains: search, mode: "insensitive" } }, { sku: { contains: search, mode: "insensitive" } }, { brand: { contains: search, mode: "insensitive" } }];
-	}
+	const where: Prisma.ProductWhereInput = {
+		...(brand && { brand }),
+		...(categoryId && { categoryId: parseInt(categoryId) }),
+		...(search && {
+			OR: [{ title: { contains: search } }, { sku: { contains: search } }, { brand: { contains: search } }],
+		}),
+		...(onlyStale && {
+			updatedAt: {
+				lt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30), // 30 дней назад
+			},
+		}),
+	};
 
 	try {
 		const [products, total] = await Promise.all([
@@ -30,7 +41,7 @@ export async function GET(req: NextRequest) {
 					category: true,
 				},
 				orderBy: {
-					createdAt: "desc",
+					[sortBy]: order,
 				},
 			}),
 			prisma.product.count({ where }),
@@ -44,6 +55,7 @@ export async function GET(req: NextRequest) {
 				price: p.price,
 				brand: p.brand,
 				categoryTitle: p.category?.title || "—",
+				updatedAt: p.updatedAt.toISOString(),
 			})),
 			total,
 			totalPages: Math.ceil(total / limit),

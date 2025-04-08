@@ -70,6 +70,7 @@ model Product {
     description String?  @map("description")
     image       String?  @map("image")
     createdAt   DateTime @default(now()) @map("created_at")
+    updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
 
     categoryId Int?      @map("category_id")
     category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
