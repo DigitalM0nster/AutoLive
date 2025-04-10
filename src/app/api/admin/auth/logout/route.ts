@@ -5,8 +5,8 @@ import { NextResponse } from "next/server";
 export async function POST() {
 	const response = NextResponse.json({ message: "Вы вышли из админки" });
 
-	// Удаляем adminToken через установку просроченной куки
-	response.cookies.set("adminToken", "", {
+	// Удаляем authToken через установку просроченной куки
+	response.cookies.set("authToken", "", {
 		httpOnly: true,
 		expires: new Date(0),
 		path: "/",

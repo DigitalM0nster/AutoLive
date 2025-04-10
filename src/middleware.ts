@@ -14,13 +14,18 @@ export function middleware(request: NextRequest) {
 	// Если пользователь на /admin (форма логина)
 	if (pathname === "/admin") {
 		if (token) {
-			return NextResponse.redirect(new URL("/admin/dashboard", request.url));
+			// Декодировать токен и проверить роль
+			const userRole = JSON.parse(atob(token.split(".")[1])).role; // Для JWT: разделить на части и декодировать payload
+			// Если роль — один из администраторов, перенаправить в /admin/dashboard
+			if (userRole === "superadmin" || userRole === "admin" || userRole === "manager") {
+				return NextResponse.redirect(new URL("/admin/dashboard", request.url));
+			}
 		}
 		return NextResponse.next();
 	}
 
-	// Остальной админ-доступ — только с токеном
-	if (!token) {
+	// Остальной админ-доступ — только с токеном и ролью superadmin, admin или manager
+	if (!token || !["superadmin", "admin", "manager"].includes(JSON.parse(atob(token.split(".")[1])).role)) {
 		return NextResponse.redirect(new URL("/admin", request.url));
 	}
 

@@ -1,5 +1,3 @@
-// src\app\admin\dashboard\page.tsx
-
 "use server";
 
 import { cookies } from "next/headers";
@@ -19,12 +17,9 @@ type DecodedToken = {
 
 export default async function DashboardPage() {
 	const cookieStore = await cookies();
-	const token = cookieStore.get("adminToken")?.value;
-
-	console.log("adminToken:", token); // 🐞 LOG 1
+	const token = cookieStore.get("authToken")?.value; // 👈 заменили
 
 	if (!token) {
-		console.log("❌ Нет токена, редирект на /admin");
 		redirect("/admin");
 	}
 
@@ -32,14 +27,11 @@ export default async function DashboardPage() {
 
 	try {
 		user = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
-		console.log("✅ Токен валиден. Пользователь:", user); // 🐞 LOG 2
 	} catch (e) {
-		console.log("❌ Ошибка декодирования токена:", e); // 🐞 LOG 3
 		return <div className="p-4 text-center text-red-500">Ошибка авторизации. Попробуйте зайти снова.</div>;
 	}
 
 	if (!["superadmin", "admin", "manager"].includes(user.role)) {
-		console.log("❌ Недостаточно прав:", user.role); // 🐞 LOG 4
 		return <div className="p-4 text-center text-red-500">У вас нет доступа к админке</div>;
 	}
 

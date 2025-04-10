@@ -1,5 +1,3 @@
-// src\app\admin\page.tsx
-
 "use server";
 
 import { cookies } from "next/headers";
@@ -19,14 +17,15 @@ type DecodedToken = {
 
 export default async function AdminLoginPage() {
 	const cookieStore = await cookies();
-	const token = cookieStore.get("adminToken")?.value;
+	const token = cookieStore.get("authToken")?.value; // 👈 заменили
+
 	let user: DecodedToken | null = null;
 
 	if (token) {
 		try {
 			user = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
 		} catch {
-			// Не редиректим — просто покажем форму
+			// просто покажем форму
 		}
 	}
 
@@ -34,6 +33,5 @@ export default async function AdminLoginPage() {
 		// redirect("/admin/dashboard");
 	}
 
-	// Показываем форму входа
 	return <AdminLoginForm />;
 }

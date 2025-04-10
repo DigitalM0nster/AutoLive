@@ -1,9 +1,9 @@
+// src\app\api\admin\auth\login\route.ts
+
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma"; // ✅ используем общий клиент
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-
-const prisma = new PrismaClient();
 
 export async function POST(req: NextRequest) {
 	const { phone, password } = await req.json();
@@ -33,9 +33,9 @@ export async function POST(req: NextRequest) {
 		{ expiresIn: "7d" }
 	);
 
-	const res = NextResponse.json({ message: "Успешный вход" }); // ✅ СОЗДАЛИ ответ
+	const res = NextResponse.json({ message: "Успешный вход" });
 
-	res.cookies.set("adminToken", token, {
+	res.cookies.set("authToken", token, {
 		httpOnly: true,
 		secure: process.env.NODE_ENV === "production",
 		sameSite: "lax",
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
 		maxAge: 60 * 60 * 24 * 7,
 	});
 
-	console.log("Создаём админ-токен с ролью:", user.role);
+	console.log("Создаём authToken с ролью:", user.role);
 
-	return res; // ✅ ВОЗВРАЩАЕМ тот же самый res, в который записали куку
+	return res;
 }

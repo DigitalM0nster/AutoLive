@@ -16,8 +16,8 @@ type Decoded = {
 };
 
 export async function GET() {
-	const cookieStore = cookies();
-	const token = cookieStore.get("adminToken")?.value; // 🟢 заменили authToken на adminToken
+	const cookieStore = await cookies();
+	const token = cookieStore.get("authToken")?.value; // 👈 используем authToken
 
 	if (!token) return NextResponse.json({ error: "Нет токена" }, { status: 401 });
 
