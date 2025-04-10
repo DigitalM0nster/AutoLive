@@ -3,6 +3,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import ProfileSkeleton from "./local_components/ProfileSkeleton";
 
 export default function AdminProfilePage() {
 	const [firstName, setFirstName] = useState("");
@@ -14,7 +15,9 @@ export default function AdminProfilePage() {
 	const [currentPassword, setCurrentPassword] = useState("");
 	const [newPassword, setNewPassword] = useState("");
 
-	const [loading, setLoading] = useState(false);
+	const [isProfileLoaded, setIsProfileLoaded] = useState(false); // 🆕 флаг: данные реально пришли
+	const [isFormSubmitting, setIsFormSubmitting] = useState(false); // 🟦 отправка формы
+	const [isDataLoading, setIsDataLoading] = useState(true); // 🟨 первичная загрузка данных
 	const [message, setMessage] = useState("");
 
 	useEffect(() => {
@@ -23,15 +26,19 @@ export default function AdminProfilePage() {
 				const res = await fetch("/api/admin/get-admin-data");
 				if (res.ok) {
 					const data = await res.json();
-					console.log("Данные админа:", data); // 👈 добавь это
+					console.log("Данные админа:", data);
 					setFirstName(data.first_name || "");
 					setLastName(data.last_name || "");
 					setPhone(data.phone || "");
 					setAvatar(data.avatar || null);
+					setIsProfileLoaded(true);
 				}
 			} catch (error) {
 				console.error("Ошибка при загрузке данных профиля:", error);
 				setMessage("Ошибка при загрузке данных профиля.");
+				setIsProfileLoaded(false);
+			} finally {
+				setIsDataLoading(false); // ⬅️ убираем загрузку
 			}
 		};
 		fetchData();
@@ -51,7 +58,7 @@ export default function AdminProfilePage() {
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		setLoading(true);
+		setIsFormSubmitting(true);
 		setMessage("");
 
 		const formData = new FormData();
@@ -82,9 +89,24 @@ export default function AdminProfilePage() {
 			console.error("Ошибка при обновлении профиля:", error);
 			setMessage("Ошибка при обновлении профиля.");
 		} finally {
-			setLoading(false);
+			setIsFormSubmitting(false);
 		}
 	};
+
+	// ЗАГЛУШКА ВО ВРЕМЯ ЗАГРУЗКИ
+	if (isDataLoading) {
+		return <ProfileSkeleton />;
+	}
+
+	// ЕСЛИ ДАННЫЕ НЕ ПРИШЛИ
+	if (!isProfileLoaded) {
+		return (
+			<div className="max-w-xl mx-auto mt-28 p-6 bg-white border rounded-xl shadow text-center text-red-700">
+				<h2 className="text-xl font-semibold mb-2">Ошибка</h2>
+				<p>Не удалось загрузить данные профиля. Пожалуйста, попробуйте позже.</p>
+			</div>
+		);
+	}
 
 	return (
 		<div className="max-w-2xl mx-auto mt-28 p-6 bg-white rounded-xl shadow border">
@@ -153,8 +175,8 @@ export default function AdminProfilePage() {
 
 				{/* КНОПКА */}
 				<div className="text-center">
-					<button type="submit" disabled={loading} className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
-						{loading ? "Сохраняем..." : "Сохранить изменения"}
+					<button type="submit" disabled={isFormSubmitting} className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+						{isFormSubmitting ? "Сохраняем..." : "Сохранить изменения"}
 					</button>
 					{message && (
 						<p className={`mt-3 text-sm px-4 py-2 rounded ${message.startsWith("✅") ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>{message}</p>

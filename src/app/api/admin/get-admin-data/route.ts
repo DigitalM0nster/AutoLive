@@ -1,3 +1,5 @@
+// src\app\api\admin\get-admin-data\route.ts
+
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
