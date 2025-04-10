@@ -37,11 +37,15 @@ export default function ColumnMatcher({ preview, columns, errors, setColumns, se
 
 			// Строим ошибки — только если поле не первое
 			const newErrors: Record<string, string> = {};
+			const requiredFields: FieldKey[] = ["sku", "title", "price", "brand"];
+
 			for (const col in used) {
 				const keys = used[col];
 				if (keys.length > 1) {
 					for (let i = 1; i < keys.length; i++) {
-						newErrors[keys[i]] = "Эта колонка уже выбрана для другого поля.";
+						if (requiredFields.includes(keys[i] as FieldKey)) {
+							newErrors[keys[i]] = "Эта колонка уже выбрана для другого поля.";
+						}
 					}
 				}
 			}

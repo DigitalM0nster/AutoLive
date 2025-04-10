@@ -26,10 +26,8 @@ export async function POST(req: Request) {
 			const priceRaw = row[columns.price];
 			const brand = row[columns.brand]?.toString().trim();
 
-			let categoryTitle = null;
-			if (columns.category !== -1) {
-				categoryTitle = row[columns.category]?.toString().trim();
-			}
+			const categoryIndex = columns.category;
+			const categoryTitle = categoryIndex !== -1 ? row[categoryIndex]?.toString().trim() : null;
 
 			if (!sku || !title || !priceRaw || !brand) continue;
 

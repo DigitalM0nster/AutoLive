@@ -66,9 +66,12 @@ export default function ImportPricelist() {
 			return;
 		}
 
-		if (Object.values(columns).includes(-1)) {
-			showErrorToast("Все поля должны быть сопоставлены.");
-			return;
+		const requiredFields: (keyof typeof columns)[] = ["sku", "title", "price", "brand"];
+		for (const field of requiredFields) {
+			if (columns[field] === -1) {
+				showErrorToast("Все обязательные поля должны быть сопоставлены.");
+				return;
+			}
 		}
 
 		const formData = new FormData();
