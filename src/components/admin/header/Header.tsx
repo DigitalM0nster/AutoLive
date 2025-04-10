@@ -50,7 +50,11 @@ export default function Header() {
 						<Loading />
 					) : admin ? (
 						<span>
-							👋 Здравствуйте, <span className="text-blue-600">{admin.name}</span> ({admin.role})
+							👋 Здравствуйте,{" "}
+							<span className="text-blue-600 hover:underline cursor-pointer" onClick={() => router.push("/admin/profile")}>
+								{admin.name}
+							</span>{" "}
+							({admin.role})
 						</span>
 					) : (
 						<span>🔐 Войдите в свою учетную запись</span>
