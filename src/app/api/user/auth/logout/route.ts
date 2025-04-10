@@ -1,9 +1,15 @@
+// src\app\api\user\auth\logout\route.ts
+
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 
 export async function POST() {
-	const cookieStore = await cookies();
-	cookieStore.delete("userToken");
+	const response = NextResponse.json({ message: "Вы вышли из системы" });
 
-	return NextResponse.json({ message: "Вы вышли из системы" });
+	response.cookies.set("authToken", "", {
+		httpOnly: true,
+		expires: new Date(0),
+		path: "/",
+	});
+
+	return response;
 }

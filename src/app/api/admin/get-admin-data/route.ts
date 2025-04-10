@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 import { Role, ROLE_PERMISSIONS, Permission } from "@/lib/rolesConfig";
-import { prisma } from "@/lib/prisma"; // ✅ обязательно проверь алиас
+import { prisma } from "@/lib/prisma";
 
 type Decoded = {
 	id: number;
@@ -16,8 +16,8 @@ type Decoded = {
 };
 
 export async function GET() {
-	const cookieStore = await cookies();
-	const token = cookieStore.get("authToken")?.value;
+	const cookieStore = cookies();
+	const token = cookieStore.get("adminToken")?.value; // 🟢 заменили authToken на adminToken
 
 	if (!token) return NextResponse.json({ error: "Нет токена" }, { status: 401 });
 

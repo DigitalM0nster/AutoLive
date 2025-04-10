@@ -4,6 +4,9 @@
 
 import { useEffect, useState } from "react";
 import ProfileSkeleton from "./local_components/ProfileSkeleton";
+import { showErrorToast, showSuccessToast } from "@/components/ui/toast/toastService";
+import { CameraIcon, XIcon } from "lucide-react";
+import { useAuthStore } from "@/store/authStore";
 
 export default function AdminProfilePage() {
 	const [firstName, setFirstName] = useState("");
@@ -19,6 +22,8 @@ export default function AdminProfilePage() {
 	const [isFormSubmitting, setIsFormSubmitting] = useState(false); // 🟦 отправка формы
 	const [isDataLoading, setIsDataLoading] = useState(true); // 🟨 первичная загрузка данных
 	const [message, setMessage] = useState("");
+
+	const [errors, setErrors] = useState<{ currentPassword?: boolean; newPassword?: boolean }>({});
 
 	useEffect(() => {
 		const fetchData = async () => {
@@ -55,17 +60,38 @@ export default function AdminProfilePage() {
 			reader.readAsDataURL(file);
 		}
 	};
-
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setIsFormSubmitting(true);
-		setMessage("");
+		setErrors({}); // сброс ошибок
+
+		// валидация пароля
+		if ((currentPassword && !newPassword) || (!currentPassword && newPassword)) {
+			setErrors({
+				currentPassword: !currentPassword,
+				newPassword: !newPassword,
+			});
+			showErrorToast("Укажите и текущий, и новый пароль");
+			setIsFormSubmitting(false);
+			return;
+		}
+
+		if (newPassword && newPassword.length < 4) {
+			setErrors({ newPassword: true });
+			showErrorToast("Новый пароль слишком короткий (мин. 4 символа)");
+			setIsFormSubmitting(false);
+			return;
+		}
 
 		const formData = new FormData();
 		formData.append("first_name", firstName);
 		formData.append("last_name", lastName);
 		formData.append("phone", phone);
-		if (avatarFile) formData.append("avatar", avatarFile);
+		if (avatarFile) {
+			formData.append("avatar", avatarFile);
+		} else if (avatar === null) {
+			formData.append("removeAvatar", "true");
+		}
 		if (currentPassword && newPassword) {
 			formData.append("currentPassword", currentPassword);
 			formData.append("newPassword", newPassword);
@@ -76,18 +102,25 @@ export default function AdminProfilePage() {
 				method: "POST",
 				body: formData,
 			});
-
 			const data = await res.json();
+
 			if (res.ok) {
-				setMessage("✅ Профиль обновлён");
+				showSuccessToast("Профиль обновлён");
 				setCurrentPassword("");
 				setNewPassword("");
+
+				// обновим user в store
+				await useAuthStore.getState().initAuth();
 			} else {
-				setMessage(data.message || "❌ Ошибка при обновлении");
+				// если ошибка в текущем пароле
+				if (data.message === "Текущий пароль неверен") {
+					setErrors({ currentPassword: true });
+				}
+				showErrorToast(data.message || "Ошибка при обновлении");
 			}
 		} catch (error) {
 			console.error("Ошибка при обновлении профиля:", error);
-			setMessage("Ошибка при обновлении профиля.");
+			showErrorToast("Ошибка при обновлении профиля.");
 		} finally {
 			setIsFormSubmitting(false);
 		}
@@ -114,13 +147,33 @@ export default function AdminProfilePage() {
 
 			<form onSubmit={handleSubmit} className="space-y-8">
 				{/* AVATAR */}
-				<div className="flex flex-col items-center">
-					<div className="relative">
-						<img src={avatar || "/images/user_placeholder.png"} alt="avatar" className="w-24 h-24 rounded-full object-cover border" />
-						<label className="absolute bottom-0 right-0 bg-blue-600 text-white text-xs px-2 py-1 rounded cursor-pointer hover:bg-blue-700">
-							Изменить
+				<div className="flex justify-center">
+					<div className="relative group w-36 h-36 sm:w-40 sm:h-40">
+						{/* Фото */}
+						<img
+							src={avatar || "/images/user_placeholder.png"}
+							alt="avatar"
+							className="w-full h-full rounded-full object-cover border-4 border-white shadow-md transition duration-300 group-hover:brightness-90"
+						/>
+
+						{/* Затемнение + иконка камеры */}
+						<label className="absolute inset-0 flex items-center justify-center rounded-full bg-black/20 opacity-0 group-hover:opacity-100 transition cursor-pointer pointer-events-auto">
+							<CameraIcon className="w-6 h-6 text-white" />
 							<input type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
 						</label>
+
+						{/* Кнопка удаления */}
+						<button
+							type="button"
+							onClick={() => {
+								setAvatar(null);
+								setAvatarFile(null);
+							}}
+							className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white rounded-full p-1 shadow transition pointer-events-auto"
+							title="Удалить фото"
+						>
+							<XIcon className="w-4 h-4" />
+						</button>
 					</div>
 				</div>
 
@@ -160,15 +213,21 @@ export default function AdminProfilePage() {
 							type="password"
 							placeholder="Текущий пароль"
 							value={currentPassword}
-							onChange={(e) => setCurrentPassword(e.target.value)}
-							className="w-full border rounded px-3 py-2"
+							onChange={(e) => {
+								setCurrentPassword(e.target.value);
+								if (errors.currentPassword) setErrors((prev) => ({ ...prev, currentPassword: false }));
+							}}
+							className={`w-full border rounded px-3 py-2 ${errors.currentPassword ? "border-red-500 text-red-700 placeholder-red-400" : ""}`}
 						/>
 						<input
 							type="password"
 							placeholder="Новый пароль"
 							value={newPassword}
-							onChange={(e) => setNewPassword(e.target.value)}
-							className="w-full border rounded px-3 py-2"
+							onChange={(e) => {
+								setNewPassword(e.target.value);
+								if (errors.newPassword) setErrors((prev) => ({ ...prev, newPassword: false }));
+							}}
+							className={`w-full border rounded px-3 py-2 ${errors.newPassword ? "border-red-500 text-red-700 placeholder-red-400" : ""}`}
 						/>
 					</div>
 				</div>

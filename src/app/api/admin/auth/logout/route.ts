@@ -1,14 +1,16 @@
 // src\app\api\admin\auth\logout\route.ts
 
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 
 export async function POST() {
-	// ⬇️ используем await
-	const cookieStore = await cookies();
+	const response = NextResponse.json({ message: "Вы вышли из админки" });
 
-	// Удаляем куку
-	cookieStore.delete("authToken");
+	// Удаляем adminToken через установку просроченной куки
+	response.cookies.set("adminToken", "", {
+		httpOnly: true,
+		expires: new Date(0),
+		path: "/",
+	});
 
-	return NextResponse.json({ message: "Вы вышли из системы" });
+	return response;
 }

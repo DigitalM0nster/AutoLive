@@ -8,7 +8,7 @@ import AdminPageWrapper from "./AdminPageWrapper";
 import ToastManager from "@/components/ui/toast/ToastManager";
 
 export const metadata = {
-	title: "Админ-панель",
+	title: "Админка",
 	description: "Панель управления магазином автозапчастей",
 };
 

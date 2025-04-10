@@ -7,6 +7,7 @@ type User = {
 	id: number;
 	first_name: string;
 	last_name: string;
+	avatar: string;
 	phone: string;
 	role: Role;
 };
@@ -30,14 +31,28 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
 	initAuth: async () => {
 		try {
-			const response = await fetch("/api/user/get-user-data", {
+			// пробуем сначала как админ
+			let response = await fetch("/api/admin/get-admin-data", {
 				method: "GET",
 				credentials: "include",
 			});
+
+			if (!response.ok) {
+				// если не получилось — пробуем как клиент
+				response = await fetch("/api/user/get-user-data", {
+					method: "GET",
+					credentials: "include",
+				});
+			}
+
 			const data = await response.json();
 
 			if (response.ok) {
-				set({ isLogined: true, user: data, role: data.role });
+				set({
+					isLogined: true,
+					user: data,
+					role: data.role,
+				});
 			} else {
 				set({ isLogined: false, user: null, role: null });
 			}
@@ -69,10 +84,19 @@ export const useAuthStore = create<AuthStore>((set) => ({
 	},
 
 	logout: async () => {
+		await fetch("/api/admin/auth/logout", {
+			method: "POST",
+			credentials: "include",
+		}).catch(() => {});
+
 		await fetch("/api/user/auth/logout", {
 			method: "POST",
 			credentials: "include",
-		});
+		}).catch(() => {});
+
 		set({ isLogined: false, user: null, role: null });
+
+		// ⬇️ повторная проверка куки после выхода
+		await useAuthStore.getState().initAuth();
 	},
 }));

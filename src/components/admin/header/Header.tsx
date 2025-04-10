@@ -1,48 +1,25 @@
 // src/components/admin/header/Header.tsx
+
 "use client";
 
 import Loading from "@/components/ui/loading/Loading";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Breadcrumbs from "../breadcrumbs/Breadcrumbs";
-import { AdminData } from "@/lib/types";
+import { useAuthStore } from "@/store/authStore";
 
 export default function Header() {
 	const router = useRouter();
-	const pathname = usePathname();
-	const [admin, setAdmin] = useState<AdminData | null>(null);
+	const { user, logout, initAuth } = useAuthStore();
 	const [loading, setLoading] = useState(true);
-	const [loggingOut, setLoggingOut] = useState(false);
 
 	useEffect(() => {
-		const load = async () => {
-			try {
-				const res = await fetch("/api/admin/get-admin-data");
-				if (res.ok) {
-					const data = await res.json();
-					setAdmin({
-						first_name: data.first_name,
-						last_name: data.last_name,
-						avatar: data.avatar,
-						role: data.role,
-						id: data.id,
-						phone: data.phone,
-						permissions: data.permissions,
-					});
-				}
-			} catch (e) {
-				console.error("Ошибка при загрузке данных админа", e);
-			} finally {
-				setLoading(false);
-			}
-		};
-		load();
+		initAuth().finally(() => setLoading(false));
 	}, []);
 
 	const handleLogout = async () => {
-		setLoggingOut(true);
 		await fetch("/api/admin/auth/logout", { method: "POST" });
-		setAdmin(null);
+		logout();
 		router.replace("/admin/login");
 	};
 
@@ -52,11 +29,11 @@ export default function Header() {
 				<div className="text-sm sm:text-base font-medium text-gray-800">
 					{loading ? (
 						<Loading />
-					) : admin ? (
+					) : user ? (
 						<div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition" onClick={() => router.push("/admin/profile")}>
-							<img src={admin.avatar || "/images/user_placeholder.png"} alt="avatar" className="w-8 h-8 rounded-full object-cover border" />
+							<img src={user.avatar || "/images/user_placeholder.png"} alt="avatar" className="w-8 h-8 rounded-full object-cover border" />
 							<span>
-								{admin.first_name || "Админ"} <span className="text-gray-500 text-sm">({admin.role})</span>
+								{user.first_name || "Админ"} <span className="text-gray-500 text-sm">({user.role})</span>
 							</span>
 						</div>
 					) : (
@@ -64,9 +41,9 @@ export default function Header() {
 					)}
 				</div>
 
-				{!loading && admin && (
-					<button onClick={handleLogout} disabled={loggingOut} className="bg-red-500 hover:bg-red-600 text-white px-4 py-1.5 rounded shadow text-sm">
-						{loggingOut ? "Выход..." : "Выйти"}
+				{!loading && user && (
+					<button onClick={handleLogout} className="bg-red-500 hover:bg-red-600 text-white px-4 py-1.5 rounded shadow text-sm">
+						Выйти
 					</button>
 				)}
 			</div>

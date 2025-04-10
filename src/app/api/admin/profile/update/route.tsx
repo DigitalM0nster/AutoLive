@@ -40,6 +40,8 @@ export async function POST(req: NextRequest) {
 	const dataToUpdate: any = { first_name, last_name, phone };
 
 	// обработка аватара
+	const removeAvatar = formData.get("removeAvatar");
+
 	if (avatarFile) {
 		const bytes = await avatarFile.arrayBuffer();
 		const buffer = Buffer.from(bytes);
@@ -47,6 +49,8 @@ export async function POST(req: NextRequest) {
 		const filePath = path.join(process.cwd(), "public", "uploads", fileName);
 		await writeFile(filePath, buffer);
 		dataToUpdate.avatar = `/uploads/${fileName}`;
+	} else if (removeAvatar === "true") {
+		dataToUpdate.avatar = null;
 	}
 
 	// обработка пароля
