@@ -1,8 +1,8 @@
-// src/app/api/admin/get-admin-data/route.ts
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 import { Role, ROLE_PERMISSIONS, Permission } from "@/lib/rolesConfig";
+import { prisma } from "@/lib/prisma"; // ✅ обязательно проверь алиас
 
 type Decoded = {
 	id: number;
@@ -26,12 +26,27 @@ export async function GET() {
 			return NextResponse.json({ error: "Недостаточно прав" }, { status: 403 });
 		}
 
-		const permissions: Permission[] = ROLE_PERMISSIONS[user.role] || [];
+		// Загружаем админа из БД
+		const admin = await prisma.user.findUnique({
+			where: { id: user.id },
+			select: {
+				id: true,
+				first_name: true,
+				last_name: true,
+				phone: true,
+				avatar: true,
+				role: true,
+			},
+		});
+
+		if (!admin) {
+			return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });
+		}
+
+		const permissions: Permission[] = ROLE_PERMISSIONS[admin.role] || [];
 
 		return NextResponse.json({
-			id: user.id,
-			name: user.name,
-			role: user.role,
+			...admin,
 			permissions,
 		});
 	} catch {

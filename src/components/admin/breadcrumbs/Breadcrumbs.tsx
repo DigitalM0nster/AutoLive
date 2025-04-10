@@ -62,7 +62,7 @@ export default function Breadcrumbs() {
 					<ol className="flex items-center flex-wrap gap-x-1">
 						<li>
 							<Link href="/admin" className="hover:underline text-blue-600">
-								Админка
+								Админ-панель
 							</Link>
 						</li>
 						{breadcrumbs.slice(1).map((crumb, i) => (

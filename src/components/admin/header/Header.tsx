@@ -5,11 +5,7 @@ import Loading from "@/components/ui/loading/Loading";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import Breadcrumbs from "../breadcrumbs/Breadcrumbs";
-
-type AdminData = {
-	name: string;
-	role: string;
-};
+import { AdminData } from "@/lib/types";
 
 export default function Header() {
 	const router = useRouter();
@@ -24,7 +20,15 @@ export default function Header() {
 				const res = await fetch("/api/admin/get-admin-data");
 				if (res.ok) {
 					const data = await res.json();
-					setAdmin({ name: data.name, role: data.role });
+					setAdmin({
+						first_name: data.first_name,
+						last_name: data.last_name,
+						avatar: data.avatar,
+						role: data.role,
+						id: data.id,
+						phone: data.phone,
+						permissions: data.permissions,
+					});
 				}
 			} catch (e) {
 				console.error("Ошибка при загрузке данных админа", e);
@@ -45,17 +49,16 @@ export default function Header() {
 	return (
 		<header id="admin-header" className="fixed top-0 left-0 right-0 bg-white border-b shadow z-50">
 			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-				<div className="text-sm sm:text-base font-semibold text-gray-800">
+				<div className="text-sm sm:text-base font-medium text-gray-800">
 					{loading ? (
 						<Loading />
 					) : admin ? (
-						<span>
-							👋 Здравствуйте,{" "}
-							<span className="text-blue-600 hover:underline cursor-pointer" onClick={() => router.push("/admin/profile")}>
-								{admin.name}
-							</span>{" "}
-							({admin.role})
-						</span>
+						<div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition" onClick={() => router.push("/admin/profile")}>
+							<img src={admin.avatar || "/images/user_placeholder.png"} alt="avatar" className="w-8 h-8 rounded-full object-cover border" />
+							<span>
+								{admin.first_name || "Админ"} <span className="text-gray-500 text-sm">({admin.role})</span>
+							</span>
+						</div>
 					) : (
 						<span>🔐 Войдите в свою учетную запись</span>
 					)}

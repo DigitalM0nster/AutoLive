@@ -94,3 +94,13 @@ export type EditableFilter = {
 		value: string;
 	}[];
 };
+
+export type AdminData = {
+	id: number;
+	first_name: string | null;
+	last_name: string | null;
+	phone: string;
+	avatar: string | null;
+	role: string;
+	permissions: string[];
+};

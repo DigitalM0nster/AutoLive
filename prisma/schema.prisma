@@ -14,10 +14,11 @@ datasource db {
 // ------------------------------
 model User {
     id         Int        @id @default(autoincrement()) @map("id")
-    first_name String?    @map("first_name")
-    last_name  String?    @map("last_name")
     phone      String     @unique @map("phone")
     password   String     @map("password")
+    first_name String?    @map("first_name")
+    last_name  String?    @map("last_name")
+    avatar     String?
     role       Role       @map("role")
     status     UserStatus @default(unverified) @map("status")
     createdAt  DateTime   @default(now()) @map("created_at")

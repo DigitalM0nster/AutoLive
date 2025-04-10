@@ -36,6 +36,7 @@ export const adminRoutesMeta: Record<string, AdminRouteMeta> = {
 		description: "Категории, товары, Комплекты ТО",
 		bg: "from-sky-400 to-sky-600",
 	},
+	profile: { label: "Редактирование профиля" },
 	categories: { label: "Категории" },
 	items: { label: "Товары" },
 	kits: { label: "Комплекты ТО" },
@@ -46,5 +47,5 @@ export const adminRoutesMeta: Record<string, AdminRouteMeta> = {
 	promotions: { label: "Акции" },
 	edit: { label: "Редактирование" },
 	create: { label: "Создание" },
-	admin: { label: "Админка" },
+	admin: { label: "Админ-панель" },
 };

@@ -1,4 +1,3 @@
-// src/app/admin/profile/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -18,12 +17,20 @@ export default function AdminProfilePage() {
 
 	useEffect(() => {
 		const fetchData = async () => {
-			const res = await fetch("/api/admin/get-admin-data");
-			const data = await res.json();
-			setFirstName(data.first_name || "");
-			setLastName(data.last_name || "");
-			setPhone(data.phone || "");
-			setAvatar(data.avatar || null);
+			try {
+				const res = await fetch("/api/admin/get-admin-data");
+				if (res.ok) {
+					const data = await res.json();
+					console.log("Данные админа:", data); // 👈 добавь это
+					setFirstName(data.first_name || "");
+					setLastName(data.last_name || "");
+					setPhone(data.phone || "");
+					setAvatar(data.avatar || null);
+				}
+			} catch (error) {
+				console.error("Ошибка при загрузке данных профиля:", error);
+				setMessage("Ошибка при загрузке данных профиля.");
+			}
 		};
 		fetchData();
 	}, []);
@@ -55,19 +62,25 @@ export default function AdminProfilePage() {
 			formData.append("newPassword", newPassword);
 		}
 
-		const res = await fetch("/api/admin/profile/update", {
-			method: "POST",
-			body: formData,
-		});
+		try {
+			const res = await fetch("/api/admin/profile/update", {
+				method: "POST",
+				body: formData,
+			});
 
-		const data = await res.json();
-		setLoading(false);
-		if (res.ok) {
-			setMessage("✅ Профиль обновлён");
-			setCurrentPassword("");
-			setNewPassword("");
-		} else {
-			setMessage(data.message || "❌ Ошибка при обновлении");
+			const data = await res.json();
+			if (res.ok) {
+				setMessage("✅ Профиль обновлён");
+				setCurrentPassword("");
+				setNewPassword("");
+			} else {
+				setMessage(data.message || "❌ Ошибка при обновлении");
+			}
+		} catch (error) {
+			console.error("Ошибка при обновлении профиля:", error);
+			setMessage("Ошибка при обновлении профиля.");
+		} finally {
+			setLoading(false);
 		}
 	};
 
@@ -79,12 +92,7 @@ export default function AdminProfilePage() {
 				{/* AVATAR */}
 				<div className="flex flex-col items-center">
 					<div className="relative">
-						<img
-							src={avatar?.startsWith("data:") || avatar?.startsWith("http") ? avatar : "/images/user_placeholder.png"}
-							alt="avatar"
-							className="w-24 h-24 rounded-full object-cover border shadow"
-						/>
-
+						<img src={avatar || "/images/user_placeholder.png"} alt="avatar" className="w-24 h-24 rounded-full object-cover border" />
 						<label className="absolute bottom-0 right-0 bg-blue-600 text-white text-xs px-2 py-1 rounded cursor-pointer hover:bg-blue-700">
 							Изменить
 							<input type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
@@ -110,7 +118,13 @@ export default function AdminProfilePage() {
 					</div>
 					<div className="sm:col-span-2">
 						<label className="block text-sm font-medium mb-1">Телефон (логин)</label>
-						<input type="text" value={phone} placeholder="9954091882" onChange={(e) => setPhone(e.target.value)} className="w-full border rounded px-3 py-2" />
+						<input
+							type="text"
+							value={phone}
+							placeholder="Введите номер телефона"
+							onChange={(e) => setPhone(e.target.value)}
+							className="w-full border rounded px-3 py-2"
+						/>
 					</div>
 				</div>
 
@@ -140,7 +154,9 @@ export default function AdminProfilePage() {
 					<button type="submit" disabled={loading} className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
 						{loading ? "Сохраняем..." : "Сохранить изменения"}
 					</button>
-					{message && <p className="mt-3 text-sm text-gray-700">{message}</p>}
+					{message && (
+						<p className={`mt-3 text-sm px-4 py-2 rounded ${message.startsWith("✅") ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>{message}</p>
+					)}
 				</div>
 			</form>
 		</div>
