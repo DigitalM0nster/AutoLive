@@ -11,21 +11,22 @@ export async function GET(req: NextRequest) {
 	const order = searchParams.get("order") === "asc" ? "asc" : "desc";
 	const onlyStale = searchParams.get("onlyStale") === "true";
 
-	const page = parseInt(searchParams.get("page") || "1");
+	const cursor = searchParams.get("cursor");
 	const limit = parseInt(searchParams.get("limit") || "10");
 	const brand = searchParams.get("brand") || undefined;
 	const categoryId = searchParams.get("categoryId") || undefined;
 	const search = searchParams.get("search")?.toLowerCase();
 
+	// 👇 Поиск (тип безопасен)
+	const searchFilter: Prisma.ProductWhereInput[] = search ? [{ title: { contains: search } }, { sku: { contains: search } }, { brand: { contains: search } }] : [];
+
 	const where: Prisma.ProductWhereInput = {
 		...(brand && { brand }),
 		...(categoryId && { categoryId: parseInt(categoryId) }),
-		...(search && {
-			OR: [{ title: { contains: search } }, { sku: { contains: search } }, { brand: { contains: search } }],
-		}),
+		...(search && { OR: searchFilter }),
 		...(onlyStale && {
 			updatedAt: {
-				lt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30), // 30 дней
+				lt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30),
 			},
 		}),
 	};
@@ -33,18 +34,30 @@ export async function GET(req: NextRequest) {
 	const orderBy: Prisma.ProductOrderByWithRelationInput = sortBy === "categoryTitle" ? { category: { title: order } } : { [sortBy]: order };
 
 	try {
-		const [products, total] = await Promise.all([
-			prisma.product.findMany({
-				where,
-				skip: (page - 1) * limit,
-				take: limit,
-				include: {
-					category: true,
-				},
-				orderBy,
+		const queryOptions: Parameters<typeof prisma.product.findMany>[0] = {
+			where,
+			take: limit,
+			orderBy,
+			include: { category: true },
+		};
+
+		if (cursor) {
+			queryOptions.cursor = { id: parseInt(cursor) };
+			queryOptions.skip = 1;
+		}
+
+		const products = (await prisma.product.findMany({
+			where,
+			take: limit,
+			orderBy,
+			include: { category: true },
+			...(cursor && {
+				cursor: { id: parseInt(cursor) },
+				skip: 1,
 			}),
-			prisma.product.count({ where }),
-		]);
+		})) as Array<Prisma.ProductGetPayload<{ include: { category: true } }>>;
+
+		const nextCursor = products.length === limit ? products[products.length - 1].id : null;
 
 		return NextResponse.json({
 			products: products.map((p) => ({
@@ -59,10 +72,8 @@ export async function GET(req: NextRequest) {
 				categoryTitle: p.category?.title || "—",
 				updatedAt: p.updatedAt.toISOString(),
 			})),
-
-			total,
-			totalPages: Math.ceil(total / limit),
-			page,
+			nextCursor,
+			limit,
 		});
 	} catch (error) {
 		console.error("Ошибка получения товаров:", error);
@@ -70,7 +81,7 @@ export async function GET(req: NextRequest) {
 	}
 }
 
-// POST – Создание нового товара
+// POST – Создание нового товара (оставляем без изменений)
 export async function POST(req: Request) {
 	const body = await req.json();
 

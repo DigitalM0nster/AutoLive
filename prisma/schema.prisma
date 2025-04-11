@@ -93,11 +93,12 @@ model Product {
     productFilterValues ProductFilterValue[]
     analogsFrom         ProductAnalog[]      @relation("ProductToAnalog")
     analogsTo           ProductAnalog[]      @relation("AnalogToProduct")
-    OrderItem           OrderItem[]
     serviceKitItems     ServiceKitItem[]     @relation("KitItemProduct")
     analogInKits        ServiceKitItem[]     @relation("KitItemAnalog")
 
-    @@index([sku, brand]) // ✅ индекс для поиска
+    @@index([title])
+    @@index([sku])
+    @@index([brand])
     @@map("product")
 }
 
@@ -183,10 +184,8 @@ model ServiceKitItem {
     analogProductId Int? @map("analog_product_id")
 
     kit           ServiceKit @relation(fields: [kitId], references: [id])
-    product       Product    @relation("KitItemProduct", fields: [productId], references: [id])
-    analogProduct Product?   @relation("KitItemAnalog", fields: [analogProductId], references: [id])
-
-    @@map("service_kit_item")
+    product       Product    @relation("KitItemProduct", fields: [productId], references: [id], onDelete: Cascade)
+    analogProduct Product?   @relation("KitItemAnalog", fields: [analogProductId], references: [id], onDelete: SetNull)
 }
 
 // ------------------------------
@@ -211,15 +210,18 @@ model Order {
 }
 
 model OrderItem {
-    id        Int @id @default(autoincrement()) @map("id")
-    orderId   Int @map("order_id")
-    productId Int @map("product_id")
-    quantity  Int @default(1) @map("quantity")
+    id      Int @id @default(autoincrement()) @map("id")
+    orderId Int @map("order_id")
 
-    order   Order   @relation(fields: [orderId], references: [id])
-    product Product @relation(fields: [productId], references: [id])
+    // Снимок данных товара:
+    sku      String  @map("product_sku")
+    title    String  @map("product_title")
+    price    Float   @map("product_price")
+    brand    String  @map("product_brand")
+    image    String? @map("product_image")
+    quantity Int     @default(1) @map("quantity")
 
-    @@map("order_item")
+    order Order @relation(fields: [orderId], references: [id])
 }
 
 enum OrderStatus {

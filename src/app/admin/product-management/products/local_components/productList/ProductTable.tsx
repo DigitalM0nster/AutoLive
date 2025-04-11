@@ -1,9 +1,9 @@
 // src\app\admin\product-management\items\local_components\productList\ProductTable.tsx
-
 import { EditableProduct, Category } from "@/lib/types";
 import ProductRow from "./ProductRow";
 import { ArrowDown, ArrowUp, ArrowDownWideNarrow } from "lucide-react";
 import { useEffect, useState } from "react";
+import React from "react"; // Импорт React
 
 type Props = {
 	products: EditableProduct[];
@@ -11,65 +11,65 @@ type Props = {
 	sortBy: string;
 	sortOrder: "asc" | "desc";
 	handleSort: (column: string) => void;
-	categories: Category[]; // добавили
+	categories: Category[];
+	onProductUpdate: (updated: EditableProduct) => void;
 };
 
-export default function ProductTable({ products, loading, sortBy, sortOrder, handleSort, categories }: Props) {
+const ProductTable = React.memo(({ products, loading, sortBy, sortOrder, handleSort, categories, onProductUpdate }: Props) => {
 	const renderSortIcon = (column: string) => {
 		if (sortBy !== column) {
 			return <ArrowDownWideNarrow size={14} className="inline-block text-gray-300 ml-1" />;
 		}
 		return sortOrder === "asc" ? <ArrowUp size={14} className="inline-block text-blue-600 ml-1" /> : <ArrowDown size={14} className="inline-block text-blue-600 ml-1" />;
 	};
+
+	// Следим за изменениями пропсов, чтобы обновлять только когда это необходимо
 	const [localProducts, setLocalProducts] = useState(products);
 
 	useEffect(() => {
 		setLocalProducts(products);
-	}, [products]);
+	}, [products]); // Обновляем локальные данные только при изменении товаров
 
+	// ОБНОВЛЯЕМ ТОВАР
 	const handleProductUpdate = (updated: EditableProduct) => {
-		setLocalProducts((prev) => prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p)));
+		setLocalProducts((prev) => {
+			// если новый товар ("new"), удалим его и добавим обновлённый
+			if (typeof updated.id === "number") {
+				return prev.filter((p) => p.id !== "new" && p.id !== updated.id).concat(updated);
+			}
+			return prev;
+		});
+		onProductUpdate(updated);
 	};
 
 	// Удаляем товар
-	const handleProductDelete = async (id: string | number) => {
+	const handleProductDelete = (id: string | number) => {
 		if (id === "new") {
 			setLocalProducts((prev) => prev.filter((p) => p.id !== "new"));
 			return;
 		}
-
-		try {
-			const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
-			if (res.ok) {
-				setLocalProducts((prev) => prev.filter((p) => p.id !== id));
-			} else {
-				alert("Ошибка при удалении");
-			}
-		} catch (err) {
-			alert("Ошибка сети");
-		}
+		setLocalProducts((prev) => prev.filter((p) => p.id !== id));
 	};
 
 	// ✅ Добавим новый товар
 	const handleAddProduct = () => {
-		setLocalProducts((prev) => [
-			...prev,
-			{
-				id: "new",
-				title: "",
-				sku: "",
-				price: 0,
-				brand: "",
-				image: null,
-				description: "",
-				categoryId: undefined,
-				categoryTitle: "—",
-				createdAt: new Date().toISOString(),
-				updatedAt: new Date().toISOString(),
-				filters: [],
-				isEditing: true,
-			},
-		]);
+		const newProduct: EditableProduct = {
+			id: "new",
+			title: "",
+			sku: "",
+			price: 0,
+			brand: "",
+			image: null,
+			description: "",
+			categoryId: undefined,
+			categoryTitle: "—",
+			createdAt: new Date().toISOString(),
+			updatedAt: new Date().toISOString(),
+			filters: [],
+			isEditing: true,
+		};
+
+		setLocalProducts((prev) => [newProduct, ...prev]);
 	};
 
 	if (loading) {
@@ -78,6 +78,9 @@ export default function ProductTable({ products, loading, sortBy, sortOrder, han
 
 	return (
 		<>
+			<button onClick={handleAddProduct} className="text-sm text-green-600 hover:underline border border-green-600 px-3 py-1 rounded">
+				+ Добавить товар
+			</button>
 			<table className="w-full table-fixed text-sm border border-black/10border-gray-300">
 				<thead className="bg-gray-100 text-left">
 					<tr>
@@ -107,11 +110,11 @@ export default function ProductTable({ products, loading, sortBy, sortOrder, han
 					{localProducts.length > 0 ? (
 						localProducts.map((product) => (
 							<ProductRow
-								key={product.id}
+								key={`${product.id}-${product.updatedAt}`}
 								product={product}
 								categories={categories}
 								onUpdate={handleProductUpdate}
-								onDelete={handleProductDelete} // 👈
+								onDelete={handleProductDelete}
 							/>
 						))
 					) : (
@@ -123,11 +126,10 @@ export default function ProductTable({ products, loading, sortBy, sortOrder, han
 					)}
 				</tbody>
 			</table>
-			<div className="flex justify-end mb-2">
-				<button onClick={handleAddProduct} className="text-sm text-green-600 hover:underline border border-green-600 px-3 py-1 rounded">
-					+ Добавить товар
-				</button>
-			</div>
+			<div className="flex justify-end mb-2"></div>
 		</>
 	);
-}
+});
+
+// Мемоизированный компонент
+export default ProductTable;

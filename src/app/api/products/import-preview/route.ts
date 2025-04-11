@@ -1,5 +1,3 @@
-// src\app\api\products\import-preview\route.ts
-
 import { NextResponse } from "next/server";
 import { read, utils } from "xlsx";
 
@@ -15,9 +13,15 @@ export async function POST(req: Request) {
 		const buffer = Buffer.from(await file.arrayBuffer());
 		const workbook = read(buffer, { type: "buffer" });
 		const sheet = workbook.Sheets[workbook.SheetNames[0]];
-		const rows = utils.sheet_to_json(sheet, { header: 1 }) as any[][];
 
-		return NextResponse.json({ rows: rows.slice(0, 20) });
+		// Получаем все строки без ограничения
+		const rows = utils.sheet_to_json(sheet, { header: 0, defval: "" }) as any[][];
+
+		// Преобразуем объекты в массивы
+		const formattedRows = rows.map((row) => Object.values(row));
+
+		// Просто вернем все строки, без ограничения
+		return NextResponse.json({ rows: formattedRows });
 	} catch (error) {
 		console.error("Ошибка при парсинге файла:", error);
 		return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });

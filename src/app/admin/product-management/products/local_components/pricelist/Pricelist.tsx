@@ -21,10 +21,11 @@ export default function Pricelist() {
 	});
 	const [loading, setLoading] = useState(false);
 	const [totalRows, setTotalRows] = useState<number | null>(null);
+	const [currentPage, setCurrentPage] = useState<number>(1); // Страница
 
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-	const handlePreviewUpload = async (selectedFile: File) => {
+	const handlePreviewUpload = async (selectedFile: File, page: number = currentPage) => {
 		const allowedTypes = ["application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"];
 		if (!allowedTypes.includes(selectedFile.type)) {
 			showErrorToast("Неверный формат файла. Поддерживаются только .xls и .xlsx");
@@ -38,7 +39,7 @@ export default function Pricelist() {
 		formData.append("file", selectedFile);
 
 		try {
-			const res = await fetch("/api/products/import-preview", {
+			const res = await fetch(`/api/products/import-preview?page=${page}`, {
 				method: "POST",
 				body: formData,
 			});
@@ -46,8 +47,9 @@ export default function Pricelist() {
 			if (!res.ok) throw new Error("Ошибка при получении превью");
 
 			const data = await res.json();
-			setPreview(data.rows);
-			setTotalRows(data.rows.length);
+			setPreview(data.rows); // Устанавливаем строки для текущей страницы
+			setTotalRows(data.rows.length); // Всего строк
+			setCurrentPage(page); // Обновляем текущую страницу
 			showSuccessToast(`Файл загружен. Строк: ${data.rows.length}`);
 		} catch (error: any) {
 			showErrorToast("Ошибка при загрузке превью");
@@ -136,6 +138,27 @@ export default function Pricelist() {
 					<button className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition" onClick={handleImport} disabled={loading}>
 						{loading ? "Импорт..." : "Импортировать товары"}
 					</button>
+
+					{/* Пагинация */}
+					<div className="flex justify-between mt-4">
+						<button
+							className="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400"
+							onClick={() => handlePreviewUpload(file!, currentPage - 1)}
+							disabled={currentPage === 1}
+						>
+							Назад
+						</button>
+
+						<button
+							className="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400"
+							onClick={() => handlePreviewUpload(file!, currentPage + 1)}
+							disabled={totalRows === null || totalRows <= currentPage * 1000}
+						>
+							Вперёд
+						</button>
+					</div>
+
+					<p className="mt-2 text-center text-gray-500">Страница {currentPage}</p>
 				</>
 			)}
 		</div>

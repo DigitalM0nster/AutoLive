@@ -1,5 +1,7 @@
+// src\app\admin\product-management\products\local_components\productList\ProductRow.tsx
 import { useState } from "react";
 import { EditableProduct, Category } from "@/lib/types";
+import { showErrorToast, showSuccessToast } from "@/components/ui/toast/toastService";
 
 export default function ProductRow({
 	product,
@@ -25,6 +27,8 @@ export default function ProductRow({
 	const [imageFile, setImageFile] = useState<File | null>(null);
 	const [imagePreview, setImagePreview] = useState<string | null>(product.image || null);
 
+	const [errors, setErrors] = useState<Partial<Record<keyof typeof form, string>>>({});
+
 	const [isSaving, setIsSaving] = useState(false);
 
 	const isStale = (updatedAt: string) => {
@@ -35,6 +39,21 @@ export default function ProductRow({
 	const handleSave = async () => {
 		setIsSaving(true);
 
+		// Валидация
+		const validationErrors: typeof errors = {};
+		if (!form.title.trim()) validationErrors.title = "Укажите название";
+		if (!form.sku.trim()) validationErrors.sku = "Укажите артикул";
+		if (!form.brand.trim()) validationErrors.brand = "Укажите бренд";
+		if (!form.price || isNaN(parseFloat(form.price))) validationErrors.price = "Некорректная цена";
+
+		if (Object.keys(validationErrors).length > 0) {
+			showErrorToast("Заполните обязательные поля");
+			setErrors(validationErrors);
+			setIsSaving(false);
+			return;
+		}
+
+		setErrors({}); // очистка ошибок
 		let imageUrl = form.image;
 
 		if (imageFile) {
@@ -49,7 +68,7 @@ export default function ProductRow({
 				const uploadJson = await uploadRes.json();
 				imageUrl = uploadJson.url;
 			} catch (uploadErr) {
-				alert("Ошибка загрузки изображения");
+				showErrorToast("Ошибка загрузки изображения");
 				setIsSaving(false);
 				return;
 			}
@@ -78,25 +97,30 @@ export default function ProductRow({
 
 				const selectedCategory = categories.find((c) => c.id === savedProduct.categoryId);
 				const updatedProduct: EditableProduct = {
-					...product,
-					...form,
 					id: savedProduct.id,
-					image: imageUrl,
-					price: parseFloat(form.price),
+					sku: savedProduct.sku,
+					title: savedProduct.title,
+					description: savedProduct.description || "",
+					price: savedProduct.price,
+					brand: savedProduct.brand,
+					image: savedProduct.image,
 					categoryId: savedProduct.categoryId,
 					categoryTitle: selectedCategory?.title || "—",
-					updatedAt: new Date().toISOString(),
+					createdAt: savedProduct.createdAt,
+					updatedAt: savedProduct.updatedAt || new Date().toISOString(),
+					filters: savedProduct.filters || [],
 				};
 
 				onUpdate(updatedProduct);
 				setIsEditing(false);
 				setImageFile(null);
 				setImagePreview(imageUrl);
+				showSuccessToast("Товар сохранён");
 			} else {
-				alert("Ошибка при сохранении товара");
+				showErrorToast("Ошибка при сохранении товара");
 			}
 		} catch (err) {
-			alert("Ошибка сети");
+			showErrorToast("Ошибка сети");
 		} finally {
 			setIsSaving(false);
 		}
@@ -112,11 +136,12 @@ export default function ProductRow({
 
 			if (res.ok) {
 				onDelete(product.id);
+				showSuccessToast("Товар удалён");
 			} else {
-				alert("Ошибка при удалении товара");
+				showErrorToast("Ошибка при удалении товара");
 			}
 		} catch (err) {
-			alert("Ошибка сети");
+			showErrorToast("Ошибка сети");
 		}
 	};
 
@@ -124,14 +149,34 @@ export default function ProductRow({
 		<tr className={isStale(product.updatedAt) ? "bg-yellow-50" : ""}>
 			<td className="border border-black/10 px-2 py-1 w-1/6">
 				{isEditing ? (
-					<input type="text" value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} className="w-full border px-1 py-0.5 text-sm rounded" />
+					<input
+						type="text"
+						value={form.brand}
+						onChange={(e) => {
+							setForm({ ...form, brand: e.target.value });
+							if (errors.brand) {
+								setErrors((prev) => ({ ...prev, brand: undefined }));
+							}
+						}}
+						className={`w-full border px-1 py-0.5 text-sm rounded ${errors.brand ? "border-red-500 bg-red-100" : ""}`}
+					/>
 				) : (
 					product.brand
 				)}
 			</td>
 			<td className="border border-black/10 px-2 py-1 w-1/6">
 				{isEditing ? (
-					<input type="text" value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} className="w-full border px-1 py-0.5 text-sm rounded" />
+					<input
+						type="text"
+						value={form.sku}
+						onChange={(e) => {
+							setForm({ ...form, sku: e.target.value });
+							if (errors.sku) {
+								setErrors((prev) => ({ ...prev, sku: undefined }));
+							}
+						}}
+						className={`w-full border px-1 py-0.5 text-sm rounded ${errors.sku ? "border-red-500 bg-red-100" : ""}`}
+					/>
 				) : (
 					product.sku
 				)}
@@ -139,7 +184,17 @@ export default function ProductRow({
 
 			<td className="border border-black/10 px-2 py-1 w-1/6">
 				{isEditing ? (
-					<input type="text" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full border px-1 py-0.5 text-sm rounded" />
+					<input
+						type="text"
+						value={form.title}
+						onChange={(e) => {
+							setForm({ ...form, title: e.target.value });
+							if (errors.title) {
+								setErrors((prev) => ({ ...prev, title: undefined }));
+							}
+						}}
+						className={`w-full border px-1 py-0.5 text-sm rounded ${errors.title ? "border-red-500 bg-red-100" : ""}`}
+					/>
 				) : (
 					product.title
 				)}
@@ -150,7 +205,7 @@ export default function ProductRow({
 					<textarea
 						value={form.description}
 						onChange={(e) => setForm({ ...form, description: e.target.value })}
-						className="w-full border px-1 py-0.5 text-sm rounded resize-none h-[60px]"
+						className="w-full border px-1 py-0.5 text-sm rounded h-[26px]"
 					/>
 				) : (
 					<p className="text-xs text-gray-600 line-clamp-2">{product.description || "—"}</p>
@@ -159,7 +214,17 @@ export default function ProductRow({
 
 			<td className="border border-black/10 px-2 py-1 w-1/6">
 				{isEditing ? (
-					<input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className="w-full border px-1 py-0.5 text-sm rounded" />
+					<input
+						type="number"
+						value={form.price}
+						onChange={(e) => {
+							setForm({ ...form, price: e.target.value });
+							if (errors.price) {
+								setErrors((prev) => ({ ...prev, price: undefined }));
+							}
+						}}
+						className={`w-full border px-1 py-0.5 text-sm rounded ${errors.price ? "border-red-500 bg-red-100" : ""}`}
+					/>
 				) : (
 					`${product.price} ₽`
 				)}

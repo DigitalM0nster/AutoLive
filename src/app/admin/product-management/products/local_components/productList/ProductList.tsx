@@ -1,26 +1,28 @@
-// src\app\admin\product-management\items\local_components\productList\ProductList.tsx
-
+// src\app\admin\product-management\products\local_components\productList\ProductList.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ProductFilterPanel from "./ProductFilterPanel";
 import ProductTable from "./ProductTable";
 import type { Product, Category } from "@/lib/types";
+import useDebounce from "@/hooks/useDebounce";
 
 export default function ProductList() {
+	// Состояния для данных
 	const [products, setProducts] = useState<Product[]>([]);
 	const [brands, setBrands] = useState<string[]>([]);
 	const [categories, setCategories] = useState<Category[]>([]);
-
 	const [search, setSearch] = useState("");
+	// Используем хук дебаунса – задержка 500 мс
+	const debouncedSearch = useDebounce(search, 500);
+
 	const [brandFilter, setBrandFilter] = useState("");
 	const [categoryFilter, setCategoryFilter] = useState("");
 	const [onlyStale, setOnlyStale] = useState(false);
 
-	const [page, setPage] = useState(1);
-	const [totalPages, setTotalPages] = useState(1);
+	// Пагинация с курсором
+	const [cursor, setCursor] = useState<string | null>(null);
 	const [loading, setLoading] = useState(false);
-
 	const [sortBy, setSortBy] = useState("createdAt");
 	const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
@@ -41,42 +43,64 @@ export default function ProductList() {
 		fetchInitialData();
 	}, []);
 
-	// Сброс страницы при фильтрах
+	// При изменении фильтров (включая debouncedSearch) сбрасываем список товаров и курсор, чтобы начать сначала
 	useEffect(() => {
-		setPage(1);
-	}, [search, brandFilter, categoryFilter, sortBy, sortOrder, onlyStale]);
-
-	// Загрузка товаров
-	useEffect(() => {
-		const fetchProducts = async () => {
-			setLoading(true);
-			const params = new URLSearchParams({
-				page: page.toString(),
-				limit: "10",
-				sortBy,
-				order: sortOrder,
-			});
-
-			if (onlyStale) params.append("onlyStale", "true");
-			if (search.trim()) params.append("search", search.trim());
-			if (brandFilter) params.append("brand", brandFilter);
-			if (categoryFilter) params.append("categoryId", categoryFilter);
-
-			try {
-				const res = await fetch(`/api/products?${params.toString()}`);
-				const data = await res.json();
-
-				setTotalPages(data.totalPages);
-				setProducts(data.products);
-			} catch (error) {
-				console.error("Ошибка при загрузке товаров", error);
-			} finally {
-				setLoading(false);
-			}
-		};
-
+		setProducts([]);
+		setCursor(null);
 		fetchProducts();
-	}, [page, brandFilter, categoryFilter, search, sortBy, sortOrder, onlyStale]);
+	}, [debouncedSearch, brandFilter, categoryFilter, sortBy, sortOrder, onlyStale]);
+
+	// Отмена предыдущих запросов при быстром вводе
+	const abortControllerRef = useRef<AbortController | null>(null);
+
+	const fetchProducts = async (cursorParam: string | null = null) => {
+		if (abortControllerRef.current) {
+			abortControllerRef.current.abort();
+		}
+		const controller = new AbortController();
+		abortControllerRef.current = controller;
+
+		setLoading(true);
+		const params = new URLSearchParams({
+			limit: "10",
+			sortBy,
+			order: sortOrder,
+		});
+		if (cursorParam) params.append("cursor", cursorParam);
+		if (onlyStale) params.append("onlyStale", "true");
+		if (brandFilter) params.append("brand", brandFilter);
+		if (categoryFilter) params.append("categoryId", categoryFilter);
+		// Передаем debouncedSearch, чтобы не отправлять слишком часто запросы
+		if (debouncedSearch) params.append("search", debouncedSearch);
+
+		try {
+			const res = await fetch(`/api/products?${params.toString()}`, {
+				signal: controller.signal,
+			});
+			const data = await res.json();
+
+			if (cursorParam) {
+				setProducts((prev) => [...prev, ...data.products]);
+			} else {
+				setProducts(data.products);
+			}
+			setCursor(data.nextCursor);
+		} catch (error: any) {
+			if (error.name === "AbortError") {
+				console.log("Запрос отменён");
+			} else {
+				console.error("Ошибка при загрузке товаров", error);
+			}
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const handleLoadMore = () => {
+		if (cursor) {
+			fetchProducts(cursor);
+		}
+	};
 
 	const handleSort = (column: string) => {
 		if (sortBy === column) {
@@ -100,10 +124,6 @@ export default function ProductList() {
 				setBrandFilter={setBrandFilter}
 				onlyStale={onlyStale}
 				setOnlyStale={setOnlyStale}
-				sortBy={sortBy}
-				setSortBy={setSortBy}
-				sortOrder={sortOrder}
-				setSortOrder={setSortOrder}
 				resetFilters={() => {
 					setSearch("");
 					setBrandFilter("");
@@ -111,19 +131,52 @@ export default function ProductList() {
 					setSortBy("createdAt");
 					setSortOrder("desc");
 					setOnlyStale(false);
-					setPage(1);
+					setProducts([]);
+					setCursor(null);
+					fetchProducts();
 				}}
 			/>
-			<ProductTable products={products} sortBy={sortBy} sortOrder={sortOrder} handleSort={handleSort} loading={loading} categories={categories} />
 
-			{/* NAV MENU */}
-			{totalPages > 1 && (
-				<div className="mt-4 flex justify-center gap-2">
-					{Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-						<button key={p} onClick={() => setPage(p)} className={`px-3 py-1 rounded border border-black/10 ${page === p ? "bg-blue-600 text-white" : "bg-white"}`}>
-							{p}
-						</button>
-					))}
+			<ProductTable
+				products={products}
+				sortBy={sortBy}
+				sortOrder={sortOrder}
+				handleSort={handleSort}
+				loading={loading}
+				categories={categories}
+				onProductUpdate={(updatedProduct) => {
+					if (updatedProduct.id === "new") return;
+
+					const cleanedProduct: Product = {
+						id: updatedProduct.id,
+						sku: updatedProduct.sku,
+						title: updatedProduct.title,
+						description: updatedProduct.description,
+						price: updatedProduct.price,
+						brand: updatedProduct.brand,
+						image: updatedProduct.image,
+						categoryId: updatedProduct.categoryId,
+						categoryTitle: updatedProduct.categoryTitle,
+						createdAt: updatedProduct.createdAt,
+						updatedAt: updatedProduct.updatedAt,
+						filters: updatedProduct.filters,
+					};
+
+					setProducts((prev) => {
+						const exists = prev.some((p) => p.id === cleanedProduct.id);
+						if (exists) {
+							return prev.map((p) => (p.id === cleanedProduct.id ? cleanedProduct : p));
+						}
+						return [...prev, cleanedProduct];
+					});
+				}}
+			/>
+
+			{!loading && cursor && (
+				<div className="mt-4 flex justify-center">
+					<button onClick={handleLoadMore} className="px-4 py-2 rounded bg-blue-600 text-white">
+						Загрузить ещё
+					</button>
 				</div>
 			)}
 		</div>

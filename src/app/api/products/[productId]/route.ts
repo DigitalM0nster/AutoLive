@@ -4,10 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
 // GET – Получение товара по ID
-export async function GET(_req: Request, context: { params: { productId: string } }) {
-	const { productId } = context.params;
-
-	console.log("🔍 Получаем товар по ID:", productId);
+export async function GET(_req: NextRequest, context: { params: Promise<{ productId: string }> }) {
+	const { productId } = await context.params;
 
 	try {
 		const id = parseInt(productId);
@@ -74,8 +72,8 @@ export async function GET(_req: Request, context: { params: { productId: string 
 }
 
 // PUT – Редактирование товара по ID
-export async function PUT(req: NextRequest, context: { params: { productId: string } }) {
-	const { productId } = context.params;
+export async function PUT(req: NextRequest, context: { params: Promise<{ productId: string }> }) {
+	const { productId } = await context.params;
 	const body = await req.json();
 
 	try {
@@ -104,8 +102,8 @@ export async function PUT(req: NextRequest, context: { params: { productId: stri
 }
 
 // DELETE – Удаление товара по ID
-export async function DELETE(req: Request, context: { params: { productId: string } }) {
-	const { productId } = context.params;
+export async function DELETE(_req: NextRequest, context: { params: Promise<{ productId: string }> }) {
+	const { productId } = await context.params;
 
 	try {
 		const id = parseInt(productId);
@@ -118,10 +116,16 @@ export async function DELETE(req: Request, context: { params: { productId: strin
 			return NextResponse.json({ error: "Товар не найден" }, { status: 404 });
 		}
 
+		await prisma.productFilterValue.deleteMany({ where: { productId: id } });
+		await prisma.productAnalog.deleteMany({ where: { OR: [{ productId: id }, { analogId: id }] } });
+		await prisma.serviceKitItem.deleteMany({ where: { OR: [{ productId: id }, { analogProductId: id }] } });
+
 		await prisma.product.delete({ where: { id } });
+
 		return NextResponse.json({ success: true });
 	} catch (error) {
-		console.error("Ошибка удаления продукта:", error);
+		console.error("Ошибка при удалении товара:", error);
 		return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
 	}
 }
+`z`;

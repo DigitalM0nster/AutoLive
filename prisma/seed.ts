@@ -55,14 +55,14 @@ async function main() {
 	]);
 
 	const categories = [
-		{ title: "Масла", slug: "masla", image: "/images/maslo.svg" },
-		{ title: "Жидкости", slug: "zhidkosti", image: "/images/water.svg" },
-		{ title: "Фильтра", slug: "filtry", image: "/images/filters.svg" },
-		{ title: "Прокладки", slug: "prokladki", image: "/images/prokladki.svg" },
-		{ title: "Приводные ремни", slug: "remni", image: "/images/grm.svg" },
-		{ title: "Тормозные колодки", slug: "kolodki", image: "/images/kolodki.svg" },
-		{ title: "Тормозные диски", slug: "diski", image: "/images/diski.svg" },
-		{ title: "Аксессуары", slug: "aksessuary", image: "/images/aksesuary.svg" },
+		{ title: "Масла", image: "/images/maslo.svg" },
+		{ title: "Жидкости", image: "/images/water.svg" },
+		{ title: "Фильтра", image: "/images/filters.svg" },
+		{ title: "Прокладки", image: "/images/prokladki.svg" },
+		{ title: "Приводные ремни", image: "/images/grm.svg" },
+		{ title: "Тормозные колодки", image: "/images/kolodki.svg" },
+		{ title: "Тормозные диски", image: "/images/diski.svg" },
+		{ title: "Аксессуары", image: "/images/aksesuary.svg" },
 	];
 
 	for (const [index, cat] of categories.entries()) {
@@ -85,11 +85,12 @@ async function main() {
 			},
 		});
 
+		const skuPrefix = category.title.replace(/\s/g, "").toUpperCase();
 		for (let i = 1; i <= 3; i++) {
 			await prisma.product.create({
 				data: {
 					title: `${category.title} Товар ${i}`,
-					sku: `${category.slug.toUpperCase()}-00${i}`,
+					sku: `${skuPrefix}-00${i}`,
 					price: 1000 + i * 100,
 					categoryId: category.id,
 					productFilterValues: {
