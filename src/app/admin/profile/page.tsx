@@ -134,7 +134,7 @@ export default function AdminProfilePage() {
 	// ЕСЛИ ДАННЫЕ НЕ ПРИШЛИ
 	if (!isProfileLoaded) {
 		return (
-			<div className="max-w-xl mx-auto mt-28 p-6 bg-white border rounded-xl shadow text-center text-red-700">
+			<div className="max-w-xl mx-auto mt-28 p-6 bg-white border border-black/10 rounded-xl shadow text-center text-red-700">
 				<h2 className="text-xl font-semibold mb-2">Ошибка</h2>
 				<p>Не удалось загрузить данные профиля. Пожалуйста, попробуйте позже.</p>
 			</div>
@@ -181,7 +181,13 @@ export default function AdminProfilePage() {
 				<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 					<div>
 						<label className="block text-sm font-medium mb-1">Имя</label>
-						<input type="text" value={firstName} placeholder="Введите имя" onChange={(e) => setFirstName(e.target.value)} className="w-full border rounded px-3 py-2" />
+						<input
+							type="text"
+							value={firstName}
+							placeholder="Введите имя"
+							onChange={(e) => setFirstName(e.target.value)}
+							className="w-full border border-black/10 rounded px-3 py-2"
+						/>
 					</div>
 					<div>
 						<label className="block text-sm font-medium mb-1">Фамилия</label>
@@ -190,7 +196,7 @@ export default function AdminProfilePage() {
 							value={lastName}
 							placeholder="Введите фамилию"
 							onChange={(e) => setLastName(e.target.value)}
-							className="w-full border rounded px-3 py-2"
+							className="w-full border border-black/10 rounded px-3 py-2"
 						/>
 					</div>
 					<div className="sm:col-span-2">
@@ -200,7 +206,7 @@ export default function AdminProfilePage() {
 							value={phone}
 							placeholder="Введите номер телефона"
 							onChange={(e) => setPhone(e.target.value)}
-							className="w-full border rounded px-3 py-2"
+							className="w-full border border-black/10 rounded px-3 py-2"
 						/>
 					</div>
 				</div>
@@ -217,7 +223,7 @@ export default function AdminProfilePage() {
 								setCurrentPassword(e.target.value);
 								if (errors.currentPassword) setErrors((prev) => ({ ...prev, currentPassword: false }));
 							}}
-							className={`w-full border rounded px-3 py-2 ${errors.currentPassword ? "border-red-500 text-red-700 placeholder-red-400" : ""}`}
+							className={`w-full border border-black/10 rounded px-3 py-2 ${errors.currentPassword ? "border-red-500 text-red-700 placeholder-red-400" : ""}`}
 						/>
 						<input
 							type="password"
@@ -227,7 +233,7 @@ export default function AdminProfilePage() {
 								setNewPassword(e.target.value);
 								if (errors.newPassword) setErrors((prev) => ({ ...prev, newPassword: false }));
 							}}
-							className={`w-full border rounded px-3 py-2 ${errors.newPassword ? "border-red-500 text-red-700 placeholder-red-400" : ""}`}
+							className={`w-full border border-black/10 rounded px-3 py-2 ${errors.newPassword ? "border-red-500 text-red-700 placeholder-red-400" : ""}`}
 						/>
 					</div>
 				</div>

@@ -30,7 +30,7 @@ export const adminRoutesMeta: Record<string, AdminRouteMeta> = {
 		icon: FileText,
 		bg: "from-pink-400 to-pink-600",
 	},
-	products: {
+	"product-management": {
 		label: "Управление товарами",
 		icon: Package,
 		description: "Категории, товары, Комплекты ТО",
@@ -38,7 +38,7 @@ export const adminRoutesMeta: Record<string, AdminRouteMeta> = {
 	},
 	profile: { label: "Редактирование профиля" },
 	categories: { label: "Категории" },
-	items: { label: "Товары" },
+	products: { label: "Товары" },
 	kits: { label: "Комплекты ТО" },
 	clients: { label: "Клиенты" },
 	managers: { label: "Менеджеры" },

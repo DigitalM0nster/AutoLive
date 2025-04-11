@@ -4,14 +4,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { cookies } from "next/headers";
 
 export async function POST(req: NextRequest) {
 	try {
 		const { phone, password } = await req.json();
 
 		if (!phone || !password) {
-			return NextResponse.json({ error: "Введите телефон и пароль" }, { status: 400 });
+			return NextResponse.json({ error: "Введите телефон и пароль", code: "MISSING_CREDENTIALS" }, { status: 400 });
 		}
 
 		const user = await prisma.user.findUnique({
@@ -19,17 +18,17 @@ export async function POST(req: NextRequest) {
 		});
 
 		if (!user) {
-			return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });
+			return NextResponse.json({ error: "Пользователь не найден", code: "USER_NOT_FOUND" }, { status: 404 });
 		}
 
 		const isValid = await bcrypt.compare(password, user.password);
 		if (!isValid) {
-			return NextResponse.json({ error: "Неверный пароль" }, { status: 401 });
+			return NextResponse.json({ error: "Неверный пароль", code: "INVALID_PASSWORD" }, { status: 401 });
 		}
 
 		if (!process.env.JWT_SECRET) {
 			console.error("❌ JWT_SECRET не задан в .env");
-			return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
+			return NextResponse.json({ error: "Ошибка сервера", code: "SERVER_ERROR" }, { status: 500 });
 		}
 
 		const token = jwt.sign(
@@ -53,6 +52,6 @@ export async function POST(req: NextRequest) {
 		return response;
 	} catch (error) {
 		console.error("Ошибка логина:", error);
-		return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
+		return NextResponse.json({ error: "Ошибка сервера", code: "SERVER_ERROR" }, { status: 500 });
 	}
 }

@@ -79,7 +79,7 @@ model Category {
 model Product {
     id          Int      @id @default(autoincrement()) @map("id")
     title       String   @map("title")
-    sku         String   @unique @map("sku")
+    sku         String   @map("sku")
     brand       String   @default("UNKNOWN") @map("brand")
     price       Float    @map("price")
     description String?  @map("description")
@@ -91,13 +91,13 @@ model Product {
     category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
     productFilterValues ProductFilterValue[]
+    analogsFrom         ProductAnalog[]      @relation("ProductToAnalog")
+    analogsTo           ProductAnalog[]      @relation("AnalogToProduct")
+    OrderItem           OrderItem[]
+    serviceKitItems     ServiceKitItem[]     @relation("KitItemProduct")
+    analogInKits        ServiceKitItem[]     @relation("KitItemAnalog")
 
-    analogsFrom     ProductAnalog[]  @relation("ProductToAnalog")
-    analogsTo       ProductAnalog[]  @relation("AnalogToProduct")
-    OrderItem       OrderItem[]
-    serviceKitItems ServiceKitItem[] @relation("KitItemProduct")
-    analogInKits    ServiceKitItem[] @relation("KitItemAnalog")
-
+    @@index([sku, brand]) // ✅ индекс для поиска
     @@map("product")
 }
 

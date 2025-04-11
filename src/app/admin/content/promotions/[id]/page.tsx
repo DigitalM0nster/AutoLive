@@ -54,11 +54,36 @@ export default function EditPromotionPage() {
 				</div>
 			) : (
 				<form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded shadow">
-					<input type="text" placeholder="Название" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full border px-4 py-2 rounded" required />
-					<textarea placeholder="Описание" value={description} onChange={(e) => setDescription(e.target.value)} className="w-full border px-4 py-2 rounded" required />
+					<input
+						type="text"
+						placeholder="Название"
+						value={title}
+						onChange={(e) => setTitle(e.target.value)}
+						className="w-full border border-black/10 px-4 py-2 rounded"
+						required
+					/>
+					<textarea
+						placeholder="Описание"
+						value={description}
+						onChange={(e) => setDescription(e.target.value)}
+						className="w-full border border-black/10 px-4 py-2 rounded"
+						required
+					/>
 					<ImageUploader imageUrl={imageUrl} setImageUrl={setImageUrl} />
-					<input type="text" placeholder="Текст кнопки" value={buttonText} onChange={(e) => setButtonText(e.target.value)} className="w-full border px-4 py-2 rounded" />
-					<input type="text" placeholder="Ссылка кнопки" value={buttonLink} onChange={(e) => setButtonLink(e.target.value)} className="w-full border px-4 py-2 rounded" />
+					<input
+						type="text"
+						placeholder="Текст кнопки"
+						value={buttonText}
+						onChange={(e) => setButtonText(e.target.value)}
+						className="w-full border border-black/10 px-4 py-2 rounded"
+					/>
+					<input
+						type="text"
+						placeholder="Ссылка кнопки"
+						value={buttonLink}
+						onChange={(e) => setButtonLink(e.target.value)}
+						className="w-full border border-black/10 px-4 py-2 rounded"
+					/>
 					<button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
 						Сохранить
 					</button>

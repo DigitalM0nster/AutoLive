@@ -8,7 +8,10 @@ export default function AdminPageWrapper({ children }: { children: React.ReactNo
 	const headerHeight = useHeaderHeight();
 
 	return (
-		<div style={{ paddingTop: headerHeight }} className="screen">
+		<div
+			className="screen bg-gray-50"
+			// style={{ paddingTop: headerHeight }}
+		>
 			{children}
 		</div>
 	);

@@ -22,7 +22,7 @@ export default function PromoCard({ promo, onDelete }: Props) {
 	};
 
 	return (
-		<div ref={setNodeRef} style={style} {...attributes} className="flex gap-4 items-center bg-white rounded-xl shadow hover:shadow-md border px-4 py-3">
+		<div ref={setNodeRef} style={style} {...attributes} className="flex gap-4 items-center bg-white rounded-xl shadow hover:shadow-md border border-black/10 px-4 py-3">
 			{/* Перетаскиватель */}
 			<div {...listeners} className="text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing" title="Перетащить">
 				<GripVertical size={18} />

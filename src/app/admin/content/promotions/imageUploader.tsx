@@ -40,12 +40,12 @@ export default function ImageUploader({ imageUrl, setImageUrl }: Props) {
 					<img
 						src={imageUrl}
 						alt="Загруженное изображение"
-						className="w-full h-64 object-cover rounded-xl shadow-md border transition-transform group-hover:scale-[1.01]"
+						className="w-full h-64 object-cover rounded-xl shadow-md border border-black/10 transition-transform group-hover:scale-[1.01]"
 					/>
 					<button
 						type="button"
 						onClick={removeImage}
-						className="absolute top-3 right-3 bg-white text-red-600 border border-red-300 p-2 rounded-full shadow hover:bg-red-50 transition"
+						className="absolute top-3 right-3 bg-white text-red-600  border-red-300 p-2 rounded-full shadow hover:bg-red-50 transition"
 					>
 						<Trash2 size={18} />
 					</button>

@@ -1,7 +1,7 @@
 export default function ProfileSkeleton() {
 	return (
 		<>
-			<div className="max-w-2xl mx-auto mt-28 p-6 bg-white rounded-xl shadow border animate-pulse">
+			<div className="max-w-2xl mx-auto mt-28 p-6 bg-white rounded-xl shadow border border-black/10 animate-pulse">
 				<h1 className="text-2xl font-bold mb-6 text-center bg-gray-200 h-6 w-2/3 mx-auto rounded"></h1>
 
 				<div className="flex flex-col items-center mb-8">

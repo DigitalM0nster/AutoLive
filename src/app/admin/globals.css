@@ -9,5 +9,10 @@ button {
 }
 
 .screen {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	min-height: calc(100dvh - 0px);
 	padding: 100px 0px 0px 0px;
 }

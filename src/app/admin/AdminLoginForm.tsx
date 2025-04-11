@@ -1,14 +1,36 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
+import { showErrorToast } from "@/components/ui/toast/toastService";
+import PhoneInput from "@/components/ui/phoneInput/PhoneInput";
 
 export default function AdminLoginForm() {
 	const [phone, setPhone] = useState("");
 	const [password, setPassword] = useState("");
-	const [error, setError] = useState("");
+	// Отдельные состояния для ошибок каждого поля
+	const [phoneError, setPhoneError] = useState("");
+	const [passwordError, setPasswordError] = useState("");
 	const [loading, setLoading] = useState(false);
 
 	const handleLogin = async () => {
+		// Сброс ошибок перед новой попыткой
+		setPhoneError("");
+		setPasswordError("");
+
+		let hasError = false;
+		if (phone.trim() === "") {
+			setPhoneError("Введите телефон");
+			showErrorToast("Введите телефон");
+			hasError = true;
+		}
+		if (password.trim() === "") {
+			setPasswordError("Введите пароль");
+			showErrorToast("Введите пароль");
+			hasError = true;
+		}
+		if (hasError) return;
+
 		if (loading) return;
 		setLoading(true);
 		const res = await fetch("/api/admin/auth/login", {
@@ -22,8 +44,18 @@ export default function AdminLoginForm() {
 		setLoading(false);
 
 		if (!res.ok) {
-			setError(data.error || "Ошибка авторизации");
+			// При ошибке можно анализировать message и, например,
+			// если ошибка содержит "телефон" или "пароль", подсвечивать соответствующее поле
+			if (data.error.toLowerCase().includes("телефон")) {
+				setPhoneError(data.error);
+			} else if (data.error.toLowerCase().includes("пароль")) {
+				setPasswordError(data.error);
+			}
+			showErrorToast(data.error || "Ошибка авторизации");
 		} else {
+			// Очистка ошибок при успешном логине
+			setPhoneError("");
+			setPasswordError("");
 			window.location.href = "/admin/dashboard";
 		}
 	};
@@ -35,27 +67,35 @@ export default function AdminLoginForm() {
 	};
 
 	return (
-		<div className="max-w-md mx-auto mt-20 p-8 bg-white/80 backdrop-blur rounded-2xl shadow-lg border">
-			<h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Вход в админку</h2>
+		<div className="max-w-md mx-auto p-8 bg-white/80 rounded shadow-lg">
+			<h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Вход в админ-панель</h2>
 
 			<div className="space-y-4">
-				<input
-					type="text"
-					placeholder="Телефон"
-					value={phone}
-					onChange={(e) => setPhone(e.target.value)}
-					onKeyDown={handleKeyDown}
-					className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-				/>
+				<div>
+					<PhoneInput
+						value={phone}
+						onValueChange={(rawValue: string, formattedValue: string) => setPhone(rawValue)}
+						inputClassName={`w-full px-4 py-3 rounded-lg border border-black/10 transition 
+              ${phoneError ? "border-red-500" : "border-gray-300"} 
+              focus:outline-none focus:ring-2 focus:ring-blue-500`}
+						onKeyDown={handleKeyDown}
+					/>
+					{phoneError && <p className="text-red-500 text-xs mt-1">{phoneError}</p>}
+				</div>
 
-				<input
-					type="password"
-					placeholder="Пароль"
-					value={password}
-					onChange={(e) => setPassword(e.target.value)}
-					onKeyDown={handleKeyDown}
-					className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-				/>
+				<div>
+					<input
+						type="password"
+						placeholder="Пароль"
+						value={password}
+						onChange={(e) => setPassword(e.target.value)}
+						onKeyDown={handleKeyDown}
+						className={`w-full px-4 py-3 rounded-lg border border-black/10 transition 
+              ${passwordError ? "border-red-500" : "border-gray-300"} 
+              focus:outline-none focus:ring-2 focus:ring-blue-500`}
+					/>
+					{passwordError && <p className="text-red-500 text-xs mt-1">{passwordError}</p>}
+				</div>
 
 				<button
 					onClick={handleLogin}
@@ -66,8 +106,12 @@ export default function AdminLoginForm() {
 				>
 					{loading ? "Вход..." : "Войти"}
 				</button>
+			</div>
 
-				{error && <p className="text-red-500 text-sm text-center mt-2">{error}</p>}
+			<div className="mt-4 text-center">
+				<Link href="/admin/reset-password" className="text-blue-500 hover:underline">
+					Забыли пароль?
+				</Link>
 			</div>
 		</div>
 	);

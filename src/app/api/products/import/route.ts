@@ -1,3 +1,5 @@
+// src\app\api\products\import\route.ts
+
 import { NextResponse } from "next/server";
 import { read, utils } from "xlsx";
 import { prisma } from "@/lib/prisma";
@@ -20,62 +22,72 @@ export async function POST(req: Request) {
 		let created = 0;
 		let updated = 0;
 
-		for (const row of rows.slice(1)) {
-			const sku = row[columns.sku]?.toString().trim();
-			const title = row[columns.title]?.toString().trim();
-			const priceRaw = row[columns.price];
-			const brand = row[columns.brand]?.toString().trim();
+		for (const [i, row] of rows.slice(1).entries()) {
+			try {
+				if (!row || row.every((cell) => cell === null || cell === undefined || cell === "")) continue;
 
-			const categoryIndex = columns.category;
-			const categoryTitle = categoryIndex !== -1 ? row[categoryIndex]?.toString().trim() : null;
+				const sku = row[columns.sku]?.toString().trim();
+				const title = row[columns.title]?.toString().trim();
+				const priceRaw = row[columns.price];
+				const brand = row[columns.brand]?.toString().trim();
 
-			if (!sku || !title || !priceRaw || !brand) continue;
+				if (!sku || !title || !priceRaw || !brand) continue;
 
-			const price = typeof priceRaw === "string" ? parseFloat(priceRaw.replace(",", ".")) : priceRaw;
+				const price = typeof priceRaw === "string" ? parseFloat(priceRaw.replace(",", ".")) : priceRaw;
 
-			let category = null;
-			if (categoryTitle) {
-				category = await prisma.category.upsert({
-					where: { title: categoryTitle },
-					update: {},
-					create: { title: categoryTitle },
+				const categoryIndex = columns.category;
+				const descriptionIndex = columns.description;
+
+				const categoryTitle = categoryIndex !== undefined && categoryIndex !== -1 ? row[categoryIndex]?.toString().trim() : null;
+				const description = descriptionIndex !== undefined && descriptionIndex !== -1 ? row[descriptionIndex]?.toString().trim() : null;
+
+				let category = null;
+				if (categoryTitle) {
+					category = await prisma.category.upsert({
+						where: { title: categoryTitle },
+						update: {},
+						create: { title: categoryTitle },
+					});
+				}
+
+				const existing = await prisma.product.findFirst({
+					where: { sku, brand },
 				});
-			}
 
-			const existing = await prisma.product.findFirst({
-				where: { sku, brand },
-			});
-
-			if (existing) {
-				await prisma.product.update({
-					where: { id: existing.id },
-					data: {
-						title,
-						price,
-						categoryId: category?.id || null,
-					},
-				});
-				updated++;
-			} else {
-				await prisma.product.create({
-					data: {
-						sku,
-						title,
-						brand,
-						price,
-						image: null,
-						description: null,
-						categoryId: category?.id || null,
-					},
-				});
-				created++;
+				if (existing) {
+					await prisma.product.update({
+						where: { id: existing.id },
+						data: {
+							title,
+							price,
+							categoryId: category?.id || null,
+							description: description || null,
+						},
+					});
+					updated++;
+				} else {
+					await prisma.product.create({
+						data: {
+							sku,
+							title,
+							brand,
+							price,
+							image: null,
+							description: description || null,
+							categoryId: category?.id || null,
+						},
+					});
+					created++;
+				}
+			} catch (err) {
+				console.warn(`⚠️ Ошибка при импорте строки ${i + 2}:`, err);
+				continue;
 			}
 		}
 
-		// ✅ Записываем лог
 		await prisma.importLog.create({
 			data: {
-				userId: 1, // заменить позже на ID текущего пользователя
+				userId: 1,
 				fileName: file.name,
 				created,
 				updated,

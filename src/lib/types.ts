@@ -20,10 +20,12 @@ export type Product = {
 	id: number;
 	sku: string;
 	title: string;
+	description: string;
 	price: number;
 	image?: string | null;
 	brand: string;
 	updatedAt: string;
+	categoryId?: number;
 	categoryTitle?: string;
 	filters: {
 		filterId: number;
@@ -31,6 +33,7 @@ export type Product = {
 		value: string;
 	}[];
 };
+export type EditableProduct = Omit<Product, "id"> & { id: number | "new" };
 
 export type ProductFilter = {
 	id: number;

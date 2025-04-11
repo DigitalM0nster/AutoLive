@@ -34,7 +34,7 @@ export default function AdminContentPage() {
 					<Link
 						key={href}
 						href={href}
-						className="group relative p-6 rounded-2xl border bg-white/80 backdrop-blur shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 hover:bg-white"
+						className="group relative p-6 rounded-2xl border border-black/10 bg-white/80 backdrop-blur shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 hover:bg-white"
 					>
 						<div className={`w-14 h-14 flex items-center justify-center rounded-xl mb-4 bg-gradient-to-br ${bg} text-white shadow-md`}>
 							<Icon className="w-6 h-6" />

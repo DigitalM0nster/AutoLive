@@ -18,7 +18,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 			<body>
 				<Header />
 				<AdminPageWrapper>{children}</AdminPageWrapper>
-				<Footer />
+				{/* <Footer /> */}
 				<ToastManager />
 			</body>
 		</html>
