@@ -23,9 +23,8 @@ model User {
     status     UserStatus @default(unverified) @map("status")
     createdAt  DateTime   @default(now()) @map("created_at")
 
-    adminId  Int?   @map("admin_id")
-    admin    User?  @relation("AdminManagers", fields: [adminId], references: [id])
-    managers User[] @relation("AdminManagers")
+    departmentId Int?        @map("department_id")
+    department   Department? @relation("DepartmentManagers", fields: [departmentId], references: [id])
 
     managerOrders Order[] @relation("ManagerOrders")
     clientOrders  Order[] @relation("ClientOrders")
@@ -87,8 +86,10 @@ model Product {
     createdAt   DateTime @default(now()) @map("created_at")
     updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
 
-    categoryId Int?      @map("category_id")
-    category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+    categoryId   Int?        @map("category_id")
+    category     Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+    departmentId Int?        @map("department_id")
+    department   Department? @relation(fields: [departmentId], references: [id])
 
     productFilterValues ProductFilterValue[]
     analogsFrom         ProductAnalog[]      @relation("ProductToAnalog")
@@ -198,8 +199,10 @@ model Order {
     status      OrderStatus @default(pending) @map("status")
     createdAt   DateTime    @default(now()) @map("created_at")
 
-    managerId Int  @map("manager_id")
-    manager   User @relation("ManagerOrders", fields: [managerId], references: [id])
+    managerId    Int         @map("manager_id")
+    manager      User        @relation("ManagerOrders", fields: [managerId], references: [id])
+    departmentId Int?        @map("department_id")
+    department   Department? @relation(fields: [departmentId], references: [id])
 
     clientId Int  @map("client_id")
     client   User @relation("ClientOrders", fields: [clientId], references: [id])
@@ -279,4 +282,19 @@ model ImportLog {
     createdAt DateTime @default(now())
     userId    Int
     user      User     @relation(fields: [userId], references: [id])
+}
+
+// ------------------------------
+// 🏢 Отделы
+// ------------------------------
+model Department {
+    id        Int      @id @default(autoincrement()) @map("id")
+    name      String   @map("name")
+    createdAt DateTime @default(now()) @map("created_at")
+
+    managers User[]    @relation("DepartmentManagers")
+    products Product[]
+    orders   Order[]
+
+    @@map("department")
 }

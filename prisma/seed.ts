@@ -9,6 +9,12 @@ async function main() {
 	console.log("🌱 Start seeding...");
 
 	const hash = await bcrypt.hash("1234", 10);
+	// Создаём отдел
+	const department = await prisma.department.create({
+		data: {
+			name: "Отдел №1",
+		},
+	});
 
 	const [superadmin, admin, manager, client] = await Promise.all([
 		prisma.user.create({
@@ -29,6 +35,7 @@ async function main() {
 				password: hash,
 				role: "admin",
 				status: "verified",
+				departmentId: department.id,
 			},
 		}),
 		prisma.user.create({
@@ -39,7 +46,7 @@ async function main() {
 				password: hash,
 				role: "manager",
 				status: "verified",
-				adminId: 2,
+				departmentId: department.id,
 			},
 		}),
 		prisma.user.create({
@@ -93,6 +100,7 @@ async function main() {
 					sku: `${skuPrefix}-00${i}`,
 					price: 1000 + i * 100,
 					categoryId: category.id,
+					departmentId: department.id, // ← Только здесь
 					productFilterValues: {
 						create: {
 							filterValueId: category.Filter[0].values[i % 2].id,

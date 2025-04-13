@@ -1,7 +1,6 @@
 // src\lib\api.ts
 
-import { prisma } from "./prisma";
-import { Category, ProductResponse, Promotion, ServiceKit } from "./types";
+import { Category, Promotion, ServiceKit } from "./types";
 
 // Получаем товары
 export async function getProductsByCategory(categoryId: string): Promise<{ category: Category } | { error: string }> {
