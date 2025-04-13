@@ -1,16 +1,7 @@
 // src\store\authStore.ts
 
 import { create } from "zustand";
-
-type Role = "superadmin" | "admin" | "manager" | "client";
-type User = {
-	id: number;
-	first_name: string;
-	last_name: string;
-	avatar: string;
-	phone: string;
-	role: Role;
-};
+import { User, Role } from "@/lib/types";
 
 type AuthStore = {
 	isLogined: boolean;

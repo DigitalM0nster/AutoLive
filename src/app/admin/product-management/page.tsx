@@ -1,14 +1,17 @@
-// src\app\admin\product-management\page.tsx
+"use client";
+
 import Link from "next/link";
 import { Package, ListOrdered, Wrench } from "lucide-react";
+import { useAuthStore } from "@/store/authStore";
 
-const sections = [
+const allSections = [
 	{
 		href: "/admin/product-management/categories",
 		label: "Категории",
 		desc: "Создание и настройка категорий товаров",
 		icon: ListOrdered,
 		bg: "from-purple-400 to-purple-600",
+		onlySuperadmin: true, // ← добавлено
 	},
 	{
 		href: "/admin/product-management/products",
@@ -27,6 +30,15 @@ const sections = [
 ];
 
 export default function ProductsDashboardPage() {
+	const { user } = useAuthStore();
+
+	const sections = allSections.filter((section) => {
+		if (section.onlySuperadmin) {
+			return user?.role === "superadmin";
+		}
+		return true;
+	});
+
 	return (
 		<div className="px-6 py-10 max-w-7xl mx-auto mb-auto">
 			<h1 className="text-3xl font-extrabold text-gray-900 mb-8">Управление товарами</h1>

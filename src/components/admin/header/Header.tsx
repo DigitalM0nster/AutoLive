@@ -1,5 +1,3 @@
-// src/components/admin/header/Header.tsx
-
 "use client";
 
 import Loading from "@/components/ui/loading/Loading";
@@ -7,6 +5,21 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Breadcrumbs from "../breadcrumbs/Breadcrumbs";
 import { useAuthStore } from "@/store/authStore";
+
+const getRoleName = (role: string) => {
+	switch (role) {
+		case "superadmin":
+			return "Суперадмин";
+		case "admin":
+			return "Админ";
+		case "manager":
+			return "Менеджер";
+		case "client":
+			return "Пользователь";
+		default:
+			return role;
+	}
+};
 
 export default function Header() {
 	const router = useRouter();
@@ -32,9 +45,13 @@ export default function Header() {
 					) : user ? (
 						<div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition" onClick={() => router.push("/admin/profile")}>
 							<img src={user.avatar || "/images/user_placeholder.png"} alt="avatar" className="w-8 h-8 rounded-full object-cover border" />
-							<span>
-								{user.first_name || "Админ"} <span className="text-gray-500 text-sm">({user.role})</span>
-							</span>
+							<div className="flex flex-col leading-tight">
+								<span>{user.first_name || "Пользователь"}</span>
+								<span className="text-gray-500 text-xs">
+									Роль: {getRoleName(user.role)}
+									{(user.role === "admin" || user.role === "manager") && user.department?.name && <> | Отдел: {user.department.name}</>}
+								</span>
+							</div>
 						</div>
 					) : (
 						<span>🔐 Войдите в свою учетную запись</span>

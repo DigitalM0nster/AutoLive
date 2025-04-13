@@ -5,12 +5,32 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { withPermission } from "@/middleware/permissionMiddleware";
 
-// Внутренний тип продукта, получаемый из Prisma с включённой категорией
-type ProductWithCategory = Prisma.ProductGetPayload<{
-	include: { category: true };
-}>;
+type ProductWithRelations = {
+	id: number;
+	title: string;
+	sku: string;
+	brand: string;
+	price: number;
+	description: string | null;
+	image: string | null;
+	createdAt: Date;
+	updatedAt: Date;
+	categoryId: number | null;
+	departmentId: number | null;
+	category: {
+		id: number;
+		title: string;
+		image: string | null;
+		createdAt: Date;
+		order: number;
+	} | null;
+	department: {
+		id: number;
+		name: string;
+		createdAt: Date;
+	} | null;
+};
 
-// Тип данных, который будет возвращаться клиенту
 type ProductResponse = {
 	id: number;
 	sku: string;
@@ -20,13 +40,16 @@ type ProductResponse = {
 	brand: string;
 	image: string | null;
 	createdAt: Date;
-	updatedAt: string; // Преобразуем в строку (ISO)
+	updatedAt: string;
 	categoryId: number | null;
 	departmentId: number | null;
 	categoryTitle: string;
+	department?: {
+		id: number;
+		name: string;
+	};
 };
 
-// 🔐 GET — доступен для admin/superadmin/manager
 export const GET = withPermission(
 	async (req, { user, scope }) => {
 		const { searchParams } = new URL(req.url);
@@ -52,7 +75,6 @@ export const GET = withPermission(
 					lt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30),
 				},
 			}),
-			// Ограничение по отделу (если это админ с department scope)
 			...(scope === "department" && user.departmentId ? { departmentId: user.departmentId } : {}),
 		};
 
@@ -63,7 +85,10 @@ export const GET = withPermission(
 				where,
 				take: limit,
 				orderBy,
-				include: { category: true },
+				include: {
+					category: true,
+					department: true,
+				},
 			};
 
 			if (cursor) {
@@ -71,13 +96,34 @@ export const GET = withPermission(
 				queryOptions.skip = 1;
 			}
 
-			// Получаем данные из базы; тип – ProductWithCategory[]
-			const products = await prisma.product.findMany({
-				...queryOptions,
-				include: { category: true },
+			const products: ProductWithRelations[] = await prisma.product.findMany({
+				where,
+				take: limit,
+				orderBy,
+				include: {
+					category: {
+						select: {
+							id: true,
+							title: true,
+							image: true,
+							createdAt: true,
+							order: true,
+						},
+					},
+					department: {
+						select: {
+							id: true,
+							name: true,
+							createdAt: true,
+						},
+					},
+				},
+				...(cursor && {
+					cursor: { id: parseInt(cursor) },
+					skip: 1,
+				}),
 			});
 
-			// Преобразуем их в тип, удобный для клиента (ProductResponse)
 			const mappedProducts: ProductResponse[] = products.map((p) => ({
 				id: p.id,
 				sku: p.sku,
@@ -91,16 +137,12 @@ export const GET = withPermission(
 				categoryId: p.categoryId,
 				departmentId: p.departmentId,
 				categoryTitle: p.category?.title || "—",
+				department: p.department ? { id: p.department.id, name: p.department.name } : undefined,
 			}));
 
 			const nextCursor = products.length === limit ? products[products.length - 1].id : null;
 
-			// Явно указываем ожидаемый тип ответа в NextResponse.json
-			return NextResponse.json<{
-				products: ProductResponse[];
-				nextCursor: number | null;
-				limit: number;
-			}>({
+			return NextResponse.json({
 				products: mappedProducts,
 				nextCursor,
 				limit,
@@ -112,45 +154,4 @@ export const GET = withPermission(
 	},
 	"edit_products",
 	["superadmin", "admin", "manager"]
-); // Доступ для чтения
-
-// 👇 POST — создание товара (только для админов и суперадминов)
-export const POST = withPermission(
-	async (req, { user }) => {
-		const body = await req.json();
-
-		if (
-			typeof body.title !== "string" ||
-			body.title.trim() === "" ||
-			typeof body.sku !== "string" ||
-			body.sku.trim() === "" ||
-			typeof body.brand !== "string" ||
-			body.brand.trim() === "" ||
-			typeof body.price !== "number" ||
-			isNaN(body.price)
-		) {
-			return NextResponse.json({ error: "Обязательные поля: title, sku, brand, price" }, { status: 400 });
-		}
-
-		try {
-			const product = await prisma.product.create({
-				data: {
-					title: body.title,
-					description: body.description,
-					sku: body.sku,
-					price: body.price,
-					brand: body.brand,
-					categoryId: body.categoryId,
-					image: body.image,
-					departmentId: user.departmentId ?? null,
-				},
-			});
-			return NextResponse.json({ product });
-		} catch (error) {
-			console.error("Ошибка создания продукта:", error);
-			return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
-		}
-	},
-	"edit_products",
-	["superadmin", "admin"]
 );

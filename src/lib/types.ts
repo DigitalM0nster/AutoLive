@@ -1,5 +1,21 @@
 // src\lib\types.ts
 
+export type Role = "superadmin" | "admin" | "manager" | "client";
+export type Department = {
+	id: number;
+	name: string;
+};
+
+export type User = {
+	id: number;
+	first_name: string;
+	last_name: string;
+	avatar: string;
+	phone: string;
+	role: Role;
+	department?: Department;
+};
+
 export type Category = {
 	id: number;
 	title: string;
@@ -28,6 +44,10 @@ export type Product = {
 	updatedAt: string;
 	categoryId: number | null;
 	categoryTitle: string;
+	department?: {
+		id: number;
+		name: string;
+	};
 	filters: {
 		filterId: number;
 		valueId: number;

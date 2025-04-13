@@ -1,9 +1,11 @@
 // src\app\admin\product-management\items\local_components\productList\ProductTable.tsx
+
 import { EditableProduct, Category } from "@/lib/types";
 import ProductRow from "./ProductRow";
 import { ArrowDown, ArrowUp, ArrowDownWideNarrow } from "lucide-react";
 import { useEffect, useState } from "react";
 import React from "react"; // Импорт React
+import { User } from "@/lib/types";
 
 type Props = {
 	products: EditableProduct[];
@@ -13,9 +15,10 @@ type Props = {
 	handleSort: (column: string) => void;
 	categories: Category[];
 	onProductUpdate: (updated: EditableProduct) => void;
+	user?: User | null;
 };
 
-const ProductTable = React.memo(({ products, loading, sortBy, sortOrder, handleSort, categories, onProductUpdate }: Props) => {
+const ProductTable = React.memo(({ products, loading, sortBy, sortOrder, handleSort, categories, user, onProductUpdate }: Props) => {
 	const renderSortIcon = (column: string) => {
 		if (sortBy !== column) {
 			return <ArrowDownWideNarrow size={14} className="inline-block text-gray-300 ml-1" />;
@@ -61,7 +64,7 @@ const ProductTable = React.memo(({ products, loading, sortBy, sortOrder, handleS
 			brand: "",
 			image: null,
 			description: "",
-			categoryId: undefined,
+			categoryId: null,
 			categoryTitle: "—",
 			createdAt: new Date().toISOString(),
 			updatedAt: new Date().toISOString(),
@@ -102,6 +105,8 @@ const ProductTable = React.memo(({ products, loading, sortBy, sortOrder, handleS
 							Категория {renderSortIcon("categoryTitle")}
 						</th>
 						<th className="border border-black/10 px-2 py-1 text-center w-1/6">Изображение</th>
+						{user?.role === "superadmin" && <th className="border border-black/10 px-2 py-1 cursor-default w-1/6">Отдел</th>}
+
 						<th className="border border-black/10 px-2 py-1 text-center w-1/6">Действия</th>
 					</tr>
 				</thead>
@@ -115,6 +120,7 @@ const ProductTable = React.memo(({ products, loading, sortBy, sortOrder, handleS
 								categories={categories}
 								onUpdate={handleProductUpdate}
 								onDelete={handleProductDelete}
+								user={user}
 							/>
 						))
 					) : (

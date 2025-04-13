@@ -6,8 +6,10 @@ import ProductFilterPanel from "./ProductFilterPanel";
 import ProductTable from "./ProductTable";
 import type { Product, Category } from "@/lib/types";
 import useDebounce from "@/hooks/useDebounce";
+import { useAuthStore } from "@/store/authStore";
 
 export default function ProductList() {
+	const { user } = useAuthStore();
 	// Состояния для данных
 	const [products, setProducts] = useState<Product[]>([]);
 	const [brands, setBrands] = useState<string[]>([]);
@@ -144,6 +146,7 @@ export default function ProductList() {
 				handleSort={handleSort}
 				loading={loading}
 				categories={categories}
+				user={user}
 				onProductUpdate={(updatedProduct) => {
 					if (updatedProduct.id === "new") return;
 

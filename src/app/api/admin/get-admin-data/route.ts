@@ -39,7 +39,12 @@ export async function GET() {
 				phone: true,
 				avatar: true,
 				role: true,
-				departmentId: true,
+				department: {
+					select: {
+						id: true,
+						name: true,
+					},
+				},
 			},
 		});
 

@@ -1,5 +1,3 @@
-// prisma/seed.ts
-
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 
@@ -8,15 +6,17 @@ const prisma = new PrismaClient();
 async function main() {
 	console.log("🌱 Start seeding...");
 
-	const hash = await bcrypt.hash("1234", 10);
-	// Создаём отдел
-	const department = await prisma.department.create({
-		data: {
-			name: "Отдел №1",
-		},
-	});
+	// Создаём отделы
+	const [department1, department2, department3] = await Promise.all([
+		prisma.department.create({ data: { name: "Отдел №1" } }),
+		prisma.department.create({ data: { name: "Отдел №2" } }),
+		prisma.department.create({ data: { name: "Отдел №3" } }),
+	]);
 
-	const [superadmin, admin, manager, client] = await Promise.all([
+	const hash = await bcrypt.hash("1234", 10);
+
+	// Создаём пользователей
+	const [superadmin, admin1, admin2, admin3, manager1, manager2, manager3, client] = await Promise.all([
 		prisma.user.create({
 			data: {
 				first_name: "Супер",
@@ -29,31 +29,75 @@ async function main() {
 		}),
 		prisma.user.create({
 			data: {
-				first_name: "Обычный",
-				last_name: "Админ",
+				first_name: "Админ",
+				last_name: "1",
 				phone: "9954091883",
 				password: hash,
 				role: "admin",
 				status: "verified",
-				departmentId: department.id,
+				departmentId: department1.id,
+			},
+		}),
+		prisma.user.create({
+			data: {
+				first_name: "Админ",
+				last_name: "2",
+				phone: "9954091886",
+				password: hash,
+				role: "admin",
+				status: "verified",
+				departmentId: department2.id,
+			},
+		}),
+		prisma.user.create({
+			data: {
+				first_name: "Админ",
+				last_name: "3",
+				phone: "9954091887",
+				password: hash,
+				role: "admin",
+				status: "verified",
+				departmentId: department3.id,
 			},
 		}),
 		prisma.user.create({
 			data: {
 				first_name: "Менеджер",
-				last_name: "Иван",
+				last_name: "1",
 				phone: "9954091884",
 				password: hash,
 				role: "manager",
 				status: "verified",
-				departmentId: department.id,
+				departmentId: department1.id,
+			},
+		}),
+		prisma.user.create({
+			data: {
+				first_name: "Менеджер",
+				last_name: "2",
+				phone: "9954091888",
+				password: hash,
+				role: "manager",
+				status: "verified",
+				departmentId: department2.id,
+			},
+		}),
+		prisma.user.create({
+			data: {
+				first_name: "Менеджер",
+				last_name: "3",
+				phone: "9954091889",
+				password: hash,
+				role: "manager",
+				status: "verified",
+				departmentId: department3.id,
 			},
 		}),
 		prisma.user.create({
 			data: {
 				first_name: "Пользователь",
 				last_name: "Илья",
-				phone: "9954091885",
+				phone: "9954091890",
 				password: hash,
 				role: "client",
 				status: "verified",
@@ -61,6 +105,7 @@ async function main() {
 		}),
 	]);
 
+	// Категории
 	const categories = [
 		{ title: "Масла", image: "/images/maslo.svg" },
 		{ title: "Жидкости", image: "/images/water.svg" },
@@ -100,7 +145,7 @@ async function main() {
 					sku: `${skuPrefix}-00${i}`,
 					price: 1000 + i * 100,
 					categoryId: category.id,
-					departmentId: department.id, // ← Только здесь
+					departmentId: department1.id,
 					productFilterValues: {
 						create: {
 							filterValueId: category.Filter[0].values[i % 2].id,
@@ -111,7 +156,7 @@ async function main() {
 		}
 	}
 
-	// Добавим аналоги (первый товар в каждой категории — аналог второго)
+	// Добавим аналоги
 	const allProducts = await prisma.product.findMany();
 	for (let i = 0; i < allProducts.length; i += 3) {
 		const p1 = allProducts[i];

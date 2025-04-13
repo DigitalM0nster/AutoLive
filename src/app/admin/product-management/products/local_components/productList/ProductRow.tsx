@@ -1,6 +1,6 @@
 // src\app\admin\product-management\products\local_components\productList\ProductRow.tsx
 import { useState } from "react";
-import { EditableProduct, Category } from "@/lib/types";
+import { EditableProduct, Category, User } from "@/lib/types";
 import { showErrorToast, showSuccessToast } from "@/components/ui/toast/toastService";
 
 export default function ProductRow({
@@ -8,11 +8,13 @@ export default function ProductRow({
 	categories,
 	onUpdate,
 	onDelete,
+	user,
 }: {
 	product: EditableProduct;
 	categories: Category[];
 	onUpdate: (updated: EditableProduct) => void;
 	onDelete: (id: string | number) => void;
+	user?: User | null;
 }) {
 	const [isEditing, setIsEditing] = useState(product.id === "new" || (product as any).isEditing);
 	const [form, setForm] = useState({
@@ -306,6 +308,8 @@ export default function ProductRow({
 					<span className="text-[10px] text-gray-400">Нет</span>
 				)}
 			</td>
+
+			{user?.role === "superadmin" && <td className="border border-black/10 px-2 py-1 w-1/6">{product.department?.name || "—"}</td>}
 
 			<td className="border border-black/10 px-2 py-1 text-center w-1/6">
 				{isEditing ? (
