@@ -2,8 +2,9 @@
 
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { withPermission } from "@/middleware/permissionMiddleware";
 
-// GET – Получение товара по ID
+// ✅ GET — можно оставить открытым, если клиентам можно смотреть товары
 export async function GET(_req: NextRequest, context: { params: Promise<{ productId: string }> }) {
 	const { productId } = await context.params;
 
@@ -71,61 +72,91 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ produc
 	}
 }
 
-// PUT – Редактирование товара по ID
-export async function PUT(req: NextRequest, context: { params: Promise<{ productId: string }> }) {
-	const { productId } = await context.params;
-	const body = await req.json();
+// ✅ PUT — только admin/superadmin с правом edit_products
+export const PUT = withPermission(
+	async (req, { user, scope }) => {
+		const url = new URL(req.url);
+		const productId = parseInt(url.pathname.split("/").pop()!);
 
-	try {
-		const id = parseInt(productId);
-		if (isNaN(id)) {
+		if (isNaN(productId)) {
 			return NextResponse.json({ error: "Некорректный ID" }, { status: 400 });
 		}
 
-		const product = await prisma.product.update({
-			where: { id },
-			data: {
-				sku: body.sku,
-				title: body.title,
-				description: body.description,
-				price: body.price,
-				brand: body.brand,
-				categoryId: body.categoryId,
-				image: body.image,
-			},
-		});
-		return NextResponse.json({ product });
-	} catch (error) {
-		console.error("Ошибка обновления продукта:", error);
-		return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
-	}
-}
+		const body = await req.json();
 
-// DELETE – Удаление товара по ID
-export async function DELETE(_req: NextRequest, context: { params: Promise<{ productId: string }> }) {
-	const { productId } = await context.params;
+		try {
+			const existing = await prisma.product.findUnique({
+				where: { id: productId },
+				select: { departmentId: true },
+			});
 
-	try {
-		const id = parseInt(productId);
-		if (isNaN(id)) {
+			if (!existing) {
+				return NextResponse.json({ error: "Товар не найден" }, { status: 404 });
+			}
+
+			if (scope === "department" && existing.departmentId !== user.departmentId) {
+				return NextResponse.json({ error: "Недостаточно прав для редактирования этого товара" }, { status: 403 });
+			}
+
+			const product = await prisma.product.update({
+				where: { id: productId },
+				data: {
+					sku: body.sku,
+					title: body.title,
+					description: body.description,
+					price: body.price,
+					brand: body.brand,
+					categoryId: body.categoryId,
+					image: body.image,
+				},
+			});
+
+			return NextResponse.json({ product });
+		} catch (error) {
+			console.error("Ошибка обновления продукта:", error);
+			return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
+		}
+	},
+	"edit_products",
+	["admin", "superadmin"]
+);
+
+// ✅ DELETE — только admin/superadmin с правом edit_products
+export const DELETE = withPermission(
+	async (req, { user, scope }) => {
+		const url = new URL(req.url);
+		const productId = parseInt(url.pathname.split("/").pop()!);
+
+		if (isNaN(productId)) {
 			return NextResponse.json({ error: "Некорректный ID" }, { status: 400 });
 		}
 
-		const existing = await prisma.product.findUnique({ where: { id } });
-		if (!existing) {
-			return NextResponse.json({ error: "Товар не найден" }, { status: 404 });
+		try {
+			const existing = await prisma.product.findUnique({
+				where: { id: productId },
+				select: { id: true, departmentId: true },
+			});
+
+			if (!existing) {
+				return NextResponse.json({ error: "Товар не найден" }, { status: 404 });
+			}
+
+			if (scope === "department" && existing.departmentId !== user.departmentId) {
+				return NextResponse.json({ error: "Недостаточно прав для удаления этого товара" }, { status: 403 });
+			}
+
+			await prisma.productFilterValue.deleteMany({ where: { productId } });
+			await prisma.productAnalog.deleteMany({ where: { OR: [{ productId }, { analogId: productId }] } });
+			await prisma.serviceKitItem.deleteMany({ where: { OR: [{ productId }, { analogProductId: productId }] } });
+
+			await prisma.product.delete({ where: { id: productId } });
+
+			return NextResponse.json({ success: true });
+		} catch (error) {
+			console.error("Ошибка при удалении товара:", error);
+			return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
 		}
-
-		await prisma.productFilterValue.deleteMany({ where: { productId: id } });
-		await prisma.productAnalog.deleteMany({ where: { OR: [{ productId: id }, { analogId: id }] } });
-		await prisma.serviceKitItem.deleteMany({ where: { OR: [{ productId: id }, { analogProductId: id }] } });
-
-		await prisma.product.delete({ where: { id } });
-
-		return NextResponse.json({ success: true });
-	} catch (error) {
-		console.error("Ошибка при удалении товара:", error);
-		return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
-	}
-}
-`z`;
+	},
+	"edit_products",
+	["admin", "superadmin"]
+);

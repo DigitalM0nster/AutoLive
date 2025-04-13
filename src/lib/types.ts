@@ -26,14 +26,15 @@ export type Product = {
 	brand: string;
 	createdAt: string;
 	updatedAt: string;
-	categoryId?: number;
-	categoryTitle?: string;
+	categoryId: number | null;
+	categoryTitle: string;
 	filters: {
 		filterId: number;
 		valueId: number;
 		value: string;
 	}[];
 };
+
 export type NewProduct = Omit<Product, "id"> & { id: "new"; isEditing: true };
 export type EditableProduct = Product | NewProduct;
 
