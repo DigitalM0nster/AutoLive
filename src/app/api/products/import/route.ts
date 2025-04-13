@@ -35,6 +35,8 @@ async function asyncPool<T, R>(poolLimit: number, array: T[], iteratorFn: (item:
 export const POST = withPermission(
 	async (req, { user }) => {
 		try {
+			const unauthorizedCategories = new Set<string>();
+
 			// Получаем form-data: файл и описание колонок
 			const formData = await req.formData();
 			const file = formData.get("file") as File;
@@ -68,9 +70,23 @@ export const POST = withPermission(
 					select: { id: true },
 				});
 
-				const result = category?.id ?? null;
-				categoryCache[categoryTitle] = result;
-				return result;
+				if (category) {
+					categoryCache[categoryTitle] = category.id;
+					return category.id;
+				}
+
+				// 👇 Пытаемся создать категорию только если пользователь — суперадмин
+				if (user.role === "superadmin") {
+					const created = await prisma.category.create({
+						data: { title: categoryTitle },
+					});
+					categoryCache[categoryTitle] = created.id;
+					return created.id;
+				} else {
+					unauthorizedCategories.add(categoryTitle);
+					categoryCache[categoryTitle] = null;
+					return null;
+				}
 			};
 
 			// Функция обработки одной строки (одного товара)
@@ -166,11 +182,17 @@ export const POST = withPermission(
 					fileName: file.name,
 					created,
 					updated,
+					message: unauthorizedCategories.size > 0 ? `Не удалось создать категории: ${[...unauthorizedCategories].join(", ")}` : null,
 				},
 			});
 
 			// Возвращаем результат
-			return NextResponse.json({ created, updated, skipped });
+			return NextResponse.json({
+				created,
+				updated,
+				skipped,
+				missingCategories: [...unauthorizedCategories],
+			});
 		} catch (error) {
 			console.error("Ошибка при импорте товаров:", error);
 			return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });

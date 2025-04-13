@@ -96,6 +96,9 @@ export default function Pricelist() {
 			if (!res.ok) throw new Error("Ошибка при импорте");
 
 			const result = await res.json();
+			if (result.missingCategories?.length) {
+				showErrorToast(`Не удалось создать категории: ${result.missingCategories.join(", ")}`);
+			}
 			showSuccessToast(`Импорт завершён: ${result.created} новых, ${result.updated} обновлено`);
 		} catch (error: any) {
 			showErrorToast("Ошибка при импорте");

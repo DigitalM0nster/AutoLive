@@ -10,6 +10,7 @@ type ImportLog = {
 	fileName: string;
 	created: number;
 	updated: number;
+	message: string | null; // 👈 добавлено поле
 	user: {
 		first_name: string;
 		last_name: string;
@@ -44,7 +45,7 @@ export default function PricelistLogs() {
 	return (
 		<div className="mt-8">
 			<h3 className="text-lg font-bold mb-2">История загрузок</h3>
-			<table className="w-full table-auto text-sm border border-black/10border-gray-300">
+			<table className="w-full table-auto text-sm border border-black/10 border-collapse">
 				<thead className="bg-gray-100">
 					<tr>
 						<th className="border border-black/10 px-2 py-1">Дата</th>
@@ -52,6 +53,7 @@ export default function PricelistLogs() {
 						<th className="border border-black/10 px-2 py-1">Файл</th>
 						<th className="border border-black/10 px-2 py-1">Создано</th>
 						<th className="border border-black/10 px-2 py-1">Обновлено</th>
+						<th className="border border-black/10 px-2 py-1">Комментарий</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -65,11 +67,12 @@ export default function PricelistLogs() {
 								<td className="border border-black/10 px-2 py-1">{log.fileName}</td>
 								<td className="border border-black/10 px-2 py-1 text-center">{log.created}</td>
 								<td className="border border-black/10 px-2 py-1 text-center">{log.updated}</td>
+								<td className="border border-black/10 px-2 py-1 text-gray-700">{log.message ? log.message : <span className="text-gray-400 italic">—</span>}</td>
 							</tr>
 						))
 					) : (
 						<tr>
-							<td colSpan={5} className="text-center py-4 text-gray-500">
+							<td colSpan={6} className="text-center py-4 text-gray-500">
 								Логи отсутствуют
 							</td>
 						</tr>

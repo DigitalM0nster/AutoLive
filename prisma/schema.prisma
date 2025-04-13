@@ -282,6 +282,7 @@ model ImportLog {
     createdAt DateTime @default(now())
     userId    Int
     user      User     @relation(fields: [userId], references: [id])
+    message   String?
 }
 
 // ------------------------------
