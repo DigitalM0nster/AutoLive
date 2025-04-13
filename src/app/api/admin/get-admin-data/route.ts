@@ -13,6 +13,7 @@ type Decoded = {
 	phone: string;
 	iat: number;
 	exp: number;
+	departmentId?: number;
 };
 
 export async function GET() {
@@ -38,6 +39,7 @@ export async function GET() {
 				phone: true,
 				avatar: true,
 				role: true,
+				departmentId: true,
 			},
 		});
 
@@ -45,7 +47,7 @@ export async function GET() {
 			return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });
 		}
 
-		const permissions: Permission[] = ROLE_PERMISSIONS[admin.role] || [];
+		const permissions: Permission[] = (ROLE_PERMISSIONS[admin.role] || []).map((p) => p.permission);
 
 		return NextResponse.json({
 			...admin,

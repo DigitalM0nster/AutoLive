@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
 			name: `${user.first_name} ${user.last_name}`,
 			phone: user.phone,
 			role: user.role,
+			departmentId: user.departmentId ?? null,
 		},
 		process.env.JWT_SECRET!,
 		{ expiresIn: "7d" }

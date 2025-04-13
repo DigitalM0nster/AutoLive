@@ -12,6 +12,7 @@ type Decoded = {
 	id: number;
 	role: string;
 	phone: string;
+	departmentId?: number;
 	iat: number;
 	exp: number;
 };

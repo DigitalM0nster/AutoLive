@@ -10,6 +10,7 @@ type DecodedToken = {
 	role: Role;
 	name?: string;
 	phone: string;
+	departmentId?: number;
 	iat: number;
 	exp: number;
 };
