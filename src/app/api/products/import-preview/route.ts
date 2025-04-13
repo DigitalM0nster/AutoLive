@@ -14,14 +14,14 @@ export async function POST(req: Request) {
 		const workbook = read(buffer, { type: "buffer" });
 		const sheet = workbook.Sheets[workbook.SheetNames[0]];
 
-		// Получаем все строки без ограничения
-		const rows = utils.sheet_to_json(sheet, { header: 0, defval: "" }) as any[][];
+		// Чтение файла как массив массивов
+		const rows = utils.sheet_to_json(sheet, { header: 1, defval: "" }) as any[][];
 
-		// Преобразуем объекты в массивы
-		const formattedRows = rows.map((row) => Object.values(row));
+		// Фильтруем пустые строки (без одной хотя бы непустой ячейки)
+		const nonEmptyRows = rows.filter((row) => row.some((cell) => cell !== ""));
 
-		// Просто вернем все строки, без ограничения
-		return NextResponse.json({ rows: formattedRows });
+		// Отправляем только непустые строки
+		return NextResponse.json({ rows: nonEmptyRows });
 	} catch (error) {
 		console.error("Ошибка при парсинге файла:", error);
 		return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });

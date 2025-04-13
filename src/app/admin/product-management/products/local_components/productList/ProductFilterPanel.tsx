@@ -1,12 +1,13 @@
-// src\app\admin\product-management\products\local_components\productList\ProductFilterPanel.tsx
-import { useState } from "react";
+// src/app/admin/product-management/items/local_components/productList/ProductFilterPanel.tsx
+
+import React, { useState, useCallback, useEffect, memo, useMemo } from "react";
 import type { Category } from "@/lib/types";
-import CategorySelect from "./CategorySelect";
+import SelectWithSearchAndPagination, { Option } from "./SelectWithSearchAndPagination";
 
 type Props = {
 	categories: Category[];
 	brands: string[];
-	// Эти пропсы теперь будут использоваться только для начального значения
+	// Эти пропсы используются для начального значения
 	search: string;
 	setSearch: (val: string) => void;
 	categoryFilter: string;
@@ -18,7 +19,7 @@ type Props = {
 	resetFilters: () => void;
 };
 
-export default function ProductFilterPanel({
+function ProductFilterPanel({
 	categories,
 	brands,
 	search,
@@ -33,11 +34,54 @@ export default function ProductFilterPanel({
 }: Props) {
 	const [localSearch, setLocalSearch] = useState(search);
 
-	const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-		if (e.key === "Enter") {
-			setSearch(localSearch); // Обновляем родительское состояние
-		}
-	};
+	// Синхронизируем локальное состояние, если родитель обновляет search
+	useEffect(() => {
+		setLocalSearch(search);
+	}, [search]);
+
+	const handleInputChange = useCallback(
+		(e: React.ChangeEvent<HTMLInputElement>) => {
+			setSearch(e.target.value);
+		},
+		[setSearch]
+	);
+
+	const handleKeyDown = useCallback(
+		(e: React.KeyboardEvent<HTMLInputElement>) => {
+			if (e.key === "Enter") {
+				setSearch(localSearch);
+			}
+		},
+		[localSearch, setSearch]
+	);
+
+	const handleSearchClick = useCallback(() => {
+		setSearch(localSearch);
+	}, [localSearch, setSearch]);
+
+	const handleOnlyStaleChange = useCallback(
+		(e: React.ChangeEvent<HTMLInputElement>) => {
+			setOnlyStale(e.target.checked);
+		},
+		[setOnlyStale]
+	);
+
+	// Преобразуем категории для универсального селекта
+	const categoryOptions: Option[] = useMemo(() => {
+		return categories.map((cat) => ({
+			id: cat.id.toString(),
+			title: cat.title,
+			productCount: cat.productCount,
+		}));
+	}, [categories]);
+
+	// Преобразуем бренды (строки) в формат Option
+	const brandOptions: Option[] = useMemo(() => {
+		return brands.map((brand) => ({
+			id: brand,
+			title: brand,
+		}));
+	}, [brands]);
 
 	return (
 		<div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
@@ -46,31 +90,23 @@ export default function ProductFilterPanel({
 					type="text"
 					placeholder="Поиск по названию, артикулу, бренду..."
 					value={localSearch}
-					onChange={(e) => setLocalSearch(e.target.value)}
+					onChange={handleInputChange}
 					onKeyDown={handleKeyDown}
 					className="border border-black/10 p-2 rounded"
 				/>
-				<button
-					onClick={() => {
-						setSearch(localSearch);
-					}}
-					className="px-3 py-2 bg-blue-600 text-white rounded"
-				>
+				<button onClick={handleSearchClick} className="px-3 py-2 bg-blue-600 text-white rounded">
 					Искать
 				</button>
 			</div>
 
-			<CategorySelect categories={categories} value={categoryFilter} onChange={setCategoryFilter} />
+			{/* Селект для категорий */}
+			<SelectWithSearchAndPagination options={categoryOptions} value={categoryFilter} onChange={setCategoryFilter} placeholder="Все категории" />
 
-			<select value={brandFilter} onChange={(e) => setBrandFilter(e.target.value)} className="border border-black/10 p-2 rounded">
-				<option value="">Все бренды</option>
-				{brands.map((brand) => (
-					<option key={brand}>{brand}</option>
-				))}
-			</select>
+			{/* Селект для брендов */}
+			<SelectWithSearchAndPagination options={brandOptions} value={brandFilter} onChange={setBrandFilter} placeholder="Все бренды" />
 
 			<label className="flex items-center gap-2 text-sm">
-				<input type="checkbox" checked={onlyStale} onChange={(e) => setOnlyStale(e.target.checked)} />
+				<input type="checkbox" checked={onlyStale} onChange={handleOnlyStaleChange} />
 				Показать только устаревшие
 			</label>
 
@@ -80,3 +116,5 @@ export default function ProductFilterPanel({
 		</div>
 	);
 }
+
+export default memo(ProductFilterPanel);
