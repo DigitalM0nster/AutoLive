@@ -7,6 +7,8 @@ export default function ProductRow({
 	product,
 	categories,
 	departments,
+	setPendingProductData,
+	setDuplicateProduct,
 	onUpdate,
 	onDelete,
 	user,
@@ -14,6 +16,8 @@ export default function ProductRow({
 	product: EditableProduct;
 	categories: Category[];
 	departments: { id: number; name: string }[];
+	setPendingProductData: (data: EditableProduct | null) => void;
+	setDuplicateProduct: (product: EditableProduct | null) => void;
 	onUpdate: (updated: EditableProduct) => void;
 	onDelete: (id: string | number) => void;
 	user?: User | null;
@@ -31,7 +35,6 @@ export default function ProductRow({
 	});
 	const [imageFile, setImageFile] = useState<File | null>(null);
 	const [imagePreview, setImagePreview] = useState<string | null>(product.image || null);
-
 	const [errors, setErrors] = useState<Partial<Record<keyof typeof form, string>>>({});
 
 	const [isSaving, setIsSaving] = useState(false);
@@ -92,12 +95,53 @@ export default function ProductRow({
 			}),
 		};
 
+		// 👇 Проверка дубликата перед созданием нового товара
+		if (product.id === "new") {
+			try {
+				const duplicateRes = await fetch(`/api/products/check-duplicate?sku=${encodeURIComponent(productData.sku)}&brand=${encodeURIComponent(productData.brand)}`);
+
+				if (duplicateRes.ok) {
+					const result = await duplicateRes.json();
+					if (result.exists) {
+						setDuplicateProduct(result.product);
+						setPendingProductData({
+							...productData,
+							id: "new",
+							isEditing: true,
+							filters: [],
+							createdAt: new Date().toISOString(),
+							updatedAt: new Date().toISOString(),
+							categoryTitle: categories.find((c) => c.id === productData.categoryId)?.title || "—",
+							department:
+								user?.role === "superadmin"
+									? departments.find((d) => d.id === productData.departmentId!) || undefined
+									: user?.department?.id
+									? departments.find((d) => d.id === user.department?.id!) || undefined
+									: undefined,
+						});
+
+						setIsSaving(false);
+						return;
+					}
+				}
+			} catch (err) {
+				console.warn("Ошибка при проверке дубликата:", err);
+			}
+		}
+
+		// Создание нового товара
 		try {
 			const res = await fetch(product.id === "new" ? `/api/products` : `/api/products/${product.id}`, {
 				method: product.id === "new" ? "POST" : "PUT",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(productData),
 			});
+
+			if (res.status === 409) {
+				showErrorToast("Такой товар уже есть. Измените артикул или бренд.");
+				setIsSaving(false);
+				return;
+			}
 
 			if (res.ok) {
 				let json: any = null;
@@ -160,242 +204,244 @@ export default function ProductRow({
 	};
 
 	return (
-		<tr className={isStale(product.updatedAt) ? "bg-yellow-50" : ""}>
-			<td className="tableBlock border border-black/10 px-2 py-1 w-1/6">
-				{isEditing ? (
-					<input
-						type="text"
-						value={form.brand}
-						onChange={(e) => {
-							setForm({ ...form, brand: e.target.value });
-							if (errors.brand) {
-								setErrors((prev) => ({ ...prev, brand: undefined }));
-							}
-						}}
-						className={`w-full border px-1 py-0.5 text-sm rounded ${errors.brand ? "border-red-500 bg-red-100" : ""}`}
-					/>
-				) : (
-					product.brand
-				)}
-			</td>
-
-			<td className="tableBlock border border-black/10 px-2 py-1 w-1/6">
-				{isEditing ? (
-					<input
-						type="text"
-						value={form.sku}
-						onChange={(e) => {
-							setForm({ ...form, sku: e.target.value });
-							if (errors.sku) {
-								setErrors((prev) => ({ ...prev, sku: undefined }));
-							}
-						}}
-						className={`w-full border px-1 py-0.5 text-sm rounded ${errors.sku ? "border-red-500 bg-red-100" : ""}`}
-					/>
-				) : (
-					product.sku
-				)}
-			</td>
-
-			<td className="tableBlock border border-black/10 px-2 py-1 w-1/6">
-				{isEditing ? (
-					<input
-						type="text"
-						value={form.title}
-						onChange={(e) => {
-							setForm({ ...form, title: e.target.value });
-							if (errors.title) {
-								setErrors((prev) => ({ ...prev, title: undefined }));
-							}
-						}}
-						className={`w-full border px-1 py-0.5 text-sm rounded ${errors.title ? "border-red-500 bg-red-100" : ""}`}
-					/>
-				) : (
-					product.title
-				)}
-			</td>
-
-			<td className="tableBlock border border-black/10 px-2 py-1 w-1/6">
-				{isEditing ? (
-					<textarea
-						value={form.description}
-						onChange={(e) => setForm({ ...form, description: e.target.value })}
-						className="w-full border px-1 py-0.5 text-sm rounded h-[26px]"
-					/>
-				) : (
-					<p className="text-xs text-gray-600 line-clamp-2">{product.description || "—"}</p>
-				)}
-			</td>
-
-			<td className="tableBlock border border-black/10 px-2 py-1 w-1/6">
-				{isEditing ? (
-					<input
-						type="number"
-						value={form.price}
-						onChange={(e) => {
-							setForm({ ...form, price: e.target.value });
-							if (errors.price) {
-								setErrors((prev) => ({ ...prev, price: undefined }));
-							}
-						}}
-						className={`w-full border px-1 py-0.5 text-sm rounded ${errors.price ? "border-red-500 bg-red-100" : ""}`}
-					/>
-				) : (
-					`${product.price} ₽`
-				)}
-			</td>
-
-			<td className="tableBlock border border-black/10 px-2 py-1 w-1/6">
-				{isEditing ? (
-					<select value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })} className="w-full border px-1 py-0.5 text-sm rounded">
-						<option value="">Выбрать...</option>
-						{Array.isArray(categories) &&
-							categories.map((cat) => (
-								<option key={cat.id} value={cat.id}>
-									{cat.title}
-								</option>
-							))}
-					</select>
-				) : (
-					product.categoryTitle
-				)}
-			</td>
-
-			<td className="tableBlock border border-black/10 px-2 py-1 w-1/6 text-center">
-				{isEditing ? (
-					<div className="relative w-10 h-10 mx-auto group">
-						<label
-							htmlFor={`image-upload-${product.id}`}
-							className="absolute inset-0 bg-black/40 hover:bg-black/60 transition flex items-center justify-center text-white text-[10px] rounded cursor-pointer z-10 opacity-0 group-hover:opacity-100"
-						>
-							Изменить
-						</label>
-
+		<>
+			<tr className={isStale(product.updatedAt) ? "bg-yellow-50" : ""}>
+				<td className="tableBlock border border-black/10 px-2 py-1 w-1/6">
+					{isEditing ? (
 						<input
-							id={`image-upload-${product.id}`}
-							type="file"
-							accept="image/*"
+							type="text"
+							value={form.brand}
 							onChange={(e) => {
-								const file = e.target.files?.[0];
-								if (file) {
-									setImageFile(file);
-									setImagePreview(URL.createObjectURL(file));
+								setForm({ ...form, brand: e.target.value });
+								if (errors.brand) {
+									setErrors((prev) => ({ ...prev, brand: undefined }));
 								}
 							}}
-							className="hidden"
+							className={`w-full border px-1 py-0.5 text-sm rounded ${errors.brand ? "border-red-500 bg-red-100" : ""}`}
 						/>
+					) : (
+						product.brand
+					)}
+				</td>
 
-						{imagePreview ? (
+				<td className="tableBlock border border-black/10 px-2 py-1 w-1/6">
+					{isEditing ? (
+						<input
+							type="text"
+							value={form.sku}
+							onChange={(e) => {
+								setForm({ ...form, sku: e.target.value });
+								if (errors.sku) {
+									setErrors((prev) => ({ ...prev, sku: undefined }));
+								}
+							}}
+							className={`w-full border px-1 py-0.5 text-sm rounded ${errors.sku ? "border-red-500 bg-red-100" : ""}`}
+						/>
+					) : (
+						product.sku
+					)}
+				</td>
+
+				<td className="tableBlock border border-black/10 px-2 py-1 w-1/6">
+					{isEditing ? (
+						<input
+							type="text"
+							value={form.title}
+							onChange={(e) => {
+								setForm({ ...form, title: e.target.value });
+								if (errors.title) {
+									setErrors((prev) => ({ ...prev, title: undefined }));
+								}
+							}}
+							className={`w-full border px-1 py-0.5 text-sm rounded ${errors.title ? "border-red-500 bg-red-100" : ""}`}
+						/>
+					) : (
+						product.title
+					)}
+				</td>
+
+				<td className="tableBlock border border-black/10 px-2 py-1 w-1/6">
+					{isEditing ? (
+						<textarea
+							value={form.description}
+							onChange={(e) => setForm({ ...form, description: e.target.value })}
+							className="w-full border px-1 py-0.5 text-sm rounded h-[26px]"
+						/>
+					) : (
+						<p className="text-xs text-gray-600 line-clamp-2">{product.description || "—"}</p>
+					)}
+				</td>
+
+				<td className="tableBlock border border-black/10 px-2 py-1 w-1/6">
+					{isEditing ? (
+						<input
+							type="number"
+							value={form.price}
+							onChange={(e) => {
+								setForm({ ...form, price: e.target.value });
+								if (errors.price) {
+									setErrors((prev) => ({ ...prev, price: undefined }));
+								}
+							}}
+							className={`w-full border px-1 py-0.5 text-sm rounded ${errors.price ? "border-red-500 bg-red-100" : ""}`}
+						/>
+					) : (
+						`${product.price} ₽`
+					)}
+				</td>
+
+				<td className="tableBlock border border-black/10 px-2 py-1 w-1/6">
+					{isEditing ? (
+						<select value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })} className="w-full border px-1 py-0.5 text-sm rounded">
+							<option value="">Выбрать...</option>
+							{Array.isArray(categories) &&
+								categories.map((cat) => (
+									<option key={cat.id} value={cat.id}>
+										{cat.title}
+									</option>
+								))}
+						</select>
+					) : (
+						product.categoryTitle
+					)}
+				</td>
+
+				<td className="tableBlock border border-black/10 px-2 py-1 w-1/6 text-center">
+					{isEditing ? (
+						<div className="relative w-10 h-10 mx-auto group">
+							<label
+								htmlFor={`image-upload-${product.id}`}
+								className="absolute inset-0 bg-black/40 hover:bg-black/60 transition flex items-center justify-center text-white text-[10px] rounded cursor-pointer z-10 opacity-0 group-hover:opacity-100"
+							>
+								Изменить
+							</label>
+
+							<input
+								id={`image-upload-${product.id}`}
+								type="file"
+								accept="image/*"
+								onChange={(e) => {
+									const file = e.target.files?.[0];
+									if (file) {
+										setImageFile(file);
+										setImagePreview(URL.createObjectURL(file));
+									}
+								}}
+								className="hidden"
+							/>
+
+							{imagePreview ? (
+								<>
+									<img
+										src={imagePreview}
+										alt="preview"
+										className="w-full h-full object-cover rounded border transition-all duration-200 group-hover:scale-150 group-hover:z-20"
+									/>
+									<button
+										type="button"
+										onClick={() => {
+											setImageFile(null);
+											setImagePreview(null);
+											setForm((prev) => ({ ...prev, image: "" }));
+										}}
+										className="absolute -top-2 -right-2 bg-white text-red-600 border border-red-400 rounded-full w-4 h-4 text-[10px] flex items-center justify-center z-30 shadow hover:scale-110 transition"
+										title="Удалить изображение"
+									>
+										×
+									</button>
+								</>
+							) : (
+								<div className="w-full h-full bg-gray-100 border rounded flex items-center justify-center text-[10px] text-gray-400">Нет</div>
+							)}
+						</div>
+					) : product.image ? (
+						<div className="relative group w-10 h-10 mx-auto">
+							<img
+								src={product.image}
+								alt="img"
+								className="w-full h-full object-cover rounded border transition-all duration-200 group-hover:scale-150 group-hover:z-20"
+							/>
+						</div>
+					) : (
+						<span className="text-[10px] text-gray-400">Нет</span>
+					)}
+				</td>
+
+				{user?.role === "superadmin" && (
+					<td className="tableBlock border border-black/10 px-2 py-1 w-1/6">
+						{isEditing ? (
+							<select
+								value={form.departmentId}
+								onChange={(e) => setForm({ ...form, departmentId: e.target.value })}
+								className="w-full border px-1 py-0.5 text-sm rounded"
+							>
+								<option value="">Без отдела</option>
+								{departments.map((dep) => (
+									<option key={dep.id} value={dep.id}>
+										{dep.name}
+									</option>
+								))}
+							</select>
+						) : (
+							product.department?.name || "—"
+						)}
+					</td>
+				)}
+
+				{user?.role !== "manager" && (
+					<td className="tableBlock border border-black/10 px-2 py-1 text-center w-1/6">
+						{isEditing ? (
 							<>
-								<img
-									src={imagePreview}
-									alt="preview"
-									className="w-full h-full object-cover rounded border transition-all duration-200 group-hover:scale-150 group-hover:z-20"
-								/>
+								<button onClick={handleSave} disabled={isSaving} className="text-green-600 hover:underline text-xs mr-2">
+									{isSaving ? "Сохраняем..." : "Сохранить"}
+								</button>
 								<button
-									type="button"
 									onClick={() => {
-										setImageFile(null);
-										setImagePreview(null);
-										setForm((prev) => ({ ...prev, image: "" }));
+										if (product.id === "new") {
+											onDelete("new");
+										} else {
+											setIsEditing(false);
+											setForm({
+												title: product.title,
+												description: product.description,
+												sku: product.sku,
+												price: product.price.toString(),
+												brand: product.brand,
+												categoryId: product.categoryId?.toString() || "",
+												image: product.image || "",
+												departmentId: product.department?.id?.toString() || "",
+											});
+											setImageFile(null);
+											setImagePreview(product.image || null);
+										}
 									}}
-									className="absolute -top-2 -right-2 bg-white text-red-600 border border-red-400 rounded-full w-4 h-4 text-[10px] flex items-center justify-center z-30 shadow hover:scale-110 transition"
-									title="Удалить изображение"
+									className="text-gray-600 hover:underline text-xs"
 								>
-									×
+									{product.id === "new" ? "Удалить" : "Отмена"}
 								</button>
 							</>
 						) : (
-							<div className="w-full h-full bg-gray-100 border rounded flex items-center justify-center text-[10px] text-gray-400">Нет</div>
+							<>
+								<button onClick={() => setIsEditing(true)} className="text-blue-600 hover:underline text-xs mr-2">
+									Редактировать
+								</button>
+								<button
+									onClick={() => {
+										if (product.id === "new") {
+											onDelete("new");
+										} else {
+											handleDelete();
+										}
+									}}
+									className="text-red-600 hover:underline text-xs"
+								>
+									Удалить
+								</button>
+							</>
 						)}
-					</div>
-				) : product.image ? (
-					<div className="relative group w-10 h-10 mx-auto">
-						<img
-							src={product.image}
-							alt="img"
-							className="w-full h-full object-cover rounded border transition-all duration-200 group-hover:scale-150 group-hover:z-20"
-						/>
-					</div>
-				) : (
-					<span className="text-[10px] text-gray-400">Нет</span>
+					</td>
 				)}
-			</td>
-
-			{user?.role === "superadmin" && (
-				<td className="tableBlock border border-black/10 px-2 py-1 w-1/6">
-					{isEditing ? (
-						<select
-							value={form.departmentId}
-							onChange={(e) => setForm({ ...form, departmentId: e.target.value })}
-							className="w-full border px-1 py-0.5 text-sm rounded"
-						>
-							<option value="">Без отдела</option>
-							{departments.map((dep) => (
-								<option key={dep.id} value={dep.id}>
-									{dep.name}
-								</option>
-							))}
-						</select>
-					) : (
-						product.department?.name || "—"
-					)}
-				</td>
-			)}
-
-			{user?.role !== "manager" && (
-				<td className="tableBlock border border-black/10 px-2 py-1 text-center w-1/6">
-					{isEditing ? (
-						<>
-							<button onClick={handleSave} disabled={isSaving} className="text-green-600 hover:underline text-xs mr-2">
-								{isSaving ? "Сохраняем..." : "Сохранить"}
-							</button>
-							<button
-								onClick={() => {
-									if (product.id === "new") {
-										onDelete("new");
-									} else {
-										setIsEditing(false);
-										setForm({
-											title: product.title,
-											description: product.description,
-											sku: product.sku,
-											price: product.price.toString(),
-											brand: product.brand,
-											categoryId: product.categoryId?.toString() || "",
-											image: product.image || "",
-											departmentId: product.department?.id?.toString() || "",
-										});
-										setImageFile(null);
-										setImagePreview(product.image || null);
-									}
-								}}
-								className="text-gray-600 hover:underline text-xs"
-							>
-								{product.id === "new" ? "Удалить" : "Отмена"}
-							</button>
-						</>
-					) : (
-						<>
-							<button onClick={() => setIsEditing(true)} className="text-blue-600 hover:underline text-xs mr-2">
-								Редактировать
-							</button>
-							<button
-								onClick={() => {
-									if (product.id === "new") {
-										onDelete("new");
-									} else {
-										handleDelete();
-									}
-								}}
-								className="text-red-600 hover:underline text-xs"
-							>
-								Удалить
-							</button>
-						</>
-					)}
-				</td>
-			)}
-		</tr>
+			</tr>
+		</>
 	);
 }

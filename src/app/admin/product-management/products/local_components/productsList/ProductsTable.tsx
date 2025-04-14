@@ -6,6 +6,7 @@ import { ArrowDown, ArrowUp, ArrowDownWideNarrow } from "lucide-react";
 import { useEffect, useState } from "react";
 import React from "react"; // Импорт React
 import { User } from "@/lib/types";
+import DuplicateProductModal from "./DuplicateProductModal";
 
 type Props = {
 	products: EditableProduct[];
@@ -26,6 +27,9 @@ const ProductsTable = React.memo(({ products, loading, sortBy, sortOrder, handle
 		}
 		return sortOrder === "asc" ? <ArrowUp size={14} className="inline-block text-blue-600 ml-1" /> : <ArrowDown size={14} className="inline-block text-blue-600 ml-1" />;
 	};
+
+	const [duplicateProduct, setDuplicateProduct] = useState<EditableProduct | null>(null);
+	const [pendingProductData, setPendingProductData] = useState<EditableProduct | null>(null);
 
 	// Следим за изменениями пропсов, чтобы обновлять только когда это необходимо
 	const [localProducts, setLocalProducts] = useState(products);
@@ -122,6 +126,8 @@ const ProductsTable = React.memo(({ products, loading, sortBy, sortOrder, handle
 								product={product}
 								categories={categories}
 								departments={departments}
+								setPendingProductData={setPendingProductData}
+								setDuplicateProduct={setDuplicateProduct}
 								onUpdate={handleProductUpdate}
 								onDelete={handleProductDelete}
 								user={user}
@@ -136,7 +142,31 @@ const ProductsTable = React.memo(({ products, loading, sortBy, sortOrder, handle
 					)}
 				</tbody>
 			</table>
-			<div className="flex justify-end mb-2"></div>
+			{duplicateProduct && pendingProductData && (
+				<DuplicateProductModal
+					existing={duplicateProduct}
+					pending={pendingProductData}
+					categories={categories}
+					departments={departments}
+					onEditArticle={() => {
+						setDuplicateProduct(null);
+						setPendingProductData(null);
+					}}
+					onUpdateExisting={async () => {
+						const res = await fetch(`/api/products/${duplicateProduct.id}`, {
+							method: "PUT",
+							headers: { "Content-Type": "application/json" },
+							body: JSON.stringify(pendingProductData),
+						});
+						if (res.ok) {
+							const json = await res.json();
+							handleProductUpdate({ ...json.product, id: duplicateProduct.id });
+							setDuplicateProduct(null);
+							setPendingProductData(null);
+						}
+					}}
+				/>
+			)}
 		</>
 	);
 });

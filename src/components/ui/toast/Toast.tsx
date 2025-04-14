@@ -10,7 +10,7 @@ type Props = {
 	duration?: number;
 };
 
-export default function Toast({ message, type = "success", onClose, duration = 3000 }: Props) {
+export default function Toast({ message, type = "success", onClose, duration = 10000 }: Props) {
 	const [visible, setVisible] = useState(true);
 
 	useEffect(() => {

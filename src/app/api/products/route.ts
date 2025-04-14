@@ -152,12 +152,22 @@ export const POST = withPermission(
 	async (req: NextRequest, { user }: ExtendedRequestContext) => {
 		try {
 			const data = await req.json();
-
-			// Только superadmin может указать departmentId вручную
 			const departmentId = user.role === "superadmin" ? data.departmentId ?? null : user.departmentId ?? null;
 
-			if (!departmentId) {
-				return new NextResponse("Отдел не определён", { status: 400 });
+			if (user.role === "admin" && !departmentId) {
+				return new NextResponse("Администратор должен иметь отдел", { status: 400 });
+			}
+
+			// 🔍 Проверка на уникальность SKU + brand
+			const existing = await prisma.product.findFirst({
+				where: {
+					sku: data.sku,
+					brand: data.brand,
+				},
+			});
+
+			if (existing) {
+				return new NextResponse("Товар с таким артикулом и брендом уже существует", { status: 409 });
 			}
 
 			const newProduct = await prisma.product.create({
@@ -177,7 +187,10 @@ export const POST = withPermission(
 			});
 
 			return NextResponse.json({ product: newProduct });
-		} catch (error) {
+		} catch (error: any) {
+			if (error.code === "P2002") {
+				return new NextResponse("Товар с таким артикулом и брендом уже существует (ошибка уникальности)", { status: 409 });
+			}
 			console.error("Ошибка при создании товара:", error);
 			return new NextResponse("Ошибка сервера", { status: 500 });
 		}
