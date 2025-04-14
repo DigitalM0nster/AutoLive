@@ -1,4 +1,4 @@
-// src\app\admin\product-management\items\local_components\productList\ProductTable.tsx
+// src\app\admin\product-management\products\local_components\productsList\ProductsTable.tsx
 
 import { EditableProduct, Category } from "@/lib/types";
 import ProductRow from "./ProductRow";
@@ -14,11 +14,12 @@ type Props = {
 	sortOrder: "asc" | "desc";
 	handleSort: (column: string) => void;
 	categories: Category[];
+	departments: { id: number; name: string }[];
 	onProductUpdate: (updated: EditableProduct) => void;
 	user?: User | null;
 };
 
-const ProductTable = React.memo(({ products, loading, sortBy, sortOrder, handleSort, categories, user, onProductUpdate }: Props) => {
+const ProductsTable = React.memo(({ products, loading, sortBy, sortOrder, handleSort, categories, departments, user, onProductUpdate }: Props) => {
 	const renderSortIcon = (column: string) => {
 		if (sortBy !== column) {
 			return <ArrowDownWideNarrow size={14} className="inline-block text-gray-300 ml-1" />;
@@ -81,9 +82,11 @@ const ProductTable = React.memo(({ products, loading, sortBy, sortOrder, handleS
 
 	return (
 		<>
-			<button onClick={handleAddProduct} className="text-sm text-green-600 hover:underline border border-green-600 px-3 py-1 rounded">
-				+ Добавить товар
-			</button>
+			{user?.role !== "manager" && (
+				<button onClick={handleAddProduct} className="text-sm text-green-600 hover:underline border border-green-600 px-3 py-1 rounded">
+					+ Добавить товар
+				</button>
+			)}
 			<table className="w-full table-fixed text-sm border border-black/10border-gray-300">
 				<thead className="bg-gray-100 text-left">
 					<tr>
@@ -107,7 +110,7 @@ const ProductTable = React.memo(({ products, loading, sortBy, sortOrder, handleS
 						<th className="border border-black/10 px-2 py-1 text-center w-1/6">Изображение</th>
 						{user?.role === "superadmin" && <th className="border border-black/10 px-2 py-1 cursor-default w-1/6">Отдел</th>}
 
-						<th className="border border-black/10 px-2 py-1 text-center w-1/6">Действия</th>
+						{user?.role !== "manager" && <th className="border border-black/10 px-2 py-1 text-center w-1/6">Действия</th>}
 					</tr>
 				</thead>
 
@@ -118,6 +121,7 @@ const ProductTable = React.memo(({ products, loading, sortBy, sortOrder, handleS
 								key={`${product.id}-${product.updatedAt}`}
 								product={product}
 								categories={categories}
+								departments={departments}
 								onUpdate={handleProductUpdate}
 								onDelete={handleProductDelete}
 								user={user}
@@ -138,4 +142,4 @@ const ProductTable = React.memo(({ products, loading, sortBy, sortOrder, handleS
 });
 
 // Мемоизированный компонент
-export default ProductTable;
+export default ProductsTable;

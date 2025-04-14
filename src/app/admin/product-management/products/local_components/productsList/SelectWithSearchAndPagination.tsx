@@ -1,4 +1,4 @@
-// src/app/admin/product-management/items/local_components/productList/SelectWithSearchAndPagination.tsx
+// src\app\admin\product-management\products\local_components\productsList\SelectWithSearchAndPagination.tsx
 
 "use client";
 
@@ -81,19 +81,34 @@ export default function SelectWithSearchAndPagination({ options, value, onChange
 						{placeholder ? `${placeholder}` : "Все"}
 					</button>
 
-					{displayOptions.map((opt) => (
-						<button
-							key={opt.id}
-							onClick={() => {
-								onChange(opt.id);
-								setShowDropdown(false);
-								setSearchTerm("");
-							}}
-							className="block w-full text-left px-2 py-1 text-sm hover:bg-gray-100"
-						>
-							{opt.title} {opt.productCount !== undefined && <span className="text-gray-400 ml-1">({opt.productCount})</span>}
-						</button>
-					))}
+					{displayOptions.map((opt) => {
+						const titleParts = searchTerm ? opt.title.split(new RegExp(`(${searchTerm})`, "gi")) : [opt.title];
+
+						return (
+							<button
+								key={opt.id}
+								onClick={() => {
+									onChange(opt.id);
+									setShowDropdown(false);
+									setSearchTerm("");
+								}}
+								className="block w-full text-left px-2 py-1 text-sm hover:bg-gray-100"
+							>
+								<span>
+									{titleParts.map((part, idx) =>
+										part.toLowerCase() === searchTerm.toLowerCase() ? (
+											<span key={idx} className="font-bold">
+												{part}
+											</span>
+										) : (
+											<span key={idx}>{part}</span>
+										)
+									)}
+								</span>
+								{opt.productCount !== undefined && <span className="text-gray-400 ml-1">({opt.productCount})</span>}
+							</button>
+						);
+					})}
 
 					{displayOptions.length < filtered.length && (
 						<button onClick={loadMore} className="block w-full text-left px-2 py-1 text-sm hover:bg-gray-100">

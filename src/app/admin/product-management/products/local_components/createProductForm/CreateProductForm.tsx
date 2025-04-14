@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Category } from "@/lib/types";
-import CategorySelect from "../productList/CategorySelect";
+import CategorySelect from "../productsList/CategorySelect";
 import Link from "next/link";
 
 type ProductFormProps = {

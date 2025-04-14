@@ -1,3 +1,5 @@
+// src\app\admin\product-management\products\local_components\productsUpload\ProductsUpload.tsx
+
 "use client";
 
 import { useRef, useState } from "react";
@@ -7,7 +9,7 @@ import UploadBox from "./UploadBox";
 import ColumnMatcher from "./ColumnMatcher";
 import PreviewTable from "./PreviewTable";
 
-export default function Pricelist() {
+export default function ProductsUpload() {
 	const [file, setFile] = useState<File | null>(null);
 	const [preview, setPreview] = useState<any[][] | null>(null);
 	const [errors, setErrors] = useState<Record<string, string>>({});

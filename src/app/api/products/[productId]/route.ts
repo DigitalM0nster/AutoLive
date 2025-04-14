@@ -98,16 +98,25 @@ export const PUT = withPermission(
 				return NextResponse.json({ error: "Недостаточно прав для редактирования этого товара" }, { status: 403 });
 			}
 
+			const dataToUpdate: any = {
+				sku: body.sku,
+				title: body.title,
+				description: body.description,
+				price: body.price,
+				brand: body.brand,
+				categoryId: body.categoryId,
+				image: body.image,
+			};
+
+			if (user.role === "superadmin") {
+				dataToUpdate.departmentId = body.departmentId ?? null;
+			}
+
 			const product = await prisma.product.update({
 				where: { id: productId },
-				data: {
-					sku: body.sku,
-					title: body.title,
-					description: body.description,
-					price: body.price,
-					brand: body.brand,
-					categoryId: body.categoryId,
-					image: body.image,
+				data: dataToUpdate,
+				include: {
+					department: true,
 				},
 			});
 

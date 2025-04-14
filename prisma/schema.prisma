@@ -24,7 +24,7 @@ model User {
     createdAt  DateTime   @default(now()) @map("created_at")
 
     departmentId Int?        @map("department_id")
-    department   Department? @relation("DepartmentManagers", fields: [departmentId], references: [id])
+    department   Department? @relation("DepartmentUsers", fields: [departmentId], references: [id])
 
     managerOrders Order[] @relation("ManagerOrders")
     clientOrders  Order[] @relation("ClientOrders")
@@ -293,7 +293,7 @@ model Department {
     name      String   @map("name")
     createdAt DateTime @default(now()) @map("created_at")
 
-    managers User[]    @relation("DepartmentManagers")
+    users    User[]    @relation("DepartmentUsers")
     products Product[]
     orders   Order[]
 

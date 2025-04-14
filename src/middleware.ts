@@ -18,6 +18,7 @@ export function middleware(request: NextRequest) {
 
 	// Если пользователь на /admin (форма логина)
 	if (pathname === "/admin") {
+		console.log("token:", token);
 		if (token) {
 			// Декодировать токен и проверить роль
 			const userRole = JSON.parse(atob(token.split(".")[1])).role;

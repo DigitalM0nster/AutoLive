@@ -1,4 +1,4 @@
-// src/app/api/products/route.ts
+// src\app\api\products\route.ts
 
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
@@ -50,8 +50,16 @@ type ProductResponse = {
 	};
 };
 
+interface ExtendedRequestContext {
+	user: {
+		role: "superadmin" | "admin" | "manager";
+		departmentId: number | null;
+	};
+	scope: string;
+}
+
 export const GET = withPermission(
-	async (req, { user, scope }) => {
+	async (req: NextRequest, { user }: ExtendedRequestContext) => {
 		const { searchParams } = new URL(req.url);
 
 		const sortBy = searchParams.get("sortBy") || "createdAt";
@@ -62,6 +70,9 @@ export const GET = withPermission(
 		const limit = parseInt(searchParams.get("limit") || "10");
 		const brand = searchParams.get("brand") || undefined;
 		const categoryId = searchParams.get("categoryId") || undefined;
+		const departmentId = searchParams.get("departmentId");
+		console.log("Принято departmentId:", departmentId);
+
 		const search = searchParams.get("search")?.toLowerCase();
 
 		const searchFilter: Prisma.ProductWhereInput[] = search ? [{ title: { contains: search } }, { sku: { contains: search } }, { brand: { contains: search } }] : [];
@@ -75,8 +86,16 @@ export const GET = withPermission(
 					lt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30),
 				},
 			}),
-			...(scope === "department" && user.departmentId ? { departmentId: user.departmentId } : {}),
 		};
+
+		// 📌 ЯВНО ДОБАВЛЯЕМ departmentId
+		if (user?.role === "superadmin") {
+			if (departmentId !== null && departmentId !== "") {
+				where.departmentId = parseInt(departmentId);
+			}
+		} else if (user?.departmentId) {
+			where.departmentId = user.departmentId;
+		}
 
 		const orderBy: Prisma.ProductOrderByWithRelationInput = sortBy === "categoryTitle" ? { category: { title: order } } : { [sortBy]: order };
 
@@ -89,40 +108,13 @@ export const GET = withPermission(
 					category: true,
 					department: true,
 				},
-			};
-
-			if (cursor) {
-				queryOptions.cursor = { id: parseInt(cursor) };
-				queryOptions.skip = 1;
-			}
-
-			const products: ProductWithRelations[] = await prisma.product.findMany({
-				where,
-				take: limit,
-				orderBy,
-				include: {
-					category: {
-						select: {
-							id: true,
-							title: true,
-							image: true,
-							createdAt: true,
-							order: true,
-						},
-					},
-					department: {
-						select: {
-							id: true,
-							name: true,
-							createdAt: true,
-						},
-					},
-				},
 				...(cursor && {
 					cursor: { id: parseInt(cursor) },
 					skip: 1,
 				}),
-			});
+			};
+
+			const products = (await prisma.product.findMany(queryOptions)) as ProductWithRelations[];
 
 			const mappedProducts: ProductResponse[] = products.map((p) => ({
 				id: p.id,
@@ -152,6 +144,44 @@ export const GET = withPermission(
 			return new NextResponse("Ошибка сервера", { status: 500 });
 		}
 	},
-	"edit_products",
+	"view_products", // или другой скоуп, если используешь
 	["superadmin", "admin", "manager"]
+);
+
+export const POST = withPermission(
+	async (req: NextRequest, { user }: ExtendedRequestContext) => {
+		try {
+			const data = await req.json();
+
+			// Только superadmin может указать departmentId вручную
+			const departmentId = user.role === "superadmin" ? data.departmentId ?? null : user.departmentId ?? null;
+
+			if (!departmentId) {
+				return new NextResponse("Отдел не определён", { status: 400 });
+			}
+
+			const newProduct = await prisma.product.create({
+				data: {
+					title: data.title,
+					sku: data.sku,
+					price: data.price,
+					brand: data.brand,
+					description: data.description,
+					image: data.image,
+					categoryId: data.categoryId,
+					departmentId,
+				},
+				include: {
+					department: true,
+				},
+			});
+
+			return NextResponse.json({ product: newProduct });
+		} catch (error) {
+			console.error("Ошибка при создании товара:", error);
+			return new NextResponse("Ошибка сервера", { status: 500 });
+		}
+	},
+	"edit_products",
+	["superadmin", "admin"]
 );

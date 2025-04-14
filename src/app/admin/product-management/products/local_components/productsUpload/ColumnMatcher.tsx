@@ -1,4 +1,4 @@
-// src\app\admin\product-management\items\local_components\importPricelist\ColumnMatcher.tsx
+// src\app\admin\product-management\products\local_components\productsUpload\ColumnMatcher.tsx
 
 import { Dispatch, SetStateAction } from "react";
 import { AlertCircle } from "lucide-react"; // ← Иконка ошибки

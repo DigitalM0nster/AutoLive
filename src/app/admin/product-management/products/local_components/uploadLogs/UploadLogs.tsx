@@ -1,4 +1,4 @@
-// src/app/admin/products/items/local_components/importLogs/ImportLogs.tsx
+// src\app\admin\product-management\products\local_components\uploadLogs\UploadLogs.tsx
 
 "use client";
 
@@ -18,7 +18,7 @@ type ImportLog = {
 	};
 };
 
-export default function PricelistLogs() {
+export default function UploadLogs() {
 	const [logs, setLogs] = useState<ImportLog[]>([]);
 	const [loading, setLoading] = useState(true);
 

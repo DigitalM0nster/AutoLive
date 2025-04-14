@@ -1,4 +1,4 @@
-// src\app\admin\product-management\items\local_components\importPricelist\PreviewTable.tsx
+// src\app\admin\product-management\products\local_components\productsUpload\PreviewTable.tsx
 
 "use client";
 

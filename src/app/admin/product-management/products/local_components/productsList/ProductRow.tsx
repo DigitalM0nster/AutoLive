@@ -6,12 +6,14 @@ import { showErrorToast, showSuccessToast } from "@/components/ui/toast/toastSer
 export default function ProductRow({
 	product,
 	categories,
+	departments,
 	onUpdate,
 	onDelete,
 	user,
 }: {
 	product: EditableProduct;
 	categories: Category[];
+	departments: { id: number; name: string }[];
 	onUpdate: (updated: EditableProduct) => void;
 	onDelete: (id: string | number) => void;
 	user?: User | null;
@@ -24,6 +26,7 @@ export default function ProductRow({
 		price: product.price.toString(),
 		brand: product.brand,
 		categoryId: product.categoryId?.toString() || "",
+		departmentId: product.department?.id?.toString() || "",
 		image: product.image || "",
 	});
 	const [imageFile, setImageFile] = useState<File | null>(null);
@@ -84,6 +87,9 @@ export default function ProductRow({
 			brand: form.brand,
 			categoryId: form.categoryId ? parseInt(form.categoryId) : null,
 			image: imageUrl,
+			...(user?.role === "superadmin" && {
+				departmentId: form.departmentId ? parseInt(form.departmentId) : null, // ✅
+			}),
 		};
 
 		try {
@@ -94,10 +100,15 @@ export default function ProductRow({
 			});
 
 			if (res.ok) {
-				const json = await res.json();
+				let json: any = null;
+				try {
+					json = await res.json();
+				} catch (_) {
+					// тело не JSON — ничего не делаем
+				}
 				const savedProduct = product.id === "new" ? json.product : { ...json.product, id: product.id };
-
 				const selectedCategory = categories.find((c) => c.id === savedProduct.categoryId);
+				const selectedDepartment = departments.find((d) => d.id === savedProduct.departmentId);
 				const updatedProduct: EditableProduct = {
 					id: savedProduct.id,
 					sku: savedProduct.sku,
@@ -108,9 +119,10 @@ export default function ProductRow({
 					image: savedProduct.image,
 					categoryId: savedProduct.categoryId,
 					categoryTitle: selectedCategory?.title || "—",
-					createdAt: savedProduct.createdAt,
-					updatedAt: savedProduct.updatedAt || new Date().toISOString(),
+					createdAt: new Date(savedProduct.createdAt).toISOString(),
+					updatedAt: new Date(savedProduct.updatedAt).toISOString(),
 					filters: savedProduct.filters || [],
+					department: selectedDepartment ? { id: selectedDepartment.id, name: selectedDepartment.name } : undefined,
 				};
 
 				onUpdate(updatedProduct);
@@ -149,7 +161,7 @@ export default function ProductRow({
 
 	return (
 		<tr className={isStale(product.updatedAt) ? "bg-yellow-50" : ""}>
-			<td className="border border-black/10 px-2 py-1 w-1/6">
+			<td className="tableBlock border border-black/10 px-2 py-1 w-1/6">
 				{isEditing ? (
 					<input
 						type="text"
@@ -166,7 +178,8 @@ export default function ProductRow({
 					product.brand
 				)}
 			</td>
-			<td className="border border-black/10 px-2 py-1 w-1/6">
+
+			<td className="tableBlock border border-black/10 px-2 py-1 w-1/6">
 				{isEditing ? (
 					<input
 						type="text"
@@ -184,7 +197,7 @@ export default function ProductRow({
 				)}
 			</td>
 
-			<td className="border border-black/10 px-2 py-1 w-1/6">
+			<td className="tableBlock border border-black/10 px-2 py-1 w-1/6">
 				{isEditing ? (
 					<input
 						type="text"
@@ -202,7 +215,7 @@ export default function ProductRow({
 				)}
 			</td>
 
-			<td className="border border-black/10 px-2 py-1 w-1/6">
+			<td className="tableBlock border border-black/10 px-2 py-1 w-1/6">
 				{isEditing ? (
 					<textarea
 						value={form.description}
@@ -214,7 +227,7 @@ export default function ProductRow({
 				)}
 			</td>
 
-			<td className="border border-black/10 px-2 py-1 w-1/6">
+			<td className="tableBlock border border-black/10 px-2 py-1 w-1/6">
 				{isEditing ? (
 					<input
 						type="number"
@@ -232,7 +245,7 @@ export default function ProductRow({
 				)}
 			</td>
 
-			<td className="border border-black/10 px-2 py-1 w-1/6">
+			<td className="tableBlock border border-black/10 px-2 py-1 w-1/6">
 				{isEditing ? (
 					<select value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })} className="w-full border px-1 py-0.5 text-sm rounded">
 						<option value="">Выбрать...</option>
@@ -248,7 +261,7 @@ export default function ProductRow({
 				)}
 			</td>
 
-			<td className="border border-black/10 px-2 py-1 w-1/6 text-center">
+			<td className="tableBlock border border-black/10 px-2 py-1 w-1/6 text-center">
 				{isEditing ? (
 					<div className="relative w-10 h-10 mx-auto group">
 						<label
@@ -309,58 +322,80 @@ export default function ProductRow({
 				)}
 			</td>
 
-			{user?.role === "superadmin" && <td className="border border-black/10 px-2 py-1 w-1/6">{product.department?.name || "—"}</td>}
+			{user?.role === "superadmin" && (
+				<td className="tableBlock border border-black/10 px-2 py-1 w-1/6">
+					{isEditing ? (
+						<select
+							value={form.departmentId}
+							onChange={(e) => setForm({ ...form, departmentId: e.target.value })}
+							className="w-full border px-1 py-0.5 text-sm rounded"
+						>
+							<option value="">Без отдела</option>
+							{departments.map((dep) => (
+								<option key={dep.id} value={dep.id}>
+									{dep.name}
+								</option>
+							))}
+						</select>
+					) : (
+						product.department?.name || "—"
+					)}
+				</td>
+			)}
 
-			<td className="border border-black/10 px-2 py-1 text-center w-1/6">
-				{isEditing ? (
-					<>
-						<button onClick={handleSave} disabled={isSaving} className="text-green-600 hover:underline text-xs mr-2">
-							{isSaving ? "Сохраняем..." : "Сохранить"}
-						</button>
-						<button
-							onClick={() => {
-								if (product.id === "new") {
-									onDelete("new");
-								} else {
-									setIsEditing(false);
-									setForm({
-										title: product.title,
-										description: product.description,
-										sku: product.sku,
-										price: product.price.toString(),
-										brand: product.brand,
-										categoryId: product.categoryId?.toString() || "",
-										image: product.image || "",
-									});
-									setImageFile(null);
-									setImagePreview(product.image || null);
-								}
-							}}
-							className="text-gray-600 hover:underline text-xs"
-						>
-							{product.id === "new" ? "Удалить" : "Отмена"}
-						</button>
-					</>
-				) : (
-					<>
-						<button onClick={() => setIsEditing(true)} className="text-blue-600 hover:underline text-xs mr-2">
-							Редактировать
-						</button>
-						<button
-							onClick={() => {
-								if (product.id === "new") {
-									onDelete("new");
-								} else {
-									handleDelete();
-								}
-							}}
-							className="text-red-600 hover:underline text-xs"
-						>
-							Удалить
-						</button>
-					</>
-				)}
-			</td>
+			{user?.role !== "manager" && (
+				<td className="tableBlock border border-black/10 px-2 py-1 text-center w-1/6">
+					{isEditing ? (
+						<>
+							<button onClick={handleSave} disabled={isSaving} className="text-green-600 hover:underline text-xs mr-2">
+								{isSaving ? "Сохраняем..." : "Сохранить"}
+							</button>
+							<button
+								onClick={() => {
+									if (product.id === "new") {
+										onDelete("new");
+									} else {
+										setIsEditing(false);
+										setForm({
+											title: product.title,
+											description: product.description,
+											sku: product.sku,
+											price: product.price.toString(),
+											brand: product.brand,
+											categoryId: product.categoryId?.toString() || "",
+											image: product.image || "",
+											departmentId: product.department?.id?.toString() || "",
+										});
+										setImageFile(null);
+										setImagePreview(product.image || null);
+									}
+								}}
+								className="text-gray-600 hover:underline text-xs"
+							>
+								{product.id === "new" ? "Удалить" : "Отмена"}
+							</button>
+						</>
+					) : (
+						<>
+							<button onClick={() => setIsEditing(true)} className="text-blue-600 hover:underline text-xs mr-2">
+								Редактировать
+							</button>
+							<button
+								onClick={() => {
+									if (product.id === "new") {
+										onDelete("new");
+									} else {
+										handleDelete();
+									}
+								}}
+								className="text-red-600 hover:underline text-xs"
+							>
+								Удалить
+							</button>
+						</>
+					)}
+				</td>
+			)}
 		</tr>
 	);
 }
