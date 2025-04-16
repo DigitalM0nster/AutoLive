@@ -1,6 +1,6 @@
 // src\app\admin\product-management\products\local_components\productList\ProductRow.tsx
 import { useState } from "react";
-import { EditableProduct, Category, User } from "@/lib/types";
+import { EditableProduct, Category, User, Product } from "@/lib/types";
 import { showErrorToast, showSuccessToast } from "@/components/ui/toast/toastService";
 
 export default function ProductRow({
@@ -12,6 +12,8 @@ export default function ProductRow({
 	onUpdate,
 	onDelete,
 	user,
+	toEditableProduct,
+	toProductForm,
 }: {
 	product: EditableProduct;
 	categories: Category[];
@@ -21,18 +23,11 @@ export default function ProductRow({
 	onUpdate: (updated: EditableProduct) => void;
 	onDelete: (id: string | number) => void;
 	user?: User | null;
+	toEditableProduct: (product: Product) => EditableProduct;
+	toProductForm: (product: EditableProduct) => any;
 }) {
 	const [isEditing, setIsEditing] = useState(product.id === "new" || (product as any).isEditing);
-	const [form, setForm] = useState({
-		title: product.title,
-		description: product.description || "",
-		sku: product.sku,
-		price: product.price.toString(),
-		brand: product.brand,
-		categoryId: product.categoryId?.toString() || "",
-		departmentId: product.department?.id?.toString() || "",
-		image: product.image || "",
-	});
+	const [form, setForm] = useState(toProductForm(product));
 	const [imageFile, setImageFile] = useState<File | null>(null);
 	const [imagePreview, setImagePreview] = useState<string | null>(product.image || null);
 	const [errors, setErrors] = useState<Partial<Record<keyof typeof form, string>>>({});
@@ -86,6 +81,7 @@ export default function ProductRow({
 			sku: form.sku,
 			title: form.title,
 			description: form.description,
+			supplierPrice: form.supplierPrice ? parseFloat(form.supplierPrice) : null,
 			price: parseFloat(form.price),
 			brand: form.brand,
 			categoryId: form.categoryId ? parseInt(form.categoryId) : null,
@@ -151,24 +147,7 @@ export default function ProductRow({
 					// тело не JSON — ничего не делаем
 				}
 				const savedProduct = product.id === "new" ? json.product : { ...json.product, id: product.id };
-				const selectedCategory = categories.find((c) => c.id === savedProduct.categoryId);
-				const selectedDepartment = departments.find((d) => d.id === savedProduct.departmentId);
-				const updatedProduct: EditableProduct = {
-					id: savedProduct.id,
-					sku: savedProduct.sku,
-					title: savedProduct.title,
-					description: savedProduct.description || "",
-					price: savedProduct.price,
-					brand: savedProduct.brand,
-					image: savedProduct.image,
-					categoryId: savedProduct.categoryId,
-					categoryTitle: selectedCategory?.title || "—",
-					createdAt: new Date(savedProduct.createdAt).toISOString(),
-					updatedAt: new Date(savedProduct.updatedAt).toISOString(),
-					filters: savedProduct.filters || [],
-					department: selectedDepartment ? { id: selectedDepartment.id, name: selectedDepartment.name } : undefined,
-				};
-
+				const updatedProduct = toEditableProduct(savedProduct);
 				onUpdate(updatedProduct);
 				setIsEditing(false);
 				setImageFile(null);
@@ -276,6 +255,22 @@ export default function ProductRow({
 					{isEditing ? (
 						<input
 							type="number"
+							value={form.supplierPrice}
+							onChange={(e) => setForm({ ...form, supplierPrice: e.target.value })}
+							className="w-full border px-1 py-0.5 text-sm rounded"
+							placeholder="0"
+						/>
+					) : product.supplierPrice ? (
+						`${product.supplierPrice} ₽`
+					) : (
+						"—"
+					)}
+				</td>
+
+				<td className="tableBlock border border-black/10 px-2 py-1 w-1/6">
+					{isEditing ? (
+						<input
+							type="number"
 							value={form.price}
 							onChange={(e) => {
 								setForm({ ...form, price: e.target.value });
@@ -342,7 +337,7 @@ export default function ProductRow({
 										onClick={() => {
 											setImageFile(null);
 											setImagePreview(null);
-											setForm((prev) => ({ ...prev, image: "" }));
+											setForm((prev: typeof form) => ({ ...prev, image: "" }));
 										}}
 										className="absolute -top-2 -right-2 bg-white text-red-600 border border-red-400 rounded-full w-4 h-4 text-[10px] flex items-center justify-center z-30 shadow hover:scale-110 transition"
 										title="Удалить изображение"
@@ -401,16 +396,7 @@ export default function ProductRow({
 											onDelete("new");
 										} else {
 											setIsEditing(false);
-											setForm({
-												title: product.title,
-												description: product.description,
-												sku: product.sku,
-												price: product.price.toString(),
-												brand: product.brand,
-												categoryId: product.categoryId?.toString() || "",
-												image: product.image || "",
-												departmentId: product.department?.id?.toString() || "",
-											});
+											setForm(toProductForm(product));
 											setImageFile(null);
 											setImagePreview(product.image || null);
 										}

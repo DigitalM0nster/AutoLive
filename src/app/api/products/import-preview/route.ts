@@ -1,13 +1,14 @@
-// src/app/api/products/preview/route.ts
-
 import { NextResponse } from "next/server";
 import { read, utils } from "xlsx";
 import { withPermission } from "@/middleware/permissionMiddleware";
+import { OBJECTS_PER_PAGE } from "@/lib/objectsPerPage";
 
-// 👇 Только админы и суперадмины могут использовать предпросмотр
 export const POST = withPermission(
 	async (req, { user }) => {
 		try {
+			const { searchParams } = new URL(req.url);
+			const page = parseInt(searchParams.get("page") || "1");
+
 			const formData = await req.formData();
 			const file = formData.get("file") as File;
 
@@ -21,10 +22,17 @@ export const POST = withPermission(
 
 			const rows = utils.sheet_to_json(sheet, { header: 1, defval: "" }) as any[][];
 
-			// Убираем полностью пустые строки
 			const nonEmptyRows = rows.filter((row) => row.some((cell) => cell !== ""));
 
-			return NextResponse.json({ rows: nonEmptyRows });
+			const start = (page - 1) * OBJECTS_PER_PAGE;
+			const end = page * OBJECTS_PER_PAGE;
+			const pageRows = nonEmptyRows.slice(start, end);
+
+			return NextResponse.json({
+				rows: pageRows,
+				total: nonEmptyRows.length,
+				page,
+			});
 		} catch (error) {
 			console.error("Ошибка при парсинге файла:", error);
 			return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });

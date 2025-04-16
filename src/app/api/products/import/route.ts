@@ -41,6 +41,46 @@ export const POST = withPermission(
 			const formData = await req.formData();
 			const file = formData.get("file") as File;
 			const columns = JSON.parse(formData.get("columns") as string);
+			const rawMarkupRules = JSON.parse(formData.get("markupRules") as string) as {
+				from: number | null;
+				to: number | null;
+				type: "%" | "₽";
+				value: number | null;
+			}[];
+
+			const markupRules = rawMarkupRules
+				.filter((r) => {
+					// отсекаем невалидные или пустые
+					if (r.value === null || isNaN(r.value)) return false;
+
+					const from = r.from ?? 0;
+					const to = r.to ?? Infinity;
+
+					// отсекаем если from > to
+					if (from > to) return false;
+
+					return true;
+				})
+				.map((r) => ({
+					from: r.from ?? 0,
+					to: r.to ?? Infinity,
+					type: r.type,
+					value: r.value!,
+				}));
+
+			function applyMarkup(supplierPrice: number, rules: typeof markupRules, fallback: typeof defaultMarkup): number {
+				for (const rule of rules) {
+					if (supplierPrice >= rule.from && supplierPrice <= rule.to) {
+						return rule.type === "%" ? Math.round(supplierPrice * (1 + rule.value / 100)) : Math.round(supplierPrice + rule.value);
+					}
+				}
+				return fallback.type === "%" ? Math.round(supplierPrice * (1 + fallback.value / 100)) : Math.round(supplierPrice + fallback.value);
+			}
+
+			const defaultMarkup = JSON.parse(formData.get("defaultMarkup") as string) as {
+				type: "%" | "₽";
+				value: number;
+			};
 
 			if (!file) {
 				return NextResponse.json({ error: "Файл не получен" }, { status: 400 });
@@ -106,7 +146,10 @@ export const POST = withPermission(
 						return { skipped: true };
 					}
 
-					const price = typeof priceRaw === "string" ? parseFloat(priceRaw.replace(",", ".")) : priceRaw;
+					const supplierPrice = typeof priceRaw === "string" ? parseFloat(priceRaw.replace(",", ".")) : priceRaw;
+					if (!supplierPrice || isNaN(supplierPrice)) return { skipped: true };
+
+					const price = applyMarkup(supplierPrice, markupRules, defaultMarkup);
 
 					const categoryTitle = columns.category !== undefined && columns.category !== -1 ? row[columns.category]?.toString().trim() : null;
 					const description = columns.description !== undefined && columns.description !== -1 ? row[columns.description]?.toString().trim() : null;
@@ -131,6 +174,7 @@ export const POST = withPermission(
 							data: {
 								title,
 								price,
+								supplierPrice,
 								categoryId,
 								description: description || null,
 							},
@@ -144,6 +188,7 @@ export const POST = withPermission(
 								title,
 								brand,
 								price,
+								supplierPrice,
 								image: null,
 								description: description || null,
 								categoryId,

@@ -6,7 +6,7 @@ import UploadLogs from "./local_components/uploadLogs/UploadLogs";
 import { useAuthStore } from "@/store/authStore";
 
 const ProductTabsPage = () => {
-	const [activeTab, setActiveTab] = useState<"products" | "pricelists">("products");
+	const [activeTab, setActiveTab] = useState<"products" | "pricelists" | "logs">("products");
 	const { user } = useAuthStore();
 
 	useEffect(() => {
@@ -31,20 +31,31 @@ const ProductTabsPage = () => {
 					>
 						Загрузка товаров
 					</button>
+					<button
+						onClick={() => setActiveTab("logs")}
+						className={`pb-2 px-4 border-b-2 transition-all ${activeTab === "logs" ? "border-black font-semibold" : "border-transparent text-gray-500"}`}
+					>
+						История загрузок
+					</button>
 				</div>
-			)}
-
-			{activeTab === "pricelists" && (
-				<>
-					<ProductsUpload />
-					<UploadLogs />
-				</>
 			)}
 
 			{activeTab === "products" && (
 				<>
 					{user?.role === "manager" && <div className="text-3xl font-bold text-gray-800 mb-8">Список товаров</div>}
 					<ProductsList />
+				</>
+			)}
+
+			{user?.role !== "manager" && activeTab === "pricelists" && (
+				<>
+					<ProductsUpload />
+				</>
+			)}
+
+			{user?.role !== "manager" && activeTab === "logs" && (
+				<>
+					<UploadLogs />
 				</>
 			)}
 		</div>

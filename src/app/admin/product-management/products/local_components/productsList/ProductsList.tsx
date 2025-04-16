@@ -4,14 +4,14 @@
 import { useEffect, useRef, useState } from "react";
 import ProductsFilterPanel from "./ProductsFilterPanel";
 import ProductsTable from "./ProductsTable";
-import type { Product, Category } from "@/lib/types";
+import type { Product, Category, EditableProduct } from "@/lib/types";
 import useDebounce from "@/hooks/useDebounce";
 import { useAuthStore } from "@/store/authStore";
 
 export default function ProductsList() {
 	const { user } = useAuthStore();
 	// Состояния для данных
-	const [products, setProducts] = useState<Product[]>([]);
+	const [products, setProducts] = useState<EditableProduct[]>([]);
 	const [brands, setBrands] = useState<string[]>([]);
 	const [categories, setCategories] = useState<Category[]>([]);
 	const [departments, setDepartments] = useState<{ id: number; name: string }[]>([]);
@@ -121,6 +121,29 @@ export default function ProductsList() {
 		}
 	};
 
+	function toEditableProduct(product: Product, categories: Category[], departments: { id: number; name: string }[]): EditableProduct {
+		return {
+			...product,
+			isEditing: false,
+			categoryTitle: categories.find((c) => c.id === product.categoryId)?.title || "—",
+			department: product.department ? departments.find((d) => d.id === product?.department?.id) : undefined,
+		};
+	}
+
+	function toProductForm(product: EditableProduct) {
+		return {
+			title: product.title,
+			description: product.description || "",
+			sku: product.sku,
+			supplierPrice: product.supplierPrice !== null && product.supplierPrice !== undefined ? product.supplierPrice.toString() : "",
+			price: product.price.toString(),
+			brand: product.brand,
+			categoryId: product.categoryId?.toString() || "",
+			departmentId: product.department?.id?.toString() || "",
+			image: product.image || "",
+		};
+	}
+
 	return (
 		<>
 			<div className="mt-8">
@@ -163,32 +186,19 @@ export default function ProductsList() {
 					departments={departments}
 					user={user}
 					onProductUpdate={(updatedProduct) => {
+						// можно оставить даже проверку на new, если ты не хочешь сохранять его в список
 						if (updatedProduct.id === "new") return;
 
-						const cleanedProduct: Product = {
-							id: updatedProduct.id,
-							sku: updatedProduct.sku,
-							title: updatedProduct.title,
-							description: updatedProduct.description,
-							price: updatedProduct.price,
-							brand: updatedProduct.brand,
-							image: updatedProduct.image,
-							categoryId: updatedProduct.categoryId,
-							categoryTitle: updatedProduct.categoryTitle,
-							createdAt: updatedProduct.createdAt,
-							updatedAt: updatedProduct.updatedAt,
-							filters: updatedProduct.filters,
-							department: updatedProduct.department ?? undefined, // 👈 ДОБАВЬ ЭТО
-						};
-
 						setProducts((prev) => {
-							const exists = prev.some((p) => p.id === cleanedProduct.id);
+							const exists = prev.some((p) => p.id === updatedProduct.id);
 							if (exists) {
-								return prev.map((p) => (p.id === cleanedProduct.id ? cleanedProduct : p));
+								return prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p));
 							}
-							return [cleanedProduct, ...prev];
+							return [updatedProduct, ...prev];
 						});
 					}}
+					toEditableProduct={(product) => toEditableProduct(product, categories, departments)}
+					toProductForm={toProductForm}
 				/>
 
 				{!loading && cursor && (

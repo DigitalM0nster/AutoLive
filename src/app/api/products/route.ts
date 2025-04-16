@@ -11,6 +11,7 @@ type ProductWithRelations = {
 	sku: string;
 	brand: string;
 	price: number;
+	supplierPrice?: number | null;
 	description: string | null;
 	image: string | null;
 	createdAt: Date;
@@ -36,6 +37,7 @@ type ProductResponse = {
 	sku: string;
 	title: string;
 	description: string | null;
+	supplierPrice?: number | null;
 	price: number;
 	brand: string;
 	image: string | null;
@@ -71,7 +73,6 @@ export const GET = withPermission(
 		const brand = searchParams.get("brand") || undefined;
 		const categoryId = searchParams.get("categoryId") || undefined;
 		const departmentId = searchParams.get("departmentId");
-		console.log("Принято departmentId:", departmentId);
 
 		const search = searchParams.get("search")?.toLowerCase();
 
@@ -122,6 +123,7 @@ export const GET = withPermission(
 				title: p.title,
 				description: p.description,
 				price: p.price,
+				supplierPrice: p.supplierPrice ?? null,
 				brand: p.brand,
 				image: p.image,
 				createdAt: p.createdAt,
@@ -170,11 +172,54 @@ export const POST = withPermission(
 				return new NextResponse("Товар с таким артикулом и брендом уже существует", { status: 409 });
 			}
 
+			// Найдём наценку, если price не передан
+			let supplierPrice = data.supplierPrice ?? data.price;
+			let finalPrice = data.price;
+
+			if (!finalPrice && supplierPrice) {
+				const markupRule = await prisma.markupRule.findFirst({
+					where: {
+						OR: [
+							{
+								brand: data.brand,
+								categoryId: data.categoryId,
+								departmentId,
+								priceFrom: { lte: supplierPrice },
+								OR: [{ priceTo: null }, { priceTo: { gte: supplierPrice } }],
+							},
+							{
+								brand: data.brand,
+								departmentId,
+								priceFrom: { lte: supplierPrice },
+								OR: [{ priceTo: null }, { priceTo: { gte: supplierPrice } }],
+							},
+							{
+								categoryId: data.categoryId,
+								departmentId,
+								priceFrom: { lte: supplierPrice },
+								OR: [{ priceTo: null }, { priceTo: { gte: supplierPrice } }],
+							},
+							{
+								departmentId,
+								priceFrom: { lte: supplierPrice },
+								OR: [{ priceTo: null }, { priceTo: { gte: supplierPrice } }],
+							},
+						],
+					},
+					orderBy: { priceFrom: "desc" },
+				});
+
+				if (markupRule) {
+					finalPrice = supplierPrice * markupRule.markup;
+				}
+			}
+
 			const newProduct = await prisma.product.create({
 				data: {
 					title: data.title,
 					sku: data.sku,
-					price: data.price,
+					price: finalPrice ?? 0,
+					supplierPrice: supplierPrice ?? null,
 					brand: data.brand,
 					description: data.description,
 					image: data.image,

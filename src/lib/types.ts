@@ -38,6 +38,7 @@ export type Product = {
 	title: string;
 	description: string;
 	price: number;
+	supplierPrice?: number | null;
 	image?: string | null;
 	brand: string;
 	createdAt: string;
@@ -55,8 +56,8 @@ export type Product = {
 	}[];
 };
 
-export type NewProduct = Omit<Product, "id"> & { id: "new"; isEditing: true };
-export type EditableProduct = Product | NewProduct;
+export type NewProduct = Omit<Product, "id"> & { id: "new" };
+export type EditableProduct = (Product & { isEditing?: boolean }) | (Omit<Product, "id"> & { id: "new"; isEditing: true });
 
 export type ProductFilter = {
 	id: number;

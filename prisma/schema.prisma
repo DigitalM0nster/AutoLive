@@ -70,21 +70,24 @@ model Category {
     products Product[]
     Filter   Filter[]
 
-    order Int @default(0) @map("order")
+    order              Int                  @default(0) @map("order")
+    markupRules        MarkupRule[]
+    allowedDepartments DepartmentCategory[]
 
     @@map("category")
 }
 
 model Product {
-    id          Int      @id @default(autoincrement()) @map("id")
-    title       String   @map("title")
-    sku         String   @map("sku")
-    brand       String   @default("UNKNOWN") @map("brand")
-    price       Float    @map("price")
-    description String?  @map("description")
-    image       String?  @map("image")
-    createdAt   DateTime @default(now()) @map("created_at")
-    updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+    id            Int      @id @default(autoincrement()) @map("id")
+    title         String   @map("title")
+    sku           String   @map("sku")
+    brand         String   @default("UNKNOWN") @map("brand")
+    price         Float    @map("price")
+    supplierPrice Float?   @map("supplier_price")
+    description   String?  @map("description")
+    image         String?  @map("image")
+    createdAt     DateTime @default(now()) @map("created_at")
+    updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
 
     categoryId   Int?        @map("category_id")
     category     Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
@@ -293,9 +296,41 @@ model Department {
     name      String   @map("name")
     createdAt DateTime @default(now()) @map("created_at")
 
-    users    User[]    @relation("DepartmentUsers")
-    products Product[]
-    orders   Order[]
+    users             User[]               @relation("DepartmentUsers")
+    products          Product[]
+    orders            Order[]
+    markupRules       MarkupRule[]
+    allowedCategories DepartmentCategory[]
 
     @@map("department")
+}
+
+model DepartmentCategory {
+    id           Int @id @default(autoincrement())
+    departmentId Int
+    categoryId   Int
+
+    department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+    category   Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+    @@unique([departmentId, categoryId])
+}
+
+// ------------------------------
+// НАЦЕНКА
+// ------------------------------
+model MarkupRule {
+    id           Int      @id @default(autoincrement()) @map("id")
+    departmentId Int?     @map("department_id")
+    categoryId   Int?     @map("category_id")
+    brand        String?  @map("brand")
+    priceFrom    Float    @default(0) @map("price_from") // от какой цены
+    priceTo      Float?   @map("price_to") // до какой цены (nullable = ∞)
+    markup       Float    @default(1.0) @map("markup") // коэффициент, например 1.5 = +50%
+    createdAt    DateTime @default(now()) @map("created_at")
+
+    department Department? @relation(fields: [departmentId], references: [id])
+    category   Category?   @relation(fields: [categoryId], references: [id])
+
+    @@map("markup_rule")
 }

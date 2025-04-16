@@ -3,11 +3,13 @@
 "use client";
 
 import { useRef, useState } from "react";
-import Loading from "@/components/ui/loading/Loading";
 import { showSuccessToast, showErrorToast } from "@/components/ui/toast/toastService";
 import UploadBox from "./UploadBox";
-import ColumnMatcher from "./ColumnMatcher";
 import PreviewTable from "./PreviewTable";
+import MarkupRulesEditor, { MarkupRule, DefaultMarkup } from "./MarkupRulesEditor";
+import { OBJECTS_PER_PAGE } from "@/lib/objectsPerPage";
+import Loading from "@/components/ui/loading/Loading";
+import TableSkeleton from "./TableSkeleton";
 
 export default function ProductsUpload() {
 	const [file, setFile] = useState<File | null>(null);
@@ -23,7 +25,11 @@ export default function ProductsUpload() {
 	});
 	const [loading, setLoading] = useState(false);
 	const [totalRows, setTotalRows] = useState<number | null>(null);
-	const [currentPage, setCurrentPage] = useState<number>(1); // Страница
+	const [currentPage, setCurrentPage] = useState<number>(1);
+
+	const [markupRules, setMarkupRules] = useState<MarkupRule[]>([]);
+	const [defaultMarkup, setDefaultMarkup] = useState<DefaultMarkup>({ type: "%", value: 30 });
+	const [hasMarkupErrors, setHasMarkupErrors] = useState(false);
 
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -49,9 +55,11 @@ export default function ProductsUpload() {
 			if (!res.ok) throw new Error("Ошибка при получении превью");
 
 			const data = await res.json();
-			setPreview(data.rows); // Устанавливаем строки для текущей страницы
-			setTotalRows(data.rows.length); // Всего строк
+			setPreview(data.rows);
+			setTotalRows(data.total);
+			console.log("ВСЕГО ROWS!!!!! ", data.total);
 			setCurrentPage(page); // Обновляем текущую страницу
+			console.log("страница!!!! ", page);
 			showSuccessToast(`Файл загружен. Строк: ${data.rows.length}`);
 		} catch (error: any) {
 			showErrorToast("Ошибка при загрузке превью");
@@ -86,6 +94,8 @@ export default function ProductsUpload() {
 		const formData = new FormData();
 		formData.append("file", file);
 		formData.append("columns", JSON.stringify(columns));
+		formData.append("markupRules", JSON.stringify(markupRules));
+		formData.append("defaultMarkup", JSON.stringify(defaultMarkup));
 
 		setLoading(true);
 
@@ -112,8 +122,7 @@ export default function ProductsUpload() {
 	return (
 		<div className="relative border border-black/10 p-4 mb-6">
 			{loading && <Loading />}
-
-			<h2 className="text-lg font-bold mb-4">Загрузка прайс-листа</h2>
+			<h2 className="font-semibold mb-1">Загрузка прайс-листа</h2>
 
 			<UploadBox
 				file={file}
@@ -134,37 +143,60 @@ export default function ProductsUpload() {
 				handlePreviewUpload={handlePreviewUpload}
 			/>
 
-			{preview && (
-				<>
-					<ColumnMatcher preview={preview} columns={columns} errors={errors} setColumns={setColumns} setErrors={setErrors} />
+			{loading ? (
+				<TableSkeleton />
+			) : (
+				preview && (
+					<>
+						{/* <ColumnMatcher preview={preview} columns={columns} errors={errors} setColumns={setColumns} setErrors={setErrors} /> */}
 
-					<PreviewTable preview={preview} totalRows={totalRows} />
+						<PreviewTable preview={preview} totalRows={totalRows} columns={columns} setColumns={setColumns} />
+						{/* Пагинация */}
+						<div className="flex items-center justify-between mt-4">
+							<button
+								className="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400"
+								onClick={() => {
+									const prevPage = currentPage - 1;
+									setCurrentPage(prevPage);
+									handlePreviewUpload(file!, prevPage);
+								}}
+								disabled={currentPage === 1}
+							>
+								Назад
+							</button>
 
-					<button className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition" onClick={handleImport} disabled={loading}>
-						{loading ? "Импорт..." : "Импортировать товары"}
-					</button>
+							<p className="text-gray-500">Страница {currentPage}</p>
 
-					{/* Пагинация */}
-					<div className="flex justify-between mt-4">
+							<button
+								className="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400"
+								onClick={() => {
+									const nextPage = currentPage + 1;
+									setCurrentPage(nextPage);
+									handlePreviewUpload(file!, nextPage);
+								}}
+								disabled={totalRows === null || totalRows <= currentPage * OBJECTS_PER_PAGE}
+							>
+								Вперёд
+							</button>
+						</div>
+
+						<MarkupRulesEditor
+							rules={markupRules}
+							setRules={setMarkupRules}
+							defaultMarkup={defaultMarkup}
+							setDefaultMarkup={setDefaultMarkup}
+							onValidationChange={setHasMarkupErrors}
+						/>
+
 						<button
-							className="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400"
-							onClick={() => handlePreviewUpload(file!, currentPage - 1)}
-							disabled={currentPage === 1}
+							className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition disabled:opacity-50"
+							onClick={handleImport}
+							disabled={loading || hasMarkupErrors}
 						>
-							Назад
+							{loading ? "Импорт..." : "Импортировать товары"}
 						</button>
-
-						<button
-							className="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400"
-							onClick={() => handlePreviewUpload(file!, currentPage + 1)}
-							disabled={totalRows === null || totalRows <= currentPage * 1000}
-						>
-							Вперёд
-						</button>
-					</div>
-
-					<p className="mt-2 text-center text-gray-500">Страница {currentPage}</p>
-				</>
+					</>
+				)
 			)}
 		</div>
 	);

@@ -2,7 +2,7 @@ import "./globals.css";
 import Header from "@/components/admin/header/Header";
 import React from "react";
 import AdminPageWrapper from "./AdminPageWrapper";
-import ToastManager from "@/components/ui/toast/ToastManager";
+import ToastProvider from "@/components/ui/toast/ToastProvider";
 
 export const metadata = {
 	title: "Админка",
@@ -39,7 +39,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 			<body>
 				<Header />
 				<AdminPageWrapper>{children}</AdminPageWrapper>
-				<ToastManager />
+				<ToastProvider />
 			</body>
 		</html>
 	);
