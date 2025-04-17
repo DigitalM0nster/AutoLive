@@ -100,18 +100,32 @@ export const PUT = withPermission(
 			}
 
 			const dataToUpdate: any = {
-				sku: body.sku,
-				title: body.title,
-				description: body.description,
-				supplierPrice: body.supplierPrice,
-				price: body.price,
-				brand: body.brand,
-				categoryId: body.categoryId,
-				image: body.image,
+				sku: String(body.sku).trim(),
+				title: String(body.title).trim(),
+				description: body.description?.trim() || null,
+				supplierPrice: body.supplierPrice !== "" ? parseFloat(body.supplierPrice) : null,
+				price: parseFloat(body.price),
+				brand: String(body.brand).trim(),
+				categoryId: body.categoryId !== "" ? parseInt(body.categoryId) : null,
+				image: body.image?.trim() || null,
 			};
 
 			if (user.role === "superadmin") {
-				dataToUpdate.departmentId = body.departmentId ?? null;
+				dataToUpdate.departmentId = body.departmentId !== "" ? parseInt(body.departmentId) : null;
+			}
+
+			// 🔍 Проверка на дубликат по sku + brand + departmentId
+			const duplicate = await prisma.product.findFirst({
+				where: {
+					id: { not: productId },
+					sku: dataToUpdate.sku,
+					brand: dataToUpdate.brand,
+					departmentId: dataToUpdate.departmentId ?? existing.departmentId,
+				},
+			});
+
+			if (duplicate) {
+				return NextResponse.json({ error: "Товар с таким артикулом и брендом уже существует" }, { status: 409 });
 			}
 
 			const product = await prisma.product.update({
@@ -125,6 +139,7 @@ export const PUT = withPermission(
 			return NextResponse.json({ product });
 		} catch (error) {
 			console.error("Ошибка обновления продукта:", error);
+			console.error("Подробности:", JSON.stringify(error, null, 2));
 			return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
 		}
 	},

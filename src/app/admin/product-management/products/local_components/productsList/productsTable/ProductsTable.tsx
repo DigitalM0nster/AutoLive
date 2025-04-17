@@ -10,6 +10,8 @@ import DuplicateProductModal from "./DuplicateProductModal";
 
 type Props = {
 	products: EditableProduct[];
+	selectedProductIds: (number | string)[];
+	setSelectedProductIds: React.Dispatch<React.SetStateAction<(number | string)[]>>;
 	loading: boolean;
 	sortBy: string;
 	sortOrder: "asc" | "desc";
@@ -23,7 +25,21 @@ type Props = {
 };
 
 const ProductsTable = React.memo(
-	({ products, loading, sortBy, sortOrder, handleSort, categories, departments, user, onProductUpdate, toEditableProduct, toProductForm }: Props) => {
+	({
+		products,
+		selectedProductIds,
+		setSelectedProductIds,
+		loading,
+		sortBy,
+		sortOrder,
+		handleSort,
+		categories,
+		departments,
+		user,
+		onProductUpdate,
+		toEditableProduct,
+		toProductForm,
+	}: Props) => {
 		const renderSortIcon = (column: string) => {
 			if (sortBy !== column) {
 				return <ArrowDownWideNarrow size={14} className="inline-block text-gray-300 ml-1" />;
@@ -97,6 +113,20 @@ const ProductsTable = React.memo(
 				<table className="w-full table-fixed text-sm border border-black/10border-gray-300">
 					<thead className="bg-gray-100 text-left">
 						<tr>
+							<th className="border border-black/10 px-2 py-1 w-1/15 text-center">
+								<input
+									type="checkbox"
+									checked={products.length > 0 && products.every((p) => selectedProductIds.includes(p.id))}
+									onChange={(e) => {
+										if (e.target.checked) {
+											setSelectedProductIds(products.map((p) => p.id));
+										} else {
+											setSelectedProductIds([]);
+										}
+									}}
+								/>
+							</th>
+
 							<th className="border border-black/10 px-2 py-1 cursor-pointer w-1/6" onClick={() => handleSort("brand")}>
 								Бренд {renderSortIcon("brand")}
 							</th>
@@ -137,6 +167,10 @@ const ProductsTable = React.memo(
 									user={user}
 									toEditableProduct={toEditableProduct}
 									toProductForm={toProductForm}
+									isSelected={selectedProductIds.includes(product.id)}
+									toggleSelect={() => {
+										setSelectedProductIds((prev) => (prev.includes(product.id) ? prev.filter((id) => id !== product.id) : [...prev, product.id]));
+									}}
 								/>
 							))
 						) : (
@@ -159,7 +193,11 @@ const ProductsTable = React.memo(
 							setPendingProductData(null);
 						}}
 						onUpdateExisting={async () => {
-							const productData = toProductForm(pendingProductData);
+							const productData = {
+								...toProductForm(pendingProductData),
+								sku: pendingProductData.sku,
+								brand: pendingProductData.brand,
+							};
 
 							const res = await fetch(`/api/products/${duplicateProduct.id}`, {
 								method: "PUT",

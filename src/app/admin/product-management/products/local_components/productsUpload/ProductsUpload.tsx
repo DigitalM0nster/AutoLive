@@ -3,7 +3,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { showSuccessToast, showErrorToast } from "@/components/ui/toast/toastService";
+import { showSuccessToast, showErrorToast } from "@/components/ui/toast/ToastProvider";
 import UploadBox from "./UploadBox";
 import PreviewTable from "./PreviewTable";
 import MarkupRulesEditor, { MarkupRule, DefaultMarkup } from "./MarkupRulesEditor";
@@ -148,9 +148,9 @@ export default function ProductsUpload() {
 			) : (
 				preview && (
 					<>
-						{/* <ColumnMatcher preview={preview} columns={columns} errors={errors} setColumns={setColumns} setErrors={setErrors} /> */}
-
+						{/* Выбор категорий */}
 						<PreviewTable preview={preview} totalRows={totalRows} columns={columns} setColumns={setColumns} />
+
 						{/* Пагинация */}
 						<div className="flex items-center justify-between mt-4">
 							<button
@@ -180,6 +180,7 @@ export default function ProductsUpload() {
 							</button>
 						</div>
 
+						{/* Установление наценки */}
 						<MarkupRulesEditor
 							rules={markupRules}
 							setRules={setMarkupRules}

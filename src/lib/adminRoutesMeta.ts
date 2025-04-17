@@ -1,6 +1,6 @@
 // src/lib/adminRoutesMeta.ts
 
-import { LucideIcon, Users, ShoppingCart, Wrench, FileText, Package } from "lucide-react";
+import { Building2, LucideIcon, Users, ShoppingCart, Wrench, FileText, Package } from "lucide-react";
 
 export type AdminRouteMeta = {
 	label: string;
@@ -10,6 +10,11 @@ export type AdminRouteMeta = {
 };
 
 export const adminRoutesMeta: Record<string, AdminRouteMeta> = {
+	departments: {
+		label: "Отделы",
+		icon: Building2,
+		bg: "from-indigo-400 to-indigo-600",
+	},
 	users: {
 		label: "Пользователи",
 		icon: Users,

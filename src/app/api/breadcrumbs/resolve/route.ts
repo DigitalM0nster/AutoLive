@@ -30,6 +30,11 @@ export async function POST(request: Request) {
 					const product = await prisma.product.findUnique({ where: { id: Number(seg) } });
 					if (product) labels[seg] = product.title;
 				}
+
+				if (prev === "departments") {
+					const department = await prisma.department.findUnique({ where: { id: Number(seg) } });
+					if (department) labels[seg] = department.name;
+				}
 			}
 		}
 

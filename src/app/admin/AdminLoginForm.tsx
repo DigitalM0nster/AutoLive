@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { showErrorToast } from "@/components/ui/toast/toastService";
+import { showErrorToast } from "@/components/ui/toast/ToastProvider";
 import PhoneInput from "@/components/ui/phoneInput/PhoneInput";
 
 export default function AdminLoginForm() {

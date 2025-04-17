@@ -4,7 +4,7 @@
 
 import { useEffect, useState } from "react";
 import ProfileSkeleton from "./local_components/ProfileSkeleton";
-import { showErrorToast, showSuccessToast } from "@/components/ui/toast/toastService";
+import { showErrorToast, showSuccessToast } from "@/components/ui/toast/ToastProvider";
 import { CameraIcon, XIcon } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 

@@ -1,3 +1,5 @@
+// prisma/seed.ts
+
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 
@@ -117,6 +119,8 @@ async function main() {
 		{ title: "Аксессуары", image: "/images/aksesuary.svg" },
 	];
 
+	const createdCategories: any[] = [];
+
 	for (const [index, cat] of categories.entries()) {
 		const category = await prisma.category.create({
 			data: {
@@ -137,22 +141,52 @@ async function main() {
 			},
 		});
 
-		const skuPrefix = category.title.replace(/\s/g, "").toUpperCase();
-		for (let i = 1; i <= 3; i++) {
-			await prisma.product.create({
-				data: {
-					title: `${category.title} Товар ${i}`,
-					sku: `${skuPrefix}-00${i}`,
-					price: 1000 + i * 100,
-					categoryId: category.id,
-					departmentId: department1.id,
-					productFilterValues: {
-						create: {
-							filterValueId: category.Filter[0].values[i % 2].id,
-						},
+		createdCategories.push(category);
+	}
+
+	// Назначаем категории отделам
+	await prisma.departmentCategory.createMany({
+		data: [
+			{ departmentId: department1.id, categoryId: createdCategories[0].id },
+			{ departmentId: department1.id, categoryId: createdCategories[1].id },
+			{ departmentId: department2.id, categoryId: createdCategories[2].id },
+			{ departmentId: department2.id, categoryId: createdCategories[3].id },
+			{ departmentId: department3.id, categoryId: createdCategories[4].id },
+			{ departmentId: department3.id, categoryId: createdCategories[5].id },
+		],
+	});
+
+	// Мапа для проверки доступности категории в отделе
+	const allowedMap: Record<number, Set<number>> = {
+		[department1.id]: new Set([createdCategories[0].id, createdCategories[1].id]),
+		[department2.id]: new Set([createdCategories[2].id, createdCategories[3].id]),
+		[department3.id]: new Set([createdCategories[4].id, createdCategories[5].id]),
+	};
+
+	// Создание товаров по каждой категории в каждом отделе
+	for (const department of [department1, department2, department3]) {
+		for (const [i, category] of createdCategories.entries()) {
+			const skuPrefix = category.title.replace(/\s/g, "").toUpperCase();
+			const isAllowed = allowedMap[department.id]?.has(category.id);
+
+			for (let j = 1; j <= 3; j++) {
+				await prisma.product.create({
+					data: {
+						title: `${category.title} Товар ${j}`,
+						sku: `${skuPrefix}-00${j}`,
+						price: 1000 + j * 100,
+						categoryId: isAllowed ? category.id : null,
+						departmentId: department.id,
+						productFilterValues: isAllowed
+							? {
+									create: {
+										filterValueId: category.Filter[0].values[j % 2].id,
+									},
+							  }
+							: undefined,
 					},
-				},
-			});
+				});
+			}
 		}
 	}
 

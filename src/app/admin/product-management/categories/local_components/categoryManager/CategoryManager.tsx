@@ -5,7 +5,7 @@
 import { useRef, useState } from "react";
 import CategoryForm from "./CategoryForm";
 import CategoryFilters from "./CategoryFilters";
-import { showSuccessToast, showErrorToast } from "@/components/ui/toast/toastService";
+import { showSuccessToast, showErrorToast } from "@/components/ui/toast/ToastProvider";
 
 type Props = {
 	initialCategory?: {

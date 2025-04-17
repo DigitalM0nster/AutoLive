@@ -76,6 +76,9 @@ export const GET = withPermission(
 
 		const search = searchParams.get("search")?.toLowerCase();
 
+		const priceMin = parseFloat(searchParams.get("priceMin") || "0");
+		const priceMax = parseFloat(searchParams.get("priceMax") || "10000000");
+
 		const searchFilter: Prisma.ProductWhereInput[] = search ? [{ title: { contains: search } }, { sku: { contains: search } }, { brand: { contains: search } }] : [];
 
 		const where: Prisma.ProductWhereInput = {
@@ -87,15 +90,20 @@ export const GET = withPermission(
 					lt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30),
 				},
 			}),
+			price: {
+				gte: priceMin,
+				lte: priceMax,
+			},
 		};
 
-		// 📌 ЯВНО ДОБАВЛЯЕМ departmentId
+		const withoutDepartment = searchParams.get("withoutDepartment");
+
 		if (user?.role === "superadmin") {
-			if (departmentId !== null && departmentId !== "") {
+			if (withoutDepartment === "true") {
+				where.departmentId = null;
+			} else if (departmentId !== null && departmentId !== "") {
 				where.departmentId = parseInt(departmentId);
 			}
-		} else if (user?.departmentId) {
-			where.departmentId = user.departmentId;
 		}
 
 		const orderBy: Prisma.ProductOrderByWithRelationInput = sortBy === "categoryTitle" ? { category: { title: order } } : { [sortBy]: order };
@@ -146,7 +154,7 @@ export const GET = withPermission(
 			return new NextResponse("Ошибка сервера", { status: 500 });
 		}
 	},
-	"view_products", // или другой скоуп, если используешь
+	"view_products",
 	["superadmin", "admin", "manager"]
 );
 
@@ -165,6 +173,7 @@ export const POST = withPermission(
 				where: {
 					sku: data.sku,
 					brand: data.brand,
+					departmentId: departmentId ?? null,
 				},
 			});
 
@@ -211,6 +220,20 @@ export const POST = withPermission(
 
 				if (markupRule) {
 					finalPrice = supplierPrice * markupRule.markup;
+				}
+			}
+
+			// 🔐 Проверяем, разрешена ли категория
+			if (data.categoryId) {
+				const allowed = await prisma.departmentCategory.findFirst({
+					where: {
+						departmentId,
+						categoryId: data.categoryId,
+					},
+				});
+				if (!allowed) {
+					console.warn(`Категория ${data.categoryId} запрещена для отдела ${departmentId}, убираем`);
+					data.categoryId = null;
 				}
 			}
 

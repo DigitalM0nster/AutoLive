@@ -16,7 +16,9 @@ export default function DuplicateProductModal({ existing, pending, categories, d
 	const getCategoryTitle = (id: number | null) => categories.find((c) => c.id === id)?.title || "—";
 	const getDepartmentName = (id: number | null) => departments.find((d) => d.id === id)?.name || "—";
 
-	const isDiff = (a: any, b: any) => a !== b;
+	const normalize = (v: any) => (v === null || v === undefined ? "" : v);
+	const isDiff = (a: any, b: any) => normalize(a) !== normalize(b);
+
 	const fields = [
 		{ label: "Название", key: "title" },
 		{ label: "Артикул", key: "sku" },

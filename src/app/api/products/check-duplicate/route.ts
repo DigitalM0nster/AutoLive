@@ -1,3 +1,5 @@
+// src/app/api/products/check-duplicate/route.ts
+
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -5,14 +7,21 @@ export async function GET(req: NextRequest) {
 	const { searchParams } = new URL(req.url);
 	const sku = searchParams.get("sku");
 	const brand = searchParams.get("brand");
+	const departmentIdRaw = searchParams.get("departmentId");
 
 	if (!sku || !brand) {
 		return new NextResponse("Не переданы параметры", { status: 400 });
 	}
 
+	const departmentId = departmentIdRaw === "null" ? null : parseInt(departmentIdRaw || "");
+
 	try {
 		const existing = await prisma.product.findFirst({
-			where: { sku, brand },
+			where: {
+				sku,
+				brand,
+				departmentId: departmentId ?? null,
+			},
 			include: {
 				category: true,
 				department: true,

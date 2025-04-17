@@ -1,7 +1,7 @@
 // src\app\admin\product-management\products\local_components\productList\ProductRow.tsx
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { EditableProduct, Category, User, Product } from "@/lib/types";
-import { showErrorToast, showSuccessToast } from "@/components/ui/toast/toastService";
+import { showErrorToast, showSuccessToast } from "@/components/ui/toast/ToastProvider";
 
 export default function ProductRow({
 	product,
@@ -14,6 +14,8 @@ export default function ProductRow({
 	user,
 	toEditableProduct,
 	toProductForm,
+	isSelected,
+	toggleSelect,
 }: {
 	product: EditableProduct;
 	categories: Category[];
@@ -25,12 +27,35 @@ export default function ProductRow({
 	user?: User | null;
 	toEditableProduct: (product: Product) => EditableProduct;
 	toProductForm: (product: EditableProduct) => any;
+	isSelected: boolean;
+	toggleSelect: () => void;
 }) {
 	const [isEditing, setIsEditing] = useState(product.id === "new" || (product as any).isEditing);
 	const [form, setForm] = useState(toProductForm(product));
 	const [imageFile, setImageFile] = useState<File | null>(null);
 	const [imagePreview, setImagePreview] = useState<string | null>(product.image || null);
 	const [errors, setErrors] = useState<Partial<Record<keyof typeof form, string>>>({});
+	const [allowedCategoryIds, setAllowedCategoryIds] = useState<number[]>([]);
+
+	useEffect(() => {
+		const fetchAllowedCategories = async () => {
+			try {
+				const depId = user?.role === "superadmin" ? parseInt(form.departmentId || user.department?.id || "") : user?.department?.id;
+
+				if (!depId) return;
+
+				const res = await fetch(`/api/departments/${depId}`);
+				const data = await res.json();
+
+				const categoryIds = (data.allowedCategories || []).map((c: any) => c.category.id);
+				setAllowedCategoryIds(categoryIds);
+			} catch (err) {
+				console.warn("Ошибка загрузки разрешённых категорий:", err);
+			}
+		};
+
+		fetchAllowedCategories();
+	}, [form.departmentId]);
 
 	const [isSaving, setIsSaving] = useState(false);
 
@@ -77,6 +102,11 @@ export default function ProductRow({
 			}
 		}
 
+		if (form.categoryId && !allowedCategoryIds.includes(parseInt(form.categoryId))) {
+			showErrorToast("Выбранная категория не разрешена для отдела. Товар будет создан без категории.");
+			form.categoryId = ""; // для формы
+			product.categoryId = null; // на всякий случай — чтобы не остался старый id
+		}
 		const productData = {
 			sku: form.sku,
 			title: form.title,
@@ -94,7 +124,11 @@ export default function ProductRow({
 		// 👇 Проверка дубликата перед созданием нового товара
 		if (product.id === "new") {
 			try {
-				const duplicateRes = await fetch(`/api/products/check-duplicate?sku=${encodeURIComponent(productData.sku)}&brand=${encodeURIComponent(productData.brand)}`);
+				const depId = user?.role === "superadmin" ? productData.departmentId ?? "null" : user?.department?.id ?? "null";
+
+				const duplicateRes = await fetch(
+					`/api/products/check-duplicate?sku=${encodeURIComponent(productData.sku)}&brand=${encodeURIComponent(productData.brand)}&departmentId=${depId}`
+				);
 
 				if (duplicateRes.ok) {
 					const result = await duplicateRes.json();
@@ -134,7 +168,7 @@ export default function ProductRow({
 			});
 
 			if (res.status === 409) {
-				showErrorToast("Такой товар уже есть. Измените артикул или бренд.");
+				showErrorToast("Такой товар уже есть. Измените артикул, бренд или отдел.");
 				setIsSaving(false);
 				return;
 			}
@@ -185,6 +219,10 @@ export default function ProductRow({
 	return (
 		<>
 			<tr className={isStale(product.updatedAt) ? "bg-yellow-50" : ""}>
+				<td className="border border-black/10 px-2 py-1 text-center w-1/15">
+					<input type="checkbox" checked={isSelected} onChange={toggleSelect} />
+				</td>
+
 				<td className="tableBlock border border-black/10 px-2 py-1 w-1/6">
 					{isEditing ? (
 						<input
