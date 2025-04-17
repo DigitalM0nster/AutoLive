@@ -1,5 +1,7 @@
+// src\app\api\products\import-preview\route.ts
+
 import { NextResponse } from "next/server";
-import { read, utils } from "xlsx";
+import ExcelJS from "exceljs";
 import { withPermission } from "@/middleware/permissionMiddleware";
 import { OBJECTS_PER_PAGE } from "@/lib/objectsPerPage";
 
@@ -16,14 +18,23 @@ export const POST = withPermission(
 				return NextResponse.json({ error: "Файл не получен" }, { status: 400 });
 			}
 
-			const buffer = Buffer.from(await file.arrayBuffer());
-			const workbook = read(buffer, { type: "buffer" });
-			const sheet = workbook.Sheets[workbook.SheetNames[0]];
+			// Читаем Excel-файл через exceljs
+			const arrayBuffer = await file.arrayBuffer();
+			const workbook = new ExcelJS.Workbook();
+			await workbook.xlsx.load(arrayBuffer);
 
-			const rows = utils.sheet_to_json(sheet, { header: 1, defval: "" }) as any[][];
+			// Берём первый лист
+			const worksheet = workbook.worksheets[0];
+			const rows: any[][] = [];
+			worksheet.eachRow({ includeEmpty: true }, (row) => {
+				// row.values[0] всегда undefined, поэтому slice(1)
+				rows.push((row.values as any[]).slice(1));
+			});
 
+			// Фильтрация непустых строк
 			const nonEmptyRows = rows.filter((row) => row.some((cell) => cell !== ""));
 
+			// Пагинация
 			const start = (page - 1) * OBJECTS_PER_PAGE;
 			const end = page * OBJECTS_PER_PAGE;
 			const pageRows = nonEmptyRows.slice(start, end);

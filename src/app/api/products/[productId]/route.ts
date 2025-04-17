@@ -99,13 +99,19 @@ export const PUT = withPermission(
 				return NextResponse.json({ error: "Недостаточно прав для редактирования этого товара" }, { status: 403 });
 			}
 
+			// Приводим sku и brand к нижнему регистру только для проверки дубликатов
+			const rawSku = String(body.sku).trim();
+			const rawBrand = String(body.brand).trim();
+			const normalizedSku = rawSku.toLowerCase();
+			const normalizedBrand = rawBrand.toLowerCase();
+
 			const dataToUpdate: any = {
-				sku: String(body.sku).trim(),
+				sku: rawSku, // сохраняем как есть
 				title: String(body.title).trim(),
 				description: body.description?.trim() || null,
 				supplierPrice: body.supplierPrice !== "" ? parseFloat(body.supplierPrice) : null,
 				price: parseFloat(body.price),
-				brand: String(body.brand).trim(),
+				brand: rawBrand, // сохраняем как есть
 				categoryId: body.categoryId !== "" ? parseInt(body.categoryId) : null,
 				image: body.image?.trim() || null,
 			};
@@ -113,14 +119,19 @@ export const PUT = withPermission(
 			if (user.role === "superadmin") {
 				dataToUpdate.departmentId = body.departmentId !== "" ? parseInt(body.departmentId) : null;
 			}
+			if (user.role === "superadmin" && (dataToUpdate.departmentId === null || isNaN(dataToUpdate.departmentId))) {
+				return NextResponse.json({ error: "Поле 'Отдел' обязательно" }, { status: 400 });
+			}
 
-			// 🔍 Проверка на дубликат по sku + brand + departmentId
+			const departmentIdToCheck = dataToUpdate.departmentId ?? existing.departmentId;
+
+			// Проверка на дубликат по sku + brand + departmentId
 			const duplicate = await prisma.product.findFirst({
 				where: {
 					id: { not: productId },
-					sku: dataToUpdate.sku,
-					brand: dataToUpdate.brand,
-					departmentId: dataToUpdate.departmentId ?? existing.departmentId,
+					departmentId: departmentIdToCheck,
+					sku: normalizedSku,
+					brand: normalizedBrand,
 				},
 			});
 
@@ -139,7 +150,6 @@ export const PUT = withPermission(
 			return NextResponse.json({ product });
 		} catch (error) {
 			console.error("Ошибка обновления продукта:", error);
-			console.error("Подробности:", JSON.stringify(error, null, 2));
 			return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
 		}
 	},

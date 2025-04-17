@@ -27,7 +27,7 @@ const contentSections = [
 
 export default function AdminContentPage() {
 	return (
-		<div className="px-6 py-10 max-w-7xl mx-auto">
+		<div className="px-6 py-10 w-full max-w-7xl mx-auto mb-auto">
 			<h1 className="text-3xl font-bold text-gray-800 mb-8">Редактирование контента сайта</h1>
 			<div className="grid gap-8 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
 				{contentSections.map(({ href, label, icon: Icon, bg }) => (

@@ -43,7 +43,7 @@ export default function DepartmentsDashboardPage() {
 	if (!user || user.role !== "superadmin") return null;
 
 	return (
-		<div className="px-6 py-10 max-w-7xl mx-auto mb-auto">
+		<div className="px-6 py-10 w-full max-w-7xl mx-auto mb-auto">
 			<div className="flex justify-between items-center mb-8">
 				<h1 className="text-3xl font-bold text-gray-800">Управление отделами</h1>
 				<Link href="/admin/departments/create" className="bg-indigo-600 text-white px-5 py-2 rounded-xl text-sm font-medium hover:bg-indigo-700 transition">

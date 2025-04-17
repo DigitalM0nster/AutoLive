@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import ProductsFilterPanel from "./productsFilter/ProductsFilterPanel";
 import ProductsTable from "./productsTable/ProductsTable";
-import useProductsFilters from "@/hooks/productsList/useProductsFilters";
-import useProductsFetcher from "@/hooks/productsList/useProductsFetcher";
+import useProductsFilters from "@/app/admin/product-management/products/local_components/productsList/hooks/useProductsFilters";
+import useProductsFetcher from "@/app/admin/product-management/products/local_components/productsList/hooks/useProductsFetcher";
 import useDebounce from "@/hooks/useDebounce";
 import { useAuthStore } from "@/store/authStore";
-import type { Product, Category, EditableProduct } from "@/lib/types";
+import type { ProductListItem, Category, EditableProduct, Product } from "@/lib/types";
 import ProductsBulkActions from "./ProductsBulkActions";
 
 export default function ProductsList() {
@@ -28,20 +28,44 @@ export default function ProductsList() {
 		departmentFilter,
 	});
 
-	const { products, setProducts, cursor, setCursor, loading, fetchProducts } = useProductsFetcher();
+	const { products, setProducts, cursor, setCursor, loading, fetchProducts, total } = useProductsFetcher();
+
+	// paged pagination
+	const [currentPage, setCurrentPage] = useState(1);
+	const limit = 10; // количество на страницу
+	const totalPages = Math.ceil(total / limit);
+
+	const pagesToShow = useMemo<(number | "ellipsis")[]>(() => {
+		if (totalPages <= 1) return [];
+		const pages = new Set<number>([1, totalPages]);
+		for (let i = currentPage - 2; i <= currentPage + 2; i++) {
+			if (i > 1 && i < totalPages) pages.add(i);
+		}
+		const sorted = Array.from(pages).sort((a, b) => a - b);
+		const result: (number | "ellipsis")[] = [];
+		let prev = 0;
+		for (const p of sorted) {
+			if (prev && p > prev + 1) result.push("ellipsis");
+			result.push(p);
+			prev = p;
+		}
+		return result;
+	}, [currentPage, totalPages]);
 
 	const [sortBy, setSortBy] = useState("createdAt");
 	const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 	const [selectedProductIds, setSelectedProductIds] = useState<(number | string)[]>([]);
-	const [showDeleteModal, setShowDeleteModal] = useState(false);
 
 	// 🔁 Перезагрузка товаров при изменении фильтров
 	useEffect(() => {
+		// сбрасываем на первую страницу при любом изменении фильтров
+		setCurrentPage(1);
 		setProducts([]);
-		setCursor(null);
 
+		// собираем все параметры, в том числе page
 		const params = new URLSearchParams({
-			limit: "10",
+			limit: String(limit),
+			page: "1",
 			sortBy,
 			order: sortOrder,
 			priceMin: String(priceMin),
@@ -51,14 +75,11 @@ export default function ProductsList() {
 		if (onlyStale) params.append("onlyStale", "true");
 		if (brandFilter) params.append("brand", brandFilter);
 		if (categoryFilter) params.append("categoryId", categoryFilter);
-
-		if (user?.role === "superadmin") {
-			if (departmentFilter && departmentFilter !== "__all__") {
-				if (departmentFilter === "__none__") {
-					params.append("withoutDepartment", "true");
-				} else {
-					params.append("departmentId", departmentFilter);
-				}
+		if (user?.role === "superadmin" && departmentFilter !== "__all__") {
+			if (departmentFilter === "__none__") {
+				params.append("withoutDepartment", "true");
+			} else {
+				params.append("departmentId", departmentFilter);
 			}
 		}
 
@@ -74,12 +95,13 @@ export default function ProductsList() {
 		}
 	};
 
-	const handleLoadMore = () => {
-		if (!cursor) return;
+	const handleLoadPage = (page: number) => {
+		setCurrentPage(page);
+		setProducts([]);
 
 		const params = new URLSearchParams({
-			limit: "10",
-			cursor,
+			limit: String(limit),
+			page: String(page),
 			sortBy,
 			order: sortOrder,
 			priceMin: String(priceMin),
@@ -89,27 +111,43 @@ export default function ProductsList() {
 		if (onlyStale) params.append("onlyStale", "true");
 		if (brandFilter) params.append("brand", brandFilter);
 		if (categoryFilter) params.append("categoryId", categoryFilter);
-
-		if (user?.role === "superadmin") {
-			if (departmentFilter && departmentFilter !== "__all__") {
-				if (departmentFilter === "__none__") {
-					params.append("withoutDepartment", "true");
-				} else {
-					params.append("departmentId", departmentFilter);
-				}
+		if (user?.role === "superadmin" && departmentFilter !== "__all__") {
+			if (departmentFilter === "__none__") {
+				params.append("withoutDepartment", "true");
+			} else {
+				params.append("departmentId", departmentFilter);
 			}
 		}
 
-		fetchProducts(params, true);
+		fetchProducts(params).then(({ items, total }) => {
+			setProducts(items);
+			window.scrollTo({ top: 0, behavior: "smooth" });
+		});
 	};
 
-	function toEditableProduct(product: Product, categories: Category[], departments: { id: number; name: string }[]): EditableProduct {
-		return {
-			...product,
-			isEditing: false,
-			categoryTitle: categories.find((c) => c.id === product.categoryId)?.title || "—",
-			department: product.department ? departments.find((d) => d.id === product?.department?.id) : undefined,
-		};
+	function toEditableProduct(product: Product | EditableProduct): EditableProduct {
+		if ((product as EditableProduct).isEditing !== undefined) {
+			return product as EditableProduct;
+		} else {
+			return {
+				id: product.id,
+				sku: product.sku,
+				title: product.title,
+				description: product.description,
+				price: product.price,
+				supplierPrice: product.supplierPrice ?? null,
+				brand: product.brand,
+				image: product.image ?? null,
+				createdAt: product.createdAt,
+				updatedAt: product.updatedAt,
+				categoryId: product.categoryId,
+				departmentId: product.department?.id ?? null,
+				categoryTitle: product.categoryTitle,
+				department: product.department,
+				filters: product.filters,
+				isEditing: false,
+			};
+		}
 	}
 
 	function toProductForm(product: EditableProduct) {
@@ -174,18 +212,18 @@ export default function ProductsList() {
 				categories={categories}
 				departments={departments}
 				user={user}
-				onProductUpdate={(updatedProduct) => {
-					if (updatedProduct.id === "new") return;
+				onProductUpdate={(updatedProduct: EditableProduct) => {
 					setProducts((prev) =>
 						prev.some((p) => p.id === updatedProduct.id) ? prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p)) : [updatedProduct, ...prev]
 					);
 				}}
-				toEditableProduct={(product) => toEditableProduct(product, categories, departments)}
+				toEditableProduct={toEditableProduct}
 				toProductForm={toProductForm}
 			/>
 
 			{products.length > 0 && (
 				<ProductsBulkActions
+					user={user}
 					selectedProductIds={selectedProductIds}
 					setSelectedProductIds={setSelectedProductIds}
 					fetchProducts={() => {
@@ -235,11 +273,28 @@ export default function ProductsList() {
 				/>
 			)}
 
-			{!loading && cursor && (
-				<div className="mt-4 flex justify-center">
-					<button onClick={handleLoadMore} className="px-4 py-2 rounded bg-blue-600 text-white">
-						Загрузить ещё
-					</button>
+			{!loading && totalPages > 1 && (
+				<div className="mt-4 flex items-center justify-center space-x-1">
+					{pagesToShow.map((item, idx) =>
+						item === "ellipsis" ? (
+							<span key={`ellipsis-${idx}`} className="px-2">
+								…
+							</span>
+						) : (
+							<button
+								key={`page-${item}-${idx}`}
+								onClick={() => handleLoadPage(item as number)}
+								disabled={item === currentPage}
+								className={`px-3 py-1 rounded transition ${item === currentPage ? "bg-blue-600 text-white" : "bg-gray-200 hover:bg-gray-300 text-black"}`}
+							>
+								{item}
+							</button>
+						)
+					)}
+
+					<span className="ml-4 text-gray-600">
+						Страница {currentPage} из {totalPages}
+					</span>
 				</div>
 			)}
 		</div>

@@ -33,7 +33,18 @@ export async function GET(req: Request) {
 			return NextResponse.json({ error: "Категория не найдена" }, { status: 404 });
 		}
 
-		return NextResponse.json({ category });
+		// Удаляем supplierPrice из всех товаров
+		const sanitizedProducts = category.products.map((product) => {
+			const { supplierPrice, ...rest } = product;
+			return rest;
+		});
+
+		return NextResponse.json({
+			category: {
+				...category,
+				products: sanitizedProducts,
+			},
+		});
 	} catch (err) {
 		console.error("Ошибка получения категории с товарами:", err);
 		return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });

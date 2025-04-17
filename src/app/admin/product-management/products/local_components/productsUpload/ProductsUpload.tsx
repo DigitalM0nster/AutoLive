@@ -1,15 +1,15 @@
-// src\app\admin\product-management\products\local_components\productsUpload\ProductsUpload.tsx
+// src/app/admin/product-management/products/local_components/productsUpload/ProductsUpload.tsx
 
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useMemo } from "react";
 import { showSuccessToast, showErrorToast } from "@/components/ui/toast/ToastProvider";
 import UploadBox from "./UploadBox";
 import PreviewTable from "./PreviewTable";
 import MarkupRulesEditor, { MarkupRule, DefaultMarkup } from "./MarkupRulesEditor";
 import { OBJECTS_PER_PAGE } from "@/lib/objectsPerPage";
 import Loading from "@/components/ui/loading/Loading";
-import TableSkeleton from "./TableSkeleton";
+import TableSkeleton from "../TableSkeleton";
 
 export default function ProductsUpload() {
 	const [file, setFile] = useState<File | null>(null);
@@ -30,6 +30,33 @@ export default function ProductsUpload() {
 	const [markupRules, setMarkupRules] = useState<MarkupRule[]>([]);
 	const [defaultMarkup, setDefaultMarkup] = useState<DefaultMarkup>({ type: "%", value: 30 });
 	const [hasMarkupErrors, setHasMarkupErrors] = useState(false);
+
+	// Вычисляем общее число страниц
+	const totalPages = totalRows !== null ? Math.ceil(totalRows / OBJECTS_PER_PAGE) : 0;
+
+	// Генерируем массив для рендера: номера страниц и 'ellipsis'
+	const pagesToShow: (number | "ellipsis")[] = useMemo(() => {
+		if (totalPages <= 1) return [];
+
+		const setPages = new Set<number>();
+		setPages.add(1);
+		setPages.add(totalPages);
+		for (let i = currentPage - 2; i <= currentPage + 2; i++) {
+			if (i > 1 && i < totalPages) setPages.add(i);
+		}
+
+		const sorted = Array.from(setPages).sort((a, b) => a - b);
+		const result: (number | "ellipsis")[] = [];
+		let prev = 0;
+		for (const p of sorted) {
+			if (prev && p > prev + 1) {
+				result.push("ellipsis");
+			}
+			result.push(p);
+			prev = p;
+		}
+		return result;
+	}, [currentPage, totalPages]);
 
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -57,10 +84,8 @@ export default function ProductsUpload() {
 			const data = await res.json();
 			setPreview(data.rows);
 			setTotalRows(data.total);
-			console.log("ВСЕГО ROWS!!!!! ", data.total);
-			setCurrentPage(page); // Обновляем текущую страницу
-			console.log("страница!!!! ", page);
-			showSuccessToast(`Файл загружен. Строк: ${data.rows.length}`);
+			setCurrentPage(page);
+			showSuccessToast(`Файл загружен. Всего строк: ${data.total}`);
 		} catch (error: any) {
 			showErrorToast("Ошибка при загрузке превью");
 		} finally {
@@ -84,12 +109,12 @@ export default function ProductsUpload() {
 		}
 
 		if (Object.keys(newErrors).length > 0) {
-			setErrors(newErrors); // ✅ показать ошибки
+			setErrors(newErrors);
 			showErrorToast("Заполните обязательные поля перед импортом.");
 			return;
 		}
 
-		setErrors({}); // очистить старые ошибки
+		setErrors({});
 
 		const formData = new FormData();
 		formData.append("file", file);
@@ -130,16 +155,7 @@ export default function ProductsUpload() {
 				setFile={setFile}
 				setPreview={setPreview}
 				setTotalRows={setTotalRows}
-				resetColumns={() =>
-					setColumns({
-						brand: -1,
-						sku: -1,
-						title: -1,
-						description: -1,
-						price: -1,
-						category: -1,
-					})
-				}
+				resetColumns={() => setColumns({ brand: -1, sku: -1, title: -1, description: -1, price: -1, category: -1 })}
 				handlePreviewUpload={handlePreviewUpload}
 			/>
 
@@ -148,39 +164,41 @@ export default function ProductsUpload() {
 			) : (
 				preview && (
 					<>
-						{/* Выбор категорий */}
 						<PreviewTable preview={preview} totalRows={totalRows} columns={columns} setColumns={setColumns} />
 
 						{/* Пагинация */}
-						<div className="flex items-center justify-between mt-4">
-							<button
-								className="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400"
-								onClick={() => {
-									const prevPage = currentPage - 1;
-									setCurrentPage(prevPage);
-									handlePreviewUpload(file!, prevPage);
-								}}
-								disabled={currentPage === 1}
-							>
-								Назад
-							</button>
+						{pagesToShow.length > 0 && (
+							<div className="flex items-center justify-center mt-4 space-x-1">
+								{pagesToShow.map((item, idx) =>
+									item === "ellipsis" ? (
+										<span key={`el${idx}`} className="px-2">
+											…
+										</span>
+									) : (
+										<button
+											key={item}
+											onClick={() => {
+												if (item !== currentPage) {
+													setCurrentPage(item);
+													handlePreviewUpload(file!, item);
+												}
+											}}
+											disabled={item === currentPage}
+											className={`px-2 py-1 rounded transition ${
+												item === currentPage ? "bg-blue-600 text-white" : "bg-gray-200 hover:bg-gray-300 text-black"
+											}`}
+										>
+											{item}
+										</button>
+									)
+								)}
 
-							<p className="text-gray-500">Страница {currentPage}</p>
+								<span className="ml-4 text-gray-600">
+									Страница {currentPage} из {totalPages}
+								</span>
+							</div>
+						)}
 
-							<button
-								className="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400"
-								onClick={() => {
-									const nextPage = currentPage + 1;
-									setCurrentPage(nextPage);
-									handlePreviewUpload(file!, nextPage);
-								}}
-								disabled={totalRows === null || totalRows <= currentPage * OBJECTS_PER_PAGE}
-							>
-								Вперёд
-							</button>
-						</div>
-
-						{/* Установление наценки */}
 						<MarkupRulesEditor
 							rules={markupRules}
 							setRules={setMarkupRules}

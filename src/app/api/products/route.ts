@@ -4,53 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { withPermission } from "@/middleware/permissionMiddleware";
-
-type ProductWithRelations = {
-	id: number;
-	title: string;
-	sku: string;
-	brand: string;
-	price: number;
-	supplierPrice?: number | null;
-	description: string | null;
-	image: string | null;
-	createdAt: Date;
-	updatedAt: Date;
-	categoryId: number | null;
-	departmentId: number | null;
-	category: {
-		id: number;
-		title: string;
-		image: string | null;
-		createdAt: Date;
-		order: number;
-	} | null;
-	department: {
-		id: number;
-		name: string;
-		createdAt: Date;
-	} | null;
-};
-
-type ProductResponse = {
-	id: number;
-	sku: string;
-	title: string;
-	description: string | null;
-	supplierPrice?: number | null;
-	price: number;
-	brand: string;
-	image: string | null;
-	createdAt: Date;
-	updatedAt: string;
-	categoryId: number | null;
-	departmentId: number | null;
-	categoryTitle: string;
-	department?: {
-		id: number;
-		name: string;
-	};
-};
+import type { ProductListItem } from "@/lib/types";
 
 interface ExtendedRequestContext {
 	user: {
@@ -70,6 +24,9 @@ export const GET = withPermission(
 
 		const cursor = searchParams.get("cursor");
 		const limit = parseInt(searchParams.get("limit") || "10");
+		const pageParam = parseInt(searchParams.get("page") || "1", 10);
+		// вычисляем смещение для offset-пагинации
+		const skipOffset = (pageParam - 1) * limit;
 		const brand = searchParams.get("brand") || undefined;
 		const categoryId = searchParams.get("categoryId") || undefined;
 		const departmentId = searchParams.get("departmentId");
@@ -100,7 +57,7 @@ export const GET = withPermission(
 
 		if (user?.role === "superadmin") {
 			if (withoutDepartment === "true") {
-				where.departmentId = null;
+				(where as any).departmentId = null;
 			} else if (departmentId !== null && departmentId !== "") {
 				where.departmentId = parseInt(departmentId);
 			}
@@ -117,29 +74,44 @@ export const GET = withPermission(
 					category: true,
 					department: true,
 				},
-				...(cursor && {
-					cursor: { id: parseInt(cursor) },
-					skip: 1,
-				}),
+				// если передан cursor — используем cursor‑based, иначе — offset
+				...(cursor
+					? {
+							cursor: { id: parseInt(cursor, 10) },
+							skip: 1,
+					  }
+					: {
+							skip: skipOffset,
+					  }),
 			};
 
-			const products = (await prisma.product.findMany(queryOptions)) as ProductWithRelations[];
+			// общее число записей под текущие фильтры
+			const total = await prisma.product.count({
+				where,
+			});
+			const products = await prisma.product.findMany({
+				...queryOptions,
+				include: {
+					category: true,
+					department: true,
+				},
+			});
 
-			const mappedProducts: ProductResponse[] = products.map((p) => ({
+			const mappedProducts: ProductListItem[] = products.map((p) => ({
 				id: p.id,
 				sku: p.sku,
+				brand: p.brand,
 				title: p.title,
 				description: p.description,
 				price: p.price,
-				supplierPrice: p.supplierPrice ?? null,
-				brand: p.brand,
 				image: p.image,
-				createdAt: p.createdAt,
+				createdAt: p.createdAt.toISOString(),
 				updatedAt: p.updatedAt.toISOString(),
-				categoryId: p.categoryId,
 				departmentId: p.departmentId,
+				categoryId: p.categoryId,
 				categoryTitle: p.category?.title || "—",
 				department: p.department ? { id: p.department.id, name: p.department.name } : undefined,
+				...(user.role !== "superadmin" && user.role !== "admin" && user.role !== "manager" ? {} : { supplierPrice: p.supplierPrice ?? null }),
 			}));
 
 			const nextCursor = products.length === limit ? products[products.length - 1].id : null;
@@ -148,6 +120,7 @@ export const GET = withPermission(
 				products: mappedProducts,
 				nextCursor,
 				limit,
+				total,
 			});
 		} catch (error) {
 			console.error("Ошибка получения товаров:", error);
@@ -162,17 +135,24 @@ export const POST = withPermission(
 	async (req: NextRequest, { user }: ExtendedRequestContext) => {
 		try {
 			const data = await req.json();
+
 			const departmentId = user.role === "superadmin" ? data.departmentId ?? null : user.departmentId ?? null;
 
 			if (user.role === "admin" && !departmentId) {
 				return new NextResponse("Администратор должен иметь отдел", { status: 400 });
 			}
 
-			// 🔍 Проверка на уникальность SKU + brand
+			// 🧼 Приводим артикул и бренд к нижнему регистру для проверки дубликатов
+			const rawSku = String(data.sku).trim();
+			const rawBrand = String(data.brand).trim();
+			const normalizedSku = rawSku.toLowerCase();
+			const normalizedBrand = rawBrand.toLowerCase();
+
+			// ❗ Проверка на дубликат
 			const existing = await prisma.product.findFirst({
 				where: {
-					sku: data.sku,
-					brand: data.brand,
+					sku: normalizedSku,
+					brand: normalizedBrand,
 					departmentId: departmentId ?? null,
 				},
 			});
@@ -181,39 +161,17 @@ export const POST = withPermission(
 				return new NextResponse("Товар с таким артикулом и брендом уже существует", { status: 409 });
 			}
 
-			// Найдём наценку, если price не передан
-			let supplierPrice = data.supplierPrice ?? data.price;
-			let finalPrice = data.price;
+			let supplierPrice = data.supplierPrice !== "" ? parseFloat(data.supplierPrice) : null;
+			let finalPrice = data.price !== "" ? parseFloat(data.price) : null;
 
 			if (!finalPrice && supplierPrice) {
 				const markupRule = await prisma.markupRule.findFirst({
 					where: {
-						OR: [
-							{
-								brand: data.brand,
-								categoryId: data.categoryId,
-								departmentId,
-								priceFrom: { lte: supplierPrice },
-								OR: [{ priceTo: null }, { priceTo: { gte: supplierPrice } }],
-							},
-							{
-								brand: data.brand,
-								departmentId,
-								priceFrom: { lte: supplierPrice },
-								OR: [{ priceTo: null }, { priceTo: { gte: supplierPrice } }],
-							},
-							{
-								categoryId: data.categoryId,
-								departmentId,
-								priceFrom: { lte: supplierPrice },
-								OR: [{ priceTo: null }, { priceTo: { gte: supplierPrice } }],
-							},
-							{
-								departmentId,
-								priceFrom: { lte: supplierPrice },
-								OR: [{ priceTo: null }, { priceTo: { gte: supplierPrice } }],
-							},
-						],
+						departmentId,
+						priceFrom: { lte: supplierPrice },
+						OR: [{ priceTo: null }, { priceTo: { gte: supplierPrice } }],
+						...(data.brand && { brand: normalizedBrand }),
+						...(data.categoryId && { categoryId: data.categoryId }),
 					},
 					orderBy: { priceFrom: "desc" },
 				});
@@ -223,30 +181,31 @@ export const POST = withPermission(
 				}
 			}
 
-			// 🔐 Проверяем, разрешена ли категория
-			if (data.categoryId) {
+			// 🔐 Проверка разрешённой категории
+			let categoryIdToUse = data.categoryId;
+			if (categoryIdToUse) {
 				const allowed = await prisma.departmentCategory.findFirst({
 					where: {
 						departmentId,
-						categoryId: data.categoryId,
+						categoryId: categoryIdToUse,
 					},
 				});
 				if (!allowed) {
-					console.warn(`Категория ${data.categoryId} запрещена для отдела ${departmentId}, убираем`);
-					data.categoryId = null;
+					console.warn(`Категория ${categoryIdToUse} запрещена для отдела ${departmentId}, убираем`);
+					categoryIdToUse = null;
 				}
 			}
 
 			const newProduct = await prisma.product.create({
 				data: {
-					title: data.title,
-					sku: data.sku,
+					title: String(data.title).trim(),
+					sku: rawSku, // сохраняем как есть
 					price: finalPrice ?? 0,
-					supplierPrice: supplierPrice ?? null,
-					brand: data.brand,
-					description: data.description,
-					image: data.image,
-					categoryId: data.categoryId,
+					supplierPrice: supplierPrice,
+					brand: rawBrand, // сохраняем как есть
+					description: data.description?.trim() || null,
+					image: data.image?.trim() || null,
+					categoryId: categoryIdToUse,
 					departmentId,
 				},
 				include: {
@@ -257,7 +216,7 @@ export const POST = withPermission(
 			return NextResponse.json({ product: newProduct });
 		} catch (error: any) {
 			if (error.code === "P2002") {
-				return new NextResponse("Товар с таким артикулом и брендом уже существует (ошибка уникальности)", { status: 409 });
+				return new NextResponse("Товар с таким артикулом и брендом уже существует (уникальность)", { status: 409 });
 			}
 			console.error("Ошибка при создании товара:", error);
 			return new NextResponse("Ошибка сервера", { status: 500 });

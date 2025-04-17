@@ -1,3 +1,5 @@
+// src\app\admin\product-management\products\local_components\productsUpload\MarkupRulesEditor.tsx
+
 "use client";
 
 import { useEffect } from "react";

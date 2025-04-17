@@ -1,3 +1,5 @@
+// src\app\admin\product-management\products\local_components\productsUpload\PreviewTable.tsx
+
 "use client";
 
 type FieldKey = "sku" | "title" | "price" | "brand" | "category" | "description";

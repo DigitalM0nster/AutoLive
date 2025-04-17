@@ -1,12 +1,14 @@
 // src\app\admin\product-management\products\local_components\productsList\ProductsTable.tsx
 
 import { EditableProduct, Category, Product } from "@/lib/types";
-import ProductRow from "./ProductRow";
+import ProductRow from "./productRow/ProductRow";
 import { ArrowDown, ArrowUp, ArrowDownWideNarrow } from "lucide-react";
 import { useEffect, useState } from "react";
 import React from "react"; // Импорт React
 import { User } from "@/lib/types";
 import DuplicateProductModal from "./DuplicateProductModal";
+import ConfirmModal from "@/components/ui/confirmModal/ConfirmModal";
+import { showErrorToast, showSuccessToast } from "@/components/ui/toast/ToastProvider";
 
 type Props = {
 	products: EditableProduct[];
@@ -20,7 +22,7 @@ type Props = {
 	departments: { id: number; name: string }[];
 	onProductUpdate: (updated: EditableProduct) => void;
 	user?: User | null;
-	toEditableProduct: (product: Product) => EditableProduct;
+	toEditableProduct: (product: Product | EditableProduct) => EditableProduct;
 	toProductForm: (product: EditableProduct) => any;
 };
 
@@ -53,6 +55,8 @@ const ProductsTable = React.memo(
 		// Следим за изменениями пропсов, чтобы обновлять только когда это необходимо
 		const [localProducts, setLocalProducts] = useState(products);
 
+		const [confirmDeleteId, setConfirmDeleteId] = useState<string | number | null>(null);
+
 		useEffect(() => {
 			setLocalProducts(products);
 		}, [products]); // Обновляем локальные данные только при изменении товаров
@@ -70,18 +74,34 @@ const ProductsTable = React.memo(
 		};
 
 		// Удаляем товар
-		const handleProductDelete = (id: string | number) => {
+		const handleProductDelete = async (id: string | number) => {
 			if (id === "new") {
-				setLocalProducts((prev) => prev.filter((p) => p.id !== "new"));
+				setLocalProducts((prev) => prev.filter((p) => p.id !== id));
 				return;
 			}
-			setLocalProducts((prev) => prev.filter((p) => p.id !== id));
+
+			try {
+				const res = await fetch(`/api/products/${id}`, {
+					method: "DELETE",
+				});
+
+				if (res.ok) {
+					setLocalProducts((prev) => prev.filter((p) => p.id !== id));
+					showSuccessToast("Товар удалён");
+				} else {
+					showErrorToast("Ошибка при удалении товара");
+				}
+			} catch (err) {
+				showErrorToast("Ошибка сети");
+			}
 		};
 
 		// ✅ Добавим новый товар
 		const handleAddProduct = () => {
+			const departmentId = user?.role === "superadmin" ? "" : String(user?.department?.id ?? "");
+
 			const newProduct: EditableProduct = {
-				id: "new",
+				id: `new-${Date.now()}`,
 				title: "",
 				sku: "",
 				price: 0,
@@ -92,6 +112,8 @@ const ProductsTable = React.memo(
 				categoryTitle: "—",
 				createdAt: new Date().toISOString(),
 				updatedAt: new Date().toISOString(),
+				department: departmentId ? departments.find((d) => String(d.id) === departmentId) : undefined,
+				departmentId: departmentId ? Number(departmentId) : null,
 				filters: [],
 				isEditing: true,
 			};
@@ -106,7 +128,7 @@ const ProductsTable = React.memo(
 		return (
 			<>
 				{user?.role !== "manager" && (
-					<button onClick={handleAddProduct} className="text-sm text-green-600 hover:underline border border-green-600 px-3 py-1 rounded">
+					<button onClick={handleAddProduct} className="text-sm text-green-600 hover:underline border border-green-600 px-3 py-1 rounded mb-3">
 						+ Добавить товар
 					</button>
 				)}
@@ -127,6 +149,8 @@ const ProductsTable = React.memo(
 								/>
 							</th>
 
+							{user?.role === "superadmin" && <th className="border border-black/10 px-2 py-1 cursor-default w-1/6">Отдел</th>}
+
 							<th className="border border-black/10 px-2 py-1 cursor-pointer w-1/6" onClick={() => handleSort("brand")}>
 								Бренд {renderSortIcon("brand")}
 							</th>
@@ -146,7 +170,6 @@ const ProductsTable = React.memo(
 								Категория {renderSortIcon("categoryTitle")}
 							</th>
 							<th className="border border-black/10 px-2 py-1 text-center w-1/6">Изображение</th>
-							{user?.role === "superadmin" && <th className="border border-black/10 px-2 py-1 cursor-default w-1/6">Отдел</th>}
 
 							{user?.role !== "manager" && <th className="border border-black/10 px-2 py-1 text-center w-1/6">Действия</th>}
 						</tr>
@@ -157,13 +180,13 @@ const ProductsTable = React.memo(
 							localProducts.map((product) => (
 								<ProductRow
 									key={`${product.id}-${product.updatedAt}`}
-									product={product}
+									product={toEditableProduct(product)}
 									categories={categories}
 									departments={departments}
 									setPendingProductData={setPendingProductData}
 									setDuplicateProduct={setDuplicateProduct}
 									onUpdate={handleProductUpdate}
-									onDelete={handleProductDelete}
+									onDelete={() => setConfirmDeleteId(product.id)}
 									user={user}
 									toEditableProduct={toEditableProduct}
 									toProductForm={toProductForm}
@@ -182,6 +205,20 @@ const ProductsTable = React.memo(
 						)}
 					</tbody>
 				</table>
+				{/* Модалка подтверждения удаления товара */}
+				{confirmDeleteId !== null && (
+					<ConfirmModal
+						open={true}
+						title="Удалить товар?"
+						message="Вы действительно хотите удалить этот товар? Это действие нельзя отменить."
+						onCancel={() => setConfirmDeleteId(null)}
+						onConfirm={() => {
+							handleProductDelete(confirmDeleteId);
+							setConfirmDeleteId(null);
+						}}
+					/>
+				)}
+
 				{duplicateProduct && pendingProductData && (
 					<DuplicateProductModal
 						existing={duplicateProduct}

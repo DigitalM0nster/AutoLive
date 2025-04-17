@@ -1,5 +1,3 @@
-// src\app\api\products\filtered-products\route.ts
-
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -12,12 +10,15 @@ export async function GET(req: Request) {
 	}
 
 	if (searchParams.has("categoryId")) {
-		where.categoryId = parseInt(searchParams.get("categoryId")!);
+		const categoryId = parseInt(searchParams.get("categoryId")!, 10);
+		if (!isNaN(categoryId)) {
+			where.categoryId = categoryId;
+		}
 	}
 
 	if (searchParams.has("search")) {
 		const search = searchParams.get("search")!;
-		where.OR = [{ title: { contains: search, mode: "insensitive" } }, { sku: { contains: search, mode: "insensitive" } }];
+		where.OR = [{ title: { contains: search } }, { sku: { contains: search } }];
 	}
 
 	if (searchParams.get("onlyStale") === "true") {
@@ -34,7 +35,10 @@ export async function GET(req: Request) {
 	}
 
 	if (searchParams.has("departmentId")) {
-		where.departmentId = parseInt(searchParams.get("departmentId")!);
+		const departmentId = parseInt(searchParams.get("departmentId")!, 10);
+		if (!isNaN(departmentId)) {
+			where.departmentId = departmentId;
+		}
 	}
 
 	if (searchParams.get("withoutDepartment") === "true") {

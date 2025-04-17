@@ -205,6 +205,30 @@ async function main() {
 		}
 	}
 
+	// 🌟 Начальные акции для superadmin
+	const initialPromotions = [
+		{
+			title: "Весенняя распродажа",
+			description: "Скидки до 20% на все масла",
+			image: "/images/promotions/spring-sale.png",
+			buttonText: "Узнать больше",
+			buttonLink: "/promotions/spring-sale",
+			order: 1,
+		},
+		{
+			title: "Летняя акция",
+			description: "Специальные цены на жидкости",
+			image: "/images/promotions/summer-sale.png",
+			buttonText: "Подробнее",
+			buttonLink: "/promotions/summer-sale",
+			order: 2,
+		},
+	];
+
+	for (const promo of initialPromotions) {
+		await prisma.promotion.create({ data: promo });
+	}
+
 	console.log("✅ Seed complete.");
 }
 

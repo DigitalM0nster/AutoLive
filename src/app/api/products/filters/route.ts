@@ -32,7 +32,7 @@ export const GET = withPermission(
 			};
 
 			if (departmentId === null) {
-				baseWhere.departmentId = null;
+				baseWhere.departmentId = { equals: null } as any;
 			} else if (typeof departmentId === "number") {
 				baseWhere.departmentId = departmentId;
 			}
@@ -101,9 +101,6 @@ export const GET = withPermission(
 				productCount: departmentCountMap.get(d.id) || 0,
 			}));
 
-			// "Без отдела"
-			const withoutDepCount = departmentCountMap.get(null) || 0;
-
 			// Бренды
 			const brandWhere = { ...baseWhere };
 			delete brandWhere.brand;
@@ -122,18 +119,7 @@ export const GET = withPermission(
 					productCount: categoryCountMap.get(cat.id) || 0,
 				})),
 				brands,
-				departments: [
-					...(user.role === "superadmin"
-						? [
-								{
-									id: null,
-									name: "Без отдела",
-									productCount: withoutDepCount,
-								},
-						  ]
-						: []),
-					...departments,
-				],
+				departments,
 			});
 		} catch (error) {
 			console.error("Ошибка получения фильтров:", error);

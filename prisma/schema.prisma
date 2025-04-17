@@ -89,10 +89,10 @@ model Product {
     createdAt     DateTime @default(now()) @map("created_at")
     updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
 
-    categoryId   Int?        @map("category_id")
-    category     Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-    departmentId Int?        @map("department_id")
-    department   Department? @relation(fields: [departmentId], references: [id])
+    categoryId   Int?       @map("category_id")
+    category     Category?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+    departmentId Int        @map("department_id")
+    department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
 
     productFilterValues ProductFilterValue[]
     analogsFrom         ProductAnalog[]      @relation("ProductToAnalog")

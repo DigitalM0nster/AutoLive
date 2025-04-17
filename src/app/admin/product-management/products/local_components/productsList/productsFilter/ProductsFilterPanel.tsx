@@ -111,7 +111,7 @@ function ProductsFilterPanel({
 	}, [departments]);
 
 	return (
-		<div className="flex flex-col gap-4 mb-6">
+		<div className="flex flex-col gap-4 mb-12">
 			{/* Поиск + устаревшие */}
 			<div className="flex flex-col sm:flex-row sm:items-center gap-4">
 				<div className="flex flex-1 gap-2">

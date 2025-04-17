@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { read, utils } from "xlsx";
+// Заменили xlsx → exceljs
+import ExcelJS from "exceljs";
 import { prisma } from "@/lib/prisma";
 import { withPermission } from "@/middleware/permissionMiddleware";
 import { Permission } from "@/lib/rolesConfig";
@@ -52,13 +53,9 @@ export const POST = withPermission(
 				.filter((r) => {
 					// отсекаем невалидные или пустые
 					if (r.value === null || isNaN(r.value)) return false;
-
 					const from = r.from ?? 0;
 					const to = r.to ?? Infinity;
-
-					// отсекаем если from > to
 					if (from > to) return false;
-
 					return true;
 				})
 				.map((r) => ({
@@ -68,7 +65,7 @@ export const POST = withPermission(
 					value: r.value!,
 				}));
 
-			function applyMarkup(supplierPrice: number, rules: typeof markupRules, fallback: typeof defaultMarkup): number {
+			function applyMarkup(supplierPrice: number, rules: typeof markupRules, fallback: { type: "%" | "₽"; value: number }): number {
 				for (const rule of rules) {
 					if (supplierPrice >= rule.from && supplierPrice <= rule.to) {
 						return rule.type === "%" ? Math.round(supplierPrice * (1 + rule.value / 100)) : Math.round(supplierPrice + rule.value);
@@ -86,11 +83,16 @@ export const POST = withPermission(
 				return NextResponse.json({ error: "Файл не получен" }, { status: 400 });
 			}
 
-			// Читаем Excel-файл
-			const buffer = Buffer.from(await file.arrayBuffer());
-			const workbook = read(buffer, { type: "buffer" });
-			const sheet = workbook.Sheets[workbook.SheetNames[0]];
-			const rows = utils.sheet_to_json(sheet, { header: 1, defval: "" }) as any[][];
+			// Читаем Excel-файл через exceljs
+			const arrayBuffer = await file.arrayBuffer();
+			const workbook = new ExcelJS.Workbook();
+			await workbook.xlsx.load(arrayBuffer);
+
+			const worksheet = workbook.worksheets[0];
+			const rows: any[][] = [];
+			worksheet.eachRow({ includeEmpty: true }, (row) => {
+				rows.push((row.values as any[]).slice(1));
+			});
 
 			// Статистика импорта
 			let created = 0;
@@ -115,13 +117,13 @@ export const POST = withPermission(
 					return category.id;
 				}
 
-				// 👇 Пытаемся создать категорию только если пользователь — суперадмин
+				// 👇 Создаём категорию только для суперадмина
 				if (user.role === "superadmin") {
-					const created = await prisma.category.create({
+					const createdCat = await prisma.category.create({
 						data: { title: categoryTitle },
 					});
-					categoryCache[categoryTitle] = created.id;
-					return created.id;
+					categoryCache[categoryTitle] = createdCat.id;
+					return createdCat.id;
 				} else {
 					unauthorizedCategories.add(categoryTitle);
 					categoryCache[categoryTitle] = null;
@@ -136,7 +138,6 @@ export const POST = withPermission(
 						return { skipped: true };
 					}
 
-					// Извлекаем данные из нужных колонок
 					const sku = row[columns.sku]?.toString().trim();
 					const title = row[columns.title]?.toString().trim();
 					const brand = row[columns.brand]?.toString().trim();
@@ -162,7 +163,6 @@ export const POST = withPermission(
 						return { skipped: true };
 					}
 
-					// Проверяем, существует ли товар с таким SKU и брендом
 					const existing = await prisma.product.findFirst({
 						where: { sku, brand },
 					});
@@ -192,7 +192,7 @@ export const POST = withPermission(
 								image: null,
 								description: description || null,
 								categoryId,
-								departmentId: user.departmentId ?? null, // 👈 важно, если у товаров есть отдел
+								departmentId: user.departmentId ?? null,
 							},
 						});
 						return { created: true };

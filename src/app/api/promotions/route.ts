@@ -1,18 +1,25 @@
 // src\app\api\promotions\route.ts
 
 import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
+import { getUserFromRequest } from "@/middleware/authMiddleware";
 
 // GET /api/promotions
 export async function GET() {
 	const promos = await prisma.promotion.findMany({
-		orderBy: { order: "asc" }, // 👈 сортировка по порядку прямо в базе
+		orderBy: { order: "asc" },
 	});
 	return NextResponse.json(promos);
 }
 
-// POST /api/promotions
-export async function POST(req: Request) {
+// POST /api/promotions — только для superadmin
+export async function POST(req: NextRequest) {
+	const { user, error, status } = await getUserFromRequest(req);
+	if (!user) return NextResponse.json({ error }, { status });
+	if (user.role !== "superadmin") {
+		return new NextResponse("Недостаточно прав", { status: 403 });
+	}
+
 	try {
 		const body = await req.json();
 		const created = await prisma.promotion.create({
@@ -26,8 +33,8 @@ export async function POST(req: Request) {
 			},
 		});
 		return NextResponse.json(created);
-	} catch (error) {
-		console.error("Ошибка при создании акции:", error);
+	} catch (err) {
+		console.error("Ошибка при создании акции:", err);
 		return new NextResponse("Ошибка сервера", { status: 500 });
 	}
 }

@@ -9,10 +9,14 @@ import { SortableContext, arrayMove, verticalListSortingStrategy } from "@dnd-ki
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import PromoCard from "./PromoCard";
 import Loading from "@/components/ui/loading/Loading";
+import ConfirmModal from "@/components/ui/confirmModal/ConfirmModal";
 
 export default function PromotionsPage() {
 	const [promos, setPromos] = useState<Promotion[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
+
+	const [isModalOpen, setIsModalOpen] = useState(false);
+	const [promoToDelete, setPromoToDelete] = useState<Promotion | null>(null);
 
 	const fetchPromos = async () => {
 		setIsLoading(true);
@@ -24,10 +28,25 @@ export default function PromotionsPage() {
 		setIsLoading(false);
 	};
 
-	const handleDelete = async (id: number) => {
-		if (!confirm("Удалить акцию?")) return;
-		await fetch(`/api/promotions/${id}`, { method: "DELETE" });
+	// открывает модалку
+	const openDeleteModal = (promo: Promotion) => {
+		setPromoToDelete(promo);
+		setIsModalOpen(true);
+	};
+
+	// вызывается при клике на “Удалить” в модалке
+	const handleConfirmDelete = async () => {
+		if (!promoToDelete) return;
+		await fetch(`/api/promotions/${promoToDelete.id}`, { method: "DELETE" });
+		setIsModalOpen(false);
+		setPromoToDelete(null);
 		await fetchPromos();
+	};
+
+	// отмена
+	const handleCancelDelete = () => {
+		setIsModalOpen(false);
+		setPromoToDelete(null);
 	};
 
 	useEffect(() => {
@@ -60,7 +79,7 @@ export default function PromotionsPage() {
 	};
 
 	return (
-		<div className="px-6 py-10 max-w-3xl mx-auto">
+		<div className="px-6 py-10 w-full max-w-7xl mx-auto mb-auto">
 			<div className="flex justify-between items-center mb-6">
 				<h1 className="text-3xl font-bold">Акции</h1>
 				<Link href="/admin/content/promotions/create" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
@@ -77,12 +96,21 @@ export default function PromotionsPage() {
 					<SortableContext items={promos.map((promo) => promo.id)} strategy={verticalListSortingStrategy}>
 						<div className="flex flex-col gap-4">
 							{promos.map((promo) => (
-								<PromoCard key={promo.id} promo={promo} onDelete={() => handleDelete(promo.id)} />
+								<PromoCard key={promo.id} promo={promo} onDelete={() => openDeleteModal(promo)} />
 							))}
 						</div>
 					</SortableContext>
 				</DndContext>
 			)}
+			<ConfirmModal
+				open={isModalOpen}
+				title="Удалить акцию?"
+				message="Вы уверены, что хотите удалить эту акцию?"
+				confirmText="Удалить"
+				cancelText="Отмена"
+				onConfirm={handleConfirmDelete}
+				onCancel={handleCancelDelete}
+			/>
 		</div>
 	);
 }

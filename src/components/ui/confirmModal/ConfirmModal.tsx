@@ -1,3 +1,5 @@
+// src\components\ui\confirmModal\ConfirmModal.tsx
+
 "use client";
 
 import React from "react";
@@ -8,11 +10,12 @@ type ConfirmModalProps = {
 	message: string;
 	confirmText?: string;
 	cancelText?: string;
+	confirmButtonClassName?: string;
 	onConfirm: () => void;
 	onCancel: () => void;
 };
 
-export default function ConfirmModal({ open, title, message, confirmText = "Удалить", cancelText = "Отмена", onConfirm, onCancel }: ConfirmModalProps) {
+export default function ConfirmModal({ open, title, message, confirmText = "Удалить", cancelText = "Отмена", confirmButtonClassName, onConfirm, onCancel }: ConfirmModalProps) {
 	if (!open) return null;
 
 	return (
@@ -24,7 +27,11 @@ export default function ConfirmModal({ open, title, message, confirmText = "Уд
 					<button onClick={onCancel} className="px-4 py-2 text-sm bg-gray-200 rounded hover:bg-gray-300">
 						{cancelText}
 					</button>
-					<button onClick={onConfirm} className="px-4 py-2 text-sm bg-red-500 text-white rounded hover:bg-red-600">
+					<button
+						onClick={onConfirm}
+						// если передали класс — используем его, иначе — дефолтный “красный”
+						className={`px-4 py-2 text-sm rounded ${confirmButtonClassName ?? "bg-red-500 text-white hover:bg-red-600"}`}
+					>
 						{confirmText}
 					</button>
 				</div>

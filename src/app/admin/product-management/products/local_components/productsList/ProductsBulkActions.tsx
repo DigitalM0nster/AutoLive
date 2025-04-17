@@ -3,15 +3,17 @@
 import { useState } from "react";
 import ConfirmModal from "@/components/ui/confirmModal/ConfirmModal";
 import { showErrorToast, showSuccessToast } from "@/components/ui/toast/ToastProvider";
+import { User } from "@/lib/types";
 
 type Props = {
 	selectedProductIds: (number | string)[];
 	setSelectedProductIds: (ids: (number | string)[]) => void;
 	fetchProducts: () => void;
 	buildFilterParams: () => URLSearchParams;
+	user?: User | null;
 };
 
-export default function ProductsBulkActions({ selectedProductIds, setSelectedProductIds, fetchProducts, buildFilterParams }: Props) {
+export default function ProductsBulkActions({ user, selectedProductIds, setSelectedProductIds, fetchProducts, buildFilterParams }: Props) {
 	const [showDeleteModal, setShowDeleteModal] = useState(false);
 
 	const handleToggleSelection = async () => {
@@ -91,9 +93,11 @@ export default function ProductsBulkActions({ selectedProductIds, setSelectedPro
 
 				{selectedProductIds.length > 0 && (
 					<div className="flex gap-2 ml-4">
-						<button onClick={() => setShowDeleteModal(true)} className="text-sm px-4 py-2 rounded bg-red-500 text-white hover:bg-red-600">
-							Удалить выбранные товары
-						</button>
+						{user?.role != "manager" && (
+							<button onClick={() => setShowDeleteModal(true)} className="text-sm px-4 py-2 rounded bg-red-500 text-white hover:bg-red-600">
+								Удалить выбранные товары
+							</button>
+						)}
 
 						<button onClick={handleExport} className="text-sm px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700">
 							Экспорт в Excel

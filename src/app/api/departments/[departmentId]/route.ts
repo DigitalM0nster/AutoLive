@@ -161,28 +161,32 @@ export const DELETE = withPermission(
 			return NextResponse.json({ error: "Нет доступа" }, { status: 403 });
 		}
 
-		const dependencies = await prisma.department.findUnique({
-			where: { id: departmentId },
-			select: {
-				products: { select: { id: true }, take: 1 },
-				orders: { select: { id: true }, take: 1 },
-				users: { select: { id: true }, take: 1 },
-			},
-		});
+		try {
+			const dependencies = await prisma.department.findUnique({
+				where: { id: departmentId },
+				select: {
+					orders: { select: { id: true }, take: 1 },
+					users: { select: { id: true }, take: 1 },
+				},
+			});
 
-		if (!dependencies) {
-			return NextResponse.json({ error: "Отдел не найден" }, { status: 404 });
+			if (!dependencies) {
+				return NextResponse.json({ error: "Отдел не найден" }, { status: 404 });
+			}
+
+			if (dependencies.orders.length > 0 || dependencies.users.length > 0) {
+				return NextResponse.json({ error: "Нельзя удалить отдел с привязанными заказами или пользователями" }, { status: 400 });
+			}
+
+			await prisma.department.delete({
+				where: { id: departmentId },
+			});
+
+			return NextResponse.json({ success: true });
+		} catch (error) {
+			console.error("Ошибка при удалении отдела:", error);
+			return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
 		}
-
-		if (dependencies.products.length > 0 || dependencies.orders.length > 0 || dependencies.users.length > 0) {
-			return NextResponse.json({ error: "Нельзя удалить отдел с привязанными товарами, заказами или пользователями" }, { status: 400 });
-		}
-
-		await prisma.department.delete({
-			where: { id: departmentId },
-		});
-
-		return NextResponse.json({ success: true });
 	},
 	"manage_departments",
 	["superadmin"]

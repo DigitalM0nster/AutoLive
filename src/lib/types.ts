@@ -1,4 +1,5 @@
 // src\lib\types.ts
+import { Prisma } from "@prisma/client";
 
 export type Role = "superadmin" | "admin" | "manager" | "client";
 export type Department = {
@@ -56,8 +57,77 @@ export type Product = {
 	}[];
 };
 
-export type NewProduct = Omit<Product, "id"> & { id: "new" };
-export type EditableProduct = (Product & { isEditing?: boolean }) | (Omit<Product, "id"> & { id: "new"; isEditing: true });
+export type ProductWithRelationsFromDB = Prisma.ProductGetPayload<{
+	include: {
+		category: true;
+		department: true;
+	};
+}>;
+
+export type EditableProductId = number | `new${string}`;
+// 💡 API-ответ для списка товаров
+export type ProductListItem = {
+	id: number;
+	sku: string;
+	title: string;
+	description: string | null;
+	price: number;
+	supplierPrice?: number | null;
+	brand: string;
+	image: string | null;
+	createdAt: string;
+	updatedAt: string;
+	categoryId: number | null;
+	departmentId: number | null;
+	categoryTitle: string;
+	department?: {
+		id: number;
+		name: string;
+	};
+};
+
+// 🧑‍🎨 UI: форма
+export type ProductFormData = {
+	sku: string;
+	title: string;
+	description: string;
+	price: string;
+	supplierPrice: string;
+	brand: string;
+	categoryId: string;
+	image: string;
+	departmentId?: string;
+};
+
+// 🆕 Новый товар
+export type NewProduct = ProductListItem & {
+	id: "new";
+	isEditing: true;
+	filters: any[];
+};
+
+// ✏️ UI: редактируемый товар
+export type EditableProduct = {
+	id: EditableProductId;
+	sku: string;
+	title: string;
+	description: string;
+	price: number;
+	supplierPrice?: number | null;
+	brand: string;
+	image: string | null;
+	createdAt: string;
+	updatedAt: string;
+	categoryId: number | null;
+	categoryTitle: string;
+	departmentId?: number | null;
+	department?: {
+		id: number;
+		name: string;
+	};
+	isEditing?: boolean;
+	filters: any[];
+};
 
 export type ProductFilter = {
 	id: number;

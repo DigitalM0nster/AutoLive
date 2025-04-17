@@ -1,32 +1,35 @@
-// src/app/api/products/check-duplicate/route.ts
+// src\app\api\products\check-duplicate\route.ts
 
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
 	const { searchParams } = new URL(req.url);
-	const sku = searchParams.get("sku");
-	const brand = searchParams.get("brand");
+	const skuRaw = searchParams.get("sku");
+	const brandRaw = searchParams.get("brand");
 	const departmentIdRaw = searchParams.get("departmentId");
 
-	if (!sku || !brand) {
+	if (!skuRaw || !brandRaw) {
 		return new NextResponse("Не переданы параметры", { status: 400 });
 	}
+
+	const normalizedSku = skuRaw.trim().toLowerCase();
+	const normalizedBrand = brandRaw.trim().toLowerCase();
 
 	const departmentId = departmentIdRaw === "null" ? null : parseInt(departmentIdRaw || "");
 
 	try {
-		const existing = await prisma.product.findFirst({
-			where: {
-				sku,
-				brand,
-				departmentId: departmentId ?? null,
-			},
+		const candidates = await prisma.product.findMany({
+			where: departmentId === null ? {} : { departmentId },
 			include: {
 				category: true,
 				department: true,
 			},
 		});
+
+		const existing = candidates.find(
+			(p) => p.sku.trim().toLowerCase() === normalizedSku && p.brand.trim().toLowerCase() === normalizedBrand && (p.departmentId ?? null) === departmentId
+		);
 
 		if (existing) {
 			return NextResponse.json({ exists: true, product: existing });
