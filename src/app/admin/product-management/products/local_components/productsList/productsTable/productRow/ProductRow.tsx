@@ -224,6 +224,7 @@ export default function ProductRow({
 								setForm(toProductForm(product));
 								setImageFile(null);
 								setImagePreview(product.image || null);
+								onUpdate({ ...product, isEditing: false });
 							}
 						}}
 						onDelete={() => onDelete(product.id)}
