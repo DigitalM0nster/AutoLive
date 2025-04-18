@@ -207,11 +207,40 @@ export default function ProductRow({
 						isSaving={isSaving}
 						onEdit={() => setIsEditing(true)}
 						onSave={async () => {
+							const initial = toProductForm(product);
+
+							// сравниваем значения формы с начальными
+							const isUnchanged =
+								initial.title === form.title &&
+								initial.description === form.description &&
+								initial.sku === form.sku &&
+								initial.supplierPrice === form.supplierPrice &&
+								initial.price === form.price &&
+								initial.brand === form.brand &&
+								initial.categoryId === form.categoryId &&
+								initial.departmentId === form.departmentId &&
+								initial.image === form.image;
+
+							if (isUnchanged) {
+								// ничего не менялось — вызываем отмену
+								if (typeof product.id === "string" && product.id.startsWith("new-")) {
+									handleProductDelete(product.id);
+								} else {
+									setIsEditing(false);
+									setForm(toProductForm(product));
+									setImageFile(null);
+									setImagePreview(product.image || null);
+									onUpdate({ ...product, isEditing: false });
+								}
+								return;
+							}
+
 							const success = await handleSave();
 							if (success) {
 								setIsEditing(false);
 								setImageFile(null);
 								setImagePreview(form.image || null);
+								onUpdate({ ...product, isEditing: false });
 							}
 						}}
 						onCancel={() => {

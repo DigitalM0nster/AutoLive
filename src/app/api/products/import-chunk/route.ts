@@ -1,4 +1,4 @@
-// src/app/api/products/import-chunk/route.ts
+// src\app\api\products\import-chunk\route.ts
 
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
@@ -9,12 +9,8 @@ export const POST = withPermission(
 		try {
 			const { rows, columns, markupRules, defaultMarkup, preserveImages, departmentId: rawDepartmentId, chunkIndex, totalChunks } = await req.json();
 
-			console.log("Чанк:", chunkIndex + 1, "из", totalChunks);
-			console.log("Получено строк:", rows.length);
-
 			const departmentId = user.role === "superadmin" ? rawDepartmentId : user.departmentId ?? null;
 			if (!departmentId) {
-				console.warn("Не указан departmentId");
 				return NextResponse.json({ error: "Отдел не указан" }, { status: 400 });
 			}
 
@@ -38,14 +34,23 @@ export const POST = withPermission(
 
 			const existing = await prisma.product.findMany({
 				where: { departmentId },
-				select: { id: true, sku: true, brand: true, image: true },
+				select: {
+					id: true,
+					sku: true,
+					brand: true,
+					image: true,
+					title: true,
+					price: true,
+					supplierPrice: true,
+					description: true,
+					categoryId: true,
+				},
 			});
 			const existingMap = new Map<string, (typeof existing)[number]>();
 			for (const p of existing) {
 				existingMap.set(`${p.sku.toLowerCase()}||${p.brand.toLowerCase()}`, p);
 			}
 
-			// 👇 определим последние строки по ключу sku+brand и найдём локальные дубли
 			const lastByKey = new Map<string, number>();
 			const localDuplicates = new Set<string>();
 			for (let i = 0; i < rows.length; i++) {
@@ -59,10 +64,14 @@ export const POST = withPermission(
 
 			const toCreate: any[] = [];
 			const toUpdate: { id: number; data: any }[] = [];
+			const logsToCreate: any[] = [];
 
 			let skipped = 0;
 			let removedCategoriesCount = 0;
 			const unknownCategoryTitles = new Set<string>();
+
+			const beforeMap = new Map<number, any>();
+			const afterMap = new Map<number, any>();
 
 			for (let i = 0; i < rows.length; i++) {
 				const row = rows[i];
@@ -76,7 +85,6 @@ export const POST = withPermission(
 					continue;
 				}
 
-				// 👇 Пропускаем, если это не последняя строка с этим sku+brand
 				const key = `${sku.toLowerCase()}||${brand.toLowerCase()}`;
 				if (lastByKey.get(key) !== i) {
 					skipped++;
@@ -109,19 +117,43 @@ export const POST = withPermission(
 				const existingProduct = existingMap.get(key);
 
 				if (existingProduct) {
+					const updatedData = {
+						title,
+						price,
+						supplierPrice,
+						categoryId,
+						description,
+						image: image || (preserveImages ? existingProduct.image : null),
+					};
+
 					toUpdate.push({
 						id: existingProduct.id,
-						data: {
-							title,
-							price,
-							supplierPrice,
-							categoryId,
-							description,
-							image: image || (preserveImages ? existingProduct.image : null),
-						},
+						data: updatedData,
+					});
+
+					beforeMap.set(existingProduct.id, {
+						sku,
+						title: existingProduct.title,
+						brand,
+						price: existingProduct.price,
+						supplierPrice: existingProduct.supplierPrice,
+						description: existingProduct.description,
+						image: existingProduct.image,
+						categoryId: existingProduct.categoryId,
+					});
+
+					afterMap.set(existingProduct.id, {
+						sku,
+						title,
+						brand,
+						price,
+						supplierPrice,
+						description,
+						image: image || (preserveImages ? existingProduct.image : null),
+						categoryId,
 					});
 				} else {
-					toCreate.push({
+					const newProduct = {
 						sku,
 						title,
 						brand,
@@ -131,15 +163,49 @@ export const POST = withPermission(
 						image,
 						categoryId,
 						departmentId,
+					};
+
+					toCreate.push(newProduct);
+
+					logsToCreate.push({
+						action: "create",
+						userId: user.id,
+						departmentId,
+						message: `Импорт: создан товар ${sku} / ${brand}`,
+						snapshotAfter: newProduct,
+						productId: null,
 					});
 				}
 			}
+
+			let createdProducts: { id: number; sku: string; brand: string }[] = [];
 
 			if (toCreate.length > 0) {
 				await prisma.product.createMany({
 					data: toCreate,
 					skipDuplicates: true,
 				});
+
+				const skus = toCreate.map((p) => p.sku.toLowerCase());
+				const brands = toCreate.map((p) => p.brand.toLowerCase());
+
+				createdProducts = await prisma.product.findMany({
+					where: {
+						sku: { in: skus },
+						brand: { in: brands },
+						departmentId,
+					},
+					select: { id: true, sku: true, brand: true },
+				});
+
+				for (const log of logsToCreate) {
+					if (!log.productId && log.action === "create") {
+						const match = createdProducts.find(
+							(p) => log.snapshotAfter.sku?.toLowerCase() === p.sku.toLowerCase() && log.snapshotAfter.brand?.toLowerCase() === p.brand.toLowerCase()
+						);
+						if (match) log.productId = match.id;
+					}
+				}
 			}
 
 			for (let i = 0; i < toUpdate.length; i += 100) {
@@ -153,17 +219,70 @@ export const POST = withPermission(
 				);
 			}
 
+			for (const item of toUpdate) {
+				const before = beforeMap.get(item.id);
+				const after = afterMap.get(item.id);
+
+				if (!before || !after) continue;
+
+				logsToCreate.push({
+					action: "update",
+					userId: user.id,
+					productId: item.id,
+					departmentId,
+					message: `Импорт: обновлён товар ${before.sku} / ${before.brand}`,
+					snapshotBefore: before,
+					snapshotAfter: after,
+				});
+			}
+
+			if (logsToCreate.length > 0) {
+				await Promise.all(
+					logsToCreate.map((log) =>
+						prisma.productLog.create({
+							data: log,
+						})
+					)
+				);
+			}
+
+			const isFinalChunk = chunkIndex + 1 >= totalChunks;
+
+			if (isFinalChunk) {
+				await prisma.importLog.create({
+					data: {
+						userId: user.id,
+						fileName: `Импорт chunk ${chunkIndex + 1}/${totalChunks}`,
+						created: toCreate.length,
+						updated: toUpdate.length,
+						message: [
+							`Импорт завершён.`,
+							`Создано: ${toCreate.length}`,
+							`Обновлено: ${toUpdate.length}`,
+							`Пропущено: ${skipped}`,
+							`Категорий удалено: ${removedCategoriesCount}`,
+							localDuplicates.size > 0 ? `Повторы: ${Array.from(localDuplicates).slice(0, 5).join(", ")}` : null,
+							unknownCategoryTitles.size > 0 ? `Неизвестные категории: ${Array.from(unknownCategoryTitles).slice(0, 5).join(", ")}` : null,
+							`Изображения: ${preserveImages ? "сохранялись" : "заменялись"}`,
+							`Наценка: ${JSON.stringify({ markupRules, defaultMarkup })}`,
+						]
+							.filter(Boolean)
+							.join("\n"),
+					},
+				});
+			}
+
 			return NextResponse.json({
 				created: toCreate.length,
 				updated: toUpdate.length,
 				skipped,
 				removedCategoriesCount,
-				done: chunkIndex + 1 >= totalChunks,
+				done: isFinalChunk,
 				unknownCategoryTitles: Array.from(unknownCategoryTitles),
-				localDuplicates: Array.from(localDuplicates).map((key) => key.split("||")[0]),
+				localDuplicates: Array.from(localDuplicates).map((key) => key.split(" || ")[0]),
 			});
 		} catch (error) {
-			console.error("Ошибка в import-chunk:", error);
+			console.error("❌ Ошибка в import-chunk:", error);
 			return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
 		}
 	},

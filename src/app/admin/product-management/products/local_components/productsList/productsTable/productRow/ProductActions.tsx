@@ -1,3 +1,5 @@
+// src\app\admin\product-management\products\local_components\productsList\productsTable\productRow\ProductActions.tsx
+
 type Props = {
 	isEditing: boolean;
 	isSaving: boolean;

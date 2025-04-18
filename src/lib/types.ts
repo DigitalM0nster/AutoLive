@@ -68,6 +68,14 @@ export type ProductWithRelationsFromDB = Prisma.ProductGetPayload<{
 export type EditableProductId = number | `new${string}`;
 // 💡 API-ответ для списка товаров
 export type ProductListItem = {
+	category?: {
+		id: number;
+		title: string;
+	};
+	department?: {
+		id: number;
+		name: string;
+	};
 	id: number;
 	sku: string;
 	title: string;
@@ -81,10 +89,6 @@ export type ProductListItem = {
 	categoryId: number | null;
 	departmentId: number | null;
 	categoryTitle: string;
-	department?: {
-		id: number;
-		name: string;
-	};
 };
 
 // 🧑‍🎨 UI: форма

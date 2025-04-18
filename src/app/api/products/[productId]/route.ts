@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { withPermission } from "@/middleware/permissionMiddleware";
 
-// ✅ GET — можно оставить открытым, если клиентам можно смотреть товары
+// ✅ GET — оставляем без изменений
 export async function GET(_req: NextRequest, context: { params: Promise<{ productId: string }> }) {
 	const { productId } = await context.params;
 
@@ -17,16 +17,10 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ produc
 		const product = await prisma.product.findUnique({
 			where: { id },
 			include: {
-				category: {
-					select: { id: true, title: true },
-				},
+				category: { select: { id: true, title: true } },
 				productFilterValues: {
 					include: {
-						filterValue: {
-							include: {
-								filter: true,
-							},
-						},
+						filterValue: { include: { filter: true } },
 					},
 				},
 			},
@@ -41,11 +35,7 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ produc
 		for (const pfv of product.productFilterValues) {
 			const filter = pfv.filterValue.filter;
 			if (!filtersMap[filter.id]) {
-				filtersMap[filter.id] = {
-					id: filter.id,
-					title: filter.title,
-					selected_values: [],
-				};
+				filtersMap[filter.id] = { id: filter.id, title: filter.title, selected_values: [] };
 			}
 			filtersMap[filter.id].selected_values.push({
 				id: pfv.filterValue.id,
@@ -73,6 +63,10 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ produc
 	}
 }
 
+// ✅ PUT — редактирование товара с подробным логом
+
+// ✅ PUT — редактирование товара с подробным логом
+
 export const PUT = withPermission(
 	async (req, { user, scope }) => {
 		const url = new URL(req.url);
@@ -87,7 +81,10 @@ export const PUT = withPermission(
 		try {
 			const existing = await prisma.product.findUnique({
 				where: { id: productId },
-				select: { departmentId: true },
+				include: {
+					department: { select: { id: true, name: true } },
+					category: { select: { id: true, title: true } },
+				},
 			});
 
 			if (!existing) {
@@ -98,37 +95,42 @@ export const PUT = withPermission(
 				return NextResponse.json({ error: "Недостаточно прав для редактирования этого товара" }, { status: 403 });
 			}
 
-			// Приводим sku и brand к нижнему регистру только для проверки дубликатов
 			const rawSku = String(body.sku).trim();
 			const rawBrand = String(body.brand).trim();
 			const normalizedSku = rawSku.toLowerCase();
 			const normalizedBrand = rawBrand.toLowerCase();
 
-			// Сбор данных
+			const parseNullableFloat = (val: any) => {
+				const num = parseFloat(val);
+				return isNaN(num) ? null : num;
+			};
+
+			const parseNullableInt = (val: any) => {
+				const num = parseInt(val);
+				return isNaN(num) ? null : num;
+			};
+
 			const dataToUpdate: any = {
 				sku: rawSku,
 				title: String(body.title).trim(),
 				description: body.description?.trim() || null,
-				supplierPrice: body.supplierPrice !== "" ? parseFloat(body.supplierPrice) : null,
+				supplierPrice: parseNullableFloat(body.supplierPrice),
 				price: parseFloat(body.price),
 				brand: rawBrand,
-				categoryId: body.categoryId !== "" ? parseInt(body.categoryId) : null,
+				categoryId: parseNullableInt(body.categoryId),
 				image: body.image?.trim() || null,
 			};
 
-			// Обработка departmentId для superadmin
 			if (user.role === "superadmin") {
 				const rawDepId = String(body.departmentId || "").trim();
-				dataToUpdate.departmentId = rawDepId ? parseInt(rawDepId) : null;
+				dataToUpdate.departmentId = parseNullableInt(rawDepId);
 
-				if (dataToUpdate.departmentId === null || isNaN(dataToUpdate.departmentId)) {
+				if (dataToUpdate.departmentId === null) {
 					return NextResponse.json({ error: "Поле 'Отдел' обязательно" }, { status: 400 });
 				}
 			}
-
 			const departmentIdToCheck = dataToUpdate.departmentId ?? existing.departmentId;
 
-			// Проверка на дубликат (исключаем текущий товар)
 			const duplicate = await prisma.product.findFirst({
 				where: {
 					id: { not: productId },
@@ -142,15 +144,54 @@ export const PUT = withPermission(
 				return NextResponse.json({ error: "Товар с таким артикулом и брендом уже существует" }, { status: 409 });
 			}
 
-			const product = await prisma.product.update({
+			console.log("▶️ BEFORE:", existing);
+			console.log("▶️ AFTER:", dataToUpdate);
+
+			// 🧠 Проверка реальных изменений
+			const fieldsToCompare: [keyof typeof dataToUpdate, any, any][] = [
+				["title", existing.title, dataToUpdate.title],
+				["sku", existing.sku, dataToUpdate.sku],
+				["brand", existing.brand, dataToUpdate.brand],
+				["price", existing.price, dataToUpdate.price],
+				["supplierPrice", existing.supplierPrice, dataToUpdate.supplierPrice],
+				["description", existing.description, dataToUpdate.description],
+				["image", existing.image, dataToUpdate.image],
+				["categoryId", existing.categoryId, dataToUpdate.categoryId],
+				["departmentId", existing.departmentId, dataToUpdate.departmentId ?? existing.departmentId],
+			];
+
+			const hasChanges = fieldsToCompare.some(([_, before, after]) => String(before) !== String(after));
+
+			if (!hasChanges) {
+				return NextResponse.json({ product: existing });
+			}
+
+			const updated = await prisma.product.update({
 				where: { id: productId },
 				data: dataToUpdate,
+			});
+
+			const updatedFull = await prisma.product.findUnique({
+				where: { id: productId },
 				include: {
-					department: true,
+					department: { select: { id: true, name: true } },
+					category: { select: { id: true, title: true } },
 				},
 			});
 
-			return NextResponse.json({ product });
+			await prisma.productLog.create({
+				data: {
+					action: "update",
+					userId: user.id,
+					departmentId: updated.departmentId,
+					productId: updated.id,
+					message: null,
+					snapshotBefore: existing,
+					snapshotAfter: updatedFull!,
+				},
+			});
+
+			return NextResponse.json({ product: updatedFull });
 		} catch (error) {
 			console.error("Ошибка обновления продукта:", error);
 			return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
@@ -160,7 +201,7 @@ export const PUT = withPermission(
 	["admin", "superadmin"]
 );
 
-// ✅ DELETE — только admin/superadmin с правом edit_products
+// ✅ DELETE — удаление с подробным логом
 export const DELETE = withPermission(
 	async (req, { user, scope }) => {
 		const url = new URL(req.url);
@@ -171,10 +212,7 @@ export const DELETE = withPermission(
 		}
 
 		try {
-			const existing = await prisma.product.findUnique({
-				where: { id: productId },
-				select: { id: true, departmentId: true },
-			});
+			const existing = await prisma.product.findUnique({ where: { id: productId } });
 
 			if (!existing) {
 				return NextResponse.json({ error: "Товар не найден" }, { status: 404 });
@@ -189,6 +227,17 @@ export const DELETE = withPermission(
 			await prisma.serviceKitItem.deleteMany({ where: { OR: [{ productId }, { analogProductId: productId }] } });
 
 			await prisma.product.delete({ where: { id: productId } });
+
+			// ✅ логируем удаление
+			await prisma.productLog.create({
+				data: {
+					action: "delete",
+					userId: user.id,
+					departmentId: existing.departmentId,
+					message: "Товар удалён вручную",
+					snapshotBefore: existing,
+				},
+			});
 
 			return NextResponse.json({ success: true });
 		} catch (error) {

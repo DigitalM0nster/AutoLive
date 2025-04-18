@@ -213,9 +213,13 @@ export default function ProductsList() {
 				departments={departments}
 				user={user}
 				onProductUpdate={(updatedProduct: EditableProduct) => {
-					setProducts((prev) =>
-						prev.some((p) => p.id === updatedProduct.id) ? prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p)) : [updatedProduct, ...prev]
-					);
+					setProducts((prev) => {
+						const index = prev.findIndex((p) => p.id === updatedProduct.id);
+						if (index === -1) return [updatedProduct, ...prev];
+
+						const isNewer = new Date(updatedProduct.updatedAt) > new Date(prev[index].updatedAt);
+						return isNewer ? prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p)) : prev;
+					});
 				}}
 				toEditableProduct={toEditableProduct}
 				toProductForm={toProductForm}

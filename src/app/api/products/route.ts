@@ -1,11 +1,16 @@
+interface ExtendedRequestContext {
+	user: Pick<User, "id" | "role"> & { departmentId: number | null };
+	scope: string;
+}
+
 // src\app\api\products\route.ts
 
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { withPermission } from "@/middleware/permissionMiddleware";
-import type { ProductListItem } from "@/lib/types";
-import type { User } from "@/lib/types";
+import { logProductChange } from "@/lib/logProductChange";
+import { ProductListItem, ProductWithRelationsFromDB, User } from "@/lib/types";
 
 interface ExtendedRequestContext {
 	user: Pick<User, "id" | "role"> & { departmentId: number | null };
@@ -23,12 +28,11 @@ export const GET = withPermission(
 		const cursor = searchParams.get("cursor");
 		const limit = parseInt(searchParams.get("limit") || "10");
 		const pageParam = parseInt(searchParams.get("page") || "1", 10);
-		// вычисляем смещение для offset-пагинации
 		const skipOffset = (pageParam - 1) * limit;
+
 		const brand = searchParams.get("brand") || undefined;
 		const categoryId = searchParams.get("categoryId") || undefined;
 		const departmentId = searchParams.get("departmentId");
-
 		const search = searchParams.get("search")?.toLowerCase();
 
 		const priceMin = parseFloat(searchParams.get("priceMin") || "0");
@@ -72,7 +76,6 @@ export const GET = withPermission(
 					category: true,
 					department: true,
 				},
-				// если передан cursor — используем cursor‑based, иначе — offset
 				...(cursor
 					? {
 							cursor: { id: parseInt(cursor, 10) },
@@ -83,17 +86,9 @@ export const GET = withPermission(
 					  }),
 			};
 
-			// общее число записей под текущие фильтры
-			const total = await prisma.product.count({
-				where,
-			});
-			const products = await prisma.product.findMany({
-				...queryOptions,
-				include: {
-					category: true,
-					department: true,
-				},
-			});
+			const total = await prisma.product.count({ where });
+
+			const products = (await prisma.product.findMany(queryOptions)) as ProductWithRelationsFromDB[];
 
 			const mappedProducts: ProductListItem[] = products.map((p) => ({
 				id: p.id,
@@ -140,13 +135,11 @@ export const POST = withPermission(
 				return new NextResponse("Администратор должен иметь отдел", { status: 400 });
 			}
 
-			// 🧼 Приводим артикул и бренд к нижнему регистру для проверки дубликатов
 			const rawSku = String(data.sku).trim();
 			const rawBrand = String(data.brand).trim();
 			const normalizedSku = rawSku.toLowerCase();
 			const normalizedBrand = rawBrand.toLowerCase();
 
-			// ❗ Проверка на дубликат
 			const existing = await prisma.product.findFirst({
 				where: {
 					sku: normalizedSku,
@@ -179,7 +172,6 @@ export const POST = withPermission(
 				}
 			}
 
-			// 🔐 Проверка разрешённой категории
 			let categoryIdToUse = data.categoryId;
 			if (categoryIdToUse) {
 				const allowed = await prisma.departmentCategory.findFirst({
@@ -197,66 +189,22 @@ export const POST = withPermission(
 			const newProduct = await prisma.product.create({
 				data: {
 					title: String(data.title).trim(),
-					sku: rawSku, // сохраняем как есть
+					sku: rawSku,
 					price: finalPrice ?? 0,
-					supplierPrice: supplierPrice,
-					brand: rawBrand, // сохраняем как есть
+					supplierPrice,
+					brand: rawBrand,
 					description: data.description?.trim() || null,
 					image: data.image?.trim() || null,
 					categoryId: categoryIdToUse,
 					departmentId,
 				},
-				include: {
-					department: true,
-				},
 			});
 
-			// добавь внутрь POST-хендлера перед логированием:
-
-			if (!user.id) {
-				console.warn("❗ Не удалось записать лог — user.id отсутствует");
-			} else {
-				await prisma.productLog.create({
-					data: {
-						action: "create",
-						userId: user.id,
-						departmentId: departmentId ?? undefined,
-						productId: newProduct.id,
-						snapshot: {
-							title: newProduct.title,
-							sku: newProduct.sku,
-							brand: newProduct.brand,
-							price: newProduct.price,
-							supplierPrice: newProduct.supplierPrice,
-							description: newProduct.description,
-							image: newProduct.image,
-							categoryId: newProduct.categoryId,
-							departmentId: newProduct.departmentId,
-						},
-						message: `Ручное создание товара пользователем из админки.`,
-					},
-				});
-			}
-
-			await prisma.productLog.create({
-				data: {
-					action: "create",
-					userId: user.id, // ← нужно передавать `id` в middleware
-					departmentId: departmentId ?? undefined,
-					productId: newProduct.id,
-					snapshot: {
-						title: newProduct.title,
-						sku: newProduct.sku,
-						brand: newProduct.brand,
-						price: newProduct.price,
-						supplierPrice: newProduct.supplierPrice,
-						description: newProduct.description,
-						image: newProduct.image,
-						categoryId: newProduct.categoryId,
-						departmentId: newProduct.departmentId,
-					},
-					message: `Ручное создание товара пользователем из админки.`,
-				},
+			await logProductChange({
+				productId: newProduct.id,
+				userId: user.id,
+				action: "create",
+				message: "Ручное создание товара пользователем из админки.",
 			});
 
 			return NextResponse.json({ product: newProduct });

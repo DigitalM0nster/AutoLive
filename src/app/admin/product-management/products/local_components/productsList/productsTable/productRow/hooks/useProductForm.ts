@@ -1,3 +1,5 @@
+// src\app\admin\product-management\products\local_components\productsList\productsTable\productRow\hooks\useProductForm.ts
+
 import { useEffect, useState } from "react";
 import { EditableProduct, Product, Category, User } from "@/lib/types";
 import { showErrorToast, showSuccessToast } from "@/components/ui/toast/ToastProvider";
@@ -168,8 +170,14 @@ export function useProductForm({
 
 			if (res.ok) {
 				const json = await res.json();
-				const savedProduct = isNew ? json.product : { ...json.product, id: product.id };
-				onUpdate(toEditableProduct(savedProduct));
+				const savedProduct = json.product;
+				const updated = toEditableProduct(savedProduct);
+
+				// обновим вручную
+				updated.categoryTitle = categories.find((c) => c.id === updated.categoryId)?.title || "—";
+				updated.department = departments.find((d) => d.id === updated.departmentId) || undefined;
+
+				onUpdate(updated);
 				showSuccessToast("Товар сохранён");
 				return true;
 			} else {

@@ -5,7 +5,7 @@
 import { useEffect, useState } from "react";
 import ProductsList from "./local_components/productsList/ProductsList";
 import ProductsUpload from "./local_components/productsUpload/ProductsUpload";
-import UploadLogs from "./local_components/uploadLogs/UploadLogs";
+import UploadLogs from "./local_components/productsLogs/ProductsLogs";
 import { useAuthStore } from "@/store/authStore";
 
 const ProductTabsPage = () => {
@@ -38,7 +38,7 @@ const ProductTabsPage = () => {
 						onClick={() => setActiveTab("logs")}
 						className={`pb-2 px-4 border-b-2 transition-all ${activeTab === "logs" ? "border-black font-semibold" : "border-transparent text-gray-500"}`}
 					>
-						История загрузок
+						История действий
 					</button>
 				</div>
 			)}

@@ -63,14 +63,7 @@ const ProductsTable = React.memo(
 
 		// ОБНОВЛЯЕМ ТОВАР
 		const handleProductUpdate = (updated: EditableProduct) => {
-			setLocalProducts((prev) => {
-				// если новый товар с временным id (начинается с 'new-'), заменим его на сохранённый
-				if (typeof updated.id === "number") {
-					return prev.filter((p) => !String(p.id).startsWith("new-") && p.id !== updated.id).concat(updated);
-				}
-				return prev;
-			});
-			onProductUpdate(updated);
+			onProductUpdate(updated); // ← только это
 		};
 
 		// Удаляем товар
