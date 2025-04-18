@@ -31,6 +31,7 @@ export type Category = {
 		}[];
 	}[];
 	productCount?: number;
+	allowedDepartments?: { departmentId: number }[];
 };
 
 export type Product = {

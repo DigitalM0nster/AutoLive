@@ -2,6 +2,15 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { withPermission } from "@/middleware/permissionMiddleware";
 
+const CHUNK_SIZE = 500;
+
+async function chunkedDeleteMany<T>(array: number[], action: (chunk: number[]) => Promise<T>) {
+	for (let i = 0; i < array.length; i += CHUNK_SIZE) {
+		const chunk = array.slice(i, i + CHUNK_SIZE);
+		await action(chunk);
+	}
+}
+
 export const POST = withPermission(
 	async (req: NextRequest, { user, scope }) => {
 		try {
@@ -12,7 +21,6 @@ export const POST = withPermission(
 			}
 
 			const numericIds = ids.map((id) => parseInt(id)).filter((id) => !isNaN(id));
-
 			if (numericIds.length === 0) {
 				return NextResponse.json({ error: "Некорректные ID" }, { status: 400 });
 			}
@@ -32,26 +40,26 @@ export const POST = withPermission(
 				}
 			}
 
-			// Удаление зависимостей
-			await prisma.productFilterValue.deleteMany({
-				where: { productId: { in: numericIds } },
-			});
+			// Удаление зависимостей — с разбиением на чанки
+			await chunkedDeleteMany(numericIds, (chunk) => prisma.productFilterValue.deleteMany({ where: { productId: { in: chunk } } }));
 
-			await prisma.productAnalog.deleteMany({
-				where: {
-					OR: [{ productId: { in: numericIds } }, { analogId: { in: numericIds } }],
-				},
-			});
+			await chunkedDeleteMany(numericIds, (chunk) =>
+				prisma.productAnalog.deleteMany({
+					where: {
+						OR: [{ productId: { in: chunk } }, { analogId: { in: chunk } }],
+					},
+				})
+			);
 
-			await prisma.serviceKitItem.deleteMany({
-				where: {
-					OR: [{ productId: { in: numericIds } }, { analogProductId: { in: numericIds } }],
-				},
-			});
+			await chunkedDeleteMany(numericIds, (chunk) =>
+				prisma.serviceKitItem.deleteMany({
+					where: {
+						OR: [{ productId: { in: chunk } }, { analogProductId: { in: chunk } }],
+					},
+				})
+			);
 
-			await prisma.product.deleteMany({
-				where: { id: { in: numericIds } },
-			});
+			await chunkedDeleteMany(numericIds, (chunk) => prisma.product.deleteMany({ where: { id: { in: chunk } } }));
 
 			return NextResponse.json({ success: true });
 		} catch (error) {

@@ -64,9 +64,9 @@ const ProductsTable = React.memo(
 		// ОБНОВЛЯЕМ ТОВАР
 		const handleProductUpdate = (updated: EditableProduct) => {
 			setLocalProducts((prev) => {
-				// если новый товар ("new"), удалим его и добавим обновлённый
+				// если новый товар с временным id (начинается с 'new-'), заменим его на сохранённый
 				if (typeof updated.id === "number") {
-					return prev.filter((p) => p.id !== "new" && p.id !== updated.id).concat(updated);
+					return prev.filter((p) => !String(p.id).startsWith("new-") && p.id !== updated.id).concat(updated);
 				}
 				return prev;
 			});
@@ -75,7 +75,8 @@ const ProductsTable = React.memo(
 
 		// Удаляем товар
 		const handleProductDelete = async (id: string | number) => {
-			if (id === "new") {
+			if (typeof id === "string" && id.startsWith("new-")) {
+				// Просто удаляем локально, если это новый не сохранённый товар
 				setLocalProducts((prev) => prev.filter((p) => p.id !== id));
 				return;
 			}
@@ -162,7 +163,9 @@ const ProductsTable = React.memo(
 							</th>
 							<th className="border border-black/10 px-2 py-1 cursor-default w-1/6">Описание</th>
 
-							<th className="border border-black/10 px-2 py-1 cursor-default w-1/6">Закупка</th>
+							<th className="border border-black/10 px-2 py-1 cursor-default w-1/6" onClick={() => handleSort("supplierPrice")}>
+								Закупочная цена {renderSortIcon("supplierPrice")}
+							</th>
 							<th className="border border-black/10 px-2 py-1 cursor-pointer w-1/6" onClick={() => handleSort("price")}>
 								Цена {renderSortIcon("price")}
 							</th>
@@ -187,6 +190,7 @@ const ProductsTable = React.memo(
 									setDuplicateProduct={setDuplicateProduct}
 									onUpdate={handleProductUpdate}
 									onDelete={() => setConfirmDeleteId(product.id)}
+									handleProductDelete={handleProductDelete}
 									user={user}
 									toEditableProduct={toEditableProduct}
 									toProductForm={toProductForm}

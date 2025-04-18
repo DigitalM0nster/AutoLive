@@ -4,12 +4,16 @@
 
 import { useEffect, useState } from "react";
 
-type ToastType = "success" | "error";
+type ToastType = "success" | "error" | "warning";
 
 let showToastFn: ((msg: string, type: ToastType) => void) | null = null;
 
 export const showSuccessToast = (msg: string) => {
 	showToastFn?.(msg, "success");
+};
+
+export const showWarningToast = (msg: string) => {
+	showToastFn?.(msg, "warning");
 };
 
 export const showErrorToast = (msg: string) => {
@@ -43,7 +47,7 @@ export default function ToastProvider() {
 	return (
 		<div
 			className={`fixed bottom-6 right-6 z-50 p-4 rounded-xl shadow-xl text-white text-sm transition-all
-			${toast.type === "success" ? "bg-green-600" : "bg-red-600"}`}
+				${toast.type === "success" ? "bg-green-600" : toast.type === "error" ? "bg-red-600" : "bg-yellow-500"}`}
 		>
 			{toast.message}
 		</div>

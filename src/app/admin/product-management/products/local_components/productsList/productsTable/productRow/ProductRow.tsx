@@ -16,6 +16,7 @@ export default function ProductRow({
 	setDuplicateProduct,
 	onUpdate,
 	onDelete,
+	handleProductDelete,
 	user,
 	toEditableProduct,
 	toProductForm,
@@ -29,6 +30,7 @@ export default function ProductRow({
 	setDuplicateProduct: (product: EditableProduct | null) => void;
 	onUpdate: (updated: EditableProduct) => void;
 	onDelete: (id: string | number) => void;
+	handleProductDelete: (id: string | number) => void;
 	user?: User | null;
 	toEditableProduct: (product: Product) => EditableProduct;
 	toProductForm: (product: EditableProduct) => any;
@@ -36,6 +38,7 @@ export default function ProductRow({
 	toggleSelect: () => void;
 }) {
 	const [isEditing, setIsEditing] = useState(product.id === "new" || (product as any).isEditing);
+	if (typeof product.id === "string" && product.id.startsWith("new-") && !isEditing) return null;
 
 	const { form, setForm, errors, setErrors, imageFile, setImageFile, imagePreview, setImagePreview, isSaving, handleSave } = useProductForm({
 		product,
@@ -134,7 +137,7 @@ export default function ProductRow({
 
 			<td className="tableBlock border border-black/10 px-2 py-1 w-1/6">
 				{isEditing ? (
-					<EditableCell type="number" value={form.supplierPrice} onChange={(val) => setForm({ ...form, supplierPrice: val })} placeholder="0" />
+					<EditableCell type="number" value={form.supplierPrice} onChange={(val) => setForm({ ...form, supplierPrice: val })} />
 				) : product.supplierPrice ? (
 					`${product.supplierPrice} ₽`
 				) : (
@@ -159,7 +162,15 @@ export default function ProductRow({
 			</td>
 
 			<td className="tableBlock border border-black/10 px-2 py-1 w-1/6">
-				{isEditing ? <CategorySelect value={form.categoryId} onChange={(val) => setForm({ ...form, categoryId: val })} categories={categories} /> : product.categoryTitle}
+				{isEditing ? (
+					<CategorySelect
+						value={form.categoryId}
+						onChange={(val) => setForm({ ...form, categoryId: val })}
+						categories={categories.filter((cat) => !form.departmentId || cat.allowedDepartments?.some((d: any) => d.departmentId === Number(form.departmentId)))}
+					/>
+				) : (
+					product.categoryTitle
+				)}
 			</td>
 
 			<td className="tableBlock border border-black/10 px-2 py-1 w-1/6 text-center">
@@ -204,8 +215,10 @@ export default function ProductRow({
 							}
 						}}
 						onCancel={() => {
-							if (product.id === "new") {
-								onDelete("new");
+							if (typeof product.id === "string" && product.id.startsWith("new-")) {
+								// Сразу удаляем новый товар без подтверждения
+								onUpdate({ ...product, id: product.id, isEditing: false });
+								handleProductDelete(product.id);
 							} else {
 								setIsEditing(false);
 								setForm(toProductForm(product));

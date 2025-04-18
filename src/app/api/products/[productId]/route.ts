@@ -73,7 +73,6 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ produc
 	}
 }
 
-// ✅ PUT — только admin/superadmin с правом edit_products
 export const PUT = withPermission(
 	async (req, { user, scope }) => {
 		const url = new URL(req.url);
@@ -105,27 +104,31 @@ export const PUT = withPermission(
 			const normalizedSku = rawSku.toLowerCase();
 			const normalizedBrand = rawBrand.toLowerCase();
 
+			// Сбор данных
 			const dataToUpdate: any = {
-				sku: rawSku, // сохраняем как есть
+				sku: rawSku,
 				title: String(body.title).trim(),
 				description: body.description?.trim() || null,
 				supplierPrice: body.supplierPrice !== "" ? parseFloat(body.supplierPrice) : null,
 				price: parseFloat(body.price),
-				brand: rawBrand, // сохраняем как есть
+				brand: rawBrand,
 				categoryId: body.categoryId !== "" ? parseInt(body.categoryId) : null,
 				image: body.image?.trim() || null,
 			};
 
+			// Обработка departmentId для superadmin
 			if (user.role === "superadmin") {
-				dataToUpdate.departmentId = body.departmentId !== "" ? parseInt(body.departmentId) : null;
-			}
-			if (user.role === "superadmin" && (dataToUpdate.departmentId === null || isNaN(dataToUpdate.departmentId))) {
-				return NextResponse.json({ error: "Поле 'Отдел' обязательно" }, { status: 400 });
+				const rawDepId = String(body.departmentId || "").trim();
+				dataToUpdate.departmentId = rawDepId ? parseInt(rawDepId) : null;
+
+				if (dataToUpdate.departmentId === null || isNaN(dataToUpdate.departmentId)) {
+					return NextResponse.json({ error: "Поле 'Отдел' обязательно" }, { status: 400 });
+				}
 			}
 
 			const departmentIdToCheck = dataToUpdate.departmentId ?? existing.departmentId;
 
-			// Проверка на дубликат по sku + brand + departmentId
+			// Проверка на дубликат (исключаем текущий товар)
 			const duplicate = await prisma.product.findFirst({
 				where: {
 					id: { not: productId },

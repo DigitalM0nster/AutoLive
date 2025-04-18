@@ -44,7 +44,7 @@ export const POST = withPermission(
 			{ header: "Название", key: "title", width: 30 },
 			{ header: "Артикул", key: "sku", width: 20 },
 			{ header: "Бренд", key: "brand", width: 20 },
-			{ header: "Стоимость у поставщика", key: "supplierPrice", width: 15 },
+			{ header: "Закупочная цена", key: "supplierPrice", width: 15 },
 			{ header: "Цена", key: "price", width: 15 },
 			{ header: "Описание", key: "description", width: 50 },
 		];

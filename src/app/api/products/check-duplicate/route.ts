@@ -8,6 +8,7 @@ export async function GET(req: NextRequest) {
 	const skuRaw = searchParams.get("sku");
 	const brandRaw = searchParams.get("brand");
 	const departmentIdRaw = searchParams.get("departmentId");
+	const excludeIdRaw = searchParams.get("excludeId");
 
 	if (!skuRaw || !brandRaw) {
 		return new NextResponse("Не переданы параметры", { status: 400 });
@@ -15,8 +16,8 @@ export async function GET(req: NextRequest) {
 
 	const normalizedSku = skuRaw.trim().toLowerCase();
 	const normalizedBrand = brandRaw.trim().toLowerCase();
-
 	const departmentId = departmentIdRaw === "null" ? null : parseInt(departmentIdRaw || "");
+	const excludeId = excludeIdRaw ? parseInt(excludeIdRaw) : null;
 
 	try {
 		const candidates = await prisma.product.findMany({
@@ -28,7 +29,8 @@ export async function GET(req: NextRequest) {
 		});
 
 		const existing = candidates.find(
-			(p) => p.sku.trim().toLowerCase() === normalizedSku && p.brand.trim().toLowerCase() === normalizedBrand && (p.departmentId ?? null) === departmentId
+			(p) =>
+				p.sku.trim().toLowerCase() === normalizedSku && p.brand.trim().toLowerCase() === normalizedBrand && (p.departmentId ?? null) === departmentId && p.id !== excludeId // 👈 вот здесь исключаем текущий
 		);
 
 		if (existing) {

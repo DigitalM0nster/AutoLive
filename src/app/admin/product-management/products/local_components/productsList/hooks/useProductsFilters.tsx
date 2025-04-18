@@ -54,7 +54,15 @@ export default function useProductsFilters({
 				const filtersData = await filtersRes.json();
 
 				setBrands(filtersData.brands || []);
-				setCategories(filtersData.categories || []);
+				// фильтруем категории, если выбран отдел и у категории есть allowedDepartments
+				let filteredCategories = filtersData.categories || [];
+
+				if (user?.role === "superadmin" && departmentFilter && departmentFilter !== "__all__" && departmentFilter !== "__none__") {
+					const deptId = Number(departmentFilter);
+					filteredCategories = filteredCategories.filter((cat: any) => cat.allowedDepartments?.some((d: any) => d.departmentId === deptId));
+				}
+
+				setCategories(filteredCategories);
 				setDepartments(filtersData.departments || []);
 			} catch (error) {
 				console.error("Ошибка при загрузке фильтров", error);

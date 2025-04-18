@@ -5,12 +5,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { withPermission } from "@/middleware/permissionMiddleware";
 import type { ProductListItem } from "@/lib/types";
+import type { User } from "@/lib/types";
 
 interface ExtendedRequestContext {
-	user: {
-		role: "superadmin" | "admin" | "manager";
-		departmentId: number | null;
-	};
+	user: Pick<User, "id" | "role"> & { departmentId: number | null };
 	scope: string;
 }
 
@@ -210,6 +208,54 @@ export const POST = withPermission(
 				},
 				include: {
 					department: true,
+				},
+			});
+
+			// добавь внутрь POST-хендлера перед логированием:
+
+			if (!user.id) {
+				console.warn("❗ Не удалось записать лог — user.id отсутствует");
+			} else {
+				await prisma.productLog.create({
+					data: {
+						action: "create",
+						userId: user.id,
+						departmentId: departmentId ?? undefined,
+						productId: newProduct.id,
+						snapshot: {
+							title: newProduct.title,
+							sku: newProduct.sku,
+							brand: newProduct.brand,
+							price: newProduct.price,
+							supplierPrice: newProduct.supplierPrice,
+							description: newProduct.description,
+							image: newProduct.image,
+							categoryId: newProduct.categoryId,
+							departmentId: newProduct.departmentId,
+						},
+						message: `Ручное создание товара пользователем из админки.`,
+					},
+				});
+			}
+
+			await prisma.productLog.create({
+				data: {
+					action: "create",
+					userId: user.id, // ← нужно передавать `id` в middleware
+					departmentId: departmentId ?? undefined,
+					productId: newProduct.id,
+					snapshot: {
+						title: newProduct.title,
+						sku: newProduct.sku,
+						brand: newProduct.brand,
+						price: newProduct.price,
+						supplierPrice: newProduct.supplierPrice,
+						description: newProduct.description,
+						image: newProduct.image,
+						categoryId: newProduct.categoryId,
+						departmentId: newProduct.departmentId,
+					},
+					message: `Ручное создание товара пользователем из админки.`,
 				},
 			});
 

@@ -118,8 +118,11 @@ export function useProductForm({
 		if (isNew) {
 			try {
 				const depId = user?.role === "superadmin" ? productData.departmentId ?? "null" : user?.department?.id ?? "null";
+				const excludeId = typeof product.id === "number" ? product.id : undefined;
 				const duplicateRes = await fetch(
-					`/api/products/check-duplicate?sku=${encodeURIComponent(productData.sku)}&brand=${encodeURIComponent(productData.brand)}&departmentId=${depId}`
+					`/api/products/check-duplicate?sku=${encodeURIComponent(productData.sku)}&brand=${encodeURIComponent(productData.brand)}&departmentId=${depId}${
+						excludeId ? `&excludeId=${excludeId}` : ""
+					}`
 				);
 
 				if (duplicateRes.ok) {

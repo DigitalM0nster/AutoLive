@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { withPermission } from "@/middleware/permissionMiddleware";
-import { Prisma } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 
 export const GET = withPermission(
 	async (req: NextRequest, { user }) => {
@@ -86,11 +86,13 @@ export const GET = withPermission(
 			});
 
 			// Категории
-			const categories = await prisma.category.findMany({
+			const categories = (await prisma.category.findMany({
 				where: allowedCategoryIds ? { id: { in: allowedCategoryIds } } : {},
 				orderBy: { order: "asc" },
-			});
-
+				include: user.role === "superadmin" ? { allowedDepartments: { select: { departmentId: true } } } : undefined,
+			})) as Prisma.CategoryGetPayload<{
+				include: { allowedDepartments: { select: { departmentId: true } } };
+			}>[];
 			// Отделы
 			const rawDepartments =
 				user.role === "superadmin" ? await prisma.department.findMany() : user.departmentId ? await prisma.department.findMany({ where: { id: user.departmentId } }) : [];
@@ -110,13 +112,23 @@ export const GET = withPermission(
 				select: { brand: true },
 				distinct: ["brand"],
 			});
-			const brands = brandsRaw.map((b) => b.brand).filter(Boolean);
+			// Группировка по нижнему регистру
+			const normalizedBrandsMap = new Map<string, string>();
+			brandsRaw.forEach(({ brand }) => {
+				if (!brand) return;
+				const normalized = brand.trim().toLowerCase();
+				if (!normalizedBrandsMap.has(normalized)) {
+					normalizedBrandsMap.set(normalized, brand); // сохраняем первое встретившееся оригинальное написание
+				}
+			});
+			const brands = Array.from(normalizedBrandsMap.values()).sort((a, b) => a.localeCompare(b, "ru", { sensitivity: "base" }));
 
 			return NextResponse.json({
 				categories: categories.map((cat) => ({
 					id: cat.id,
 					title: cat.title,
 					productCount: categoryCountMap.get(cat.id) || 0,
+					allowedDepartments: user.role === "superadmin" ? cat.allowedDepartments : undefined,
 				})),
 				brands,
 				departments,

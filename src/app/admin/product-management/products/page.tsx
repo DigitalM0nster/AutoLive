@@ -1,4 +1,7 @@
+// src/app/admin/product-management/products/page.tsx
+
 "use client";
+
 import { useEffect, useState } from "react";
 import ProductsList from "./local_components/productsList/ProductsList";
 import ProductsUpload from "./local_components/productsUpload/ProductsUpload";
@@ -13,7 +16,7 @@ const ProductTabsPage = () => {
 		if (user?.role === "manager") {
 			setActiveTab("products");
 		}
-	}, []);
+	}, [user]);
 
 	return (
 		<div className="px-6 py-10 w-full max-w-7xl mx-auto mb-auto">
@@ -47,17 +50,9 @@ const ProductTabsPage = () => {
 				</>
 			)}
 
-			{user?.role !== "manager" && activeTab === "pricelists" && (
-				<>
-					<ProductsUpload />
-				</>
-			)}
+			{user?.role !== "manager" && activeTab === "pricelists" && user && <ProductsUpload user={user} />}
 
-			{user?.role !== "manager" && activeTab === "logs" && (
-				<>
-					<UploadLogs />
-				</>
-			)}
+			{user?.role !== "manager" && activeTab === "logs" && <UploadLogs />}
 		</div>
 	);
 };
