@@ -343,6 +343,9 @@ model ImportLog {
     userId        Int
     user          User     @relation(fields: [userId], references: [id])
     message       String?
+
+    snapshotBefore Json?
+    snapshotAfter  Json?
 }
 
 model ProductLog {

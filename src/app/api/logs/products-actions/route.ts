@@ -1,10 +1,13 @@
-// src/app/api/logs/products-actions/route.ts
-
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(req: Request) {
 	try {
+		const { searchParams } = new URL(req.url);
+		const page = parseInt(searchParams.get("page") || "1");
+		const limit = parseInt(searchParams.get("limit") || "20");
+		const actionFilter = searchParams.get("action"); // "Создание" | "Редактирование" | "Удаление" | "Импорт товаров" | "Массовое удаление"
+
 		const [imports, products, bulk] = await Promise.all([
 			prisma.importLog.findMany({
 				include: {
@@ -47,17 +50,21 @@ export async function GET() {
 			}),
 		]);
 
-		// Времена импортов (до секунды) + userId
 		const importTimes = new Set(imports.map((i) => `${i.userId}|${i.createdAt.toISOString().slice(0, 19)}`));
 
 		const filteredProductLogs = products.filter((log) => {
 			const timeKey = `${log.user.id}|${log.createdAt.toISOString().slice(0, 19)}`;
 
+			// исключаем лог create, если совпадает по времени с импортом
 			if (log.action === "create" && importTimes.has(timeKey)) {
 				return false;
 			}
 
-			// логи, дублирующие массовое удаление, не исключаем здесь — т.к. удалённые id больше не известны
+			// ❌ исключаем "bulk" логи, они уже есть отдельно
+			if (log.action === "bulk") {
+				return false;
+			}
+
 			return true;
 		});
 
@@ -81,8 +88,8 @@ export async function GET() {
 			})),
 
 			...filteredProductLogs.map((log) => {
-				const before = log.snapshotBefore || {};
-				const after = log.snapshotAfter || {};
+				const before = (log.snapshotBefore || {}) as Record<string, any>;
+				const after = (log.snapshotAfter || {}) as Record<string, any>;
 				const diff = [];
 
 				if (log.action === "update") {
@@ -120,7 +127,18 @@ export async function GET() {
 			})),
 		].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-		return NextResponse.json(unifiedLogs);
+		// Фильтрация по action, если задано
+		const filteredLogs = actionFilter ? unifiedLogs.filter((log) => log.action === actionFilter) : unifiedLogs;
+
+		const total = filteredLogs.length;
+		const paginated = filteredLogs.slice((page - 1) * limit, page * limit);
+
+		return NextResponse.json({
+			data: paginated,
+			total,
+			page,
+			totalPages: Math.ceil(total / limit),
+		});
 	} catch (error) {
 		console.error("❌ Ошибка при получении unified-логов:", error);
 		return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });

@@ -131,6 +131,19 @@ export const PUT = withPermission(
 			}
 			const departmentIdToCheck = dataToUpdate.departmentId ?? existing.departmentId;
 
+			if (dataToUpdate.categoryId !== null) {
+				const isAllowed = await prisma.departmentCategory.findFirst({
+					where: {
+						departmentId: departmentIdToCheck,
+						categoryId: dataToUpdate.categoryId,
+					},
+				});
+
+				if (!isAllowed) {
+					return NextResponse.json({ error: "Категория не разрешена для выбранного отдела" }, { status: 400 });
+				}
+			}
+
 			const duplicate = await prisma.product.findFirst({
 				where: {
 					id: { not: productId },

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import BulkDeletedProductsTable from "./BulkDeletedProductsTable";
 import ProductLogDetails from "./ProductLogDetails";
+import BulkOrImportDetails from "./BulkOrImportDetails";
 
 type Department = { name: string };
 type User = {
@@ -31,11 +32,13 @@ export default function ProductsLogs() {
 		const fetchLogs = async () => {
 			try {
 				const res = await fetch("/api/logs/products-actions");
-				const data = await res.json();
-				const filteredLogs = data.filter((log: UnifiedLog) => {
+				const resJson = await res.json();
+
+				const filteredLogs = resJson.data.filter((log: UnifiedLog) => {
 					if (log.type === "product" && log.action === "bulk" && !log.message) return false;
 					return true;
 				});
+
 				setLogs(filteredLogs);
 			} catch (error) {
 				console.error("Ошибка при получении логов:", error);
@@ -46,21 +49,6 @@ export default function ProductsLogs() {
 
 		fetchLogs();
 	}, []);
-
-	const formatValue = (value: any, lastKey?: string): string => {
-		if (value === null || value === undefined) return "—";
-		if (typeof value === "number" && ["price", "supplierPrice"].includes(lastKey || "")) {
-			return value.toLocaleString("ru-RU", { style: "currency", currency: "RUB" });
-		}
-		if (typeof value === "object") {
-			if ("name" in value) return value.name;
-			if ("title" in value) return value.title;
-			if (Object.keys(value).length === 0) return "—";
-			return JSON.stringify(value);
-		}
-		if (typeof value === "boolean") return value ? "Да" : "Нет";
-		return String(value);
-	};
 
 	const renderActionBadge = (type: UnifiedLog["type"], action: string) => {
 		const colors = {
@@ -74,36 +62,28 @@ export default function ProductsLogs() {
 	const renderLogDetails = (log: UnifiedLog) => {
 		const { type, message, details } = log;
 
-		if (type === "import") {
-			return (
-				<>
-					<p>
-						<strong>Файл:</strong> {details.fileName}
-					</p>
-					<p>
-						Создано: {details.created} / Обновлено: {details.updated} / Пропущено: {details.skipped}
-					</p>
-					{details.imagePolicy && <p>Изображения: {details.imagePolicy === "replace" ? "Заменялись" : "Сохранялись"}</p>}
-					{details.markupSummary && <p className="text-xs text-gray-500">Наценка: {details.markupSummary}</p>}
-					{message && <p className="text-sm mt-1">{message}</p>}
-				</>
-			);
-		}
-
-		if (type === "product" && ["Создание", "Редактирование", "Удаление"].includes(log.action)) {
-			return <ProductLogDetails action={log.action as "Создание" | "Редактирование" | "Удаление"} details={log.details} message={log.message} />;
+		if (type === "product") {
+			return <ProductLogDetails action={log.action as "Создание" | "Редактирование" | "Удаление"} details={details} message={message} />;
 		}
 
 		if (type === "bulk") {
-			const { count, snapshots = [] } = details;
+			return <BulkOrImportDetails type="bulk" count={details.count} snapshots={details.snapshots} message={message} />;
+		}
+
+		if (type === "import") {
 			return (
-				<div className="space-y-2">
-					<p>
-						Удалено товаров: <strong>{count}</strong>
-					</p>
-					{snapshots.length > 0 && <BulkDeletedProductsTable snapshots={snapshots} />}
-					{message && <p className="text-sm mt-1">{message}</p>}
-				</div>
+				<BulkOrImportDetails
+					type="import"
+					count={details.created + details.updated + (details.skipped || 0)}
+					snapshots={details.snapshots || []}
+					message={message}
+					filename={details.fileName}
+					imagePolicy={details.imagePolicy}
+					created={details.created}
+					updated={details.updated}
+					skipped={details.skipped}
+					markupSummary={details.markupSummary}
+				/>
 			);
 		}
 

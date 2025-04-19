@@ -1,258 +1,301 @@
-// src\app\admin\product-management\products\local_components\productsList\ProductsTable.tsx
+// src/app/admin/product-management/products/local_components/productsList/productsTable/ProductsTable.tsx
+"use client";
 
-import { EditableProduct, Category, Product } from "@/lib/types";
+import React, { useEffect, useRef, useState } from "react";
+import { useProductsStore } from "@/store/productsStore";
+import { useAuthStore } from "@/store/authStore";
 import ProductRow from "./productRow/ProductRow";
-import { ArrowDown, ArrowUp, ArrowDownWideNarrow } from "lucide-react";
-import { useEffect, useState } from "react";
-import React from "react"; // Импорт React
-import { User } from "@/lib/types";
-import DuplicateProductModal from "./DuplicateProductModal";
+import TableSkeleton from "../../TableSkeleton";
 import ConfirmModal from "@/components/ui/confirmModal/ConfirmModal";
 import { showErrorToast, showSuccessToast } from "@/components/ui/toast/ToastProvider";
+import DuplicateProductModal from "./DuplicateProductModal";
+import type { NewProduct } from "@/lib/types";
 
-type Props = {
-	products: EditableProduct[];
-	selectedProductIds: (number | string)[];
-	setSelectedProductIds: React.Dispatch<React.SetStateAction<(number | string)[]>>;
-	loading: boolean;
-	sortBy: string;
-	sortOrder: "asc" | "desc";
-	handleSort: (column: string) => void;
-	categories: Category[];
-	departments: { id: number; name: string }[];
-	onProductUpdate: (updated: EditableProduct) => void;
-	user?: User | null;
-	toEditableProduct: (product: Product | EditableProduct) => EditableProduct;
-	toProductForm: (product: EditableProduct) => any;
-};
-
-const ProductsTable = React.memo(
-	({
+export default function ProductsTable() {
+	const { role } = useAuthStore();
+	const {
 		products,
-		selectedProductIds,
-		setSelectedProductIds,
+		fetchProducts,
 		loading,
-		sortBy,
-		sortOrder,
-		handleSort,
-		categories,
+		page,
+		total,
+		limit,
+		setPage,
+		deleteProduct,
+		deletableProductId,
+		setDeletableProductId,
 		departments,
-		user,
-		onProductUpdate,
-		toEditableProduct,
-		toProductForm,
-	}: Props) => {
-		const renderSortIcon = (column: string) => {
-			if (sortBy !== column) {
-				return <ArrowDownWideNarrow size={14} className="inline-block text-gray-300 ml-1" />;
-			}
-			return sortOrder === "asc" ? <ArrowUp size={14} className="inline-block text-blue-600 ml-1" /> : <ArrowDown size={14} className="inline-block text-blue-600 ml-1" />;
-		};
+		loadReferenceData,
+		isAddingNewProduct,
+		setIsAddingNewProduct,
+		selectedProductIds,
+		selectAllProductsPerPage,
+		clearSelection,
+		selectAllMatchingProducts,
+	} = useProductsStore();
 
-		const [duplicateProduct, setDuplicateProduct] = useState<EditableProduct | null>(null);
-		const [pendingProductData, setPendingProductData] = useState<EditableProduct | null>(null);
+	const [activeModal, setActiveModal] = useState(false);
 
-		// Следим за изменениями пропсов, чтобы обновлять только когда это необходимо
-		const [localProducts, setLocalProducts] = useState(products);
+	useEffect(() => {
+		loadReferenceData();
+	}, [loadReferenceData]);
 
-		const [confirmDeleteId, setConfirmDeleteId] = useState<string | number | null>(null);
+	useEffect(() => {
+		fetchProducts();
+	}, [fetchProducts, page]);
 
-		useEffect(() => {
-			setLocalProducts(products);
-		}, [products]); // Обновляем локальные данные только при изменении товаров
+	const openConfirmModal = (id: number | null) => {
+		setDeletableProductId(id);
+		setActiveModal(true);
+	};
 
-		// ОБНОВЛЯЕМ ТОВАР
-		const handleProductUpdate = (updated: EditableProduct) => {
-			onProductUpdate(updated); // ← только это
-		};
+	const totalPages = Math.ceil(total / limit);
 
-		// Удаляем товар
-		const handleProductDelete = async (id: string | number) => {
-			if (typeof id === "string" && id.startsWith("new-")) {
-				// Просто удаляем локально, если это новый не сохранённый товар
-				setLocalProducts((prev) => prev.filter((p) => p.id !== id));
-				return;
-			}
-
-			try {
-				const res = await fetch(`/api/products/${id}`, {
-					method: "DELETE",
-				});
-
-				if (res.ok) {
-					setLocalProducts((prev) => prev.filter((p) => p.id !== id));
-					showSuccessToast("Товар удалён");
-				} else {
-					showErrorToast("Ошибка при удалении товара");
-				}
-			} catch (err) {
-				showErrorToast("Ошибка сети");
-			}
-		};
-
-		// ✅ Добавим новый товар
-		const handleAddProduct = () => {
-			const departmentId = user?.role === "superadmin" ? "" : String(user?.department?.id ?? "");
-
-			const newProduct: EditableProduct = {
-				id: `new-${Date.now()}`,
-				title: "",
-				sku: "",
-				price: 0,
-				brand: "",
-				image: null,
-				description: "",
-				categoryId: null,
-				categoryTitle: "—",
-				createdAt: new Date().toISOString(),
-				updatedAt: new Date().toISOString(),
-				department: departmentId ? departments.find((d) => String(d.id) === departmentId) : undefined,
-				departmentId: departmentId ? Number(departmentId) : null,
-				filters: [],
-				isEditing: true,
-			};
-
-			setLocalProducts((prev) => [newProduct, ...prev]);
-		};
-
-		if (loading) {
-			return <p className="text-gray-500 text-sm">Загрузка товаров...</p>;
+	const handleSaveNew = async (p: NewProduct) => {
+		try {
+			const res = await fetch("/api/products", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(p),
+			});
+			if (!res.ok) throw new Error();
+			showSuccessToast("Товар добавлен");
+			setIsAddingNewProduct(false);
+			fetchProducts();
+		} catch {
+			showErrorToast("Ошибка при добавлении");
 		}
+	};
 
-		return (
-			<>
-				{user?.role !== "manager" && (
-					<button onClick={handleAddProduct} className="text-sm text-green-600 hover:underline border border-green-600 px-3 py-1 rounded mb-3">
+	const emptyProduct: NewProduct = {
+		departmentId: departments[0]?.id || 0,
+		brand: "",
+		sku: "",
+		title: "",
+		description: "",
+		supplierPrice: null,
+		price: 0,
+		categoryId: null,
+		image: null,
+		filters: [],
+	};
+
+	const headerCheckboxRef = useRef<HTMLInputElement>(null);
+
+	useEffect(() => {
+		if (headerCheckboxRef.current) {
+			headerCheckboxRef.current.indeterminate = selectedProductIds.length > 0 && selectedProductIds.length < products.length;
+		}
+	}, [selectedProductIds, products.length]);
+
+	const canDelete = role === "admin" || role === "superadmin";
+	const [exporting, setExporting] = useState(false);
+	const handleExport = async () => {
+		if (selectedProductIds.length === 0) return;
+		setExporting(true);
+		try {
+			const res = await fetch("/api/products/export", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ ids: selectedProductIds }),
+			});
+			if (!res.ok) throw new Error("Ошибка экспорта");
+
+			const blob = await res.blob();
+			const url = URL.createObjectURL(blob);
+			const link = document.createElement("a");
+			link.href = url;
+			link.download = "products.xlsx";
+			document.body.appendChild(link);
+			link.click();
+			link.remove();
+			URL.revokeObjectURL(url);
+			showSuccessToast("Экспорт выполнен");
+		} catch (e) {
+			showErrorToast("Ошибка при экспорте");
+		} finally {
+			setExporting(false);
+		}
+	};
+
+	const isManager = role === "manager";
+
+	return (
+		<>
+			<div className="flex justify-between items-center mb-4">
+				<h2 className="text-lg font-medium">Список товаров</h2>
+				{!isAddingNewProduct && !isManager && (
+					<button onClick={() => setIsAddingNewProduct(true)} className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">
 						+ Добавить товар
 					</button>
 				)}
-				<table className="w-full table-fixed text-sm border border-black/10border-gray-300">
-					<thead className="bg-gray-100 text-left">
-						<tr>
-							<th className="border border-black/10 px-2 py-1 w-1/15 text-center">
+			</div>
+
+			{/* ТАБЛИЦА С ТОВАРАМИ */}
+			<div className="overflow-x-auto shadow rounded-lg">
+				<table className="min-w-full divide-y divide-gray-200">
+					<thead className="bg-gray-200">
+						<tr className="sticky top-0">
+							<th
+								className="px-3 py-2 w-8 text-center cursor-pointer"
+								onClick={() => {
+									if (selectedProductIds.length >= 1) {
+										clearSelection();
+									} else {
+										selectAllProductsPerPage();
+									}
+								}}
+							>
 								<input
+									ref={headerCheckboxRef}
 									type="checkbox"
-									checked={products.length > 0 && products.every((p) => selectedProductIds.includes(p.id))}
-									onChange={(e) => {
-										if (e.target.checked) {
-											setSelectedProductIds(products.map((p) => p.id));
-										} else {
-											setSelectedProductIds([]);
-										}
-									}}
+									checked={selectedProductIds.length >= products.length && products.length > 0}
+									onChange={(e) => e.stopPropagation()}
+									className="cursor-pointer"
 								/>
 							</th>
-
-							{user?.role === "superadmin" && <th className="border border-black/10 px-2 py-1 cursor-default w-1/6">Отдел</th>}
-
-							<th className="border border-black/10 px-2 py-1 cursor-pointer w-1/6" onClick={() => handleSort("brand")}>
-								Бренд {renderSortIcon("brand")}
-							</th>
-							<th className="border border-black/10 px-2 py-1 cursor-pointer w-1/6" onClick={() => handleSort("sku")}>
-								Артикул {renderSortIcon("sku")}
-							</th>
-							<th className="border border-black/10 px-2 py-1 cursor-pointer w-1/6" onClick={() => handleSort("title")}>
-								Название {renderSortIcon("title")}
-							</th>
-							<th className="border border-black/10 px-2 py-1 cursor-default w-1/6">Описание</th>
-
-							<th className="border border-black/10 px-2 py-1 cursor-default w-1/6" onClick={() => handleSort("supplierPrice")}>
-								Закупочная цена {renderSortIcon("supplierPrice")}
-							</th>
-							<th className="border border-black/10 px-2 py-1 cursor-pointer w-1/6" onClick={() => handleSort("price")}>
-								Цена {renderSortIcon("price")}
-							</th>
-							<th className="border border-black/10 px-2 py-1 cursor-pointer w-1/6" onClick={() => handleSort("categoryTitle")}>
-								Категория {renderSortIcon("categoryTitle")}
-							</th>
-							<th className="border border-black/10 px-2 py-1 text-center w-1/6">Изображение</th>
-
-							{user?.role !== "manager" && <th className="border border-black/10 px-2 py-1 text-center w-1/6">Действия</th>}
+							{role === "superadmin" && <th className="px-4 py-2 w-24 text-xs">Отдел</th>}
+							<th className="px-4 py-2 w-24 text-xs">Бренд</th>
+							<th className="px-4 py-2 w-24 text-xs">Артикул</th>
+							<th className="px-4 py-2 w-32 text-xs">Название</th>
+							<th className="px-4 py-2 w-48 text-xs">Описание</th>
+							<th className="px-4 py-2 w-24 text-xs">Закуп. цена</th>
+							<th className="px-4 py-2 w-24 text-xs">Цена</th>
+							<th className="px-4 py-2 w-24 text-xs">Категория</th>
+							<th className="px-4 py-2 w-20 text-xs text-center">Изобр.</th>
+							{(role === "superadmin" || role === "admin") && <th className="px-4 py-2 w-20 text-center">Действия</th>}
 						</tr>
 					</thead>
-
-					<tbody>
-						{localProducts.length > 0 ? (
-							localProducts.map((product) => (
-								<ProductRow
-									key={`${product.id}-${product.updatedAt}`}
-									product={toEditableProduct(product)}
-									categories={categories}
-									departments={departments}
-									setPendingProductData={setPendingProductData}
-									setDuplicateProduct={setDuplicateProduct}
-									onUpdate={handleProductUpdate}
-									onDelete={() => setConfirmDeleteId(product.id)}
-									handleProductDelete={handleProductDelete}
-									user={user}
-									toEditableProduct={toEditableProduct}
-									toProductForm={toProductForm}
-									isSelected={selectedProductIds.includes(product.id)}
-									toggleSelect={() => {
-										setSelectedProductIds((prev) => (prev.includes(product.id) ? prev.filter((id) => id !== product.id) : [...prev, product.id]));
-									}}
-								/>
-							))
+					<tbody className="bg-white divide-y divide-gray-200">
+						{isAddingNewProduct && <ProductRow key="__new" product={emptyProduct} isNew onSaveNew={handleSaveNew} onCancelNew={() => setIsAddingNewProduct(false)} />}
+						{loading ? (
+							<tr>
+								<td colSpan={11}>
+									<TableSkeleton />
+								</td>
+							</tr>
+						) : products.length > 0 ? (
+							products.map((p) => <ProductRow key={p.id} product={p} openConfirmModal={openConfirmModal} className="hover:bg-gray-50 transition-colors" />)
 						) : (
 							<tr>
-								<td colSpan={7} className="text-center text-gray-400 py-4">
+								<td colSpan={11} className="text-center text-gray-400 py-6">
 									Ничего не найдено
 								</td>
 							</tr>
 						)}
 					</tbody>
 				</table>
-				{/* Модалка подтверждения удаления товара */}
-				{confirmDeleteId !== null && (
-					<ConfirmModal
-						open={true}
-						title="Удалить товар?"
-						message="Вы действительно хотите удалить этот товар? Это действие нельзя отменить."
-						onCancel={() => setConfirmDeleteId(null)}
-						onConfirm={() => {
-							handleProductDelete(confirmDeleteId);
-							setConfirmDeleteId(null);
-						}}
-					/>
-				)}
+			</div>
 
-				{duplicateProduct && pendingProductData && (
-					<DuplicateProductModal
-						existing={duplicateProduct}
-						pending={pendingProductData}
-						categories={categories}
-						departments={departments}
-						onEditArticle={() => {
-							setDuplicateProduct(null);
-							setPendingProductData(null);
-						}}
-						onUpdateExisting={async () => {
-							const productData = {
-								...toProductForm(pendingProductData),
-								sku: pendingProductData.sku,
-								brand: pendingProductData.brand,
-							};
+			{/* МАССОВЫЕ ДЕЙСТВИЯ С ТОВАРАМИ */}
+			<button
+				onClick={async () => {
+					if (selectedProductIds.length >= 1) {
+						clearSelection();
+					} else {
+						try {
+							const filters = Object.fromEntries(
+								new URLSearchParams(window.location.search) // используем query, если фильтры в URL
+							);
+							await selectAllMatchingProducts(filters);
+						} catch (e) {}
+					}
+				}}
+				className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm mt-2 pt-1.5 pb-1.5"
+			>
+				{selectedProductIds.length >= 1 ? "Снять выделенные товары" : "Выделить все товары подходящие по заданным фильтрам"}
+			</button>
+			{selectedProductIds.length > 0 && (
+				<div className="flex items-center gap-2 ml-auto mt-2 flex-wrap">
+					<span className="px-3 py-1 bg-gray-100 text-gray-800 rounded text-sm">
+						Выбрано: <strong>{selectedProductIds.length}</strong> товар{selectedProductIds.length === 1 ? "" : selectedProductIds.length < 5 ? "а" : "ов"}
+					</span>
+					<button disabled={exporting} onClick={handleExport} className="px-3 py-1 bg-emerald-600 text-white rounded hover:bg-emerald-700 text-sm">
+						{exporting ? "Подготовка..." : "Экспорт"}
+					</button>
+					{canDelete && (
+						<button disabled={exporting} onClick={() => setActiveModal(true)} className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm">
+							Удалить
+						</button>
+					)}
+				</div>
+			)}
 
-							const res = await fetch(`/api/products/${duplicateProduct.id}`, {
-								method: "PUT",
+			{/* ПАГИНАЦИЯ */}
+			{totalPages > 1 && (
+				<div className="flex justify-center items-center mt-6 space-x-1">
+					{(() => {
+						const pages: (number | "...")[] = [];
+						const add = (p: number) => {
+							if (p >= 1 && p <= totalPages && !pages.includes(p)) pages.push(p);
+						};
+
+						add(1);
+						if (page > 3) pages.push("...");
+						add(page - 1);
+						add(page);
+						add(page + 1);
+						if (page < totalPages - 2) pages.push("...");
+						add(totalPages);
+
+						return pages.map((p, idx) =>
+							p === "..." ? (
+								<span key={`dots-${idx}`} className="px-2 text-gray-500 select-none">
+									...
+								</span>
+							) : (
+								<button
+									key={`page-${p}`}
+									onClick={() => setPage(p)}
+									className={`px-3 py-1 border border-gray-300 rounded ${p === page ? "bg-blue-100 text-blue-600 font-semibold" : "bg-white hover:bg-gray-100"}`}
+								>
+									{p}
+								</button>
+							)
+						);
+					})()}
+				</div>
+			)}
+
+			{/* МОДАЛКА ДЛЯ УДАЛЕНИЯ */}
+			<ConfirmModal
+				title={selectedProductIds.length > 1 ? `Удаление товаров (${selectedProductIds.length}шт.)` : "Удаление товара"}
+				message={selectedProductIds.length > 1 ? "Удалить выбранные товары?" : "Удалить выбранный товар?"}
+				open={activeModal}
+				onCancel={() => {
+					setActiveModal(false);
+					setDeletableProductId(null);
+				}}
+				onConfirm={async () => {
+					if (deletableProductId !== null) {
+						try {
+							await deleteProduct(deletableProductId);
+							showSuccessToast("Товар успешно удалён");
+						} catch {
+							showErrorToast("Не удалось удалить товар");
+						}
+					} else if (selectedProductIds.length > 0) {
+						try {
+							const res = await fetch("/api/products/bulk-delete", {
+								method: "POST",
 								headers: { "Content-Type": "application/json" },
-								body: JSON.stringify(productData),
+								body: JSON.stringify({ ids: selectedProductIds }),
 							});
+							if (!res.ok) throw new Error();
+							showSuccessToast("Товары удалены");
+							clearSelection();
+							fetchProducts();
+						} catch {
+							showErrorToast("Ошибка при массовом удалении");
+						}
+					}
+					setActiveModal(false);
+					setDeletableProductId(null);
+				}}
+			/>
 
-							if (res.ok) {
-								const json = await res.json();
-								const updatedProduct = toEditableProduct(json.product);
-								handleProductUpdate(updatedProduct);
-								setDuplicateProduct(null);
-								setPendingProductData(null);
-							}
-						}}
-					/>
-				)}
-			</>
-		);
-	}
-);
-
-// Мемоизированный компонент
-export default ProductsTable;
+			{/* МОДАЛКА ДЛЯ ДУБЛИКАТОВ */}
+			<DuplicateProductModal />
+		</>
+	);
+}

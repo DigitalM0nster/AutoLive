@@ -1,18 +1,18 @@
 // src/components/admin/products/DuplicateProductModal.tsx
 
+"use client";
+
 import React from "react";
-import { Category, EditableProduct } from "@/lib/types";
+import { useProductsStore } from "@/store/productsStore";
+import { EditableProduct } from "@/lib/types";
 
-type Props = {
-	existing: EditableProduct;
-	pending: EditableProduct;
-	categories: Category[];
-	departments: { id: number; name: string }[];
-	onEditArticle: () => void;
-	onUpdateExisting: () => void;
-};
+export default function DuplicateProductModal() {
+	const { duplicateInfo, categories, departments, clearDuplicateInfo, confirmDuplicateUpdate } = useProductsStore();
 
-export default function DuplicateProductModal({ existing, pending, categories, departments, onEditArticle, onUpdateExisting }: Props) {
+	if (!duplicateInfo) return null;
+
+	const { existing, pending } = duplicateInfo;
+
 	const getCategoryTitle = (id: number | null) => categories.find((c) => c.id === id)?.title || "—";
 	const getDepartmentName = (id: number | null) => departments.find((d) => d.id === id)?.name || "—";
 
@@ -23,27 +23,24 @@ export default function DuplicateProductModal({ existing, pending, categories, d
 		const diffs: { type: "same" | "added" | "removed"; value: string }[] = [];
 		let i = 0,
 			j = 0;
-
 		while (i < oldStr.length || j < newStr.length) {
 			const a = oldStr[i];
 			const b = newStr[j];
-
 			if (a === b) {
 				diffs.push({ type: "same", value: a });
 				i++;
 				j++;
 			} else {
-				if (a && (!b || b !== a)) {
+				if (a) {
 					diffs.push({ type: "removed", value: a });
 					i++;
 				}
-				if (b && (!a || a !== b)) {
+				if (b) {
 					diffs.push({ type: "added", value: b });
 					j++;
 				}
 			}
 		}
-
 		return diffs;
 	};
 
@@ -51,19 +48,15 @@ export default function DuplicateProductModal({ existing, pending, categories, d
 		const diffs = diffChars(oldText, newText);
 		return (
 			<span className="whitespace-pre-wrap font-mono text-sm leading-relaxed break-words text-gray-800">
-				{diffs.map((part, i) => {
-					if (part.type === "removed") {
-						return (
-							<span key={i} className="bg-red-300">
-								{part.value}
-							</span>
-						);
-					}
-					if (part.type === "same") {
-						return <span key={i}>{part.value}</span>;
-					}
-					return null; // пропускаем добавленные
-				})}
+				{diffs.map((part, i) =>
+					part.type === "removed" ? (
+						<span key={i} className="bg-red-300">
+							{part.value}
+						</span>
+					) : part.type === "same" ? (
+						<span key={i}>{part.value}</span>
+					) : null
+				)}
 			</span>
 		);
 	};
@@ -72,19 +65,15 @@ export default function DuplicateProductModal({ existing, pending, categories, d
 		const diffs = diffChars(oldText, newText);
 		return (
 			<span className="whitespace-pre-wrap font-mono text-sm leading-relaxed break-words text-gray-800">
-				{diffs.map((part, i) => {
-					if (part.type === "added") {
-						return (
-							<span key={i} className="bg-emerald-400">
-								{part.value}
-							</span>
-						);
-					}
-					if (part.type === "same") {
-						return <span key={i}>{part.value}</span>;
-					}
-					return null; // пропускаем удалённые
-				})}
+				{diffs.map((part, i) =>
+					part.type === "added" ? (
+						<span key={i} className="bg-emerald-400">
+							{part.value}
+						</span>
+					) : part.type === "same" ? (
+						<span key={i}>{part.value}</span>
+					) : null
+				)}
 			</span>
 		);
 	};
@@ -93,25 +82,11 @@ export default function DuplicateProductModal({ existing, pending, categories, d
 		{ label: "Название", key: "title" },
 		{ label: "Артикул", key: "sku" },
 		{ label: "Бренд", key: "brand" },
-		{
-			label: "Закупочная цена",
-			key: "supplierPrice",
-			format: (v: any) => (v != null ? `${v} ₽` : "—"),
-		},
-		{
-			label: "Цена",
-			key: "price",
-			format: (v: any) => (v != null ? `${v} ₽` : "—"),
-		},
+		{ label: "Закупочная цена", key: "supplierPrice", format: (v: any) => (v != null ? `${v} ₽` : "—") },
+		{ label: "Цена", key: "price", format: (v: any) => (v != null ? `${v} ₽` : "—") },
 		{ label: "Описание", key: "description" },
-		{
-			label: "Категория",
-			getValue: (p: EditableProduct) => getCategoryTitle(p.categoryId),
-		},
-		{
-			label: "Отдел",
-			getValue: (p: EditableProduct) => getDepartmentName(p.department?.id || null),
-		},
+		{ label: "Категория", getValue: (p: EditableProduct) => getCategoryTitle(p.categoryId) },
+		{ label: "Отдел", getValue: (p: EditableProduct) => getDepartmentName(p.department?.id ?? p.departmentId ?? null) },
 	];
 
 	const renderImage = (url: string | null) =>
@@ -136,7 +111,6 @@ export default function DuplicateProductModal({ existing, pending, categories, d
 								const newValue = getValue ? getValue(pending) : (pending as any)[key];
 								const isDifferent = isDiff(oldValue, newValue);
 								const formatted = format ? format(oldValue) : oldValue || "—";
-
 								return (
 									<div key={label} className={`px-2 py-1 rounded ${isDifferent ? "bg-yellow-50" : ""}`}>
 										<span className="text-gray-400">{label}:</span>{" "}
@@ -164,7 +138,6 @@ export default function DuplicateProductModal({ existing, pending, categories, d
 								const newValue = getValue ? getValue(pending) : (pending as any)[key];
 								const isDifferent = isDiff(oldValue, newValue);
 								const formatted = format ? format(newValue) : newValue || "—";
-
 								return (
 									<div key={label} className={`px-2 py-1 rounded ${isDifferent ? "bg-yellow-50" : ""}`}>
 										<span className="text-gray-400">{label}:</span>{" "}
@@ -186,19 +159,19 @@ export default function DuplicateProductModal({ existing, pending, categories, d
 
 				{/* Кнопки */}
 				<div className="hidden md:flex justify-end gap-3 mt-6">
-					<button onClick={onUpdateExisting} className="px-5 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
+					<button onClick={confirmDuplicateUpdate} className="px-5 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
 						Обновить существующий товар
 					</button>
-					<button onClick={onEditArticle} className="px-5 py-2 text-sm bg-red-500 text-white rounded-md hover:bg-red-800 transition">
+					<button onClick={clearDuplicateInfo} className="px-5 py-2 text-sm bg-red-500 text-white rounded-md hover:bg-red-800 transition">
 						Отмена
 					</button>
 				</div>
 
 				<div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 flex justify-between gap-2 px-4 py-3 md:hidden">
-					<button onClick={onUpdateExisting} className="flex-1 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
+					<button onClick={confirmDuplicateUpdate} className="flex-1 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
 						Обновить
 					</button>
-					<button onClick={onEditArticle} className="flex-1 py-2 text-sm bg-red-500 text-white rounded-md hover:bg-red-800 transition">
+					<button onClick={clearDuplicateInfo} className="flex-1 py-2 text-sm bg-red-500 text-white rounded-md hover:bg-red-800 transition">
 						Отмена
 					</button>
 				</div>

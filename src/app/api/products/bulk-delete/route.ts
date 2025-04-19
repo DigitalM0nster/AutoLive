@@ -44,6 +44,10 @@ export const POST = withPermission(
 
 			const productsToDelete = await prisma.product.findMany({
 				where: { id: { in: numericIds } },
+				include: {
+					department: true,
+					category: true,
+				},
 			});
 
 			// логируем заранее
@@ -149,8 +153,8 @@ export const POST = withPermission(
 						brand: p.brand,
 						price: p.price,
 						supplierPrice: p.supplierPrice,
-						departmentId: p.departmentId,
-						categoryId: p.categoryId,
+						department: p.department ? { name: p.department.name } : undefined,
+						category: p.category ? { title: p.category.title } : undefined,
 					})),
 				},
 			});

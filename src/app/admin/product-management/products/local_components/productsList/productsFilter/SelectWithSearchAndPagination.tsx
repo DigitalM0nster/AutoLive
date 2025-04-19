@@ -1,4 +1,4 @@
-// src\app\admin\product-management\products\local_components\productsList\SelectWithSearchAndPagination.tsx
+// src/app/admin/product-management/products/local_components/productsList/SelectWithSearchAndPagination.tsx
 
 "use client";
 
@@ -22,7 +22,6 @@ export default function SelectWithSearchAndPagination({ options, value, onChange
 	const [showDropdown, setShowDropdown] = useState(false);
 	const [itemsToShow, setItemsToShow] = useState(10);
 
-	// Создаем ref для отслеживания кликов вне компонента
 	const containerRef = useRef<HTMLDivElement>(null);
 
 	const filtered = useMemo(() => {
@@ -30,7 +29,8 @@ export default function SelectWithSearchAndPagination({ options, value, onChange
 	}, [options, searchTerm]);
 
 	const displayOptions = filtered.slice(0, itemsToShow);
-	const selectedOption = options.find((opt) => opt.id === value);
+
+	const selectedOption: Option | undefined = options.find((opt) => opt.id === value);
 
 	useEffect(() => {
 		setItemsToShow(10);
@@ -40,24 +40,24 @@ export default function SelectWithSearchAndPagination({ options, value, onChange
 		setItemsToShow((prev) => prev + 10);
 	};
 
-	// Обработчик кликов вне компонента
 	useEffect(() => {
 		const handleClickOutside = (event: MouseEvent) => {
 			if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
 				setShowDropdown(false);
 			}
 		};
-
 		document.addEventListener("click", handleClickOutside);
-		return () => {
-			document.removeEventListener("click", handleClickOutside);
-		};
+		return () => document.removeEventListener("click", handleClickOutside);
 	}, []);
 
 	return (
 		<div className="relative" ref={containerRef}>
-			<button type="button" className="w-full border border-black/10 p-2 rounded text-left" onClick={() => setShowDropdown(!showDropdown)}>
-				{selectedOption?.title || placeholder || "Выбрать"}
+			<button
+				type="button"
+				className="w-full border border-black/10 p-2 rounded text-left flex justify-between items-center"
+				onClick={() => setShowDropdown((prev) => !prev)}
+			>
+				<span>{selectedOption?.title || placeholder || "Выбрать"}</span>
 			</button>
 
 			{showDropdown && (
@@ -70,17 +70,6 @@ export default function SelectWithSearchAndPagination({ options, value, onChange
 						className="w-full border-b px-2 py-1 text-sm outline-none"
 					/>
 
-					<button
-						onClick={() => {
-							onChange("");
-							setShowDropdown(false);
-							setSearchTerm("");
-						}}
-						className="block w-full text-left px-2 py-1 text-sm hover:bg-gray-100"
-					>
-						{placeholder ? `${placeholder}` : "Все"}
-					</button>
-
 					{displayOptions.map((opt) => {
 						const titleParts = searchTerm ? opt.title.split(new RegExp(`(${searchTerm})`, "gi")) : [opt.title];
 
@@ -92,7 +81,7 @@ export default function SelectWithSearchAndPagination({ options, value, onChange
 									setShowDropdown(false);
 									setSearchTerm("");
 								}}
-								className="block w-full text-left px-2 py-1 text-sm hover:bg-gray-100"
+								className="block w-full text-left px-2 py-1 text-sm hover:bg-gray-100 flex justify-between items-center"
 							>
 								<span>
 									{titleParts.map((part, idx) =>
@@ -105,7 +94,7 @@ export default function SelectWithSearchAndPagination({ options, value, onChange
 										)
 									)}
 								</span>
-								{opt.productCount !== undefined && <span className="text-gray-400 ml-1">({opt.productCount})</span>}
+								{opt.productCount !== undefined && <span className="text-gray-400 text-sm">({opt.productCount})</span>}
 							</button>
 						);
 					})}

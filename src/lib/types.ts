@@ -5,6 +5,7 @@ export type Role = "superadmin" | "admin" | "manager" | "client";
 export type Department = {
 	id: number;
 	name: string;
+	productCount?: number;
 };
 
 export type User = {
@@ -65,7 +66,6 @@ export type ProductWithRelationsFromDB = Prisma.ProductGetPayload<{
 	};
 }>;
 
-export type EditableProductId = number | `new${string}`;
 // 💡 API-ответ для списка товаров
 export type ProductListItem = {
 	category?: {
@@ -105,15 +105,11 @@ export type ProductFormData = {
 };
 
 // 🆕 Новый товар
-export type NewProduct = ProductListItem & {
-	id: "new";
-	isEditing: true;
-	filters: any[];
-};
+export type NewProduct = Omit<EditableProduct, "id" | "createdAt" | "updatedAt" | "categoryTitle">;
 
 // ✏️ UI: редактируемый товар
 export type EditableProduct = {
-	id: EditableProductId;
+	id: number;
 	sku: string;
 	title: string;
 	description: string;

@@ -63,6 +63,8 @@ export const GET = withPermission(
 			} else if (departmentId !== null && departmentId !== "") {
 				where.departmentId = parseInt(departmentId);
 			}
+		} else {
+			where.departmentId = user.departmentId ?? -1;
 		}
 
 		const orderBy: Prisma.ProductOrderByWithRelationInput = sortBy === "categoryTitle" ? { category: { title: order } } : { [sortBy]: order };

@@ -249,6 +249,42 @@ export const POST = withPermission(
 			const isFinalChunk = chunkIndex + 1 >= totalChunks;
 
 			if (isFinalChunk) {
+				const snapshotBefore: any[] = [];
+				const snapshotAfter: any[] = [];
+
+				for (const log of logsToCreate) {
+					const base = {
+						id: log.productId,
+						sku: log.snapshotAfter?.sku,
+						brand: log.snapshotAfter?.brand,
+						title: log.snapshotAfter?.title,
+						price: log.snapshotAfter?.price,
+						supplierPrice: log.snapshotAfter?.supplierPrice,
+						description: log.snapshotAfter?.description,
+						image: log.snapshotAfter?.image,
+						categoryId: log.snapshotAfter?.categoryId,
+						departmentId: departmentId,
+					};
+
+					if (log.action === "create") {
+						snapshotAfter.push(base);
+					} else if (log.action === "update") {
+						snapshotBefore.push({
+							id: log.productId,
+							sku: log.snapshotBefore?.sku,
+							brand: log.snapshotBefore?.brand,
+							title: log.snapshotBefore?.title,
+							price: log.snapshotBefore?.price,
+							supplierPrice: log.snapshotBefore?.supplierPrice,
+							description: log.snapshotBefore?.description,
+							image: log.snapshotBefore?.image,
+							categoryId: log.snapshotBefore?.categoryId,
+							departmentId: departmentId,
+						});
+						snapshotAfter.push(base);
+					}
+				}
+
 				await prisma.importLog.create({
 					data: {
 						userId: user.id,
@@ -268,6 +304,8 @@ export const POST = withPermission(
 						]
 							.filter(Boolean)
 							.join("\n"),
+						snapshotBefore,
+						snapshotAfter,
 					},
 				});
 			}

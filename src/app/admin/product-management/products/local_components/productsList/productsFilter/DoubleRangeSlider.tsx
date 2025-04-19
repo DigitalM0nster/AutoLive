@@ -66,7 +66,7 @@ export default function DoubleRangeSlider({ min, max, step = 1, values, onChange
 					step={step}
 					value={values[0]}
 					onChange={handleSliderMin}
-					className="absolute w-full appearance-none bg-transparent pointer-events-none z-10
+					className="absolute w-full appearance-none bg-transparent pointer-events-none z-0
 						[&::-webkit-slider-thumb]:appearance-none
 						[&::-webkit-slider-thumb]:h-4
 						[&::-webkit-slider-thumb]:w-4
@@ -83,7 +83,7 @@ export default function DoubleRangeSlider({ min, max, step = 1, values, onChange
 					step={step}
 					value={values[1]}
 					onChange={handleSliderMax}
-					className="absolute w-full appearance-none bg-transparent pointer-events-none z-20
+					className="absolute w-full appearance-none bg-transparent pointer-events-none z-0
 						[&::-webkit-slider-thumb]:appearance-none
 						[&::-webkit-slider-thumb]:h-4
 						[&::-webkit-slider-thumb]:w-4
