@@ -7,12 +7,18 @@ import { useAuthStore } from "@/store/authStore";
 import ProductRow from "./productRow/ProductRow";
 import TableSkeleton from "../../TableSkeleton";
 import ConfirmModal from "@/components/ui/confirmModal/ConfirmModal";
-import { showErrorToast, showSuccessToast } from "@/components/ui/toast/ToastProvider";
 import DuplicateProductModal from "./DuplicateProductModal";
+import { showErrorToast, showSuccessToast } from "@/components/ui/toast/ToastProvider";
 import type { NewProduct } from "@/lib/types";
+import { ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react";
 
 export default function ProductsTable() {
+	// 🔐 Авторизация
 	const { role } = useAuthStore();
+	const isManager = role === "manager";
+	const canDelete = role === "admin" || role === "superadmin";
+
+	// 🧠 Стор состояния продуктов
 	const {
 		products,
 		fetchProducts,
@@ -32,10 +38,31 @@ export default function ProductsTable() {
 		selectAllProductsPerPage,
 		clearSelection,
 		selectAllMatchingProducts,
+		sortBy,
+		sortOrder,
+		setSorting,
 	} = useProductsStore();
 
+	// 📦 Локальные состояния
 	const [activeModal, setActiveModal] = useState(false);
+	const [exporting, setExporting] = useState(false);
+	const headerCheckboxRef = useRef<HTMLInputElement>(null);
 
+	// 🧾 Новый товар по умолчанию
+	const emptyProduct: NewProduct = {
+		departmentId: departments[0]?.id || 0,
+		brand: "",
+		sku: "",
+		title: "",
+		description: "",
+		supplierPrice: null,
+		price: 0,
+		categoryId: null,
+		image: null,
+		filters: [],
+	};
+
+	// 📦 Получение справочников и данных
 	useEffect(() => {
 		loadReferenceData();
 	}, [loadReferenceData]);
@@ -44,13 +71,20 @@ export default function ProductsTable() {
 		fetchProducts();
 	}, [fetchProducts, page]);
 
+	// ☑️ Индикация промежуточного состояния чекбокса
+	useEffect(() => {
+		if (headerCheckboxRef.current) {
+			headerCheckboxRef.current.indeterminate = selectedProductIds.length > 0 && selectedProductIds.length < products.length;
+		}
+	}, [selectedProductIds, products.length]);
+
+	// 🧹 Модалка подтверждения удаления
 	const openConfirmModal = (id: number | null) => {
 		setDeletableProductId(id);
 		setActiveModal(true);
 	};
 
-	const totalPages = Math.ceil(total / limit);
-
+	// 🧾 Сохранение нового товара
 	const handleSaveNew = async (p: NewProduct) => {
 		try {
 			const res = await fetch("/api/products", {
@@ -67,29 +101,18 @@ export default function ProductsTable() {
 		}
 	};
 
-	const emptyProduct: NewProduct = {
-		departmentId: departments[0]?.id || 0,
-		brand: "",
-		sku: "",
-		title: "",
-		description: "",
-		supplierPrice: null,
-		price: 0,
-		categoryId: null,
-		image: null,
-		filters: [],
+	// 📊 Сортировка колонок
+	const handleSort = (field: string) => {
+		setSorting(field);
+		fetchProducts();
 	};
 
-	const headerCheckboxRef = useRef<HTMLInputElement>(null);
+	const getSortIcon = (field: string) => {
+		if (sortBy !== field) return <ChevronsUpDown className="w-4 h-4 inline-block ml-1 text-gray-400" />;
+		return sortOrder === "asc" ? <ChevronUp className="w-4 h-4 inline-block ml-1 text-blue-600" /> : <ChevronDown className="w-4 h-4 inline-block ml-1 text-blue-600" />;
+	};
 
-	useEffect(() => {
-		if (headerCheckboxRef.current) {
-			headerCheckboxRef.current.indeterminate = selectedProductIds.length > 0 && selectedProductIds.length < products.length;
-		}
-	}, [selectedProductIds, products.length]);
-
-	const canDelete = role === "admin" || role === "superadmin";
-	const [exporting, setExporting] = useState(false);
+	// 📤 Экспорт товаров
 	const handleExport = async () => {
 		if (selectedProductIds.length === 0) return;
 		setExporting(true);
@@ -111,14 +134,15 @@ export default function ProductsTable() {
 			link.remove();
 			URL.revokeObjectURL(url);
 			showSuccessToast("Экспорт выполнен");
-		} catch (e) {
+		} catch {
 			showErrorToast("Ошибка при экспорте");
 		} finally {
 			setExporting(false);
 		}
 	};
 
-	const isManager = role === "manager";
+	// 🔢 Общее количество страниц
+	const totalPages = Math.ceil(total / limit);
 
 	return (
 		<>
@@ -151,17 +175,34 @@ export default function ProductsTable() {
 									type="checkbox"
 									checked={selectedProductIds.length >= products.length && products.length > 0}
 									onChange={(e) => e.stopPropagation()}
-									className="cursor-pointer"
+									className="cursor-pointer h-4 w-4"
 								/>
 							</th>
-							{role === "superadmin" && <th className="px-4 py-2 w-24 text-xs">Отдел</th>}
-							<th className="px-4 py-2 w-24 text-xs">Бренд</th>
-							<th className="px-4 py-2 w-24 text-xs">Артикул</th>
-							<th className="px-4 py-2 w-32 text-xs">Название</th>
+							{role === "superadmin" && (
+								<th className="px-4 py-2 w-24 text-xs cursor-pointer select-none" onClick={() => handleSort("departmentTitle")}>
+									Отдел {getSortIcon("departmentTitle")}
+								</th>
+							)}
+
+							<th className="px-4 py-2 w-24 text-xs cursor-pointer select-none" onClick={() => handleSort("brand")}>
+								Бренд {getSortIcon("brand")}
+							</th>
+							<th className="px-4 py-2 w-24 text-xs cursor-pointer select-none" onClick={() => handleSort("sku")}>
+								Артикул {getSortIcon("sku")}
+							</th>
+							<th className="px-4 py-2 w-32 text-xs cursor-pointer select-none" onClick={() => handleSort("title")}>
+								Название {getSortIcon("title")}
+							</th>
 							<th className="px-4 py-2 w-48 text-xs">Описание</th>
-							<th className="px-4 py-2 w-24 text-xs">Закуп. цена</th>
-							<th className="px-4 py-2 w-24 text-xs">Цена</th>
-							<th className="px-4 py-2 w-24 text-xs">Категория</th>
+							<th className="px-4 py-2 w-24 text-xs cursor-pointer select-none" onClick={() => handleSort("supplierPrice")}>
+								Закуп. цена {getSortIcon("supplierPrice")}
+							</th>
+							<th className="px-4 py-2 w-24 text-xs cursor-pointer select-none" onClick={() => handleSort("price")}>
+								Цена {getSortIcon("price")}
+							</th>
+							<th className="px-4 py-2 w-24 text-xs cursor-pointer select-none" onClick={() => handleSort("categoryTitle")}>
+								Категория {getSortIcon("categoryTitle")}
+							</th>
 							<th className="px-4 py-2 w-20 text-xs text-center">Изобр.</th>
 							{(role === "superadmin" || role === "admin") && <th className="px-4 py-2 w-20 text-center">Действия</th>}
 						</tr>

@@ -22,7 +22,7 @@ export const GET = withPermission(
 		const { searchParams } = new URL(req.url);
 
 		const sortBy = searchParams.get("sortBy") || "createdAt";
-		const order = searchParams.get("order") === "asc" ? "asc" : "desc";
+		const sortOrder = searchParams.get("sortOrder") === "asc" ? "asc" : "desc";
 		const onlyStale = searchParams.get("onlyStale") === "true";
 
 		const cursor = searchParams.get("cursor");
@@ -67,7 +67,15 @@ export const GET = withPermission(
 			where.departmentId = user.departmentId ?? -1;
 		}
 
-		const orderBy: Prisma.ProductOrderByWithRelationInput = sortBy === "categoryTitle" ? { category: { title: order } } : { [sortBy]: order };
+		let orderBy: Prisma.ProductOrderByWithRelationInput;
+
+		if (sortBy === "categoryTitle") {
+			orderBy = { category: { title: sortOrder } };
+		} else if (sortBy === "departmentTitle") {
+			orderBy = { department: { name: sortOrder } };
+		} else {
+			orderBy = { [sortBy]: sortOrder };
+		}
 
 		try {
 			const queryOptions: Parameters<typeof prisma.product.findMany>[0] = {

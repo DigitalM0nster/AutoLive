@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import SelectWithSearchAndPagination, { Option } from "./SelectWithSearchAndPagination";
+import SelectWithSearchAndPagination from "./SelectWithSearchAndPagination";
 import DoubleRangeSlider from "./DoubleRangeSlider";
 import { useProductsStore } from "@/store/productsStore";
 import { useAuthStore } from "@/store/authStore";
@@ -11,14 +11,15 @@ export default function ProductsFilterPanel() {
 	const { role, user } = useAuthStore();
 
 	const [search, setSearch] = useState("");
+	const [brands, setBrands] = useState<string[]>([]);
 	const [categoryFilter, setCategoryFilter] = useState("");
 	const [brandFilter, setBrandFilter] = useState("");
 	const [departmentFilter, setDepartmentFilter] = useState("");
 	const [onlyStale, setOnlyStale] = useState(false);
-	const [priceMin, setPriceMin] = useState(0);
-	const [priceMax, setPriceMax] = useState(1000000);
-	const [maxPriceInDB, setMaxPriceInDB] = useState(1000000);
-	const [brands, setBrands] = useState<string[]>([]);
+
+	const [priceMin, setPriceMin] = useState<number | null>(null);
+	const [priceMax, setPriceMax] = useState<number | null>(null);
+	const [priceRangeMax, setPriceRangeMax] = useState<number | null>(null); // фиксированное значение из базы
 
 	useEffect(() => {
 		if (role !== "superadmin" && user?.department?.id) {
@@ -41,8 +42,8 @@ export default function ProductsFilterPanel() {
 			const res = await fetch("/api/products/filters?" + params.toString());
 			if (!res.ok) return;
 			const data = await res.json();
+
 			setBrands(data.brands || []);
-			setMaxPriceInDB(data.maxPrice || 1000000);
 			setCategoryCounts(data.categoryCounts || {});
 			setDepartmentCounts(data.departmentCounts || {});
 		};
@@ -51,6 +52,31 @@ export default function ProductsFilterPanel() {
 	}, [search, categoryFilter, departmentFilter, onlyStale]);
 
 	useEffect(() => {
+		const fetchPriceRange = async () => {
+			const params = new URLSearchParams();
+			if (search) params.append("search", search);
+			if (categoryFilter) params.append("categoryId", categoryFilter);
+			if (departmentFilter) params.append("departmentId", departmentFilter);
+			if (brandFilter) params.append("brand", brandFilter);
+			if (onlyStale) params.append("onlyStale", "true");
+
+			const res = await fetch("/api/products/price-range?" + params.toString());
+			if (!res.ok) return;
+			const data = await res.json();
+			const min = data.minPrice ?? 0;
+			const max = data.maxPrice ?? 1000000;
+
+			setPriceMin(min);
+			setPriceMax(max);
+			setPriceRangeMax(max); // сохраняем максимальное значение как ограничитель
+		};
+
+		fetchPriceRange();
+	}, [search, categoryFilter, brandFilter, departmentFilter, onlyStale]);
+
+	useEffect(() => {
+		if (priceMin === null || priceMax === null) return;
+
 		const filters = {
 			search,
 			categoryId: categoryFilter,
@@ -60,77 +86,62 @@ export default function ProductsFilterPanel() {
 			priceMin: priceMin.toString(),
 			priceMax: priceMax.toString(),
 		};
+
 		setPage(1);
 		fetchProducts(1, filters);
 	}, [search, categoryFilter, brandFilter, departmentFilter, onlyStale, priceMin, priceMax]);
 
 	const resetFilters = () => {
+		const params = new URLSearchParams();
+		if (user?.department?.id && role !== "superadmin") {
+			params.append("departmentId", user.department.id.toString());
+		}
+
 		setSearch("");
 		setCategoryFilter("");
 		setBrandFilter("");
 		setDepartmentFilter("");
 		setOnlyStale(false);
-		setPriceMin(0);
-		setPriceMax(maxPriceInDB);
+
+		fetch("/api/products/price-range?" + params.toString()).then((res) =>
+			res.json().then((data) => {
+				setPriceMin(data.minPrice ?? 0);
+				setPriceMax(data.maxPrice ?? 1000000);
+				setPriceRangeMax(data.maxPrice);
+			})
+		);
+
 		setPage(1);
 		fetchProducts(1, {});
 	};
 
-	const totalCategoryCount = useMemo(() => {
-		return Object.values(categoryCounts).reduce((acc, val) => acc + val, 0);
-	}, [categoryCounts]);
+	const totalCategoryCount = useMemo(() => Object.values(categoryCounts).reduce((acc, val) => acc + val, 0), [categoryCounts]);
+	const totalDepartmentCount = useMemo(() => Object.values(departmentCounts).reduce((acc, val) => acc + val, 0), [departmentCounts]);
 
-	const totalDepartmentCount = useMemo(() => {
-		return Object.values(departmentCounts).reduce((acc, val) => acc + val, 0);
-	}, [departmentCounts]);
-
-	const categoryOptions: Option[] = useMemo(() => {
-		const options: Option[] = categories.map((cat) => ({
+	const categoryOptions = useMemo(() => {
+		const options = categories.map((cat) => ({
 			id: cat.id.toString(),
 			title: cat.title,
 			productCount: categoryCounts[cat.id.toString()] || 0,
 		}));
-
 		if (categoryCounts["null"]) {
-			options.push({
-				id: "__none__",
-				title: "Без категории",
-				productCount: categoryCounts["null"],
-			});
+			options.push({ id: "__none__", title: "Без категории", productCount: categoryCounts["null"] });
 		}
-
-		options.unshift({
-			id: "",
-			title: "Все категории",
-			productCount: totalCategoryCount,
-		});
-
-		console.log("🧪 departmentCounts", departmentCounts);
-		console.log("🧪 departmentOptions", options);
-
+		options.unshift({ id: "", title: "Все категории", productCount: totalCategoryCount });
 		return options;
 	}, [categories, categoryCounts, totalCategoryCount]);
 
-	const departmentOptions: Option[] = useMemo(() => {
-		const options = departments.map((dep) => {
-			const depIdStr = dep.id?.toString() ?? "__none__";
-			return {
-				id: depIdStr,
-				title: dep.name,
-				productCount: departmentCounts[depIdStr] ?? 0,
-			};
-		});
-		options.unshift({
-			id: "",
-			title: "Все отделы",
-			productCount: totalDepartmentCount,
-		});
+	const departmentOptions = useMemo(() => {
+		const options = departments.map((dep) => ({
+			id: dep.id?.toString() ?? "__none__",
+			title: dep.name,
+			productCount: departmentCounts[dep.id?.toString() ?? "__none__"] ?? 0,
+		}));
+		options.unshift({ id: "", title: "Все отделы", productCount: totalDepartmentCount });
 		return options;
 	}, [departments, departmentCounts, totalDepartmentCount]);
 
-	const brandOptions: Option[] = useMemo(() => {
-		return brands.map((b) => ({ id: b, title: b }));
-	}, [brands]);
+	const brandOptions = useMemo(() => brands.map((b) => ({ id: b, title: b })), [brands]);
 
 	return (
 		<div className="flex flex-col gap-4 mb-12">
@@ -162,16 +173,18 @@ export default function ProductsFilterPanel() {
 				<SelectWithSearchAndPagination options={brandOptions} value={brandFilter} onChange={setBrandFilter} placeholder="Все бренды" />
 			</div>
 
-			<DoubleRangeSlider
-				min={0}
-				max={maxPriceInDB}
-				step={100}
-				values={[priceMin, priceMax]}
-				onChange={([min, max]) => {
-					setPriceMin(min);
-					setPriceMax(max);
-				}}
-			/>
+			{priceMin !== null && priceMax !== null && priceRangeMax !== null && (
+				<DoubleRangeSlider
+					min={0}
+					max={priceRangeMax}
+					step={100}
+					values={[priceMin, priceMax]}
+					onChange={([min, max]) => {
+						setPriceMin(min);
+						setPriceMax(max);
+					}}
+				/>
+			)}
 
 			<div className="flex justify-start">
 				<button onClick={resetFilters} className="px-4 py-2 border border-red-500 text-red-500 rounded text-sm hover:bg-red-50 transition">

@@ -1,14 +1,48 @@
-// src\app\api\products\price-range\route.ts
-
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
 	try {
+		const { searchParams } = req.nextUrl;
+
+		const where: any = {};
+
+		// 🎯 Фильтры из query
+		if (searchParams.get("search")) {
+			const search = searchParams.get("search")!;
+			where.OR = [
+				{ title: { contains: search, mode: "insensitive" } },
+				{ sku: { contains: search, mode: "insensitive" } },
+				{ brand: { contains: search, mode: "insensitive" } },
+			];
+		}
+
+		if (searchParams.get("categoryId") && searchParams.get("categoryId") !== "") {
+			if (searchParams.get("categoryId") === "__none__") {
+				where.categoryId = null;
+			} else {
+				where.categoryId = Number(searchParams.get("categoryId"));
+			}
+		}
+
+		if (searchParams.get("departmentId")) {
+			where.departmentId = Number(searchParams.get("departmentId"));
+		}
+
+		if (searchParams.get("brand")) {
+			where.brand = searchParams.get("brand");
+		}
+
+		if (searchParams.get("onlyStale") === "true") {
+			where.isStale = true;
+		}
+
 		const min = await prisma.product.aggregate({
+			where,
 			_min: { price: true },
 		});
 		const max = await prisma.product.aggregate({
+			where,
 			_max: { price: true },
 		});
 

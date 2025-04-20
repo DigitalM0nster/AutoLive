@@ -1,3 +1,6 @@
+// src/app/admin/product-management/products/local_components/productsLogs/ProductLogDetails.tsx
+
+"use client";
 import { FC } from "react";
 
 type LogType = {
@@ -15,7 +18,10 @@ type Row = {
 };
 
 const formatValue = (value: any, lastKey?: string): string => {
-	if (value === null || value === undefined) return "—";
+	if (lastKey === "image" && typeof value === "string" && value.trim() !== "") {
+		return `<a href="${value}" target="_blank" class="text-blue-600 underline">Открыть</a>`;
+	}
+	if (value === null || value === undefined || value === "") return "—";
 	if (typeof value === "number" && ["price", "supplierPrice"].includes(lastKey || "")) {
 		return value.toLocaleString("ru-RU", { style: "currency", currency: "RUB" });
 	}
@@ -27,6 +33,11 @@ const formatValue = (value: any, lastKey?: string): string => {
 	}
 	if (typeof value === "boolean") return value ? "Да" : "Нет";
 	return String(value);
+};
+
+const renderCell = (value: any, key?: string, extraClass = "") => {
+	const raw = formatValue(value, key);
+	return <td className={`px-3 py-2 break-words max-w-[400px] ${extraClass}`} dangerouslySetInnerHTML={{ __html: raw }} />;
 };
 
 const ProductLogDetails: FC<LogType> = ({ action, details, message }) => {
@@ -45,30 +56,29 @@ const ProductLogDetails: FC<LogType> = ({ action, details, message }) => {
 			{ key: "department", label: "Отдел", before: before.department?.name ?? "—", after: after.department?.name ?? "—" },
 			{ key: "category", label: "Категория", before: before.category?.title ?? "—", after: after.category?.title ?? "—" },
 			{ key: "description", label: "Описание", before: before.description, after: after.description },
+			{ key: "image", label: "Изображение", before: before.image, after: after.image },
 		];
 
 		return (
 			<details className="text-sm text-gray-800 whitespace-pre-wrap">
 				<summary className="cursor-pointer text-blue-600 hover:underline font-medium">Товар отредактирован — подробности</summary>
-				<div className="mt-2 border border-gray-200 rounded-md overflow-hidden shadow-sm max-w-3xl">
-					<table className="table-auto w-full text-sm">
-						<thead className="bg-gray-100 border-b">
+				<div className="mt-2 border border-gray-200 rounded-lg overflow-hidden shadow max-w-3xl">
+					<table className="min-w-full text-xs divide-y divide-gray-200">
+						<thead className="bg-gray-100 text-gray-600">
 							<tr>
-								<th className="text-left py-2 px-3 text-gray-500 font-semibold w-48">Поле</th>
-								<th className="text-left py-2 px-3 text-gray-500 font-semibold">Было</th>
-								<th className="text-left py-2 px-3 text-gray-500 font-semibold">Стало</th>
+								<th className="px-3 py-2 text-left font-medium w-48">Поле</th>
+								<th className="px-3 py-2 text-left font-medium">Было</th>
+								<th className="px-3 py-2 text-left font-medium">Стало</th>
 							</tr>
 						</thead>
-						<tbody>
+						<tbody className="bg-white">
 							{rows.map((row) => {
 								const isChanged = changedKeys.has(row.key);
 								return (
-									<tr key={row.key} className="border-t hover:bg-gray-50 transition-colors">
-										<td className="py-1.5 px-3 text-gray-600">{row.label}</td>
-										<td className={`py-1.5 px-3 break-words max-w-[300px] ${isChanged ? "text-red-600" : "text-gray-500"}`}>{formatValue(row.before)}</td>
-										<td className={`py-1.5 px-3 break-words max-w-[300px] ${isChanged ? "text-green-700 font-medium" : "text-gray-900"}`}>
-											{formatValue(row.after)}
-										</td>
+									<tr key={row.key} className="hover:bg-gray-50 transition-colors">
+										<td className="px-3 py-2 text-gray-500 font-medium">{row.label}</td>
+										{renderCell(row.before, row.key, isChanged ? "text-red-600" : "text-gray-500")}
+										{renderCell(row.after, row.key, isChanged ? "text-green-700 font-medium" : "text-gray-900")}
 									</tr>
 								);
 							})}
@@ -79,76 +89,58 @@ const ProductLogDetails: FC<LogType> = ({ action, details, message }) => {
 		);
 	}
 
+	const baseTable = (rows: Row[], color: string, summaryText: string) => (
+		<details className="text-sm text-gray-800 whitespace-pre-wrap">
+			<summary className={`cursor-pointer ${color} hover:underline font-medium`}>{summaryText}</summary>
+			<div className="mt-2 border border-gray-200 rounded-lg overflow-hidden shadow max-w-3xl">
+				<table className="min-w-full text-xs divide-y divide-gray-200">
+					<tbody className="bg-white">
+						{rows.map((row, index) => (
+							<tr key={index} className="hover:bg-gray-50 transition-colors">
+								<td className="px-3 py-2 text-gray-500 font-medium w-48">{row.label}</td>
+								{renderCell(row.value, row.key)}
+							</tr>
+						))}
+					</tbody>
+				</table>
+			</div>
+		</details>
+	);
+
 	if (action === "Создание" && details?.after) {
 		const after = details.after;
 		const rows: Row[] = [
-			{ label: "ID", value: after.id },
-			{ label: "Название", value: after.title },
-			{ label: "Артикул", value: after.sku },
-			{ label: "Бренд", value: after.brand },
-			{ label: "Цена", value: after.price },
-			{ label: "Закупочная цена", value: after.supplierPrice },
-			{ label: "Отдел", value: after.department?.name || "—" },
-			{ label: "Категория", value: after.category?.title || "—" },
-			{ label: "Описание", value: after.description || "—" },
+			{ key: "id", label: "ID", value: after.id },
+			{ key: "title", label: "Название", value: after.title },
+			{ key: "sku", label: "Артикул", value: after.sku },
+			{ key: "brand", label: "Бренд", value: after.brand },
+			{ key: "price", label: "Цена", value: after.price },
+			{ key: "supplierPrice", label: "Закупочная цена", value: after.supplierPrice },
+			{ key: "department", label: "Отдел", value: after.department?.name },
+			{ key: "category", label: "Категория", value: after.category?.title },
+			{ key: "description", label: "Описание", value: after.description },
+			{ key: "image", label: "Изображение", value: after.image },
 		];
 
-		return (
-			<details className="text-sm text-gray-800 whitespace-pre-wrap">
-				<summary className="cursor-pointer text-green-600 hover:underline font-medium">Создан товар — подробности</summary>
-				<div className="mt-2 border border-gray-200 rounded-md overflow-hidden shadow-sm max-w-3xl">
-					<table className="table-auto w-full text-sm">
-						<tbody>
-							{rows.map((row, index) => (
-								<tr key={index} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-									<td className="py-2 px-3 text-gray-500 font-medium w-48">{row.label}</td>
-									<td className="py-2 px-3 text-gray-900 break-words max-w-[400px]">{formatValue(row.value)}</td>
-								</tr>
-							))}
-						</tbody>
-					</table>
-				</div>
-			</details>
-		);
+		return baseTable(rows, "text-green-600", "Создан товар — подробности");
 	}
 
 	if (action === "Удаление" && details?.before) {
 		const before = details.before;
 		const rows: Row[] = [
-			{ label: "ID", value: before.id },
-			{ label: "Название", value: before.title },
-			{ label: "Артикул", value: before.sku },
-			{ label: "Бренд", value: before.brand },
-			{ label: "Цена", value: before.price },
-			{ label: "Закупочная цена", value: before.supplierPrice },
-			{ label: "Отдел", value: before.department?.name ?? "—" },
-			{ label: "Категория", value: before.category?.title ?? "—" },
-			{ label: "Описание", value: before.description || "—" },
+			{ key: "id", label: "ID", value: before.id },
+			{ key: "title", label: "Название", value: before.title },
+			{ key: "sku", label: "Артикул", value: before.sku },
+			{ key: "brand", label: "Бренд", value: before.brand },
+			{ key: "price", label: "Цена", value: before.price },
+			{ key: "supplierPrice", label: "Закупочная цена", value: before.supplierPrice },
+			{ key: "department", label: "Отдел", value: before.department?.name },
+			{ key: "category", label: "Категория", value: before.category?.title },
+			{ key: "description", label: "Описание", value: before.description },
+			{ key: "image", label: "Изображение", value: before.image },
 		];
 
-		return (
-			<details className="text-sm text-gray-800 whitespace-pre-wrap">
-				<summary className="cursor-pointer text-red-600 hover:underline font-medium">Удалён товар — подробности</summary>
-				<div className="mt-2 border border-gray-200 rounded-md overflow-hidden shadow-sm max-w-3xl">
-					<table className="table-auto w-full text-sm">
-						<tbody>
-							{rows.map((row, index) => (
-								<tr key={index} className="border-t hover:bg-gray-50 transition-colors">
-									<td className="py-2 px-3 text-gray-500 font-medium w-48">{row.label}</td>
-									<td
-										className={`py-2 px-3 break-words max-w-[400px] ${
-											["ID", "Артикул", "Бренд"].includes(row.label) ? "font-mono text-sm text-blue-900" : "text-gray-900"
-										}`}
-									>
-										{formatValue(row.value)}
-									</td>
-								</tr>
-							))}
-						</tbody>
-					</table>
-				</div>
-			</details>
-		);
+		return baseTable(rows, "text-red-600", "Удалён товар — подробности");
 	}
 
 	return message || <span className="text-gray-400 italic">—</span>;

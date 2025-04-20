@@ -42,6 +42,10 @@ interface ProductsStore {
 	clearSelection: () => void;
 
 	selectAllMatchingProducts: (filters: Record<string, string>) => Promise<void>;
+
+	sortBy: string | null;
+	sortOrder: "asc" | "desc";
+	setSorting: (field: string) => void;
 }
 
 export const useProductsStore = create<ProductsStore>((set, get) => ({
@@ -92,13 +96,16 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
 		set({ loading: true, error: null, page });
 
 		try {
-			const { limit } = get();
+			const { limit, sortBy, sortOrder } = get();
 
 			const params = new URLSearchParams({
 				page: page.toString(),
 				limit: limit.toString(),
 				...Object.fromEntries(Object.entries(filters).filter(([_, v]) => v !== "" && v !== undefined)),
 			});
+
+			if (sortBy) params.append("sortBy", sortBy);
+			if (sortOrder) params.append("sortOrder", sortOrder);
 
 			const res = await fetch(`/api/products?${params.toString()}`);
 			if (!res.ok) throw new Error(`Ошибка ${res.status}`);
@@ -190,4 +197,15 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
 		set({ selectedProductIds: data.ids });
 	},
 	clearSelection: () => set({ selectedProductIds: [] }),
+
+	sortBy: null,
+	sortOrder: "asc",
+	setSorting: (field) => {
+		const { sortBy, sortOrder } = get();
+		if (sortBy === field) {
+			set({ sortOrder: sortOrder === "asc" ? "desc" : "asc" });
+		} else {
+			set({ sortBy: field, sortOrder: "asc" });
+		}
+	},
 }));

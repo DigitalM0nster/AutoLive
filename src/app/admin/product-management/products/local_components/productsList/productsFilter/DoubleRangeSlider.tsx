@@ -18,8 +18,11 @@ export default function DoubleRangeSlider({ min, max, step = 1, values, onChange
 
 	// Синхронизируем состояние, если извне приходит изменение
 	useEffect(() => {
-		setInputMin(values[0].toString());
-		setInputMax(values[1].toString());
+		const minVal = values[0].toString();
+		const maxVal = values[1].toString();
+
+		if (inputMin !== minVal) setInputMin(minVal);
+		if (inputMax !== maxVal) setInputMax(maxVal);
 	}, [values]);
 
 	const handleMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {

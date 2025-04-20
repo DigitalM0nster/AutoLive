@@ -1,3 +1,5 @@
+// BulkOrImportDetails.tsx
+
 "use client";
 
 import { useMemo, useState } from "react";
@@ -43,15 +45,11 @@ export default function BulkOrImportDetails({ type, count, snapshots, message, f
 	const totalPages = Math.ceil(filtered.length / limit);
 	const pageItems = filtered.slice((page - 1) * limit, page * limit);
 
-	// извлекаем все отделы
 	const departments = useMemo(() => {
 		const set = new Set<string>();
 		for (const snap of snapshots) {
-			if (snap.department?.name) {
-				set.add(snap.department.name);
-			} else {
-				set.add("(null)");
-			}
+			if (snap.department?.name) set.add(snap.department.name);
+			else set.add("(null)");
 		}
 		return Array.from(set).sort();
 	}, [snapshots]);
@@ -65,23 +63,43 @@ export default function BulkOrImportDetails({ type, count, snapshots, message, f
 			)}
 
 			{type === "import" && (
-				<>
-					<p>
-						<strong>Файл:</strong> {filename}
+				<div className="space-y-1">
+					<p className="text-sm text-gray-700">
+						<strong>Файл импорта:</strong> <span className="text-gray-900">{filename}</span>
 					</p>
-					<p>
-						Создано: {created} / Обновлено: {updated} / Пропущено: {skipped}
+
+					<div className="flex flex-wrap items-center gap-3 text-xs">
+						<span className="bg-green-100 text-green-700 px-2 py-0.5 rounded">Создано: {created}</span>
+						<span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded">Обновлено: {updated}</span>
+						{skipped !== undefined && skipped > 0 && <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded">Пропущено: {skipped}</span>}
+						{imagePolicy && (
+							<span className="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">Изображения: {imagePolicy === "replace" ? "Заменялись" : "Сохранялись"}</span>
+						)}
+					</div>
+
+					{markupSummary && <p className="text-xs text-gray-500 mt-1">Наценка: {markupSummary}</p>}
+
+					<p className="text-xs text-gray-600">
+						Импортировано товаров: {snapshots.length} —{" "}
+						{(() => {
+							const counts = snapshots.reduce((acc: Record<string, number>, snap) => {
+								const name = snap.department?.name || "Без отдела";
+								acc[name] = (acc[name] || 0) + 1;
+								return acc;
+							}, {});
+
+							return Object.entries(counts)
+								.map(([name, count]) => `${name} — ${count} шт.`)
+								.join(", ");
+						})()}
 					</p>
-					{imagePolicy && <p>Изображения: {imagePolicy === "replace" ? "Заменялись" : "Сохранялись"}</p>}
-					{markupSummary && <p className="text-xs text-gray-500">Наценка: {markupSummary}</p>}
-				</>
+				</div>
 			)}
 
 			{message && <p className="text-sm mt-1">{message}</p>}
 
 			{snapshots.length > 0 && (
 				<>
-					{/* Поиск и фильтр */}
 					<div className="flex flex-wrap gap-3 items-center">
 						<input
 							type="text"
@@ -91,7 +109,7 @@ export default function BulkOrImportDetails({ type, count, snapshots, message, f
 								setSearch(e.target.value);
 								setPage(1);
 							}}
-							className="border px-2 py-1 rounded w-60 text-sm"
+							className="border border-gray-300 px-3 py-1.5 rounded text-xs w-60"
 						/>
 
 						<select
@@ -100,7 +118,7 @@ export default function BulkOrImportDetails({ type, count, snapshots, message, f
 								setDepartmentFilter(e.target.value);
 								setPage(1);
 							}}
-							className="border px-2 py-1 rounded text-sm"
+							className="border border-gray-300 px-3 py-1.5 rounded text-xs"
 						>
 							<option value="">Все отделы</option>
 							{departments.map((dep) => (
@@ -113,38 +131,42 @@ export default function BulkOrImportDetails({ type, count, snapshots, message, f
 						<span className="text-xs text-gray-600">Найдено: {filtered.length}</span>
 					</div>
 
-					{/* Таблица */}
-					<div className="border rounded shadow-sm overflow-x-auto mt-2">
-						<table className="table-auto w-full text-sm border-collapse">
-							<thead className="bg-gray-100 sticky top-0">
-								<tr>
-									<th className="border px-2 py-1">Артикул</th>
-									<th className="border px-2 py-1">Название</th>
-									<th className="border px-2 py-1">Бренд</th>
-									<th className="border px-2 py-1">Цена</th>
-									<th className="border px-2 py-1">Категория</th>
-									<th className="border px-2 py-1">Отдел</th>
-								</tr>
-							</thead>
-							<tbody>
-								{pageItems.map((p) => (
-									<tr key={p.id} className="odd:bg-white even:bg-gray-50">
-										<td className="border px-2 py-1">{p.sku}</td>
-										<td className="border px-2 py-1">{p.title}</td>
-										<td className="border px-2 py-1">{p.brand}</td>
-										<td className="border px-2 py-1">{p.price} ₽</td>
-										<td className="border px-2 py-1">{p.category?.title || "—"}</td>
-										<td className="border px-2 py-1">{p.department?.name || "—"}</td>
-									</tr>
-								))}
-							</tbody>
-						</table>
+					<div className="w-full overflow-x-auto mt-2">
+						<div className="min-w-[900px] text-xs">
+							{/* Заголовок */}
+							<div className="grid grid-cols-[120px_200px_140px_100px_180px_160px] bg-gray-200 text-gray-700 font-medium px-4 py-2">
+								<div>Артикул</div>
+								<div>Название</div>
+								<div>Бренд</div>
+								<div>Цена</div>
+								<div>Категория</div>
+								<div>Отдел</div>
+							</div>
+
+							{/* Товары */}
+							{pageItems.map((p) => (
+								<div
+									key={`${p.id ?? `${p.sku}-${p.brand}`}`}
+									className="grid grid-cols-[120px_200px_140px_100px_180px_160px] px-4 py-2 border-t border-gray-100 hover:bg-gray-50 transition-colors"
+								>
+									<div className="text-gray-700">{p.sku}</div>
+									<div className="text-gray-700">{p.title}</div>
+									<div className="text-gray-700">{p.brand}</div>
+									<div className="text-gray-700">{p.price.toLocaleString("ru-RU")} ₽</div>
+									<div className="text-gray-700">{p.category?.title || "—"}</div>
+									<div className="text-gray-700">{p.department?.name || "—"}</div>
+								</div>
+							))}
+						</div>
 					</div>
 
-					{/* пагинация */}
 					{totalPages > 1 && (
-						<div className="flex justify-end gap-3 items-center mt-2 p-2">
-							<button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} className="text-xs px-2 py-1 bg-gray-100 rounded disabled:opacity-50">
+						<div className="flex justify-center gap-2 items-center mt-4">
+							<button
+								onClick={() => setPage((p) => Math.max(1, p - 1))}
+								disabled={page === 1}
+								className="text-xs px-3 py-1 bg-gray-100 rounded hover:bg-gray-200 disabled:opacity-50"
+							>
 								Назад
 							</button>
 							<span className="text-xs text-gray-600">
@@ -153,7 +175,7 @@ export default function BulkOrImportDetails({ type, count, snapshots, message, f
 							<button
 								onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
 								disabled={page === totalPages}
-								className="text-xs px-2 py-1 bg-gray-100 rounded disabled:opacity-50"
+								className="text-xs px-3 py-1 bg-gray-100 rounded hover:bg-gray-200 disabled:opacity-50"
 							>
 								Вперёд
 							</button>

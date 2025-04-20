@@ -293,6 +293,7 @@ model Department {
 
     productLogs    ProductLog[]
     bulkActionLogs BulkActionLog[]
+    importLogs     ImportLog[]
 
     @@map("department")
 }
@@ -343,7 +344,12 @@ model ImportLog {
     userId        Int
     user          User     @relation(fields: [userId], references: [id])
     message       String?
+    count         Int
 
+    departmentId Int?
+    department   Department? @relation(fields: [departmentId], references: [id])
+
+    snapshots      Json?
     snapshotBefore Json?
     snapshotAfter  Json?
 }
@@ -372,7 +378,7 @@ model BulkActionLog {
     department   Department? @relation(fields: [departmentId], references: [id])
     createdAt    DateTime    @default(now())
 
-    action    String // "delete_products"
+    action    String
     message   String?
     snapshots Json
     count     Int

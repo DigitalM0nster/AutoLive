@@ -246,66 +246,65 @@ export const POST = withPermission(
 				);
 			}
 
+			const userDepartment = await prisma.department.findUnique({
+				where: { id: departmentId || undefined },
+				select: { name: true },
+			});
 			const isFinalChunk = chunkIndex + 1 >= totalChunks;
 
 			if (isFinalChunk) {
-				const snapshotBefore: any[] = [];
-				const snapshotAfter: any[] = [];
+				const snapshots = [
+					...toCreate.map((p) => ({
+						id: null, // будет null, так как не загружаем повторно createdProducts
+						sku: p.sku,
+						brand: p.brand,
+						title: p.title,
+						price: p.price,
+						supplierPrice: p.supplierPrice,
+						image: p.image,
+						department: { name: userDepartment?.name ?? "—" },
+						category: p.categoryId ? { title: allCategories.find((c) => c.id === p.categoryId)?.title ?? "—" } : { title: "—" },
+					})),
+					...toUpdate.map((u) => {
+						const after = afterMap.get(u.id);
+						return {
+							id: u.id,
+							sku: after?.sku ?? "—",
+							brand: after?.brand ?? "—",
+							title: after?.title ?? "—",
+							price: after?.price ?? 0,
+							supplierPrice: after?.supplierPrice ?? 0,
+							image: after?.image ?? null,
+							department: { name: userDepartment?.name ?? "—" },
+							category: after?.categoryId ? { title: allCategories.find((c) => c.id === after.categoryId)?.title ?? "—" } : { title: "—" },
+						};
+					}),
+				];
 
-				for (const log of logsToCreate) {
-					const base = {
-						id: log.productId,
-						sku: log.snapshotAfter?.sku,
-						brand: log.snapshotAfter?.brand,
-						title: log.snapshotAfter?.title,
-						price: log.snapshotAfter?.price,
-						supplierPrice: log.snapshotAfter?.supplierPrice,
-						description: log.snapshotAfter?.description,
-						image: log.snapshotAfter?.image,
-						categoryId: log.snapshotAfter?.categoryId,
-						departmentId: departmentId,
-					};
-
-					if (log.action === "create") {
-						snapshotAfter.push(base);
-					} else if (log.action === "update") {
-						snapshotBefore.push({
-							id: log.productId,
-							sku: log.snapshotBefore?.sku,
-							brand: log.snapshotBefore?.brand,
-							title: log.snapshotBefore?.title,
-							price: log.snapshotBefore?.price,
-							supplierPrice: log.snapshotBefore?.supplierPrice,
-							description: log.snapshotBefore?.description,
-							image: log.snapshotBefore?.image,
-							categoryId: log.snapshotBefore?.categoryId,
-							departmentId: departmentId,
-						});
-						snapshotAfter.push(base);
-					}
-				}
-
+				console.log("🟡 Сохраняем importLog со snapshots:", JSON.stringify(snapshots, null, 2));
 				await prisma.importLog.create({
 					data: {
 						userId: user.id,
+						departmentId,
 						fileName: `Импорт chunk ${chunkIndex + 1}/${totalChunks}`,
 						created: toCreate.length,
 						updated: toUpdate.length,
+						skipped,
+						count: toCreate.length + toUpdate.length + skipped,
 						message: [
 							`Импорт завершён.`,
 							`Создано: ${toCreate.length}`,
 							`Обновлено: ${toUpdate.length}`,
 							`Пропущено: ${skipped}`,
-							`Категорий удалено: ${removedCategoriesCount}`,
-							localDuplicates.size > 0 ? `Повторы: ${Array.from(localDuplicates).slice(0, 5).join(", ")}` : null,
-							unknownCategoryTitles.size > 0 ? `Неизвестные категории: ${Array.from(unknownCategoryTitles).slice(0, 5).join(", ")}` : null,
+							removedCategoriesCount ? `Категорий удалено: ${removedCategoriesCount}` : null,
+							localDuplicates.size ? `Повторы: ${Array.from(localDuplicates).slice(0, 5).join(", ")}` : null,
+							unknownCategoryTitles.size ? `Неизвестные категории: ${Array.from(unknownCategoryTitles).slice(0, 5).join(", ")}` : null,
 							`Изображения: ${preserveImages ? "сохранялись" : "заменялись"}`,
 							`Наценка: ${JSON.stringify({ markupRules, defaultMarkup })}`,
 						]
 							.filter(Boolean)
 							.join("\n"),
-						snapshotBefore,
-						snapshotAfter,
+						snapshots,
 					},
 				});
 			}

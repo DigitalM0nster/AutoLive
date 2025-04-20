@@ -1,17 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import BulkDeletedProductsTable from "./BulkDeletedProductsTable";
 import ProductLogDetails from "./ProductLogDetails";
 import BulkOrImportDetails from "./BulkOrImportDetails";
-
-type Department = { name: string };
-type User = {
-	first_name: string;
-	last_name: string;
-	role: string;
-	department?: Department;
-};
+import { User } from "@/lib/types";
+import { Department } from "@prisma/client";
 
 type UnifiedLog = {
 	id: number;
@@ -35,7 +28,12 @@ export default function ProductsLogs() {
 				const resJson = await res.json();
 
 				const filteredLogs = resJson.data.filter((log: UnifiedLog) => {
+					// исключаем пустые bulk product-логи
 					if (log.type === "product" && log.action === "bulk" && !log.message) return false;
+
+					// исключаем product-логи, если они были частью импорта
+					if (log.type === "product" && log.message?.startsWith("Импорт:")) return false;
+
 					return true;
 				});
 
@@ -71,6 +69,7 @@ export default function ProductsLogs() {
 		}
 
 		if (type === "import") {
+			console.log(details);
 			return (
 				<BulkOrImportDetails
 					type="import"
@@ -95,30 +94,37 @@ export default function ProductsLogs() {
 	return (
 		<div className="mt-8">
 			<h3 className="text-lg font-bold mb-4">История действий над товарами</h3>
-			<table className="w-full table-auto text-sm border border-black/10 border-collapse">
-				<thead className="bg-gray-100">
-					<tr>
-						<th className="border px-2 py-1">Дата</th>
-						<th className="border px-2 py-1">Пользователь</th>
-						<th className="border px-2 py-1">Отдел</th>
-						<th className="border px-2 py-1">Действие</th>
-						<th className="border px-2 py-1">Детали</th>
-					</tr>
-				</thead>
-				<tbody>
-					{logs.map((log) => (
-						<tr key={`${log.type}-${log.id}`}>
-							<td className="border px-2 py-1">{new Date(log.createdAt).toLocaleString()}</td>
-							<td className="border px-2 py-1">
-								{log.user.first_name} {log.user.last_name} <span className="text-xs text-gray-500">({log.user.role})</span>
-							</td>
-							<td className="border px-2 py-1">{log.department?.name || "—"}</td>
-							<td className="border px-2 py-1">{renderActionBadge(log.type, log.action)}</td>
-							<td className="border px-2 py-1 text-gray-700 whitespace-pre-line">{renderLogDetails(log)}</td>
+			{/* Я НЕ ХОЧУ ЧТОБЫ ЭТО СКРОЛЛИЛОСЬ!!! */}
+			<div className="overflow-hidden shadow rounded-lg">
+				<table className="min-w-full max-w-10 divide-y divide-gray-200 text-sm">
+					<thead className="bg-gray-200">
+						<tr>
+							<th className="px-4 py-2 text-left text-xs font-medium text-gray-700">Дата</th>
+							<th className="px-4 py-2 text-left text-xs font-medium text-gray-700">Пользователь</th>
+							<th className="px-4 py-2 text-left text-xs font-medium text-gray-700">Отдел</th>
+							<th className="px-4 py-2 text-left text-xs font-medium text-gray-700">Действие</th>
+							<th className="px-4 py-2 text-left text-xs font-medium text-gray-700">Детали</th>
 						</tr>
-					))}
-				</tbody>
-			</table>
+					</thead>
+					<tbody className="bg-white divide-y divide-gray-200 text-xs">
+						{logs.map((log) => (
+							<tr key={`${log.type}-${log.id}`} className="hover:bg-gray-50">
+								<td className="px-4 py-2 text-gray-700 whitespace-nowrap">{new Date(log.createdAt).toLocaleString()}</td>
+								<td className="px-4 py-2 text-gray-700 whitespace-nowrap">
+									{log.user.first_name} {log.user.last_name} <span className="text-xs text-gray-500">({log.user.role})</span>
+								</td>
+								<td className="px-4 py-2 text-gray-700 whitespace-nowrap">{log.department?.name || "—"}</td>
+								<td className="px-4 py-2">{renderActionBadge(log.type, log.action)}</td>
+								<td className="px-4 py-2 text-gray-700">
+									<div className="max-w-full overflow-x-auto">
+										<div className="inline-block min-w-full max-w-5xl align-top">{renderLogDetails(log)}</div>
+									</div>
+								</td>
+							</tr>
+						))}
+					</tbody>
+				</table>
+			</div>
 		</div>
 	);
 }

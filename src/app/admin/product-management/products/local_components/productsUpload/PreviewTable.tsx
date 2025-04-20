@@ -73,14 +73,14 @@ export default function PreviewTable({ preview, totalRows, columns, setColumns, 
 				<label className="text-sm font-medium mr-1">Начинать импорт с строки №</label>
 				<input type="number" min={1} value={startRow} onChange={(e) => setStartRow(Number(e.target.value))} className="border p-1 rounded text-sm mt-1 w-24" />
 			</div>
-			<table className="table-auto border border-black/10 text-sm w-full min-w-[600px]">
-				<thead>
+			<table className="min-w-full divide-y divide-gray-200 shadow rounded-lg overflow-hidden">
+				<thead className="bg-gray-200">
 					<tr>
-						<th className="bg-gray-100 px-2 py-1 text-center text-[11px] text-gray-500">№</th>
+						<th className="px-3 py-2 w-8 text-center text-[11px] text-gray-500">№</th>
 						{[...Array(mostCommonColumnCount)].map((_, idx) => {
 							const selectedKey = getFieldByIndex(idx);
 							return (
-								<th key={idx} className="border border-black/10 px-2 py-1 text-center bg-gray-100">
+								<th key={idx} className="px-2 py-1 w-28 text-xs text-center">
 									<div className="text-[11px] text-gray-500 mb-1">{getExcelColumnName(idx)}</div>
 									<select
 										value={selectedKey || ""}
@@ -95,7 +95,7 @@ export default function PreviewTable({ preview, totalRows, columns, setColumns, 
 
 											setColumns(updated);
 										}}
-										className="w-full border border-black/10 rounded px-1 py-0.5 text-xs bg-white text-black"
+										className="w-full border border-gray-300 rounded px-1 py-0.5 text-xs bg-white text-black"
 										title={
 											selectedKey ? [...REQUIRED_FIELDS, ...OPTIONAL_FIELDS].find((f) => f.key === selectedKey)?.description : "Выберите назначение колонки"
 										}
@@ -121,24 +121,19 @@ export default function PreviewTable({ preview, totalRows, columns, setColumns, 
 						})}
 					</tr>
 				</thead>
-				<tbody>
+				<tbody className="bg-white divide-y divide-gray-200 text-xs">
 					{preview.slice(0, 10).map((row, rowIndex) => {
 						const absoluteRow = rowIndex + 1;
 						const isStart = startRow === absoluteRow;
 						return (
-							<tr key={rowIndex} onClick={() => setStartRow(absoluteRow)} className={isStart ? "bg-blue-50 cursor-pointer" : "hover:bg-gray-50 cursor-pointer"}>
-								<td className="border border-black/10 px-2 py-1 text-center text-xs bg-gray-50 font-mono text-gray-600">{absoluteRow}</td>
+							<tr key={rowIndex} onClick={() => setStartRow(absoluteRow)} className={`${isStart ? "bg-blue-50" : "hover:bg-gray-50"} cursor-pointer`}>
+								<td className="px-3 py-1 text-center text-gray-600 font-mono bg-gray-50">{absoluteRow}</td>
 								{[...Array(mostCommonColumnCount)].map((_, cellIndex) => {
 									const cell = row[cellIndex];
 									const isMatched = Object.values(columns).includes(cellIndex);
 									const isActiveCell = isMatched && isStart;
 									return (
-										<td
-											key={cellIndex}
-											className={`border border-black/10 px-2 py-1 ${
-												isActiveCell ? "bg-yellow-100" : isMatched ? "bg-yellow-50" : isStart ? "bg-blue-100" : ""
-											}`}
-										>
+										<td key={cellIndex} className={`px-2 py-1 ${isActiveCell ? "bg-green-200" : isMatched ? "bg-green-100" : isStart ? "bg-blue-100" : ""}`}>
 											{cell ?? ""}
 										</td>
 									);

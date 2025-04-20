@@ -7,25 +7,34 @@ import { useProductsStore } from "@/store/productsStore";
 import { EditableProduct } from "@/lib/types";
 
 export default function DuplicateProductModal() {
+	// Получаем данные из стора
 	const { duplicateInfo, categories, departments, clearDuplicateInfo, confirmDuplicateUpdate } = useProductsStore();
 
+	// Если дубликатов нет — ничего не рендерим
 	if (!duplicateInfo) return null;
 
 	const { existing, pending } = duplicateInfo;
-
-	const getCategoryTitle = (id: number | null) => categories.find((c) => c.id === id)?.title || "—";
-	const getDepartmentName = (id: number | null) => departments.find((d) => d.id === id)?.name || "—";
+	// =============================
+	// Утилиты отображения и сравнения
+	// =============================
 
 	const normalize = (v: any) => (v === null || v === undefined ? "" : String(v));
 	const isDiff = (a: any, b: any) => normalize(a) !== normalize(b);
 
+	const getCategoryTitle = (id: number | null) => categories.find((c) => c.id === id)?.title || "—";
+
+	const getDepartmentName = (id: number | null) => departments.find((d) => d.id === id)?.name || "—";
+
+	// Сравнение строк по символам: same | removed | added
 	const diffChars = (oldStr: string, newStr: string) => {
 		const diffs: { type: "same" | "added" | "removed"; value: string }[] = [];
 		let i = 0,
 			j = 0;
+
 		while (i < oldStr.length || j < newStr.length) {
 			const a = oldStr[i];
 			const b = newStr[j];
+
 			if (a === b) {
 				diffs.push({ type: "same", value: a });
 				i++;
@@ -41,9 +50,11 @@ export default function DuplicateProductModal() {
 				}
 			}
 		}
+
 		return diffs;
 	};
 
+	// Подсветка удалённого текста (старое значение)
 	const HighlightedOld = ({ oldText, newText }: { oldText: string; newText: string }) => {
 		const diffs = diffChars(oldText, newText);
 		return (
@@ -61,6 +72,7 @@ export default function DuplicateProductModal() {
 		);
 	};
 
+	// Подсветка добавленного текста (новое значение)
 	const HighlightedNew = ({ oldText, newText }: { oldText: string; newText: string }) => {
 		const diffs = diffChars(oldText, newText);
 		return (
@@ -78,17 +90,33 @@ export default function DuplicateProductModal() {
 		);
 	};
 
+	// Описание полей для сравнения
 	const fields = [
 		{ label: "Название", key: "title" },
 		{ label: "Артикул", key: "sku" },
 		{ label: "Бренд", key: "brand" },
-		{ label: "Закупочная цена", key: "supplierPrice", format: (v: any) => (v != null ? `${v} ₽` : "—") },
-		{ label: "Цена", key: "price", format: (v: any) => (v != null ? `${v} ₽` : "—") },
+		{
+			label: "Закупочная цена",
+			key: "supplierPrice",
+			format: (v: any) => (v != null ? `${v} ₽` : "—"),
+		},
+		{
+			label: "Цена",
+			key: "price",
+			format: (v: any) => (v != null ? `${v} ₽` : "—"),
+		},
 		{ label: "Описание", key: "description" },
-		{ label: "Категория", getValue: (p: EditableProduct) => getCategoryTitle(p.categoryId) },
-		{ label: "Отдел", getValue: (p: EditableProduct) => getDepartmentName(p.department?.id ?? p.departmentId ?? null) },
+		{
+			label: "Категория",
+			getValue: (p: EditableProduct) => getCategoryTitle(p.categoryId),
+		},
+		{
+			label: "Отдел",
+			getValue: (p: EditableProduct) => getDepartmentName(p.department?.id ?? p.departmentId ?? null),
+		},
 	];
 
+	// Отображение изображения
 	const renderImage = (url: string | null) =>
 		url ? (
 			<img src={url} alt="img" className="w-full max-w-[80px] aspect-square object-cover rounded shadow" />
