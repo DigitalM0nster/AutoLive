@@ -7,6 +7,9 @@ interface ProductsStore {
 	deletableProductId: number | null;
 	setDeletableProductId: (id: number | null) => void;
 
+	activeFilters: Record<string, string>;
+	setActiveFilters: (filters: Record<string, string>) => void;
+
 	isAddingNewProduct: boolean;
 	setIsAddingNewProduct: (v: boolean) => void;
 
@@ -53,6 +56,9 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
 	deletableProductId: null,
 	setDeletableProductId: (id) => set({ deletableProductId: id }),
 
+	activeFilters: {},
+	setActiveFilters: (filters) => set({ activeFilters: filters }),
+
 	isAddingNewProduct: false,
 	setIsAddingNewProduct: (v) => set({ isAddingNewProduct: v }),
 
@@ -94,6 +100,7 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
 
 	fetchProducts: async (page = get().page, filters = {}) => {
 		set({ loading: true, error: null, page });
+		set({ activeFilters: filters });
 
 		try {
 			const { limit, sortBy, sortOrder } = get();
@@ -189,7 +196,8 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
 		const allIds = get().products.map((p) => p.id);
 		set({ selectedProductIds: allIds });
 	},
-	selectAllMatchingProducts: async (filters = {}) => {
+	selectAllMatchingProducts: async () => {
+		const filters = get().activeFilters;
 		const params = new URLSearchParams(filters);
 		const res = await fetch("/api/products/filter-matching-products?" + params.toString());
 		if (!res.ok) throw new Error("Ошибка получения ID товаров");

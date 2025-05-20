@@ -12,6 +12,8 @@ type Snapshot = {
 	price: number;
 	department?: { name: string };
 	category?: { title: string };
+	status?: "created" | "updated" | "skipped";
+	reason?: string;
 };
 
 type Props = {
@@ -31,16 +33,23 @@ export default function BulkOrImportDetails({ type, count, snapshots, message, f
 	const [page, setPage] = useState(1);
 	const [search, setSearch] = useState("");
 	const [departmentFilter, setDepartmentFilter] = useState("");
+	const [statusFilter, setStatusFilter] = useState<"" | "created" | "updated" | "skipped">("");
 
 	const limit = 10;
 
 	const filtered = useMemo(() => {
-		return snapshots.filter((snap) => {
+		return snapshots.filter((snap, index) => {
 			const matchesSku = snap.sku.toLowerCase().includes(search.toLowerCase());
 			const matchesDept = departmentFilter === "" || (departmentFilter === "(null)" && !snap.department?.name) || snap.department?.name === departmentFilter;
-			return matchesSku && matchesDept;
+
+			let matchesStatus = true;
+			if (statusFilter === "created") matchesStatus = index < (created ?? 0);
+			else if (statusFilter === "updated") matchesStatus = index >= (created ?? 0) && index < (created ?? 0) + (updated ?? 0);
+			else if (statusFilter === "skipped") matchesStatus = index >= (created ?? 0) + (updated ?? 0);
+
+			return matchesSku && matchesDept && matchesStatus;
 		});
-	}, [search, departmentFilter, snapshots]);
+	}, [search, departmentFilter, snapshots, created, updated, skipped, statusFilter]);
 
 	const totalPages = Math.ceil(filtered.length / limit);
 	const pageItems = filtered.slice((page - 1) * limit, page * limit);
@@ -68,10 +77,39 @@ export default function BulkOrImportDetails({ type, count, snapshots, message, f
 						<strong>Файл импорта:</strong> <span className="text-gray-900">{filename}</span>
 					</p>
 
-					<div className="flex flex-wrap items-center gap-3 text-xs">
+					{/* <div className="flex flex-wrap items-center gap-3 text-xs">
 						<span className="bg-green-100 text-green-700 px-2 py-0.5 rounded">Создано: {created}</span>
 						<span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded">Обновлено: {updated}</span>
 						{skipped !== undefined && skipped > 0 && <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded">Пропущено: {skipped}</span>}
+						{imagePolicy && (
+							<span className="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">Изображения: {imagePolicy === "replace" ? "Заменялись" : "Сохранялись"}</span>
+						)}
+					</div> */}
+
+					<div className="flex flex-wrap items-center gap-3 text-xs">
+						<button
+							onClick={() => setStatusFilter(statusFilter === "created" ? "" : "created")}
+							className={`px-2 py-0.5 rounded ${statusFilter === "created" ? "bg-green-700 text-white" : "bg-green-100 text-green-700"}`}
+						>
+							Создано: {created}
+						</button>
+
+						<button
+							onClick={() => setStatusFilter(statusFilter === "updated" ? "" : "updated")}
+							className={`px-2 py-0.5 rounded ${statusFilter === "updated" ? "bg-blue-700 text-white" : "bg-blue-100 text-blue-700"}`}
+						>
+							Обновлено: {updated}
+						</button>
+
+						{skipped !== undefined && skipped > 0 && (
+							<button
+								onClick={() => setStatusFilter(statusFilter === "skipped" ? "" : "skipped")}
+								className={`px-2 py-0.5 rounded ${statusFilter === "skipped" ? "bg-gray-700 text-white" : "bg-gray-200 text-gray-700"}`}
+							>
+								Пропущено: {skipped}
+							</button>
+						)}
+
 						{imagePolicy && (
 							<span className="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">Изображения: {imagePolicy === "replace" ? "Заменялись" : "Сохранялись"}</span>
 						)}
@@ -80,23 +118,40 @@ export default function BulkOrImportDetails({ type, count, snapshots, message, f
 					{markupSummary && <p className="text-xs text-gray-500 mt-1">Наценка: {markupSummary}</p>}
 
 					<p className="text-xs text-gray-600">
-						Импортировано товаров: {snapshots.length} —{" "}
-						{(() => {
-							const counts = snapshots.reduce((acc: Record<string, number>, snap) => {
-								const name = snap.department?.name || "Без отдела";
-								acc[name] = (acc[name] || 0) + 1;
-								return acc;
-							}, {});
-
-							return Object.entries(counts)
-								.map(([name, count]) => `${name} — ${count} шт.`)
-								.join(", ");
-						})()}
+						<strong>{snapshots[0]?.department?.name || "—"}</strong>
+						<br></br>
+						Импортировано товаров: <strong>{snapshots.length}</strong>
 					</p>
 				</div>
 			)}
 
-			{message && <p className="text-sm mt-1">{message}</p>}
+			{message && (
+				<div className="bg-gray-50 border border-gray-200 rounded p-3 text-sm space-y-1 leading-snug text-gray-800 mt-1 whitespace-pre-line">
+					{message
+						.split("\n")
+						.filter(Boolean)
+						.map((line, i) => {
+							// особое отображение для строки с наценкой
+							if (line.startsWith("Наценка: ")) {
+								try {
+									const markup = JSON.parse(line.replace("Наценка: ", ""));
+									if (!markup) return null;
+
+									return (
+										<div key={i}>
+											<span className="font-medium">Наценка:</span>{" "}
+											{markup.defaultMarkup?.type === "%" ? `по умолчанию ${markup.defaultMarkup.value}%` : `наценка +${markup.defaultMarkup.value}₽`}
+										</div>
+									);
+								} catch {
+									return <div key={i}>{line}</div>;
+								}
+							}
+
+							return <div key={i}>{line}</div>;
+						})}
+				</div>
+			)}
 
 			{snapshots.length > 0 && (
 				<>

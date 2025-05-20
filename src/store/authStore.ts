@@ -58,7 +58,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ phone, password }),
-				credentials: "include", // ⬅ важно!
+				credentials: "include",
 			});
 
 			if (response.ok) {

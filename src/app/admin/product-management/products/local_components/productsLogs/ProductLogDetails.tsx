@@ -73,7 +73,7 @@ const ProductLogDetails: FC<LogType> = ({ action, details, message }) => {
 						</thead>
 						<tbody className="bg-white">
 							{rows.map((row) => {
-								const isChanged = changedKeys.has(row.key);
+								const isChanged = changedKeys.has(row.key) && formatValue(row.before, row.key) !== formatValue(row.after, row.key);
 								return (
 									<tr key={row.key} className="hover:bg-gray-50 transition-colors">
 										<td className="px-3 py-2 text-gray-500 font-medium">{row.label}</td>

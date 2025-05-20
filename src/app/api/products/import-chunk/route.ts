@@ -73,6 +73,15 @@ export const POST = withPermission(
 			const beforeMap = new Map<number, any>();
 			const afterMap = new Map<number, any>();
 
+			const skippedSnapshots: {
+				sku: string;
+				brand: string;
+				title?: string;
+				price: number;
+				status: "skipped";
+				reason: string;
+			}[] = [];
+
 			for (let i = 0; i < rows.length; i++) {
 				const row = rows[i];
 				const sku = row[columns.sku]?.toString().trim();
@@ -82,18 +91,42 @@ export const POST = withPermission(
 
 				if (!sku || !title || !brand || !priceRaw) {
 					skipped++;
+					skippedSnapshots.push({
+						sku: sku ?? "—",
+						brand: brand ?? "—",
+						title: title ?? "—",
+						price: 0,
+						status: "skipped",
+						reason: "Не заполнены обязательные поля",
+					});
 					continue;
 				}
 
 				const key = `${sku.toLowerCase()}||${brand.toLowerCase()}`;
 				if (lastByKey.get(key) !== i) {
 					skipped++;
+					skippedSnapshots.push({
+						sku,
+						brand,
+						title,
+						price: 0,
+						status: "skipped",
+						reason: "Локальный дубликат",
+					});
 					continue;
 				}
 
 				const supplierPrice = typeof priceRaw === "string" ? parseFloat(priceRaw.replace(",", ".")) : priceRaw;
 				if (!supplierPrice || isNaN(supplierPrice)) {
 					skipped++;
+					skippedSnapshots.push({
+						sku,
+						brand,
+						title,
+						price: 0,
+						status: "skipped",
+						reason: "Неверная цена",
+					});
 					continue;
 				}
 
@@ -255,7 +288,7 @@ export const POST = withPermission(
 			if (isFinalChunk) {
 				const snapshots = [
 					...toCreate.map((p) => ({
-						id: null, // будет null, так как не загружаем повторно createdProducts
+						id: null,
 						sku: p.sku,
 						brand: p.brand,
 						title: p.title,
@@ -264,6 +297,7 @@ export const POST = withPermission(
 						image: p.image,
 						department: { name: userDepartment?.name ?? "—" },
 						category: p.categoryId ? { title: allCategories.find((c) => c.id === p.categoryId)?.title ?? "—" } : { title: "—" },
+						status: "created",
 					})),
 					...toUpdate.map((u) => {
 						const after = afterMap.get(u.id);
@@ -277,8 +311,20 @@ export const POST = withPermission(
 							image: after?.image ?? null,
 							department: { name: userDepartment?.name ?? "—" },
 							category: after?.categoryId ? { title: allCategories.find((c) => c.id === after.categoryId)?.title ?? "—" } : { title: "—" },
+							status: "updated",
 						};
 					}),
+					...skippedSnapshots.map((s) => ({
+						id: null,
+						sku: s.sku,
+						brand: s.brand,
+						title: s.title,
+						price: s.price,
+						department: { name: userDepartment?.name ?? "—" },
+						category: { title: "—" },
+						status: "skipped",
+						reason: s.reason,
+					})),
 				];
 
 				console.log("🟡 Сохраняем importLog со snapshots:", JSON.stringify(snapshots, null, 2));
