@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { Building2 } from "lucide-react";
+import Loading from "@/components/ui/loading/Loading";
 
 type Department = {
 	id: number;
@@ -38,7 +39,12 @@ export default function DepartmentsDashboardPage() {
 	}, [user]);
 
 	if (!user) return null;
-	if (loading) return <div className="screenContent">Загрузка...</div>;
+	if (loading)
+		return (
+			<div className="screenContent">
+				<Loading />
+			</div>
+		);
 
 	return (
 		<div className="screenContent">
@@ -62,7 +68,7 @@ export default function DepartmentsDashboardPage() {
 			{user.role === "superadmin" && (
 				<div className="createContainer">
 					<Link href="/admin/departments/create" className="button createButton">
-						+ Добавить отдел
+						+ Создать отдел
 					</Link>
 				</div>
 			)}

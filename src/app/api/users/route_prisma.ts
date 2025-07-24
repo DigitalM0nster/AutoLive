@@ -1,10 +1,7 @@
+import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { withPermission } from "@/middleware/permissionMiddleware";
 import type { User } from "@/lib/types";
-import { db } from "@/drizzle/db";
-import { users, departments, orders } from "@/drizzle/schema";
-import { eq, like, or, and, asc, desc } from "drizzle-orm";
-import { sql } from "drizzle-orm";
 
 interface ExtendedRequestContext {
 	user: Pick<User, "id" | "role"> & { departmentId: number | null };
@@ -19,7 +16,7 @@ export const GET = withPermission(
 			const limit = parseInt(searchParams.get("limit") || "5", 10);
 			const skip = (page - 1) * limit;
 
-			const whereConditions: any[] = [];
+			const where: any = {};
 
 			// Добавляем поддержку поиска
 			const searchQuery = searchParams.get("search");
@@ -29,29 +26,27 @@ export const GET = withPermission(
 
 				if (isNumeric) {
 					// Если запрос - число, ищем по ID или телефону
-					whereConditions.push(or(eq(users.id, parseInt(searchQuery, 10)), like(users.phone, `%${searchQuery}%`)));
+					where.OR = [{ id: parseInt(searchQuery, 10) }, { phone: { contains: searchQuery } }];
 				} else {
 					// Иначе ищем по ФИО или телефону
-					whereConditions.push(
-						or(
-							like(users.firstName, `%${searchQuery}%`),
-							like(users.lastName, `%${searchQuery}%`),
-							like(users.middleName, `%${searchQuery}%`),
-							like(users.phone, `%${searchQuery}%`)
-						)
-					);
+					where.OR = [
+						{ first_name: { contains: searchQuery } },
+						{ last_name: { contains: searchQuery } },
+						{ middle_name: { contains: searchQuery } },
+						{ phone: { contains: searchQuery } },
+					];
 				}
 			}
 
 			const statusParam = searchParams.get("status");
 			if (statusParam === "verified" || statusParam === "unverified") {
-				whereConditions.push(eq(users.status, statusParam));
+				where.status = statusParam;
 			}
 
 			// Добавляем фильтрацию по роли
 			const roleParam = searchParams.get("role");
 			if (roleParam && ["superadmin", "admin", "manager", "client"].includes(roleParam)) {
-				whereConditions.push(eq(users.role, roleParam as "superadmin" | "admin" | "manager" | "client"));
+				where.role = roleParam;
 			}
 
 			const departmentIdParam = searchParams.get("departmentId");
@@ -62,12 +57,11 @@ export const GET = withPermission(
 
 			// Фильтр для пользователей без отдела
 			if (showWithoutDepartment) {
-				// @ts-ignore - временно игнорируем ошибку типов для null
-				whereConditions.push(eq(users.departmentId, null as any));
+				where.departmentId = null;
 			}
 			// Если указан конкретный отдел, фильтруем по нему независимо от роли пользователя
 			else if (departmentIdParam) {
-				whereConditions.push(eq(users.departmentId, parseInt(departmentIdParam, 10)));
+				where.departmentId = parseInt(departmentIdParam, 10);
 			}
 			// Если запрошены все пользователи или пользователь имеет права
 			else if (showAllUsers || user.role === "superadmin" || user.role === "admin") {
@@ -76,56 +70,39 @@ export const GET = withPermission(
 			}
 			// По умолчанию для менеджера показываем только его
 			else if (user.role === "manager") {
-				whereConditions.push(eq(users.id, user.id));
+				where.id = user.id;
 			}
 
 			const sortParam = searchParams.get("sortBy"); // "fullName"
 			const sortOrder = searchParams.get("sortOrder") === "asc" ? "asc" : "desc";
 
-			let orderBy: any = { createdAt: sortOrder };
+			let orderBy: any = { createdAt: "desc" };
 
 			if (sortParam === "fullName") {
-				orderBy = [{ firstName: sortOrder }, { lastName: sortOrder }];
+				orderBy = [{ first_name: sortOrder }, { last_name: sortOrder }];
 			} else if (sortParam === "phone") {
 				orderBy = { phone: sortOrder };
-			} else {
-				// Используем поле id вместо createdAt, так как createdAt может отсутствовать в схеме
-				orderBy = sortOrder === "asc" ? asc(users.id) : desc(users.id);
 			}
 
-			// Формируем условие WHERE с использованием and()
-			const finalWhere = whereConditions.length > 0 ? and(...whereConditions) : undefined;
-
-			const userList = await db
-				.select({
-					id: users.id,
-					first_name: users.firstName,
-					last_name: users.lastName,
-					middle_name: users.middleName,
-					phone: users.phone,
-					role: users.role,
-					status: users.status,
-					departmentId: users.departmentId,
-					department: {
-						id: departments.id,
-						name: departments.name,
+			const users = await prisma.user.findMany({
+				where,
+				include: {
+					managerOrders: {
+						select: {
+							id: true,
+							title: true,
+						},
 					},
-					managerOrders: orders, // Здесь мы указываем таблицу orders для получения связанных данных
-				})
-				.from(users)
-				.leftJoin(departments, eq(users.departmentId, departments.id))
-				.leftJoin(orders, eq(users.id, orders.managerId))
-				.where(finalWhere)
-				.orderBy(orderBy)
-				.limit(limit)
-				.offset(skip);
+					department: true,
+				},
+				skip,
+				take: limit,
+				orderBy,
+			});
 
-			const total = await db
-				.select({ count: sql`count(*)` })
-				.from(users)
-				.where(finalWhere);
+			const total = await prisma.user.count({ where });
 
-			const mappedUsers = userList.map((u) => ({
+			const mappedUsers = users.map((u) => ({
 				id: u.id,
 				first_name: u.first_name ?? "",
 				last_name: u.last_name ?? "",
@@ -133,22 +110,19 @@ export const GET = withPermission(
 				phone: u.phone,
 				role: u.role,
 				status: u.status,
-				department:
-					u.department && u.department.id
-						? {
-								id: u.department.id,
-								name: u.department.name || "",
-						  }
-						: null,
-				orders: Array.isArray(u.managerOrders)
-					? u.managerOrders.map((o: any) => ({
-							id: o.id,
-							title: o.title,
-					  }))
-					: [],
+				department: u.department
+					? {
+							id: u.department.id,
+							name: u.department.name,
+					  }
+					: null,
+				orders: u.managerOrders.map((o) => ({
+					id: o.id,
+					title: o.title,
+				})),
 			}));
 
-			return NextResponse.json({ users: mappedUsers, total: total[0].count });
+			return NextResponse.json({ users: mappedUsers, total });
 		} catch (err) {
 			console.error("Ошибка при получении пользователей:", err);
 			return new NextResponse("Ошибка сервера", { status: 500 });

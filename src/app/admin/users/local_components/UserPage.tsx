@@ -51,6 +51,8 @@ export default function UserPage({ userId, isCreating = false }: UserPageProps) 
 		departmentId: "",
 	});
 
+	// Удалены все состояния, функции и разметка, связанные с аватаркой пользователя по требованию. Оставлена только логика для остальных полей пользователя.
+
 	// Проверка прав доступа при создании
 	useEffect(() => {
 		if (isCreating && user?.role !== "superadmin" && user?.role !== "admin") {
@@ -240,11 +242,6 @@ export default function UserPage({ userId, isCreating = false }: UserPageProps) 
 		return user?.id === userData?.id;
 	};
 
-	// Проверка, является ли менеджер из отдела текущего пользователя-админа
-	const isManagerFromSameDepartment = () => {
-		return user?.role === "admin" && userData?.role === "manager" && user?.department?.id === userData?.department?.id && user?.department?.id !== undefined;
-	};
-
 	// Проверка, является ли менеджер из отдела текущего пользователя-админа или без отдела
 	const canAdminEditManager = () => {
 		// Менеджер из отдела админа
@@ -323,53 +320,35 @@ export default function UserPage({ userId, isCreating = false }: UserPageProps) 
 		}
 
 		try {
-			// Подготовка данных для отправки
+			let response;
+			// Удалены все состояния, функции и разметка, связанные с аватаркой пользователя по требованию. Оставлена только логика для остальных полей пользователя.
 			const dataToSend: any = {};
-
 			if (isCreating) {
-				// При создании отправляем все поля
 				dataToSend.first_name = formData.first_name;
 				dataToSend.last_name = formData.last_name;
 				dataToSend.middle_name = formData.middle_name;
 				dataToSend.phone = formData.phone;
 				dataToSend.role = formData.role;
 				dataToSend.status = formData.status;
-				dataToSend.adminId = user?.id; // Добавляем ID администратора
-
-				// Добавляем departmentId только если выбран отдел и роль позволяет
+				dataToSend.adminId = user?.id;
 				if (formData.departmentId && formData.role !== "client" && formData.role !== "superadmin") {
 					dataToSend.departmentId = parseInt(formData.departmentId);
 				}
 			} else {
-				// При редактировании проверяем права на редактирование полей
 				if (canEditName()) {
 					dataToSend.first_name = formData.first_name;
 					dataToSend.last_name = formData.last_name;
 					dataToSend.middle_name = formData.middle_name;
 				}
-
-				if (canEditRole()) {
-					dataToSend.role = formData.role;
-				}
-
-				if (canEditStatus()) {
-					dataToSend.status = formData.status;
-				}
-
-				if (canEditDepartment()) {
-					dataToSend.departmentId = formData.departmentId ? parseInt(formData.departmentId) : null;
-				}
+				if (canEditRole()) dataToSend.role = formData.role;
+				if (canEditStatus()) dataToSend.status = formData.status;
+				if (canEditDepartment()) dataToSend.departmentId = formData.departmentId ? parseInt(formData.departmentId) : null;
 			}
-
-			// Отправка запроса на создание или обновление
 			const url = isCreating ? `/api/users/create` : `/api/users/${userId}/update`;
 			const method = isCreating ? "POST" : "PUT";
-
-			const response = await fetch(url, {
+			response = await fetch(url, {
 				method,
-				headers: {
-					"Content-Type": "application/json",
-				},
+				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(dataToSend),
 			});
 
@@ -382,28 +361,22 @@ export default function UserPage({ userId, isCreating = false }: UserPageProps) 
 
 			if (isCreating) {
 				showSuccessToast("Пользователь успешно создан");
-
-				// Перенаправляем на страницу созданного пользователя
 				setTimeout(() => {
 					router.push(`/admin/users/${responseData.id}`);
 				}, 1000);
 			} else {
-				// Обновляем данные пользователя в состоянии
 				setUserData((prev) => (prev ? { ...prev, ...responseData } : null));
 				showSuccessToast("Данные пользователя успешно обновлены");
 				setInitialFormData({
-					// Обновляем начальные данные после сохранения
-					first_name: userData?.first_name || "",
-					last_name: userData?.last_name || "",
-					middle_name: userData?.middle_name || "",
+					first_name: responseData.first_name || "",
+					last_name: responseData.last_name || "",
+					middle_name: responseData.middle_name || "",
 					phone: undefined,
-					role: userData?.role || "",
-					status: userData?.status || "",
-					departmentId: userData?.department?.id?.toString() || "",
+					role: responseData.role || "",
+					status: responseData.status || "",
+					departmentId: responseData.department?.id?.toString() || "",
 				});
-				setHasChanges(false); // Сбрасываем флаг изменений после сохранения
-
-				// Обновляем страницу через 2 секунды для получения свежих данных
+				setHasChanges(false);
 				setTimeout(() => {
 					router.refresh();
 				}, 2000);
@@ -549,25 +522,16 @@ export default function UserPage({ userId, isCreating = false }: UserPageProps) 
 					{/* Карточка пользователя */}
 					<div className={`borderBlock ${styles.userCard}`}>
 						<div className={styles.userInfoContainer}>
-							{/* Аватар пользователя - только для существующих пользователей */}
-							{!isCreating && (
-								<div className={styles.avatar}>
-									{userData?.avatar ? (
-										<Image src={userData.avatar} alt="Аватар пользователя" width={160} height={160} />
-									) : (
-										<Image src="/images/user_placeholder.png" alt="Аватар пользователя" width={160} height={160} />
-									)}
-								</div>
-							)}
-
 							{/* Информация о пользователе */}
 							<div className={styles.userDetailsContainer}>
 								<form onSubmit={handleSaveChanges} className={styles.editForm}>
 									<div className={styles.userDetailsList}>
-										<div className={styles.detailItem}>
-											<h3 className={styles.detailLabel}>ID пользователя:</h3>
-											<div className={styles.inputField}>{userData?.id}</div>
-										</div>
+										{!isCreating && (
+											<div className={styles.detailItem}>
+												<h3 className={styles.detailLabel}>ID пользователя:</h3>
+												<div className={styles.inputField}>{userData?.id}</div>
+											</div>
+										)}
 										{isCreating ? (
 											<div className={styles.detailItem}>
 												<label className={styles.detailLabel} htmlFor="phone">

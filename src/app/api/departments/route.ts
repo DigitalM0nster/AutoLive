@@ -1,25 +1,25 @@
 // src\app\api\departments\route.ts
 
-import { prisma } from "@/lib/prisma";
+import { db } from "@/drizzle/db";
+import { departments, departmentCategories } from "@/drizzle/schema";
 import { withPermission } from "@/middleware/permissionMiddleware";
 import { NextRequest, NextResponse } from "next/server";
+import { eq } from "drizzle-orm";
 
 // ✅ Получение списка отделов
 export const GET = withPermission(
 	async (req: NextRequest, { user, scope }) => {
 		try {
-			// Все пользователи (суперадмины, админы и менеджеры) могут видеть все отделы
-			const departments = await prisma.department.findMany({
-				select: { id: true, name: true },
-			});
-			return NextResponse.json(departments);
+			// Получаем все отделы (id и name) через Drizzle
+			const result = await db.select({ id: departments.id, name: departments.name }).from(departments);
+			return NextResponse.json(result);
 		} catch (err) {
 			console.error("Ошибка загрузки отделов:", err);
 			return NextResponse.json("Ошибка сервера", { status: 500 });
 		}
 	},
 	"view_departments",
-	["superadmin", "admin", "manager"] // Добавляем manager в список разрешенных ролей
+	["superadmin", "admin", "manager"]
 );
 
 // ✅ Создание нового отдела
@@ -33,19 +33,24 @@ export const POST = withPermission(
 				return NextResponse.json({ error: "Некорректные данные" }, { status: 400 });
 			}
 
-			const department = await prisma.department.create({
-				data: {
-					name,
-					allowedCategories: {
-						create: categoryIds.map((categoryId: number) => ({ categoryId })),
-					},
-				},
-				include: {
-					allowedCategories: { include: { category: true } },
-				},
-			});
+			// 1. Создаём отдел и получаем его id
+			const departmentIdArr = await db.insert(departments).values({ name }).$returningId();
+			// Drizzle может вернуть массив объектов или чисел, берём id корректно
+			const departmentId = typeof departmentIdArr[0] === "object" ? departmentIdArr[0].id : departmentIdArr[0];
 
-			return NextResponse.json(department);
+			// 2. Привязываем категории к отделу через departmentCategories
+			if (categoryIds.length > 0) {
+				await db.insert(departmentCategories).values(
+					categoryIds.map((categoryId: number) => ({
+						departmentId: departmentId, // просто число
+						categoryId,
+					}))
+				);
+			}
+
+			// 3. Можно получить отдел с категориями, если нужно (доп. запрос)
+			// Здесь возвращаем только созданный отдел (id и name)
+			return NextResponse.json({ id: departmentId, name });
 		} catch (error) {
 			console.error("Ошибка при создании отдела:", error);
 			return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });

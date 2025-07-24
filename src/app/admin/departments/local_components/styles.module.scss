@@ -5,6 +5,14 @@
 	margin: 0px 0px 75px 0px;
 }
 
+input.screenTitle {
+	width: fit-content;
+	min-width: 500px;
+	&::placeholder {
+		opacity: 0.5;
+	}
+}
+
 .sectionBlock {
 	flex-direction: column;
 	padding: 20px;
@@ -42,6 +50,7 @@
 	align-items: flex-start;
 
 	&.emptyItem {
+		opacity: 1;
 		.itemTitleBlock {
 			cursor: default;
 		}

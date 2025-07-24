@@ -1,8 +1,6 @@
-import { db } from "@/drizzle/db";
-import { products } from "@/drizzle/schema";
+import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { withPermission } from "@/middleware/permissionMiddleware";
-import { eq, and } from "drizzle-orm";
 
 export const POST = withPermission(
 	async (req: NextRequest, { user, scope }) => {
@@ -14,10 +12,10 @@ export const POST = withPermission(
 		}
 
 		const { categoryId } = await req.json();
-		if (!categoryId) return NextResponse.json({ error: "Не указана категория" }, { status: 400 });
 
-		// Удаляем все продукты с этим departmentId и categoryId
-		await db.delete(products).where(and(eq(products.departmentId, departmentId), eq(products.categoryId, categoryId)));
+		await prisma.product.deleteMany({
+			where: { departmentId, categoryId },
+		});
 
 		return NextResponse.json({ success: true });
 	},

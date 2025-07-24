@@ -1,28 +1,28 @@
 // src\app\api\departments\[departmentId]\products-by-category\route.ts
 
-import { prisma } from "@/lib/prisma";
+import { db } from "@/drizzle/db";
+import { products } from "@/drizzle/schema";
 import { NextRequest, NextResponse } from "next/server";
 import { withPermission } from "@/middleware/permissionMiddleware";
+import { eq } from "drizzle-orm";
 
 export const GET = withPermission(
 	async (req: NextRequest, { user, scope }) => {
 		const departmentId = Number(req.nextUrl.pathname.split("/")[3]);
 		if (isNaN(departmentId)) return NextResponse.json({ error: "Неверный ID" }, { status: 400 });
 
-		// Удаляем проверку принадлежности к отделу, чтобы разрешить просмотр количества товаров в любом отделе
-		// Любой пользователь с правами view_products может видеть количество товаров в категориях
+		// Получаем все товары отдела
+		const allProducts = await db.select({ categoryId: products.categoryId }).from(products).where(eq(products.departmentId, departmentId));
 
-		const result = await prisma.product.groupBy({
-			by: ["categoryId"],
-			where: { departmentId },
-			_count: true,
-		});
+		// Группируем по categoryId и считаем количество
+		const counts: Record<number, number> = {};
+		for (const p of allProducts) {
+			const key = p.categoryId ?? 0;
+			counts[key] = (counts[key] || 0) + 1;
+		}
 
-		// 👇 приводим null к 0
-		const data = Object.fromEntries(result.map((r) => [r.categoryId ?? 0, r._count]));
-
-		return NextResponse.json(data);
+		return NextResponse.json(counts);
 	},
 	"view_products",
-	["superadmin", "admin", "manager"] // Добавляем менеджеров, чтобы они тоже могли видеть количество товаров
+	["superadmin", "admin", "manager"]
 );

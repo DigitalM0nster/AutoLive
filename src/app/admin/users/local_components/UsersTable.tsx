@@ -50,7 +50,7 @@ export default function UsersTable() {
 
 	const [sortBy, setSortBy] = useState<"createdAt" | "fullName" | "phone" | null>(null);
 	const [sortOrder, setSortOrder] = useState<"asc" | "desc" | null>(null);
-	const limit = 1;
+	const limit = 10;
 
 	const dropdownRef = useRef<HTMLDivElement>(null);
 

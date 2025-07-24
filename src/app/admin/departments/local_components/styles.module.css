@@ -5,6 +5,18 @@
   margin: 0px 0px 75px 0px;
 }
 
+input.screenTitle {
+  width: -moz-fit-content;
+  width: fit-content;
+  min-width: 500px;
+}
+input.screenTitle::-moz-placeholder {
+  opacity: 0.5;
+}
+input.screenTitle::placeholder {
+  opacity: 0.5;
+}
+
 .sectionBlock {
   flex-direction: column;
   padding: 20px;
@@ -38,6 +50,9 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+}
+.categoryItem.emptyItem {
+  opacity: 1;
 }
 .categoryItem.emptyItem .itemTitleBlock {
   cursor: default;

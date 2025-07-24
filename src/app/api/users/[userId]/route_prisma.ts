@@ -1,8 +1,6 @@
-import { db } from "@/drizzle/db";
-import { users, departments, orders } from "@/drizzle/schema";
+import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { withPermission } from "@/middleware/permissionMiddleware";
-import { eq, desc } from "drizzle-orm";
 import type { User } from "@/lib/types";
 
 interface ExtendedRequestContext {
@@ -26,47 +24,46 @@ async function getUserHandler(req: NextRequest, context: { user: any; scope: "al
 
 		// Проверка прав доступа в зависимости от роли
 		let canAccess = false;
-		if (user.role === "superadmin" || user.role === "admin" || user.role === "manager") {
+
+		// Суперадмин может просматривать любого пользователя
+		if (user.role === "superadmin") {
 			canAccess = true;
 		}
+		// Админ может просматривать всех пользователей
+		else if (user.role === "admin") {
+			canAccess = true;
+		}
+		// Менеджер тоже может просматривать всех пользователей
+		else if (user.role === "manager") {
+			canAccess = true;
+		}
+
 		if (!canAccess) {
 			return NextResponse.json({ error: "Недостаточно прав для просмотра данного пользователя" }, { status: 403 });
 		}
 
-		// Получаем пользователя с отделом через leftJoin
-		const userArr = await db
-			.select({
-				id: users.id,
-				first_name: users.firstName,
-				last_name: users.lastName,
-				middle_name: users.middleName,
-				phone: users.phone,
-				role: users.role,
-				status: users.status,
-				department: {
-					id: departments.id,
-					name: departments.name,
+		// Получаем данные пользователя
+		const userData = await prisma.user.findUnique({
+			where: { id: userId },
+			include: {
+				department: true,
+				managerOrders: {
+					select: {
+						id: true,
+						title: true,
+						status: true,
+						createdAt: true,
+					},
+					orderBy: {
+						createdAt: "desc",
+					},
 				},
-			})
-			.from(users)
-			.leftJoin(departments, eq(users.departmentId, departments.id))
-			.where(eq(users.id, userId));
-		const userData = userArr[0];
+			},
+		});
+
 		if (!userData) {
 			return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });
 		}
-
-		// Получаем заказы менеджера (managerOrders)
-		const managerOrders = await db
-			.select({
-				id: orders.id,
-				title: orders.title,
-				status: orders.status,
-				createdAt: orders.createdAt,
-			})
-			.from(orders)
-			.where(eq(orders.managerId, userId))
-			.orderBy(desc(orders.createdAt));
 
 		// Формируем ответ
 		const response = {
@@ -77,14 +74,14 @@ async function getUserHandler(req: NextRequest, context: { user: any; scope: "al
 			phone: userData.phone,
 			role: userData.role,
 			status: userData.status,
-			department:
-				userData.department && userData.department.id
-					? {
-							id: userData.department.id,
-							name: userData.department.name,
-					  }
-					: null,
-			orders: managerOrders.map((order) => ({
+			avatar: userData.avatar,
+			department: userData.department
+				? {
+						id: userData.department.id,
+						name: userData.department.name,
+				  }
+				: null,
+			orders: userData.managerOrders.map((order) => ({
 				id: order.id,
 				title: order.title,
 				status: order.status,
