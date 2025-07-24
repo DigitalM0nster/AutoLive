@@ -1,0 +1,34 @@
+.header {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: var(--header-height);
+
+	div {
+		display: flex;
+		position: relative;
+	}
+
+	.headerContainer {
+		justify-content: space-between;
+		align-items: center;
+		width: 100%;
+		height: 50%;
+		max-width: var(--maxContentWidth);
+	}
+
+	.userProfile {
+		align-items: center;
+		.userAvatar {
+			width: 30px;
+			height: 30px;
+		}
+		.userDetails {
+			flex-direction: column;
+		}
+	}
+}

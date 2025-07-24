@@ -6,7 +6,7 @@ import { useProductsStore } from "@/store/productsStore";
 import { useAuthStore } from "@/store/authStore";
 import ProductRow from "./productRow/ProductRow";
 import TableSkeleton from "../../TableSkeleton";
-import ConfirmModal from "@/components/ui/confirmModal/ConfirmModal";
+import ConfirmPopup from "@/components/ui/confirmPopup/ConfirmPopup";
 import DuplicateProductModal from "./DuplicateProductModal";
 import { showErrorToast, showSuccessToast } from "@/components/ui/toast/ToastProvider";
 import type { NewProduct } from "@/lib/types";
@@ -79,7 +79,7 @@ export default function ProductsTable() {
 	}, [selectedProductIds, products.length]);
 
 	// 🧹 Модалка подтверждения удаления
-	const openConfirmModal = (id: number | null) => {
+	const openConfirmPopup = (id: number | null) => {
 		setDeletableProductId(id);
 		setActiveModal(true);
 	};
@@ -216,7 +216,7 @@ export default function ProductsTable() {
 								</td>
 							</tr>
 						) : products.length > 0 ? (
-							products.map((p) => <ProductRow key={p.id} product={p} openConfirmModal={openConfirmModal} className="hover:bg-gray-50 transition-colors" />)
+							products.map((p) => <ProductRow key={p.id} product={p} openConfirmPopup={openConfirmPopup} className="hover:bg-gray-50 transition-colors" />)
 						) : (
 							<tr>
 								<td colSpan={11} className="text-center text-gray-400 py-6">
@@ -299,7 +299,7 @@ export default function ProductsTable() {
 			)}
 
 			{/* МОДАЛКА ДЛЯ УДАЛЕНИЯ */}
-			<ConfirmModal
+			<ConfirmPopup
 				title={selectedProductIds.length > 1 ? `Удаление товаров (${selectedProductIds.length}шт.)` : "Удаление товара"}
 				message={selectedProductIds.length > 1 ? "Удалить выбранные товары?" : "Удалить выбранный товар?"}
 				open={activeModal}

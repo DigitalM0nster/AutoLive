@@ -1,0 +1,36 @@
+.double-range-slider {
+  @apply flex flex-col gap-2;
+}
+.double-range-slider .slider-track {
+  @apply relative h-1 bg-gray-300 rounded;
+}
+.double-range-slider .slider-range {
+  @apply absolute h-1 bg-blue-500 rounded;
+  top: 0;
+}
+.double-range-slider input[type=range] {
+  @apply absolute w-full appearance-none bg-transparent pointer-events-none;
+}
+.double-range-slider input[type=range]::-webkit-slider-thumb {
+  @apply h-4 w-4 bg-blue-600 rounded-full cursor-pointer pointer-events-auto border-2 border-white shadow;
+  -webkit-appearance: none;
+          appearance: none;
+}
+.double-range-slider input[type=range]::-moz-range-thumb {
+  @apply h-4 w-4 bg-blue-600 rounded-full cursor-pointer pointer-events-auto border-2 border-white shadow;
+}
+.double-range-slider .thumb--left {
+  z-index: 10;
+}
+.double-range-slider .thumb--right {
+  z-index: 20;
+}
+.double-range-slider .slider-inputs {
+  @apply flex gap-2 items-center text-sm;
+}
+.double-range-slider .slider-inputs input {
+  @apply w-full border p-1 rounded text-sm;
+}
+.double-range-slider .slider-inputs .dash {
+  @apply px-2 text-gray-500;
+}/*# sourceMappingURL=rangeSliderStyles.css.map */

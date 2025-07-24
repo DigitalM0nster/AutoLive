@@ -15,19 +15,19 @@ type ProductRowProps =
 			product: NewProduct;
 			onSaveNew: (p: NewProduct) => Promise<void>;
 			onCancelNew: () => void;
-			openConfirmModal?: never;
+			openConfirmPopup?: never;
 			className?: string;
 	  }
 	| {
 			isNew?: false;
 			product: EditableProduct;
-			openConfirmModal: (id: number) => void;
+			openConfirmPopup: (id: number) => void;
 			onSaveNew?: never;
 			onCancelNew?: never;
 			className?: string;
 	  };
 
-export default function ProductRow({ product, className = "", isNew = false, openConfirmModal, onSaveNew, onCancelNew }: ProductRowProps) {
+export default function ProductRow({ product, className = "", isNew = false, openConfirmPopup, onSaveNew, onCancelNew }: ProductRowProps) {
 	// ========== STORES ==========
 	const { updateProduct, setDuplicateInfo, selectedProductIds, toggleProductSelection, departments, categories } = useProductsStore();
 
@@ -309,8 +309,8 @@ export default function ProductRow({ product, className = "", isNew = false, ope
 							<button onClick={() => setIsEditing(true)} className="text-blue-600 hover:text-blue-800">
 								Редактировать
 							</button>
-							{!isNew && openConfirmModal && (
-								<button onClick={() => openConfirmModal(product.id)} className="text-red-600 hover:text-red-800">
+							{!isNew && openConfirmPopup && (
+								<button onClick={() => openConfirmPopup(product.id)} className="text-red-600 hover:text-red-800">
 									Удалить
 								</button>
 							)}

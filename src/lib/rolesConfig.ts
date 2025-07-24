@@ -13,7 +13,9 @@ export type Permission =
 	| "edit_categories"
 	| "create_orders"
 	| "access_all"
-	| "view_products_logs";
+	| "view_products_logs"
+	| "view_users_logs"
+	| "delete_users";
 
 export type Scope = "all" | "department" | "own";
 
@@ -25,6 +27,8 @@ export type RolePermission = {
 export const ROLE_PERMISSIONS: Record<Role, RolePermission[]> = {
 	superadmin: [
 		{ permission: "view_products_logs", scope: "all" },
+		{ permission: "view_users_logs", scope: "all" },
+		{ permission: "delete_users", scope: "all" },
 		{ permission: "view_departments", scope: "all" },
 		{ permission: "manage_departments", scope: "all" },
 		{ permission: "manage_admins", scope: "all" },
@@ -37,6 +41,8 @@ export const ROLE_PERMISSIONS: Record<Role, RolePermission[]> = {
 	],
 	admin: [
 		{ permission: "view_products_logs", scope: "department" },
+		{ permission: "view_users_logs", scope: "department" },
+		{ permission: "delete_users", scope: "department" },
 		{ permission: "view_departments", scope: "department" },
 		{ permission: "manage_departments", scope: "department" },
 		{ permission: "manage_managers", scope: "department" },

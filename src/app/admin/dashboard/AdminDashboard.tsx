@@ -36,22 +36,15 @@ export default function AdminDashboard({ user }: Props) {
 		.filter((section): section is Section => section !== null);
 
 	return (
-		<div className="px-6 py-10 max-w-7xl mx-auto mb-auto">
-			<div className="grid gap-8 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+		<div className="screenContent">
+			<div className="cardsList">
 				{sections.map(({ href, label, icon: Icon, bg, description }) => (
-					<Link
-						key={href}
-						href={href}
-						className="group relative p-6 rounded-2xl border border-black/10 bg-white/80 backdrop-blur shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 hover:bg-white"
-					>
-						<div className={`w-14 h-14 flex items-center justify-center rounded-xl mb-4 bg-gradient-to-br ${bg} text-white shadow-md`}>
-							<Icon className="w-6 h-6" />
+					<Link key={href} href={href} className={`cardItem`}>
+						<div className={`cardIcon ${bg}`}>
+							<Icon />
 						</div>
-						<h3 className="text-xl font-semibold text-gray-800 group-hover:text-blue-600 transition">{label}</h3>
-						<p className="text-sm text-gray-500 mt-1">{description ? description : `Перейти в раздел “${label}”`}</p>
-
-						{/* glow hover effect */}
-						<div className="absolute inset-0 rounded-2xl bg-blue-100 opacity-0 group-hover:opacity-10 transition duration-300 pointer-events-none" />
+						<h3 className="cardTitle">{label}</h3>
+						<p className="cardButton">{description ? description : `Перейти в раздел “${label}”`}</p>
 					</Link>
 				))}
 			</div>

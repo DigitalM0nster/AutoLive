@@ -1,6 +1,6 @@
 // src/lib/adminRoutesMeta.ts
 
-import { Building2, LucideIcon, Users, ShoppingCart, Wrench, FileText, Package } from "lucide-react";
+import { Building2, LucideIcon, Users, ShoppingCart, Wrench, FileText, Package, ClipboardList } from "lucide-react";
 
 export type AdminRouteMeta = {
 	label: string;
@@ -13,33 +13,33 @@ export const adminRoutesMeta: Record<string, AdminRouteMeta> = {
 	departments: {
 		label: "Отделы",
 		icon: Building2,
-		bg: "from-indigo-400 to-indigo-600",
+		bg: "indigo",
 	},
 	users: {
 		label: "Пользователи",
 		icon: Users,
-		bg: "from-indigo-400 to-indigo-600",
+		bg: "indigo",
 	},
 	orders: {
 		label: "Заказы",
 		icon: ShoppingCart,
-		bg: "from-emerald-400 to-emerald-600",
+		bg: "green",
 	},
 	"service-records": {
 		label: "Записи на ТО",
 		icon: Wrench,
-		bg: "from-yellow-400 to-yellow-600",
+		bg: "orange",
 	},
 	content: {
 		label: "Контент сайта",
 		icon: FileText,
-		bg: "from-pink-400 to-pink-600",
+		bg: "pink",
 	},
 	"product-management": {
 		label: "Управление товарами",
 		icon: Package,
 		description: "Категории, товары, Комплекты ТО",
-		bg: "from-sky-400 to-sky-600",
+		bg: "blue",
 	},
 	profile: { label: "Редактирование профиля" },
 	categories: { label: "Категории" },
@@ -53,4 +53,5 @@ export const adminRoutesMeta: Record<string, AdminRouteMeta> = {
 	edit: { label: "Редактирование" },
 	create: { label: "Создание" },
 	admin: { label: "Админ-панель" },
+	logs: { label: "История изменений" },
 };

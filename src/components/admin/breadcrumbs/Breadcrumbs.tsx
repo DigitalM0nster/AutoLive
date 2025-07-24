@@ -7,6 +7,7 @@ import { ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { adminRoutesMeta } from "@/lib/adminRoutesMeta";
 import Loading from "@/components/ui/loading/Loading";
+import "./styles.scss";
 
 export default function Breadcrumbs() {
 	const pathname = usePathname();
@@ -54,23 +55,19 @@ export default function Breadcrumbs() {
 		.filter(Boolean);
 
 	return (
-		<div className="bg-gray-50 border-b border-gray-200 w-full">
-			<div className="px-6 py-2 text-sm text-gray-600 max-w-7xl mx-auto">
+		<div className="breadcrumbs">
+			<div className="screenContent">
 				{loading ? (
 					<Loading />
 				) : (
-					<ol className="flex items-center flex-wrap gap-x-1">
+					<ol className="breadcrumbsList">
 						<li>
-							<Link href="/admin" className="hover:underline text-blue-600">
-								Админ-панель
-							</Link>
+							<Link href="/admin">Админ-панель</Link>
 						</li>
 						{breadcrumbs.slice(1).map((crumb, i) => (
-							<li key={crumb!.href} className="flex items-center space-x-1">
-								<ChevronRight className="w-4 h-4 text-gray-400 mx-1" />
-								<Link href={crumb!.href} className={`hover:underline ${i === breadcrumbs.length - 2 ? "text-gray-800 font-medium" : "text-blue-600"}`}>
-									{crumb!.label}
-								</Link>
+							<li key={crumb!.href}>
+								<ChevronRight />
+								<Link href={crumb!.href}>{crumb!.label}</Link>
 							</li>
 						))}
 					</ol>

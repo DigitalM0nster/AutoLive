@@ -9,7 +9,7 @@ import { SortableContext, arrayMove, verticalListSortingStrategy } from "@dnd-ki
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import PromoCard from "./PromoCard";
 import Loading from "@/components/ui/loading/Loading";
-import ConfirmModal from "@/components/ui/confirmModal/ConfirmModal";
+import ConfirmPopup from "@/components/ui/confirmPopup/ConfirmPopup";
 
 export default function PromotionsPage() {
 	const [promos, setPromos] = useState<Promotion[]>([]);
@@ -102,7 +102,7 @@ export default function PromotionsPage() {
 					</SortableContext>
 				</DndContext>
 			)}
-			<ConfirmModal
+			<ConfirmPopup
 				open={isModalOpen}
 				title="Удалить акцию?"
 				message="Вы уверены, что хотите удалить эту акцию?"

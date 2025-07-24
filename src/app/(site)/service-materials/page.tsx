@@ -3,18 +3,20 @@
 import Link from "next/link";
 import NavigationMenu from "@/components/user/navigationMenu/NavigationMenu";
 import styles from "./styles.module.scss";
-import { getCategories } from "@/lib/api";
 import CONFIG from "@/lib/config";
 import type { Metadata } from "next";
-import { Category } from "@/lib/types";
+import type { Category } from "@/lib/types";
 
 export async function generateMetadata(): Promise<Metadata> {
-	const categories = await getCategories();
-	console.log(categories);
+	const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/categories`, {
+		next: { revalidate: 3600 },
+	});
+	const categories = await res.json();
+
 	const { CITY, STORE_NAME, DOMAIN } = CONFIG;
 
-	const categoryNamesWithCity = categories.map((cat) => `${cat.title} ${CITY}`).join(", ");
-	const categoryNames = categories.map((cat) => cat.title).join(", ");
+	const categoryNamesWithCity = categories.map((cat: Category) => `${cat.title} ${CITY}`).join(", ");
+	const categoryNames = categories.map((cat: Category) => cat.title).join(", ");
 
 	return {
 		title: `Материалы для ТО в ${STORE_NAME} | ${CITY}`,
@@ -24,7 +26,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function ServiceMaterials() {
-	const categories: Category[] = await getCategories();
+	const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/categories`, {
+		next: { revalidate: 3600 },
+	});
+	const categories: Category[] = await res.json();
 
 	return (
 		<div className={`screen ${styles.screen}`}>

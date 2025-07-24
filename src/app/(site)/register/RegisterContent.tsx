@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import styles from "./styles.module.scss";
 import PhoneInput from "./PhoneInput";
 import CodeConfirmation from "./CodeConfirmation";
+import UserDataForm from "./UserDataForm";
 
 export default function RegisterContent() {
 	const router = useRouter();
@@ -15,9 +16,15 @@ export default function RegisterContent() {
 	const [formattedPhone, setFormattedPhone] = useState<string>("");
 	const [code, setCode] = useState<string[]>(["", "", "", ""]);
 	const [isCodeSent, setIsCodeSent] = useState<boolean>(false);
+	const [isCodeConfirmed, setIsCodeConfirmed] = useState<boolean>(false);
 	const [phoneError, setPhoneError] = useState<string>("");
 	const [codeError, setCodeError] = useState<string>("");
 	const [expiresIn, setExpiresIn] = useState<number>(0);
+	const [userData, setUserData] = useState({
+		first_name: "",
+		last_name: "",
+		middle_name: "",
+	});
 
 	useEffect(() => {
 		const interval = setInterval(() => {
@@ -67,6 +74,7 @@ export default function RegisterContent() {
 		setFormattedPhone("");
 		setCode(["", "", "", ""]);
 		setIsCodeSent(false);
+		setIsCodeConfirmed(false);
 		setPhoneError("");
 		setCodeError("");
 	};
@@ -78,10 +86,36 @@ export default function RegisterContent() {
 		}
 
 		try {
-			const response = await fetch("/api/user/auth/register", {
+			const response = await fetch("/api/user/auth/register/verify-code", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ phone: inputPhone, code: inputCode }),
+			});
+			const data = await response.json();
+
+			if (response.ok) {
+				setIsCodeConfirmed(true);
+			} else {
+				setCodeError(data.error || "Ошибка проверки кода, попробуйте снова");
+			}
+		} catch (error) {
+			console.error("Ошибка confirmRegistration:", error);
+			setCodeError("Ошибка сети, попробуйте позже");
+		}
+	};
+
+	const submitUserData = async () => {
+		try {
+			const response = await fetch("/api/user/auth/register", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					phone,
+					code: code.join(""),
+					first_name: userData.first_name,
+					last_name: userData.last_name,
+					middle_name: userData.middle_name,
+				}),
 			});
 			const data = await response.json();
 
@@ -94,7 +128,7 @@ export default function RegisterContent() {
 				setCodeError(data.error || "Ошибка регистрации, попробуйте снова");
 			}
 		} catch (error) {
-			console.error("Ошибка confirmRegistration:", error);
+			console.error("Ошибка при регистрации:", error);
 			setCodeError("Ошибка сети, попробуйте позже");
 		}
 	};
@@ -112,7 +146,7 @@ export default function RegisterContent() {
 					phoneError={phoneError}
 					setExpiresIn={setExpiresIn}
 				/>
-			) : (
+			) : !isCodeConfirmed ? (
 				<CodeConfirmation
 					code={code}
 					setCode={setCode}
@@ -123,6 +157,8 @@ export default function RegisterContent() {
 					codeError={codeError}
 					setCodeError={setCodeError}
 				/>
+			) : (
+				<UserDataForm userData={userData} setUserData={setUserData} onSubmit={submitUserData} onBack={() => setIsCodeConfirmed(false)} error={codeError} />
 			)}
 		</div>
 	);

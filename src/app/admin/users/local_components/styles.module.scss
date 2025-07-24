@@ -1,0 +1,454 @@
+.tableContainer {
+	overflow-x: auto;
+	width: 100%;
+	min-height: 450px;
+}
+
+.table {
+	width: 100%;
+	min-height: auto; // Убираем минимальную высоту
+	border-collapse: collapse;
+	border-spacing: 0;
+}
+
+.tableHeader {
+	background-color: #f5f5f5;
+}
+
+.tableHeaderCell {
+	padding: 12px 15px;
+	text-align: left;
+	font-weight: 600;
+	border-bottom: 1px solid #ddd;
+	white-space: nowrap;
+}
+
+.sortableHeader {
+	cursor: pointer;
+	&:hover {
+		background-color: #eee;
+	}
+}
+
+.tableBody {
+	.tableRow {
+		max-height: 70px;
+		height: 70px;
+		&:hover {
+			background-color: #f9f9f9;
+		}
+	}
+}
+
+.tableCell {
+	padding: 10px 15px;
+	border-bottom: 1px solid #eee;
+	max-height: 70px; // Ограничиваем максимальную высоту ячеек
+}
+
+.capitalize {
+	text-transform: capitalize;
+}
+
+.loadingCell,
+.emptyCell {
+	text-align: center;
+	padding: 20px;
+	color: #666;
+}
+
+.userLink,
+.departmentLink {
+	color: #007bff;
+	text-decoration: none;
+
+	&:hover {
+		text-decoration: underline;
+	}
+}
+
+// Стили для блока фильтров
+.filtersContainer {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 15px;
+	flex-wrap: wrap;
+	gap: 10px;
+}
+
+.filtersInfo {
+	flex: 1;
+}
+
+.activeFilters {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+	font-size: 14px;
+	color: #555;
+}
+
+.filterBadge {
+	background-color: #f0f0f0;
+	padding: 4px 8px;
+	border-radius: 4px;
+	font-size: 12px;
+	color: #333;
+	display: inline-flex;
+	align-items: center;
+}
+
+// Стили для селектов
+.roleSelect,
+.departmentSelect,
+.statusSelect {
+	min-width: 150px;
+}
+
+.userPageContainer {
+	.backLink {
+		font-size: 11px;
+		letter-spacing: 1px;
+		font-weight: 500;
+		color: var(--blue-color);
+		text-transform: uppercase;
+		display: flex;
+		align-items: center;
+		gap: 5px;
+	}
+
+	h1 {
+		margin: 0px 0px 10px 0px;
+	}
+
+	.avatar {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		position: relative;
+		width: 100px;
+		height: 100px;
+		border-radius: 50%;
+		background: var(--light-grey);
+		overflow: hidden;
+
+		img {
+			position: absolute;
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+		}
+
+		.avatarPlaceholder {
+			position: absolute;
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+		}
+	}
+
+	.userDetailsList {
+		display: flex;
+		flex-direction: column;
+		gap: 5px;
+	}
+
+	.detailItem {
+		display: flex;
+		align-items: center;
+		gap: 5px;
+
+		.detailLabel {
+			width: 120px;
+			font-weight: 500;
+			font-size: 14px;
+			color: var(--dark-grey);
+		}
+
+		input {
+			width: fit-content;
+			border: 1px solid var(--light-grey);
+			border-radius: 5px;
+			padding: 5px;
+			font-size: 14px;
+			font-family: var(--mainFont);
+			color: var(--dark-grey);
+			background: white;
+
+			&:focus {
+				border: 1px solid var(--blue-color);
+				outline: none;
+			}
+		}
+
+		.detailValue {
+			font-size: 14px;
+			font-family: var(--mainFont);
+			color: var(--dark-grey);
+		}
+
+		.infoText {
+			font-size: 12px;
+			font-style: italic;
+			color: var(--dark-grey);
+			font-weight: 300;
+		}
+	}
+
+	.formActions {
+		display: flex;
+		gap: 10px;
+		margin: 30px 0px 0px 0px;
+
+		button {
+			&:disabled {
+				opacity: 0.5;
+				cursor: not-allowed;
+			}
+		}
+	}
+}
+
+// Стили для компонента логов пользователей
+.logsContainer {
+	padding: 20px;
+	background-color: #fff;
+	border-radius: 8px;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+	margin-bottom: 20px;
+}
+
+.logsTitle {
+	font-size: 18px;
+	font-weight: 600;
+	margin-bottom: 20px;
+	color: #333;
+}
+
+.logsFilters {
+	display: flex;
+	margin-bottom: 20px;
+	flex-wrap: wrap;
+	gap: 15px;
+}
+
+.filterGroup {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+
+	label {
+		font-size: 14px;
+		color: #555;
+	}
+}
+
+.filterSelect {
+	padding: 8px 12px;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	font-size: 14px;
+	min-width: 150px;
+}
+
+.logsList {
+	display: flex;
+	flex-direction: column;
+	gap: 15px;
+}
+
+.logItem {
+	border: 1px solid #eee;
+	border-radius: 6px;
+	overflow: hidden;
+}
+
+.logHeader {
+	display: flex;
+	justify-content: space-between;
+	padding: 10px 15px;
+	background-color: #f8f9fa;
+	border-bottom: 1px solid #eee;
+}
+
+.logAction {
+	font-weight: 600;
+	color: #333;
+}
+
+.logDate {
+	color: #777;
+	font-size: 14px;
+}
+
+.logContent {
+	padding: 15px;
+}
+
+.logInfo {
+	margin-bottom: 15px;
+}
+
+.logInfoItem {
+	margin-bottom: 8px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 5px;
+}
+
+.logInfoLabel {
+	font-weight: 500;
+	color: #555;
+	min-width: 120px;
+}
+
+.logInfoValue {
+	color: #333;
+}
+
+.userLink {
+	color: #0066cc;
+	text-decoration: none;
+
+	&:hover {
+		text-decoration: underline;
+	}
+}
+
+.logChanges {
+	margin-top: 15px;
+	padding-top: 15px;
+	border-top: 1px solid #eee;
+}
+
+.logChangesTitle {
+	font-size: 16px;
+	font-weight: 500;
+	margin-bottom: 10px;
+	color: #333;
+}
+
+.changesTable {
+	width: 100%;
+	border-collapse: collapse;
+
+	th,
+	td {
+		padding: 8px 12px;
+		border: 1px solid #eee;
+		text-align: left;
+	}
+
+	th {
+		background-color: #f8f9fa;
+		font-weight: 500;
+	}
+}
+
+.oldValue {
+	color: #dc3545;
+	text-decoration: line-through;
+	opacity: 0.8;
+}
+
+.newValue {
+	color: #28a745;
+}
+
+.newUserData,
+.deletedUserData {
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+	padding: 10px;
+	background-color: #f8f9fa;
+	border-radius: 4px;
+}
+
+.deletedUserData {
+	background-color: #fff8f8;
+}
+
+.noLogs {
+	padding: 30px;
+	text-align: center;
+	color: #777;
+	font-style: italic;
+}
+
+.logsPagination {
+	margin-top: 20px;
+}
+
+// Стили для вкладок пользователя
+.userTabs {
+	display: flex;
+	margin-bottom: 20px;
+	border-bottom: 1px solid #eee;
+}
+
+.tabButton {
+	padding: 10px 20px;
+	background: none;
+	border: none;
+	font-size: 16px;
+	font-weight: 500;
+	color: #555;
+	cursor: pointer;
+	position: relative;
+	transition: all 0.2s;
+
+	&:hover {
+		color: #333;
+	}
+
+	&.activeTab {
+		color: #0066cc;
+
+		&:after {
+			content: "";
+			position: absolute;
+			bottom: -1px;
+			left: 0;
+			width: 100%;
+			height: 2px;
+			background-color: #0066cc;
+		}
+	}
+}
+
+.logsTab {
+	margin-top: 20px;
+}
+
+// Стили для секции удаления пользователя
+.deleteUserSection {
+	margin-top: 20px;
+	padding: 20px;
+	background-color: #fff8f8;
+	border: 1px solid #ffcccc;
+	border-radius: 8px;
+	display: flex;
+	justify-content: flex-end;
+}
+
+.deleteButton {
+	background-color: #dc3545;
+	color: white;
+	border: none;
+	padding: 10px 20px;
+	border-radius: 4px;
+	cursor: pointer;
+	transition: background-color 0.2s;
+
+	&:hover {
+		background-color: #c82333;
+	}
+
+	&:disabled {
+		background-color: #e9a3a9;
+		cursor: not-allowed;
+	}
+}

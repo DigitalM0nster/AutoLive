@@ -8,29 +8,18 @@ import { NextRequest, NextResponse } from "next/server";
 export const GET = withPermission(
 	async (req: NextRequest, { user, scope }) => {
 		try {
-			if (scope === "all") {
-				const departments = await prisma.department.findMany({
-					select: { id: true, name: true },
-				});
-				return NextResponse.json(departments);
-			}
-
-			if (scope === "department" && user.departmentId) {
-				const department = await prisma.department.findUnique({
-					where: { id: user.departmentId },
-					select: { id: true, name: true },
-				});
-				return NextResponse.json(department ? [department] : []);
-			}
-
-			return NextResponse.json([], { status: 200 });
+			// Все пользователи (суперадмины, админы и менеджеры) могут видеть все отделы
+			const departments = await prisma.department.findMany({
+				select: { id: true, name: true },
+			});
+			return NextResponse.json(departments);
 		} catch (err) {
 			console.error("Ошибка загрузки отделов:", err);
 			return NextResponse.json("Ошибка сервера", { status: 500 });
 		}
 	},
 	"view_departments",
-	["superadmin", "admin"]
+	["superadmin", "admin", "manager"] // Добавляем manager в список разрешенных ролей
 );
 
 // ✅ Создание нового отдела

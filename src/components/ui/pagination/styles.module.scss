@@ -1,0 +1,33 @@
+.pagination {
+	display: flex;
+	gap: 5px;
+	padding: 10px 0px 0px 0px;
+	align-items: center;
+	justify-content: center;
+	flex-wrap: wrap;
+
+	button {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		text-align: center;
+		min-width: 40px;
+		width: 40px;
+		max-width: 40px;
+		height: 40px;
+		padding: 0px;
+		background: transparent;
+		border: 1px solid var(--blue-color);
+		color: var(--blue-color);
+
+		&.active {
+			background: var(--blue-color);
+			color: white;
+		}
+
+		&:hover {
+			background: var(--blue-color);
+			color: white;
+		}
+	}
+}

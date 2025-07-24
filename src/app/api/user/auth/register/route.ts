@@ -6,7 +6,7 @@ import { cookies } from "next/headers";
 
 export async function POST(req: NextRequest) {
 	try {
-		const { phone, code } = await req.json();
+		const { phone, code, first_name, last_name, middle_name } = await req.json();
 
 		if (!phone || !code) {
 			return NextResponse.json({ error: "Введите телефон и код" }, { status: 400 });
@@ -40,6 +40,9 @@ export async function POST(req: NextRequest) {
 			data: {
 				phone,
 				password: hashedPassword,
+				first_name: first_name || null,
+				last_name: last_name || null,
+				middle_name: middle_name || null,
 				role: "client",
 				status: "unverified",
 			},
@@ -65,6 +68,7 @@ export async function POST(req: NextRequest) {
 				phone: user.phone,
 				role: user.role,
 				name: user.first_name || "",
+				middle_name: user.middle_name || "",
 				status: user.status,
 			},
 			process.env.JWT_SECRET,

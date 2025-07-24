@@ -12,10 +12,70 @@ export type User = {
 	id: number;
 	first_name: string;
 	last_name: string;
+	middle_name: string;
 	avatar: string;
 	phone: string;
 	role: Role;
 	department?: Department;
+	status: string;
+	orders: {
+		id: number;
+		title: string;
+		status: string;
+		createdAt: string;
+	}[];
+};
+
+// Типы для логов пользователей
+export type UserLogAction = "create" | "update" | "delete" | "Создание" | "Редактирование" | "Удаление";
+
+export type UserLog = {
+	id: number;
+	createdAt: string;
+	action: UserLogAction;
+	message?: string | null;
+	adminId: number;
+	admin: {
+		id: number;
+		first_name: string | null;
+		last_name: string | null;
+		role: string;
+		department?: { name: string } | null;
+	};
+	targetUserId?: number | null;
+	targetUser?: {
+		id: number;
+		first_name: string | null;
+		last_name: string | null;
+		phone: string;
+		role: string;
+		department?: { name: string } | null;
+	} | null;
+	departmentId?: number | null;
+	department?: {
+		id: number;
+		name: string;
+	} | null;
+	snapshotBefore?: any;
+	snapshotAfter?: any;
+	details?: {
+		before?: Record<string, any>;
+		after?: Record<string, any>;
+		diff?: Array<{
+			key: string;
+			fieldName: string;
+			before: any;
+			after: any;
+		}>;
+	};
+};
+
+export type UserLogResponse = {
+	data: UserLog[];
+	total: number;
+	page: number;
+	totalPages: number;
+	error?: string;
 };
 
 export type Category = {
@@ -150,12 +210,13 @@ export type ProductResponse = {
 export type ServiceKit = {
 	id: number;
 	title: string;
+	name: string; // Добавляем поле name для совместимости
 	image?: string;
 	description?: string;
 	price?: number;
 	parts?: {
-		title: string;
-		analogs: Product[];
+		name: string; // Обновляем поле title на name для совместимости
+		analogs: string[] | Product[]; // Обновляем тип для совместимости
 	}[];
 };
 

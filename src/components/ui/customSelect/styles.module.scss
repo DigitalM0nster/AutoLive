@@ -1,0 +1,78 @@
+.customSelect {
+	position: relative;
+	width: fit-content;
+	max-width: 300px;
+	font-family: "Manrope", sans-serif;
+}
+
+.selectHeader {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 5px;
+	padding: 8px 12px;
+	border: 1px solid var(--light-grey);
+	border-radius: 5px;
+	background-color: white;
+	cursor: pointer;
+	transition: all 0.25s;
+
+	&:hover {
+		border-color: var(--blue-color);
+	}
+}
+
+.selectedValue {
+	flex-grow: 1;
+	font-size: 14px;
+}
+
+.arrow {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--text-color);
+	transition: transform 0.25s;
+}
+
+.optionsContainer {
+	display: flex;
+	flex-direction: column;
+	position: absolute;
+	top: 100%;
+	left: 0;
+	width: 100%;
+	min-width: 200px;
+	max-height: 200px;
+	overflow-y: auto;
+	background-color: white;
+	border: 1px solid var(--light-grey);
+	border-radius: 5px;
+	margin-top: 5px;
+	z-index: 10;
+	box-shadow: 0 5px 15px var(--shadow);
+}
+
+.option {
+	padding: 10px 12px;
+	cursor: pointer;
+	font-size: 14px;
+	transition: background-color 0.2s;
+
+	&:hover {
+		background-color: var(--light-grey);
+	}
+
+	&.selected {
+		background-color: rgba(59, 130, 246, 0.1);
+		font-weight: 600;
+	}
+
+	&.firstOption {
+		border-radius: 5px 5px 0 0;
+	}
+
+	&.lastOption {
+		border-radius: 0 0 5px 5px;
+	}
+}

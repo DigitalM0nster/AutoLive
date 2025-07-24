@@ -4,7 +4,7 @@ import styles from "./styles.module.scss";
 import NavigationMenu from "@/components/user/navigationMenu/NavigationMenu";
 import Link from "next/link";
 import CONFIG from "@/lib/config";
-import { getServiceKits } from "@/lib/api";
+import type { ServiceKit } from "@/lib/types";
 
 export async function generateMetadata() {
 	const { CITY, STORE_NAME, DOMAIN } = CONFIG;
@@ -16,7 +16,15 @@ export async function generateMetadata() {
 }
 
 export default async function ServiceKitsPage() {
-	const kits = await getServiceKits();
+	const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/get-kits`, {
+		next: { revalidate: 3600 },
+	});
+
+	if (!res.ok) {
+		return <div className="text-center">Ошибка загрузки комплектов ТО</div>;
+	}
+
+	const kits: ServiceKit[] = await res.json();
 
 	return (
 		<div className={`screen ${styles.screen}`}>

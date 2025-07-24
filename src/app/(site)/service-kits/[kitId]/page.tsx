@@ -2,7 +2,6 @@
 
 import styles from "../styles.module.scss";
 import NavigationMenu from "@/components/user/navigationMenu/NavigationMenu";
-import { getServiceKitById } from "@/lib/api";
 import type { ServiceKit } from "@/lib/types";
 import CONFIG from "@/lib/config";
 
@@ -14,25 +13,33 @@ type PageParams = {
 
 // ✅ SSR-метаданные
 export async function generateMetadata({ params }: PageParams) {
-	const kit = await getServiceKitById(params.kitId);
+	const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/service-kits/${params.kitId}`, {
+		cache: "no-store",
+	});
 
-	if (!kit) {
+	if (!res.ok) {
 		return {
 			title: `Комплект ТО не найден | ${CONFIG.STORE_NAME}`,
 		};
 	}
 
+	const kit: ServiceKit = await res.json();
+
 	return {
 		title: `${kit.title} – Комплект ТО в ${CONFIG.STORE_NAME} | ${CONFIG.CITY}`,
-		description: `Купить ${kit.title} в ${CONFIG.STORE_NAME}. Состав: ${kit.parts.map((p) => p.name).join(", ")}`,
+		description: `Купить ${kit.title} в ${CONFIG.STORE_NAME}. Состав: ${kit.parts?.map((p) => p.name).join(", ")}`,
 	};
 }
 
 // ✅ Страница комплекта ТО
 export default async function ServiceKitPage({ params }: PageParams) {
-	const kit: ServiceKit | null = await getServiceKitById(params.kitId);
+	const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/service-kits/${params.kitId}`, {
+		cache: "no-store",
+	});
 
-	if (!kit) return <div className="screenContent">Комплект не найден</div>;
+	if (!res.ok) return <div className="screenContent">Комплект не найден</div>;
+
+	const kit: ServiceKit = await res.json();
 
 	return (
 		<div className={`screen ${styles.screen}`}>
@@ -47,13 +54,13 @@ export default async function ServiceKitPage({ params }: PageParams) {
 						<div className={styles.partsList}>
 							<h3>Состав комплекта:</h3>
 							<ul>
-								{kit.parts.map((part, index) => (
+								{kit.parts?.map((part, index) => (
 									<li key={index} className={styles.partItem}>
 										<div>{part.name}</div>
 										<select className={styles.analogSelect}>
 											{part.analogs.map((analog, i) => (
-												<option key={i} value={analog}>
-													{analog}
+												<option key={i} value={typeof analog === "string" ? analog : analog.title}>
+													{typeof analog === "string" ? analog : analog.title}
 												</option>
 											))}
 										</select>

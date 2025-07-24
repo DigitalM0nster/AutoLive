@@ -1,27 +1,25 @@
 "use client";
 
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
-import { Tag, Trash2, ArrowRightLeft } from "lucide-react";
+import { Tags, Trash2, ArrowRightLeft } from "lucide-react";
 import { showErrorToast, showSuccessToast } from "@/components/ui/toast/ToastProvider";
-import ConfirmModal from "@/components/ui/confirmModal/ConfirmModal";
-
-type CategoryType = { id: number; title: string };
-
-type DepartmentData = {
-	id: number;
-	allowedCategories: { category: CategoryType }[];
-};
+import ConfirmPopup from "@/components/ui/confirmPopup/ConfirmPopup";
+import CustomSelect from "@/components/ui/customSelect/CustomSelect";
+import styles from "./styles.module.scss";
+import { Department, Category } from "@/lib/types";
 
 export default function DepartmentCategorySection({
 	categories,
 	formCategories,
 	setFormCategories,
 	department,
+	isEditable = true, // По умолчанию редактируемый
 }: {
-	categories: CategoryType[];
+	categories: Category[];
 	formCategories: number[];
 	setFormCategories: Dispatch<SetStateAction<number[]>>;
-	department: DepartmentData;
+	department: Department;
+	isEditable?: boolean;
 }) {
 	const [categoryCounts, setCategoryCounts] = useState<Record<number, number>>({});
 	const [selectedTargetCategories, setSelectedTargetCategories] = useState<Record<number, number>>({});
@@ -46,7 +44,7 @@ export default function DepartmentCategorySection({
 		fetchCounts();
 	}, [department?.id]);
 
-	// вызывается по клику “Удалить” в ConfirmModal
+	// вызывается по клику "Удалить" в ConfirmPopup
 	const deleteByCategoryConfirmed = async (categoryId: number) => {
 		try {
 			const res = await fetch(`/api/departments/${department.id}/delete-products-by-category`, {
@@ -69,7 +67,7 @@ export default function DepartmentCategorySection({
 		}
 	};
 
-	// вызывается по клику “Переместить” в ConfirmModal
+	// вызывается по клику "Переместить" в ConfirmPopup
 	const moveProductsConfirmed = async (sourceCategoryId: number, targetCategoryId: number) => {
 		try {
 			const res = await fetch(`/api/departments/${department.id}/move-products-to-category`, {
@@ -97,151 +95,141 @@ export default function DepartmentCategorySection({
 		}
 	};
 
+	// Функция для добавления/удаления категории
+	const toggleCategory = (categoryId: number) => {
+		if (!isEditable) return; // Если нет прав на редактирование, не делаем ничего
+
+		if (formCategories.includes(categoryId)) {
+			setFormCategories(formCategories.filter((id) => id !== categoryId));
+		} else {
+			setFormCategories([...formCategories, categoryId]);
+		}
+	};
+
+	// Обработчик для открытия модального окна
+	const openModal = (type: "delete" | "move", sourceId: number, targetId?: number) => {
+		if (!isEditable) return; // Если нет прав на редактирование, не открываем модалку
+
+		setModalType(type);
+		setModalPayload({ sourceId, targetId });
+		setModalOpen(true);
+	};
+
 	return (
-		<>
-			<div className="mb-10 border border-gray-200 rounded-xl p-4 bg-white">
-				<h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-800">
-					<Tag className="w-5 h-5 text-indigo-600" />
-					Категории отдела
-				</h2>
+		<div className={`block sectionBlock ${styles.sectionBlock}`}>
+			<h2 className={`blockTitle ${styles.blockTitle}`}>
+				<Tags className={`${styles.icon}`} />
+				Категории отдела
+			</h2>
 
-				<ul className="space-y-2">
-					{categories.map((cat) => {
-						const isChecked = formCategories.includes(cat.id);
-						const count = categoryCounts[cat.id] ?? 0;
-						const allowedCategories = department.allowedCategories.map((a) => a.category);
-						const moveTargets = allowedCategories.filter((target) => target.id !== cat.id);
+			<div className={`columnList ${styles.columnList}`}>
+				{/* Список категорий */}
+				{categories.map((category) => {
+					const isSelected = formCategories.includes(category.id);
+					const count = categoryCounts[category.id] || 0;
 
-						const selectedTarget = selectedTargetCategories[cat.id];
-
-						return (
-							<li key={cat.id} className="flex justify-between items-start gap-6 bg-gray-50 px-4 py-3 rounded-lg border hover:bg-gray-100 transition">
-								{/* Слева: чекбокс и название */}
-								<div
-									className="flex items-start gap-3 cursor-pointer"
-									onClick={(e) => {
-										if ((e.target as HTMLElement).closest("button") || (e.target as HTMLElement).closest("select")) return;
-										if (isChecked) {
-											setFormCategories((prev) => prev.filter((id) => id !== cat.id));
-										} else {
-											setFormCategories((prev) => [...prev, cat.id]);
-										}
-									}}
-								>
-									<div className="relative w-5 h-5 mt-1">
-										<div
-											className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${
-												isChecked ? "bg-indigo-600 border-indigo-600" : "bg-white border-gray-400"
-											}`}
-										>
-											{isChecked && (
-												<svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-													<path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-												</svg>
-											)}
-										</div>
-									</div>
-									<div className="font-medium">{cat.title}</div>
+					return (
+						<div key={category.id} className={`borderBlock categoryItem ${styles.borderBlock} ${styles.categoryItem}`}>
+							<div className={`itemTitleBlock ${styles.itemTitleBlock}`} onClick={() => toggleCategory(category.id)}>
+								<div className={`icon ${styles.icon} ${isSelected ? styles.active : ""}`}>
+									<div className={`line ${styles.line}`}></div>
+									<div className={`line ${styles.line}`}></div>
 								</div>
-
-								{/* Справа: инфо и действия */}
-								<div className="flex flex-col items-end gap-2 min-w-[220px]">
-									{isChecked && <div className="text-sm text-gray-500">Товаров: {count}</div>}
-
-									{isChecked && count > 0 && (
-										<>
-											<button
-												onClick={() => setActiveMoveCategoryId(activeMoveCategoryId === cat.id ? null : cat.id)}
-												className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
-											>
-												<ArrowRightLeft className="w-4 h-4" />
-												Переместить товары в другую категорию
-											</button>
-
-											{activeMoveCategoryId === cat.id && (
-												<div className="flex flex-col sm:flex-row gap-2 sm:items-center w-full">
-													<select
-														className="text-sm border rounded px-2 py-1 w-full sm:w-auto"
-														value={selectedTarget ?? ""}
-														onChange={(e) =>
-															setSelectedTargetCategories((prev) => ({
-																...prev,
-																[cat.id]: Number(e.target.value),
-															}))
-														}
-													>
-														<option value="">Выбрать категорию</option>
-														{moveTargets.map((target) => (
-															<option key={target.id} value={target.id}>
-																{target.title}
-															</option>
-														))}
-														<option value="0">Без категории</option>
-													</select>
-
-													<button
-														onClick={() => {
-															setModalType("move");
-															setModalPayload({ sourceId: cat.id, targetId: selectedTargetCategories[cat.id] });
-															setModalOpen(true);
-														}}
-														disabled={selectedTarget === undefined || selectedTarget === cat.id}
-														className="text-sm px-4 py-1.5 rounded bg-indigo-600 text-white hover:bg-indigo-700 transition disabled:opacity-50"
-													>
-														Переместить
-													</button>
-												</div>
-											)}
-
+								<div className={`itemTitle ${styles.itemTitle}`}>{category.title}</div>
+							</div>
+							<div className={`itemInfoBlock ${styles.itemInfoBlock}`}>
+								{count > 0 && isEditable ? (
+									activeMoveCategoryId === category.id ? (
+										<div className={`moveButtonBlock ${styles.moveButtonBlock}`}>
+											<CustomSelect
+												options={categories
+													.filter((c) => c.id !== category.id && formCategories.includes(c.id))
+													.map((c) => ({ value: c.id.toString(), label: c.title }))}
+												value={selectedTargetCategories[category.id]?.toString() || ""}
+												onChange={(value) => {
+													setSelectedTargetCategories((prev) => ({
+														...prev,
+														[category.id]: parseInt(value),
+													}));
+												}}
+												placeholder="Выберите категорию"
+											/>
 											<button
 												onClick={() => {
-													setModalType("delete");
-													setModalPayload({ sourceId: cat.id });
-													setModalOpen(true);
+													const targetId = selectedTargetCategories[category.id];
+													if (targetId) {
+														openModal("move", category.id, targetId);
+													}
 												}}
-												className="text-sm text-red-600 hover:text-red-700 flex items-center gap-1"
+												disabled={!selectedTargetCategories[category.id]}
+												className="button"
 											>
-												<Trash2 className="w-4 h-4" />
-												Удалить все товары из категории
+												Переместить
 											</button>
+											<button onClick={() => setActiveMoveCategoryId(null)} className="button">
+												Отмена
+											</button>
+										</div>
+									) : (
+										<>
+											<div className={`itemInfo ${styles.itemInfo}`}>{count} товаров</div>
+											<div className={`moveButtonBlock ${styles.moveButtonBlock}`}>
+												<button onClick={() => setActiveMoveCategoryId(category.id)} className="button">
+													<ArrowRightLeft size={16} />
+													Переместить
+												</button>
+												<button onClick={() => openModal("delete", category.id)} className="button redButton">
+													<Trash2 size={16} />
+													Удалить
+												</button>
+											</div>
 										</>
-									)}
-								</div>
-							</li>
-						);
-					})}
-
-					{/* Без категории */}
-					{categoryCounts[0] > 0 && (
-						<li className="flex justify-between items-center bg-gray-50 px-4 py-2 rounded-lg border">
-							<div>
-								<strong>Без категории</strong>
-								<span className="ml-2 text-sm text-gray-500">Товаров: {categoryCounts[0]}</span>
+									)
+								) : (
+									<div className={`itemInfo ${styles.itemInfo}`}>{count} товаров</div>
+								)}
 							</div>
-						</li>
-					)}
-				</ul>
+						</div>
+					);
+				})}
+
+				{/* Товары без категории */}
+				<div className={`emptyItem ${styles.categoryItem}`}>
+					<div className={`itemTitleBlock ${styles.itemTitleBlock}`}>
+						<div className={`itemTitle ${styles.itemTitle}`}>Без категории</div>
+					</div>
+					<div className={`itemInfoBlock ${styles.itemInfoBlock}`}>
+						<div className={`itemInfo ${styles.itemInfo}`}>{categoryCounts[0]} товаров</div>
+					</div>
+				</div>
 			</div>
-			<ConfirmModal
-				open={modalOpen}
-				title={modalType === "delete" ? "Удалить все товары?" : "Переместить товары?"}
-				message={
-					modalType === "delete"
-						? "Вы действительно хотите удалить все товары из этой категории?"
-						: "Вы действительно хотите переместить все товары в выбранную категорию?"
-				}
-				confirmText={modalType === "delete" ? "Удалить" : "Переместить"}
-				cancelText="Отмена"
-				onConfirm={() => {
-					if (modalType === "delete") {
-						deleteByCategoryConfirmed(modalPayload.sourceId);
-					} else if (modalType === "move" && modalPayload.targetId !== undefined) {
-						moveProductsConfirmed(modalPayload.sourceId, modalPayload.targetId);
-					}
-				}}
-				onCancel={() => setModalOpen(false)}
-				confirmButtonClassName={modalType === "move" ? "bg-indigo-600 text-white hover:bg-indigo-700" : undefined}
-			/>
-		</>
+
+			{/* Модальное окно подтверждения */}
+			{modalOpen && modalType === "delete" && (
+				<ConfirmPopup
+					open={modalOpen}
+					title="Подтверждение удаления"
+					message={`Вы уверены, что хотите удалить все товары из категории "${categories.find((c) => c.id === modalPayload.sourceId)?.title}"?`}
+					onConfirm={() => deleteByCategoryConfirmed(modalPayload.sourceId)}
+					onCancel={() => setModalOpen(false)}
+					confirmText="Удалить"
+					confirmButtonClassName="logoutButton"
+				/>
+			)}
+
+			{modalOpen && modalType === "move" && modalPayload.targetId && (
+				<ConfirmPopup
+					open={modalOpen}
+					title="Подтверждение перемещения"
+					message={`Вы уверены, что хотите переместить все товары из категории "${categories.find((c) => c.id === modalPayload.sourceId)?.title}" в категорию "${
+						categories.find((c) => c.id === modalPayload.targetId)?.title
+					}"?`}
+					onConfirm={() => moveProductsConfirmed(modalPayload.sourceId, modalPayload.targetId!)}
+					onCancel={() => setModalOpen(false)}
+					confirmText="Переместить"
+					confirmButtonClassName="blueButton"
+				/>
+			)}
+		</div>
 	);
 }

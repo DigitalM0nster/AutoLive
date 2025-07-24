@@ -1,0 +1,31 @@
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--header-height);
+}
+.header div {
+  display: flex;
+  position: relative;
+}
+.header .headerContainer {
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  height: 50%;
+  max-width: var(--maxContentWidth);
+}
+.header .userProfile {
+  align-items: center;
+}
+.header .userProfile .userAvatar {
+  width: 30px;
+  height: 30px;
+}
+.header .userProfile .userDetails {
+  flex-direction: column;
+}/*# sourceMappingURL=styles.css.map */

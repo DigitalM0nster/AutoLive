@@ -1,0 +1,204 @@
+@charset "UTF-8";
+.background {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  z-index: 9;
+  background-color: black;
+  opacity: 0;
+  cursor: pointer;
+  pointer-events: none;
+  transition: 0.15s;
+}
+.background.active {
+  opacity: 0.9;
+  pointer-events: auto;
+}
+
+.popup {
+  flex-direction: column;
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  min-width: 440px;
+  width: -moz-fit-content;
+  width: fit-content;
+  height: -moz-fit-content;
+  height: fit-content;
+  padding: 30px;
+  border-radius: 10px;
+  background-color: white;
+  flex-direction: column;
+  z-index: 10;
+  opacity: 0;
+  pointer-events: none;
+  transition: 0.15;
+  gap: 10px;
+}
+.popup.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+.popup .titleBlock {
+  justify-content: center;
+}
+.popup .titleBlock .title {
+  font-size: 30px;
+  font-weight: 600;
+}
+.popup form.inputsBlock,
+.popup .inputsBlock {
+  display: flex;
+  position: relative;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.popup form.inputsBlock .inputBlock,
+.popup .inputsBlock .inputBlock {
+  width: 100%;
+  max-width: 300px;
+  flex-direction: column;
+  align-items: center;
+}
+.popup form.inputsBlock .inputBlock.error input,
+.popup .inputsBlock .inputBlock.error input {
+  background-color: #fab8b8;
+}
+.popup form.inputsBlock .inputBlock input,
+.popup .inputsBlock .inputBlock input {
+  width: calc(100% - 40px);
+  font-family: Montserrat;
+  height: 20px;
+  line-height: 1;
+  font-size: 20px;
+  text-align: center;
+  border: none;
+  border-radius: 50px;
+  background-color: #f3f3f3;
+  padding: 20px 20px;
+}
+.popup form.inputsBlock .inputBlock input:focus,
+.popup .inputsBlock .inputBlock input:focus {
+  outline: none;
+}
+.popup form.inputsBlock .inputBlock .noPassword,
+.popup .inputsBlock .inputBlock .noPassword {
+  align-self: center;
+  margin: 5px 0px 0px 0px;
+}
+.popup form.inputsBlock .button,
+.popup .inputsBlock .button {
+  align-self: center;
+}
+.popup form.inputsBlock .button:hover,
+.popup .inputsBlock .button:hover {
+  background-color: rgb(61, 61, 61);
+}
+.popup form.inputsBlock .additionalButton,
+.popup .inputsBlock .additionalButton {
+  width: -moz-fit-content;
+  width: fit-content;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  border-bottom: 1px solid black;
+  cursor: pointer;
+}
+.popup form.inputsBlock .additionalButton.noPassword,
+.popup .inputsBlock .additionalButton.noPassword {
+  align-self: center;
+  margin: 0px 0px 0px 0px;
+}
+.popup form.inputsBlock .additionalButton.backButton,
+.popup .inputsBlock .additionalButton.backButton {
+  align-self: flex-center;
+  margin: 0px 0px 10px 0px;
+}
+.popup .additionalBlock {
+  flex-direction: column;
+  align-items: center;
+  margin: 10px 0px 0px 0px;
+}
+.popup .additionalBlock .additionalText {
+  font-size: 14px;
+}
+.popup .additionalBlock .additionalButton {
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: rgb(176, 203, 31);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.popup .errorMessage {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ff3a3a;
+}
+.popup .successMessage {
+  font-size: 20px;
+  font-weight: 600;
+  color: #2bb94a;
+  text-align: center;
+}
+.popup .closeIcon {
+  position: absolute;
+  right: 0;
+  top: 0;
+  transform: translate(calc(100% + 10px), calc(-100% - 10px));
+  width: 30px;
+  height: 30px;
+  justify-content: center;
+  align-items: center;
+  border: 2px solid white;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.popup .closeIcon .line {
+  position: absolute;
+  width: 20px;
+  height: 2px;
+  background-color: white;
+}
+.popup .closeIcon .line:nth-child(1) {
+  transform: rotate(45deg);
+}
+.popup .closeIcon .line:nth-child(2) {
+  transform: rotate(-45deg);
+}
+
+.orderPopup .photoBlock {
+  gap: 5px;
+  align-items: flex-end;
+  cursor: pointer;
+}
+.orderPopup .photoIcon {
+  width: 17px;
+  height: 17px;
+  background-image: url("/images/downloadIcon.svg");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+}
+.orderPopup .photoText {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.orderPopup .autoExpandTextarea {
+  resize: none; /* Убираем возможность ручного изменения размера */
+  overflow: hidden; /* Скрываем скроллбар */
+  min-height: 30px; /* Минимальная высота */
+  max-height: 300px; /* Ограничение по высоте (можно изменить) */
+}
+
+@media (max-width: 768px) {
+  .background {
+    z-index: 11;
+  }
+  .popup {
+    z-index: 11;
+  }
+}/*# sourceMappingURL=styles.module.css.map */

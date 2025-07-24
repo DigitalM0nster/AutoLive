@@ -13,10 +13,7 @@ export const GET = withPermission(
 			return NextResponse.json({ error: "Некорректный ID отдела" }, { status: 400 });
 		}
 
-		if (scope === "department" && user.departmentId !== departmentId) {
-			return NextResponse.json({ error: "Нет доступа к этому отделу" }, { status: 403 });
-		}
-
+		// Удаляем проверку на принадлежность к отделу, чтобы все пользователи могли просматривать любые отделы
 		try {
 			const department = await prisma.department.findUnique({
 				where: { id: departmentId },
@@ -77,7 +74,7 @@ export const GET = withPermission(
 		}
 	},
 	"view_departments",
-	["superadmin", "admin"]
+	["superadmin", "admin", "manager"]
 );
 
 // ✅ Обновление отдела

@@ -20,7 +20,12 @@ export default function Header() {
 	const getDisplayName = () => {
 		if (!user) return "Загрузка...";
 
-		if (user.first_name && user.last_name) return `${user.first_name} ${user.last_name}`;
+		if (user.first_name && user.last_name) {
+			// Если есть отчество, добавляем его
+			if (user.middle_name) return `${user.first_name} ${user.middle_name} ${user.last_name}`;
+			// Если нет отчества, показываем только имя и фамилию
+			return `${user.first_name} ${user.last_name}`;
+		}
 		if (user.first_name) return user.first_name;
 		if (user.last_name) return user.last_name;
 
@@ -43,6 +48,12 @@ export default function Header() {
 						<div className={styles.logo} onClick={() => router.push("/")}>
 							<img src="/images/logo.svg" alt="Логотип" />
 						</div>
+						{user?.role === "admin" ||
+							(user?.role === "superadmin" && (
+								<div className={styles.dashboardButton} onClick={() => router.push("/admin/dashboard")}>
+									Вход в админ панель
+								</div>
+							))}
 					</div>
 					<div className={styles.centerBlock}>
 						{[
@@ -68,10 +79,12 @@ export default function Header() {
 									<div className={styles.logoutText}>Выйти</div>
 								</div>
 								<div className={styles.userBlock}>
-									<div className={styles.userIcon}>
-										<img src="/images/userIcon.svg" alt="Пользователь" />
+									<div className={styles.user}>
+										<div className={styles.userIcon}>
+											<img src="/images/userIcon.svg" alt="Пользователь" />
+										</div>
+										<div className={styles.userName}>{getDisplayName()}</div>
 									</div>
-									<div className={styles.userName}>{getDisplayName()}</div>
 								</div>
 							</div>
 						) : (

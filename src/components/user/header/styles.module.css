@@ -1,0 +1,298 @@
+.header {
+  justify-content: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: calc(100% - 40px);
+  height: 60px;
+  background-color: rgb(61, 61, 61);
+  color: white;
+  padding: 20px;
+  z-index: 10;
+}
+
+.headerContent {
+  justify-content: space-between;
+  max-width: 1400px;
+  width: 100%;
+  gap: 20px;
+}
+
+.leftBlock {
+  flex-direction: column;
+}
+
+.dashboardButton {
+  align-self: center;
+  position: absolute;
+  top: 100%;
+  transform: translate(0px, 2px);
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  color: #a9a9a9;
+  cursor: pointer;
+  gap: 3px;
+}
+.dashboardButton:hover {
+  text-decoration: underline;
+}
+
+.logo {
+  max-width: 200px;
+  max-height: 65px;
+  cursor: pointer;
+}
+.logo img {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  -o-object-fit: contain;
+     object-fit: contain;
+}
+
+.rightBlock {
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px 30px;
+  flex-wrap: wrap;
+  width: calc(100% - 200px - 20px);
+}
+
+.loginBlock {
+  width: 100%;
+  justify-content: flex-end;
+}
+.loginBlock .logout {
+  align-items: center;
+  position: absolute;
+  top: 0;
+  right: 0;
+  transform: translate(0, calc(-100% - 2px));
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  color: #a9a9a9;
+  cursor: pointer;
+  gap: 3px;
+}
+.loginBlock .logout:hover {
+  color: #e97a7a;
+  text-decoration: underline;
+}
+.loginBlock .logout:hover .logoutIcon svg {
+  fill: #e97a7a;
+}
+.loginBlock .logout .logoutIcon {
+  justify-content: center;
+  align-items: center;
+  width: 12px;
+  height: 12px;
+}
+.loginBlock .logout .logoutIcon svg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  fill: #a9a9a9;
+}
+.loginBlock .userBlock {
+  align-items: center;
+  gap: 20px;
+}
+.loginBlock .userBlock .user {
+  gap: 5px;
+  align-items: center;
+  cursor: pointer;
+}
+.loginBlock .userBlock .user:hover .userName {
+  text-decoration: underline;
+}
+.loginBlock .userBlock .user .userName {
+  font-size: 18px;
+}
+.loginBlock .userBlock .user .userIcon {
+  min-width: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+.contacts {
+  gap: 10px;
+  align-items: center;
+  font-size: 24px;
+  color: white;
+}
+
+.phone {
+  gap: 5px;
+  align-items: center;
+}
+
+.cart {
+  align-items: center;
+  font-size: 24px;
+  gap: 5px;
+}
+
+.cartIcon,
+.phoneIcon {
+  justify-content: center;
+  align-items: center;
+  width: 25px;
+  height: 25px;
+}
+
+.buttons {
+  flex-direction: column;
+  gap: 10px;
+}
+
+.button {
+  font-size: 20px;
+  font-weight: 600;
+  color: white;
+  padding: 10px 30px;
+  border-radius: 50px;
+  background-color: rgb(176, 203, 31);
+  border: 1px solid rgb(176, 203, 31);
+  cursor: pointer;
+  transition: 0.25s;
+}
+.button:hover {
+  background-color: rgba(176, 203, 31, 0);
+  border: 1px solid rgb(176, 203, 31);
+}
+
+.mobileBurger {
+  display: none;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  right: 5vw;
+  top: 5vw;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: rgba(169, 169, 169, 0.7960784314);
+  z-index: 11;
+  cursor: pointer;
+}
+.mobileBurger.active .lines .line:nth-child(1) {
+  transform: translate(0, 5px) rotate(45deg);
+}
+.mobileBurger.active .lines .line:nth-child(2) {
+  width: 0px;
+  opacity: 0;
+}
+.mobileBurger.active .lines .line:nth-child(3) {
+  transform: translate(0, -5px) rotate(-45deg);
+}
+.mobileBurger .lines {
+  flex-direction: column;
+  gap: 3px;
+}
+.mobileBurger .lines .line {
+  width: 23px;
+  height: 2px;
+  background-color: white;
+  opacity: 1;
+  transform: translate(0, 0) rotate(0deg);
+  transition: 0.25s;
+}
+
+.background {
+  display: none;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  background-color: #a9a9a9;
+  z-index: 10;
+  opacity: 0;
+  pointer-events: none;
+  transition: 0.25s;
+}
+.background.active {
+  opacity: 0.9;
+  pointer-events: all;
+}
+
+.centerBlock {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+}
+.centerBlock .navLi {
+  font-size: 20px;
+}
+
+@media (max-width: 1280px) {
+  .header {
+    padding: 20px 5vw;
+    width: calc(100% - 10vw);
+  }
+}
+@media (max-width: 980px) {
+  .header {
+    padding: 20px 5vw;
+    width: calc(100% - 10vw);
+  }
+  .contacts,
+  .cart {
+    font-size: 2.5vw;
+  }
+}
+@media (max-width: 768px) {
+  .mobileBurger {
+    display: flex;
+  }
+  .background {
+    display: flex;
+  }
+  .header {
+    left: unset;
+    right: 0;
+    transform: translate(101%, 0px);
+    width: 260px;
+    height: calc(100% - 50px - 5vw);
+    padding: 5vw 20px 50px 20px;
+    transition: 0.25s;
+  }
+  .header.active {
+    transform: translate(0%, 0px);
+  }
+  .headerContent {
+    flex-direction: column;
+  }
+  .leftBlock {
+    width: 180px;
+  }
+  .leftBlock .logo {
+    max-width: 180px;
+  }
+  .loginBlock .logout {
+    right: unset;
+    left: 0;
+  }
+  .loginBlock .userBlock {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .loginBlock .userBlock .userIcon {
+    display: none;
+  }
+  .centerBlock {
+    display: flex;
+  }
+  .rightBlock {
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+  }
+  .buttons {
+    align-self: center;
+  }
+  .contacts,
+  .cart {
+    font-size: 18px;
+  }
+}/*# sourceMappingURL=styles.module.css.map */

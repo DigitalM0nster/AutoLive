@@ -1,22 +1,617 @@
-@import "tailwindcss";
+@charset "UTF-8";
+@font-face {
+  font-family: "Manrope";
+  src: url("/fonts/Manrope/Manrope-VariableFont_wght.ttf") format("truetype-variations");
+  font-weight: 200 800; /* диапазон весов от ExtraLight до ExtraBold */
+  font-style: normal;
+  font-display: swap;
+}
+:root {
+  --maxContentWidth: 1680px;
+  --text-color: rgba(14, 14, 14, 1);
+  --light-grey: rgba(235, 230, 231, 1);
+  --light-grey2: rgba(215, 215, 215, 1);
+  --blue-color: rgba(59, 130, 246, 1);
+  --red-color: rgba(239, 68, 68, 1);
+  --shadow: rgba(0, 0, 0, 0.025);
+  --shadow-hover: rgba(0, 0, 0, 0.075);
+  --background-color: rgba(245, 245, 245, 1);
+  --header-height: 100px;
+  --content-padding: 50px;
+  --h1Size: 32px;
+  --h2Size: 18px;
+  --h3Size: 16px;
+  --mainFont: "Manrope";
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--background-color);
+  font-family: "Manrope", sans-serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+}
 
 h1 {
-	/* color: red; */
+  font-size: var(--h1Size);
+}
+
+h2 {
+  font-size: var(--h2Size);
+}
+
+h3 {
+  font-size: var(--h3Size);
 }
 
 button {
-	cursor: pointer;
+  cursor: pointer;
 }
 
 .screen {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	min-height: calc(100dvh - 0px);
-	padding: 100px 0px 0px 0px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: calc(100dvh - var(--header-height) - var(--content-padding));
+  padding: calc(var(--header-height) + var(--content-padding)) 0px 0px 0px;
+}
+
+.screenContent {
+  display: flex;
+  position: relative;
+  flex-direction: column;
+  justify-content: flex-start;
+  width: 100%;
+  height: 100%;
+  max-width: var(--maxContentWidth);
+}
+
+.screenTitle {
+  font-size: var(--h1Size);
+  font-weight: 700;
+  margin: 0px 0px 20px 0px;
+  padding: 0px;
+}
+
+input.screenTitle {
+  font-family: "Manrope";
+  padding: 5px 20px;
+  width: -moz-fit-content;
+  width: fit-content;
+  border: 1px solid var(--light-grey);
+  border-radius: 5px;
+  background: white;
+  box-shadow: none;
+  font-size: var(--h1Size);
+  font-weight: 700;
+  margin: 0px 0px 20px 0px;
+}
+input.screenTitle:focus {
+  border: 1px solid var(--blue-color);
+  outline: none;
+}
+
+.blockTitle {
+  font-size: var(--h2Size);
+  font-weight: 700;
+  margin: 0px 0px 10px 0px;
+  padding: 0px;
 }
 
 .tableBlock {
-	word-break: break-word;
+  border-radius: 10px 10px 0px 0px;
+  word-break: break-word;
+  box-shadow: 0 0 #000000, 0 0 #000000, 0 0 #000000, 0 0 #000000, 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
 }
+.tableBlock .table {
+  width: 100%;
+  height: -moz-fit-content;
+  height: fit-content;
+}
+
+.tabsContainer {
+  display: flex;
+  position: relative;
+  width: calc(100% - 20px);
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  background-color: var(--light-grey);
+  border-radius: 10px 10px 0px 0px;
+  padding: 10px;
+}
+
+.tableContent {
+  display: flex;
+  flex-direction: column;
+  width: calc(100% - 20px);
+  padding: 10px;
+}
+
+.cardsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 30px;
+  width: 100%;
+}
+.cardsList .cardItem,
+.cardsList a.cardItem {
+  display: flex;
+  position: relative;
+  flex-direction: column;
+  width: calc((100% - 60px) / 3 - 50px - 2px);
+  height: -moz-fit-content;
+  height: fit-content;
+  background-color: white;
+  border-radius: 20px;
+  border: 1px solid var(--light-grey);
+  padding: 25px;
+  box-shadow: 0 10px 20px var(--shadow), 0px 5px 20px var(--shadow);
+  text-decoration: none;
+  color: var(--text-color);
+  transform: translate(0px, 0px);
+  transition: 0.25s;
+}
+.cardsList .cardItem:hover,
+.cardsList a.cardItem:hover {
+  transform: translate(0px, -3px);
+  box-shadow: 0 10px 20px var(--shadow-hover), 0px 5px 20px var(--shadow-hover);
+}
+.cardsList .cardItem:hover .cardTitle,
+.cardsList a.cardItem:hover .cardTitle {
+  color: var(--blue-color);
+}
+.cardsList .cardItem:hover .cardButton,
+.cardsList a.cardItem:hover .cardButton {
+  text-decoration: underline;
+}
+.cardsList .cardItem .cardIcon,
+.cardsList a.cardItem .cardIcon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 55px;
+  height: 55px;
+  border: 1px solid var(--light-grey);
+  border-radius: 10px;
+  background-color: var(--light-grey);
+  box-shadow: inset 0 0 10px var(--shadow);
+  margin: 0px 0px 15px 0px;
+}
+.cardsList .cardItem .cardIcon.indigo,
+.cardsList a.cardItem .cardIcon.indigo {
+  background: linear-gradient(135deg, rgb(164, 128, 245), rgb(126, 34, 206));
+}
+.cardsList .cardItem .cardIcon.green,
+.cardsList a.cardItem .cardIcon.green {
+  background: linear-gradient(135deg, rgb(16, 185, 129), rgb(26, 127, 93));
+}
+.cardsList .cardItem .cardIcon.blue,
+.cardsList a.cardItem .cardIcon.blue {
+  background: linear-gradient(135deg, rgb(59, 130, 246), rgb(37, 99, 235));
+}
+.cardsList .cardItem .cardIcon.orange,
+.cardsList a.cardItem .cardIcon.orange {
+  background: linear-gradient(135deg, rgb(239, 68, 68), rgb(239, 35, 68));
+}
+.cardsList .cardItem .cardIcon.pink,
+.cardsList a.cardItem .cardIcon.pink {
+  background: linear-gradient(135deg, rgb(236, 72, 153), rgb(219, 39, 119));
+}
+.cardsList .cardItem .cardIcon svg,
+.cardsList a.cardItem .cardIcon svg {
+  stroke: white;
+}
+.cardsList .cardItem .cardTitle,
+.cardsList .cardItem a.cardTitle,
+.cardsList a.cardItem .cardTitle,
+.cardsList a.cardItem a.cardTitle {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--text-color);
+  transition: 0.25s;
+}
+.cardsList .cardItem .cardButton,
+.cardsList a.cardItem .cardButton {
+  margin: 5px 0px 0px 0px;
+  font-size: 15px;
+  font-weight: 500;
+  opacity: 0.5;
+}
+
+.createContainer {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  margin: 25px 0px 0px 0px;
+}
+
+button,
+.button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: -moz-fit-content;
+  width: fit-content;
+  height: -moz-fit-content;
+  height: fit-content;
+  padding: 10px 25px;
+  background: linear-gradient(135deg, rgb(59, 130, 246), rgb(37, 99, 235));
+  border-radius: 8px;
+  text-decoration: none;
+  border: 1px solid var(--light-grey);
+  box-shadow: 0 5px 10px var(--shadow), 0px 2px 10px var(--shadow);
+  text-transform: uppercase;
+  font-family: "Manrope";
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: white;
+  transition: 0.25s;
+}
+button:hover,
+.button:hover {
+  box-shadow: 0 5px 10px var(--shadow-hover), 0px 2px 10px var(--shadow-hover);
+}
+button.logoutButton,
+.button.logoutButton {
+  background: linear-gradient(135deg, rgb(239, 68, 68), rgb(239, 35, 68));
+}
+button.acceptButton,
+.button.acceptButton {
+  background: linear-gradient(135deg, rgb(16, 185, 129), rgb(26, 127, 93));
+}
+button.cancelButton,
+.button.cancelButton {
+  background: linear-gradient(135deg, rgb(239, 68, 68), rgb(239, 35, 68));
+}
+button.moveButton,
+.button.moveButton {
+  padding: 0px;
+  background: none;
+  box-shadow: none;
+  color: var(--blue-color);
+  border: none;
+}
+button.removeButton,
+.button.removeButton {
+  padding: 0px;
+  background: none;
+  box-shadow: none;
+  color: var(--red-color);
+  border: none;
+}
+button.resetFiltersButton,
+.button.resetFiltersButton {
+  display: flex;
+  background: transparent;
+  padding: 5px 15px;
+  font-size: 11px;
+  border: 1px solid var(--blue-color);
+  color: var(--blue-color);
+  border-radius: 5px;
+}
+button.redBorder,
+.button.redBorder {
+  border: 1px solid var(--red-color);
+}
+button.disabled,
+.button.disabled {
+  cursor: not-allowed;
+  opacity: 0.25;
+}
+
+.fixedButtonsBlock {
+  display: flex;
+  position: fixed;
+  bottom: 10px;
+  left: 0;
+  width: 100%;
+  justify-content: center;
+}
+.fixedButtonsBlock .buttonsContent {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  height: -moz-fit-content;
+  height: fit-content;
+  max-width: var(--maxContentWidth);
+}
+
+select {
+  font-family: "Manrope";
+  padding: 5px 10px;
+  border: 1px solid var(--light-grey);
+  border-radius: 5px;
+}
+select:focus {
+  outline: none;
+  border: 1px solid var(--blue-color);
+}
+select option {
+  font-family: "Manrope";
+  border-radius: 5px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+select option:hover, select option:focus {
+  background-color: var(--light-grey);
+}
+select option:first-child {
+  border-radius: 5px 5px 0 0;
+}
+select option:last-child {
+  border-radius: 0 0 5px 5px;
+}
+
+.sectionsContent {
+  display: flex;
+  flex-direction: row;
+  gap: 30px;
+  margin: 0px 0px 75px 0px;
+}
+
+.sectionBlock {
+  flex-direction: column;
+  padding: 20px;
+  width: calc(50% - 15px - 40px);
+  background-color: white;
+  border-radius: 10px;
+  border: 1px solid var(--light-grey);
+}
+
+.blockTitle {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.blockTitle .icon {
+  width: var(--h2Size);
+  height: 30px;
+  stroke: var(--blue-color);
+}
+
+.columnList {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.categoryItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.categoryItem .itemTitleBlock {
+  display: flex;
+  padding: 20px;
+  gap: 5px;
+  align-items: center;
+  cursor: pointer;
+}
+.categoryItem .itemTitleBlock .icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  border: 1px solid var(--light-grey);
+}
+.categoryItem .itemTitleBlock .icon .line {
+  position: absolute;
+  width: 9px;
+  height: 2px;
+  background-color: var(--light-grey2);
+  transform: translate(-3px, 1px) rotate(50deg);
+  opacity: 0;
+}
+.categoryItem .itemTitleBlock .icon .line:nth-child(2) {
+  width: 12px;
+  transform: translate(3px, 0px) rotate(-45deg);
+}
+.categoryItem .itemTitleBlock .icon.active {
+  border: 1px solid var(--blue-color);
+}
+.categoryItem .itemTitleBlock .icon.active .line {
+  background-color: var(--blue-color);
+  opacity: 1;
+}
+.categoryItem .itemTitleBlock .itemTitle {
+  font-size: 16px;
+  font-weight: 700;
+}
+.categoryItem .itemInfoBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: flex-end;
+  justify-content: flex-start;
+  padding: 20px;
+}
+.categoryItem .itemInfoBlock .itemInfo {
+  opacity: 0.5;
+  font-size: 14px;
+}
+.categoryItem .moveButtonBlock {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+  width: 100%;
+}
+.categoryItem .moveButtonBlock button {
+  white-space: nowrap;
+}
+
+.emptyItem {
+  opacity: 0.5;
+}
+
+.borderBlock {
+  padding: 20px;
+  border-radius: 10px;
+  border: 1px solid var(--light-grey);
+}
+.borderBlock .borderBlockHeader {
+  margin: 0px 0px 10px 0px;
+}
+
+.listItem {
+  display: flex;
+  position: relative;
+  align-items: center;
+  text-decoration: none;
+  font-size: 16px;
+  color: var(--text-color);
+  cursor: pointer;
+}
+.listItem:before {
+  content: "";
+  display: flex;
+  position: relative;
+  margin: 0px 5px 0px 0px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--text-color);
+}
+.listItem a {
+  text-decoration: none;
+  color: var(--text-color);
+}
+.listItem a:hover {
+  text-decoration: underline;
+}
+.listItem button {
+  width: 20px;
+  height: 20px;
+  margin: 0px 0px 0px 15px;
+}
+.listItem button svg {
+  width: 100%;
+  height: 100%;
+}
+
+.popup {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+}
+.popup .background {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.3);
+  -webkit-backdrop-filter: blur(3px);
+          backdrop-filter: blur(3px);
+  cursor: pointer;
+}
+.popup .contentBlock {
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  width: -moz-fit-content;
+  width: fit-content;
+  min-width: 600px;
+  min-height: 400px;
+  background-color: white;
+  border-radius: 20px;
+  padding: 20px;
+  gap: 25px;
+  border: 1px solid var(--light-grey);
+}
+.popup .closeIcon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  right: 15px;
+  top: 15px;
+  cursor: pointer;
+}
+.popup .closeIcon .line {
+  position: absolute;
+  width: 100%;
+  height: 1px;
+  background-color: var(--text-color);
+}
+.popup .closeIcon .line:nth-child(1) {
+  transform: rotate(45deg);
+}
+.popup .closeIcon .line:nth-child(2) {
+  transform: rotate(-45deg);
+}
+.popup .buttonsBlock {
+  display: flex;
+  gap: 10px;
+}
+.popup button.cancelButton {
+  background: transparent;
+  color: var(--red-color);
+  border: 1px solid var(--red-color);
+}
+
+.pagination {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.pagination button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  min-width: 40px;
+  width: 40px;
+  max-width: 40px;
+  height: 40px;
+  background: transparent;
+  border: 1px solid var(--blue-color);
+  color: var(--blue-color);
+}
+.pagination button.active {
+  background: var(--blue-color);
+  color: white;
+}
+.pagination button:hover {
+  background: var(--blue-color);
+  color: white;
+}
+
+.searchInput {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.searchInput input {
+  padding: 10px;
+  font-family: "Manrope";
+  border: 1px solid var(--light-grey);
+  border-radius: 5px;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  color: var(--text-color);
+}
+.searchInput input:focus {
+  outline: none;
+  border: 1px solid var(--blue-color);
+}/*# sourceMappingURL=globals.css.map */

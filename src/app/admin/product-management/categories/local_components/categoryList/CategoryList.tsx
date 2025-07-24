@@ -6,7 +6,7 @@ import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-ki
 import { useRouter } from "next/navigation";
 import type { DragEndEvent } from "@dnd-kit/core";
 import CategoryCard from "./CategoryCard";
-import ConfirmModal from "@/components/ui/confirmModal/ConfirmModal";
+import ConfirmPopup from "@/components/ui/confirmPopup/ConfirmPopup";
 
 export default function CategoryList({ initialCategories }: { initialCategories: { id: number; title: string }[] }) {
 	const router = useRouter();
@@ -76,7 +76,7 @@ export default function CategoryList({ initialCategories }: { initialCategories:
 				</SortableContext>
 			</DndContext>
 
-			<ConfirmModal
+			<ConfirmPopup
 				open={modalOpen}
 				title={`Удалить категорию "${toDelete?.title}"?`}
 				message={`Вы уверены, что хотите безвозвратно удалить категорию "${toDelete?.title}"?`}

@@ -9,9 +9,8 @@ export const GET = withPermission(
 		const departmentId = Number(req.nextUrl.pathname.split("/")[3]);
 		if (isNaN(departmentId)) return NextResponse.json({ error: "Неверный ID" }, { status: 400 });
 
-		if (scope === "department" && user.departmentId !== departmentId) {
-			return NextResponse.json({ error: "Нет доступа" }, { status: 403 });
-		}
+		// Удаляем проверку принадлежности к отделу, чтобы разрешить просмотр количества товаров в любом отделе
+		// Любой пользователь с правами view_products может видеть количество товаров в категориях
 
 		const result = await prisma.product.groupBy({
 			by: ["categoryId"],
@@ -25,5 +24,5 @@ export const GET = withPermission(
 		return NextResponse.json(data);
 	},
 	"view_products",
-	["superadmin", "admin"]
+	["superadmin", "admin", "manager"] // Добавляем менеджеров, чтобы они тоже могли видеть количество товаров
 );

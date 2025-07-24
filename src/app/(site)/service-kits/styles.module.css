@@ -1,0 +1,93 @@
+.screenBlock {
+  flex-direction: column;
+  gap: 30px;
+}
+
+.serviceKitItem {
+  width: calc(100% - 40px);
+  height: -moz-fit-content;
+  height: fit-content;
+  padding: 20px;
+  background-color: #f4f4f4;
+  gap: 40px;
+}
+
+.imageBlock {
+  min-width: 300px;
+  width: 300px;
+  height: 250px;
+  background-color: #3d3d3d;
+}
+
+.contentBlock {
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.titleBlock {
+  flex-direction: column;
+  gap: 10px;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.description {
+  height: -moz-fit-content;
+  height: fit-content;
+  font-size: 14px;
+  color: #777777;
+  display: -moz-box;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -moz-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-bottom: 6px;
+  gap: 5px;
+}
+.description p {
+  margin: 0px 0px 5px 0px;
+  padding: 0;
+}
+.description p:last-child {
+  margin: 0px;
+}
+
+.buttonBlock {
+  flex-direction: column;
+  gap: 10px;
+}
+
+.button:hover {
+  background-color: #3d3d3d;
+}
+
+@media (max-width: 768px) {
+  .serviceKitItem {
+    flex-direction: column;
+    gap: 10px 40px;
+  }
+  .contentBlock {
+    gap: 20px;
+  }
+  .titleBlock {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .title {
+    width: 100%;
+  }
+  .imageBlock {
+    min-width: 100px;
+    width: 100px;
+    height: 75px;
+  }
+}
+@media (max-width: 480px) {
+  .description {
+    width: 100%;
+  }
+}/*# sourceMappingURL=styles.module.css.map */

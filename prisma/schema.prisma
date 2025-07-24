@@ -13,15 +13,16 @@ datasource db {
 // 🔐 Пользователи и роли
 // ------------------------------
 model User {
-    id         Int        @id @default(autoincrement()) @map("id")
-    phone      String     @unique @map("phone")
-    password   String     @map("password")
-    first_name String?    @map("first_name")
-    last_name  String?    @map("last_name")
-    avatar     String?
-    role       Role       @map("role")
-    status     UserStatus @default(unverified) @map("status")
-    createdAt  DateTime   @default(now()) @map("created_at")
+    id          Int        @id @default(autoincrement()) @map("id")
+    phone       String     @unique @map("phone")
+    password    String     @map("password")
+    first_name  String?    @map("first_name")
+    last_name   String?    @map("last_name")
+    middle_name String?    @map("middle_name")
+    avatar      String?
+    role        Role       @map("role")
+    status      UserStatus @default(unverified) @map("status")
+    createdAt   DateTime   @default(now()) @map("created_at")
 
     departmentId Int?        @map("department_id")
     department   Department? @relation("DepartmentUsers", fields: [departmentId], references: [id])
@@ -32,6 +33,9 @@ model User {
     importLogs     ImportLog[]
     productLogs    ProductLog[]
     bulkActionLogs BulkActionLog[]
+    adminUserLogs  UserLog[]       @relation("AdminUserLogs")
+    targetUserLogs UserLog[]       @relation("TargetUserLogs")
+    UserLog        UserLog[]
 
     @@map("user")
 }
@@ -294,6 +298,7 @@ model Department {
     productLogs    ProductLog[]
     bulkActionLogs BulkActionLog[]
     importLogs     ImportLog[]
+    userLogs       UserLog[]
 
     @@map("department")
 }
@@ -382,4 +387,28 @@ model BulkActionLog {
     message   String?
     snapshots Json
     count     Int
+}
+
+// Модель для логирования изменений пользователей
+model UserLog {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    action    String // create, update, delete
+    message   String?
+
+    // Кто внес изменения
+    adminId Int
+    admin   User @relation("AdminUserLogs", fields: [adminId], references: [id])
+
+    // Пользователь, которого изменили
+    targetUserId Int?
+    targetUser   User? @relation("TargetUserLogs", fields: [targetUserId], references: [id], onDelete: SetNull)
+
+    departmentId Int?
+    department   Department? @relation(fields: [departmentId], references: [id])
+
+    snapshotBefore Json?
+    snapshotAfter  Json?
+    User           User? @relation(fields: [userId], references: [id])
+    userId         Int?
 }

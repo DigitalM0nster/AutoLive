@@ -2,7 +2,7 @@ import Link from "next/link";
 import NavigationMenu from "@/components/user/navigationMenu/NavigationMenu";
 import styles from "./styles.module.scss";
 import CONFIG from "@/lib/config";
-import { getPromotions } from "@/lib/api";
+import type { Promotion } from "@/lib/types";
 
 export const metadata = {
 	title: `Скидки и акции в ${CONFIG.STORE_NAME} | ${CONFIG.CITY}`,
@@ -11,7 +11,15 @@ export const metadata = {
 };
 
 export default async function Promotions() {
-	const promotions = await getPromotions();
+	const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/promotions`, {
+		next: { revalidate: 3600 },
+	});
+
+	if (!res.ok) {
+		return <div className="text-center">Ошибка загрузки акций</div>;
+	}
+
+	const promotions: Promotion[] = await res.json();
 
 	return (
 		<div className={`screen ${styles.screen}`}>

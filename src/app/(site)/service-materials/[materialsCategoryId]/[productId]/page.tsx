@@ -1,4 +1,3 @@
-import { getProductById } from "@/lib/api";
 import styles from "./styles.module.scss";
 import NavigationMenu from "@/components/user/navigationMenu/NavigationMenu";
 
@@ -18,7 +17,15 @@ export default async function ProductPage({ params }: PageParams) {
 		return <div className="text-center">Загрузка...</div>;
 	}
 
-	const { product } = await getProductById(productId);
+	const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/products/${productId}`, {
+		cache: "no-store",
+	});
+
+	if (!res.ok) {
+		return <div className="text-center">Ошибка загрузки продукта</div>;
+	}
+
+	const { product } = await res.json();
 
 	return (
 		<div className={`screen ${styles.screen}`}>

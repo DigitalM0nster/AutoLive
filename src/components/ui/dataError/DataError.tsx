@@ -2,7 +2,15 @@
 
 import React from "react";
 
-export default function DataError() {
+type DataErrorProps = {
+	message?: string;
+	code?: string;
+};
+
+export default function DataError({
+	message = "Не удалось подключиться к базе данных. Пожалуйста, проверьте настройки или попробуйте позже.",
+	code = "DB_CONNECTION_FAIL",
+}: DataErrorProps) {
 	return (
 		<div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-white to-red-50 px-4 py-12">
 			<div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center border border-red-200 animate-fade-in">
@@ -16,10 +24,10 @@ export default function DataError() {
 						/>
 					</svg>
 				</div>
-				<h1 className="text-2xl font-semibold text-red-700 mb-3">Ошибка подключения</h1>
-				<p className="text-gray-600 mb-4">Не удалось подключиться к базе данных. Пожалуйста, проверьте настройки или попробуйте позже.</p>
+				<h1 className="text-2xl font-semibold text-red-700 mb-3">Ошибка</h1>
+				<p className="text-gray-600 mb-4">{message}</p>
 				<p className="text-sm text-gray-400">
-					Код ошибки: <span className="text-red-500 font-mono">DB_CONNECTION_FAIL</span>
+					Код ошибки: <span className="text-red-500 font-mono">{code}</span>
 				</p>
 			</div>
 		</div>

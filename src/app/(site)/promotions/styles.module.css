@@ -1,0 +1,69 @@
+.screenBlock {
+  flex-direction: column;
+  gap: 50px;
+}
+
+.promotionItem {
+  flex-direction: row;
+  gap: 20px;
+}
+.promotionItem .photo {
+  width: 300px;
+  min-width: 300px;
+  min-height: 200px;
+  max-height: 300px;
+  border-radius: 5px;
+  background-color: #3d3d3d;
+}
+.promotionItem .photo img {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  -o-object-fit: cover;
+     object-fit: cover;
+  -o-object-position: center;
+     object-position: center;
+}
+.promotionItem .contentBlock {
+  flex-direction: column;
+  gap: 20px;
+  justify-content: space-between;
+}
+.promotionItem .textContent {
+  flex-direction: column;
+  gap: 10px;
+}
+.promotionItem .title {
+  font-size: 30px;
+  font-weight: 600;
+}
+.promotionItem .button:hover {
+  background-color: #3d3d3d;
+}
+
+@media (max-width: 768px) {
+  .screenBlock {
+    gap: 100px;
+  }
+  .promotionItem {
+    flex-direction: column;
+  }
+}
+@media (max-width: 640px) {
+  .promotionItem .photo {
+    width: 65vw;
+    height: 40vw;
+    min-height: unset;
+    max-height: unset;
+  }
+}
+@media (max-width: 480px) {
+  .promotionItem .photo {
+    max-width: unset;
+    min-width: unset;
+    width: 100%;
+    height: 55vw;
+    min-height: unset;
+    max-height: unset;
+  }
+}/*# sourceMappingURL=styles.module.css.map */

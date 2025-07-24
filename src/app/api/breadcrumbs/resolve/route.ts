@@ -35,6 +35,13 @@ export async function POST(request: Request) {
 					const department = await prisma.department.findUnique({ where: { id: Number(seg) } });
 					if (department) labels[seg] = department.name;
 				}
+
+				if (prev === "users") {
+					const user = await prisma.user.findUnique({ where: { id: Number(seg) } });
+					if (user) {
+						labels[seg] = `ID: ${seg} | ${user.phone}`;
+					}
+				}
 			}
 		}
 

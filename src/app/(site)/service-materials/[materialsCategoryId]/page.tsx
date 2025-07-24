@@ -2,7 +2,6 @@
 
 import styles from "./styles.module.scss";
 import NavigationMenu from "@/components/user/navigationMenu/NavigationMenu";
-import { getProductsByCategory } from "@/lib/api";
 import CategoryPageClient from "./CategoryPageClient";
 import type { Category } from "@/lib/types";
 
@@ -19,10 +18,18 @@ export default async function MaterialPageByCategory({ params }: PageParams) {
 		return <div className="text-center">Загрузка...</div>;
 	}
 
-	const categoryData: { category: Category } | { error: string } = await getProductsByCategory(categoryId);
+	const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/products/get-products-by-category?category=${categoryId}`, {
+		next: { revalidate: 3600 },
+	});
+
+	if (!res.ok) {
+		return <div className="text-center">Ошибка загрузки данных</div>;
+	}
+
+	const categoryData = await res.json();
 	console.log("Получаем товары по выбранной категории: ", categoryData);
 
-	if ("error" in categoryData) {
+	if (!categoryData || !categoryData.category) {
 		return <div className="text-center">Ошибка загрузки данных</div>;
 	}
 

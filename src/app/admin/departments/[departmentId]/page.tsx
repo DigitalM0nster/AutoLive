@@ -4,17 +4,17 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { showSuccessToast, showErrorToast } from "@/components/ui/toast/ToastProvider";
-import DepartmentTitleSettings from "./local_components/DepartmentTitleSettings";
 import DepartmentCategorySection from "./local_components/DepartmentCategorySection";
 import DepartmentStaffSection from "./local_components/DepartmentStaffSection";
-import { Category } from "@/lib/types";
+import { Category, User } from "@/lib/types";
 import { Check, X } from "lucide-react";
+import styles from "./local_components/styles.module.scss";
 
 type Department = {
 	id: number;
 	name: string;
 	allowedCategories: { category: Category }[];
-	users: { id: number; first_name: string; last_name: string; phone: string; role: string }[];
+	users: User[];
 	products: { id: number; title: string; sku: string; brand: string; price: number }[];
 	orders: { id: number; title: string; status: string; createdAt: string }[];
 };
@@ -32,6 +32,21 @@ export default function DepartmentPage() {
 
 	const [originalName, setOriginalName] = useState("");
 	const [originalCategories, setOriginalCategories] = useState<number[]>([]);
+
+	// Проверка, может ли пользователь редактировать этот отдел
+	const canEditDepartment = () => {
+		if (!user || !department) return false;
+
+		// Суперадмин может редактировать любой отдел
+		if (user.role === "superadmin") return true;
+
+		// Админ может редактировать только свой отдел
+		if (user.role === "admin" && user.department?.id === Number(departmentId)) {
+			return true;
+		}
+
+		return false;
+	};
 
 	useEffect(() => {
 		const fetchDepartment = async () => {
@@ -103,35 +118,41 @@ export default function DepartmentPage() {
 	if (loading) return <div className="p-6">Загрузка...</div>;
 	if (!department) return <div className="p-6 text-red-500">Отдел не найден</div>;
 
+	const isEditable = canEditDepartment();
+
 	return (
-		<div className="px-6 py-10 max-w-5xl mx-auto">
-			<DepartmentTitleSettings formName={formName} setFormName={setFormName} />
-			<DepartmentCategorySection categories={categories} formCategories={formCategories} setFormCategories={setFormCategories} department={department} />
-			<DepartmentStaffSection users={department.users} />
-			{(user?.role === "superadmin" || user?.role === "admin") && (
-				<div className="flex items-center gap-2 mb-10">
-					<button
-						onClick={handleSave}
-						disabled={!isDirty}
-						className={`flex items-center gap-1 px-4 py-2 rounded-lg text-sm transition ${
-							isDirty ? "bg-green-600 text-white hover:bg-green-700" : "bg-gray-300 text-gray-500 cursor-not-allowed"
-						}`}
-					>
-						<Check className="w-4 h-4" />
-						Сохранить
-					</button>
-					{isDirty && (
-						<button
-							onClick={() => {
-								setFormName(originalName);
-								setFormCategories(originalCategories);
-							}}
-							className="flex items-center gap-1 bg-gray-300 text-gray-800 px-4 py-2 rounded-lg text-sm hover:bg-gray-400 transition"
-						>
-							<X className="w-4 h-4" />
-							Отменить
+		<div className="screenContent">
+			{isEditable ? <input value={formName} onChange={(e) => setFormName(e.target.value)} className="screenTitle" /> : <h1 className="screenTitle">{department.name}</h1>}
+			<div className={`sectionsContent ${styles.sectionsContent}`}>
+				<DepartmentCategorySection
+					categories={categories}
+					formCategories={formCategories}
+					setFormCategories={setFormCategories}
+					department={department}
+					isEditable={isEditable}
+				/>
+				<DepartmentStaffSection users={department.users} isEditable={isEditable} />
+			</div>
+			{isEditable && isDirty && (
+				<div className="fixedButtonsBlock">
+					<div className="buttonsContent">
+						<button onClick={handleSave} disabled={!isDirty} className={`acceptButton ${isDirty ? "" : "disabled"}`}>
+							<Check className="" />
+							Сохранить
 						</button>
-					)}
+						{isDirty && (
+							<button
+								onClick={() => {
+									setFormName(originalName);
+									setFormCategories(originalCategories);
+								}}
+								className="cancelButton"
+							>
+								<X className="" />
+								Отменить
+							</button>
+						)}
+					</div>
 				</div>
 			)}
 		</div>
