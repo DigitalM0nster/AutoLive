@@ -8,7 +8,8 @@ import styles from "./styles.module.scss";
 type ConfirmPopupProps = {
 	open: boolean;
 	title: string;
-	message: string;
+	children?: React.ReactNode; // Новый пропс для React элементов
+	message?: string; // Оставляем для обратной совместимости
 	confirmText?: string;
 	cancelText?: string;
 	confirmButtonClassName?: string;
@@ -20,6 +21,7 @@ type ConfirmPopupProps = {
 export default function ConfirmPopup({
 	open,
 	title,
+	children,
 	message,
 	confirmText = "Удалить",
 	cancelText = "Отмена",
@@ -38,7 +40,7 @@ export default function ConfirmPopup({
 					<h2 className={`title ${styles.title}`}>{title}</h2>
 				</div>
 				<div className="popupBody">
-					<p className={`message ${styles.message}`}>{message}</p>
+					{children ? <div className={`content ${styles.content}`}>{children}</div> : <p className={`message ${styles.message}`}>{message}</p>}
 				</div>
 				<div className="popupFooter">
 					<div className={`buttonsBlock ${styles.buttonsBlock}`}>
@@ -47,7 +49,7 @@ export default function ConfirmPopup({
 						</button>
 						<button
 							onClick={onConfirm}
-							// если передали класс — используем его, иначе — дефолтный “красный”
+							// если передали класс — используем его, иначе — дефолтный "красный"
 							className={`button ${confirmButtonClassName ?? ""}`}
 						>
 							{confirmText}

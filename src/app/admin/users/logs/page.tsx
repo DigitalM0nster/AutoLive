@@ -1,14 +1,31 @@
-import React from "react";
-import UsersLogs from "../local_components/UsersLogs";
+"use client";
 
-export default function UsersLogsPage() {
+import styles from "../local_components/styles.module.scss";
+import React, { useEffect, useState } from "react";
+import Link from "next/link";
+import { useAuthStore } from "@/store/authStore";
+import AllUsersLogsComponent from "../local_components/AllUsersLogsComponent";
+
+type UsersLogsProps = {
+	userId?: number; // Опциональный параметр для фильтрации логов по конкретному пользователю
+};
+
+export default function UsersLogsPage({ userId }: UsersLogsProps) {
+	const { user } = useAuthStore();
+
 	return (
-		<div className="pageContainer">
-			<div className="pageHeader">
-				<h1 className="pageTitle">Логи изменений пользователей</h1>
-				<p className="pageDescription">История всех изменений пользователей в системе</p>
+		<div className={`screenContent`}>
+			<div className={`tableContainer`}>
+				<div className={`tabsContainer ${styles.tabsContainer}`}>
+					<Link href="/admin/users/" className={`tabButton`}>
+						Список пользователей
+					</Link>
+					<div className={`tabButton active`}>История изменений</div>
+				</div>
+
+				{/* Компонент с логами всех пользователей */}
+				<AllUsersLogsComponent />
 			</div>
-			<UsersLogs />
 		</div>
 	);
 }

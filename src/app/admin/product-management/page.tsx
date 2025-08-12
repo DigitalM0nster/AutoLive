@@ -6,14 +6,6 @@ import { useAuthStore } from "@/store/authStore";
 
 const allSections = [
 	{
-		href: "/admin/product-management/categories",
-		label: "Категории",
-		desc: "Создание и настройка категорий товаров",
-		icon: ListOrdered,
-		bg: "from-purple-400 to-purple-600",
-		onlySuperadmin: true, // ← добавлено
-	},
-	{
 		href: "/admin/product-management/products",
 		label: "Товары",
 		desc: "Добавление и редактирование товаров",
@@ -32,18 +24,11 @@ const allSections = [
 export default function ProductsDashboardPage() {
 	const { user } = useAuthStore();
 
-	const sections = allSections.filter((section) => {
-		if (section.onlySuperadmin) {
-			return user?.role === "superadmin";
-		}
-		return true;
-	});
-
 	return (
 		<div className="px-6 py-10 w-full max-w-7xl mx-auto mb-auto">
 			<h1 className="text-3xl font-bold text-gray-800 mb-8">Управление товарами</h1>
 			<div className="grid gap-8 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-				{sections.map(({ href, label, desc, icon: Icon, bg }) => (
+				{allSections.map(({ href, label, desc, icon: Icon, bg }) => (
 					<Link
 						key={href}
 						href={href}

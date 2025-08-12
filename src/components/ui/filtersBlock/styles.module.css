@@ -1,0 +1,79 @@
+.filtersContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.filtersInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.activeFilters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  font-size: 14px;
+  color: #495057;
+  flex: 1;
+}
+
+.filterBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  background: #e3f2fd;
+  color: #1976d2;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid #bbdefb;
+}
+
+.resetFiltersButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.resetFiltersButton:active:not(:disabled) {
+  transform: translateY(0);
+}
+.resetFiltersButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .filtersInfo {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .resetFiltersButton {
+    align-self: flex-end;
+  }
+  .searchInput {
+    max-width: 100%;
+  }
+}/*# sourceMappingURL=styles.module.css.map */

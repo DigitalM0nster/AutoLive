@@ -1,0 +1,93 @@
+// Контейнер для фильтров
+.filtersContainer {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	margin-bottom: 20px;
+	padding: 16px;
+	background: #f8f9fa;
+	border-radius: 8px;
+	border: 1px solid #e9ecef;
+}
+
+// Информационный блок с фильтрами и кнопкой сброса
+.filtersInfo {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	gap: 16px;
+	flex-wrap: wrap;
+}
+
+// Блок с активными фильтрами
+.activeFilters {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+	font-size: 14px;
+	color: #495057;
+	flex: 1;
+}
+
+// Бейдж для отдельного фильтра
+.filterBadge {
+	display: inline-flex;
+	align-items: center;
+	padding: 4px 8px;
+	background: #e3f2fd;
+	color: #1976d2;
+	border-radius: 4px;
+	font-size: 12px;
+	font-weight: 500;
+	border: 1px solid #bbdefb;
+}
+
+// Кнопка сброса фильтров
+.resetFiltersButton {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 8px 12px;
+	color: white;
+	border: none;
+	border-radius: 4px;
+	font-size: 14px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.2s ease;
+
+	&:hover:not(:disabled) {
+	}
+
+	&:active:not(:disabled) {
+		transform: translateY(0);
+	}
+
+	&:disabled {
+		cursor: not-allowed;
+		opacity: 0.6;
+	}
+}
+
+// Состояние отключенной кнопки
+.disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+// Адаптивность для мобильных устройств
+@media (max-width: 768px) {
+	.filtersInfo {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.resetFiltersButton {
+		align-self: flex-end;
+	}
+
+	.searchInput {
+		max-width: 100%;
+	}
+}

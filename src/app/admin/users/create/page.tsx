@@ -1,7 +1,7 @@
 "use client";
 
-import UserPage from "../local_components/UserPage";
+import UserComponent from "../local_components/UserComponent";
 
 export default function CreateUserPage() {
-	return <UserPage isCreating={true} />;
+	return <UserComponent isCreating={true} />;
 }

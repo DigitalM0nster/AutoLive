@@ -26,12 +26,12 @@ export default function CreateDepartmentForm() {
 	const [loadingManagers, setLoadingManagers] = useState(false);
 	const [adminPage, setAdminPage] = useState(1);
 	const [managerPage, setManagerPage] = useState(1);
-	const [hasMoreAdmins, setHasMoreAdmins] = useState(true);
-	const [hasMoreManagers, setHasMoreManagers] = useState(true);
-	const [debugInfo, setDebugInfo] = useState<string | null>(null);
+	const [hasMoreAdmins, setHasMoreAdmins] = useState(false);
+	const [hasMoreManagers, setHasMoreManagers] = useState(false);
 
 	// Константы
 	const PAGE_SIZE = 20; // Размер страницы для загрузки пользователей
+	const INITIAL_LOAD_LIMIT = 100; // Лимит для первоначальной загрузки
 
 	// Загрузка категорий при монтировании компонента
 	useEffect(() => {
@@ -60,41 +60,35 @@ export default function CreateDepartmentForm() {
 			setLoadingAdmins(true);
 			setLoadingManagers(true);
 
-			console.log("Загружаем всех пользователей без отдела...");
-			// Увеличиваем лимит, чтобы получить больше пользователей за один запрос
-			const usersRes = await fetch("/api/users?withoutDepartment=true&limit=100", {
+			// Загружаем пользователей без отдела
+			const apiUrl = `/api/users?withoutDepartment=true&limit=${INITIAL_LOAD_LIMIT}`;
+			const usersRes = await fetch(apiUrl, {
 				credentials: "include",
 			});
 
 			if (!usersRes.ok) {
 				const errorText = await usersRes.text();
-				console.error("Ошибка загрузки пользователей:", usersRes.status, errorText);
 				throw new Error(`Не удалось загрузить пользователей: ${usersRes.status} ${errorText}`);
 			}
 
 			const usersData = await usersRes.json();
-			console.log("Все пользователи без отдела:", usersData);
+
+			// Проверяем, что usersData.users существует и является массивом
+			if (!Array.isArray(usersData.users)) {
+				throw new Error("API вернул неверный формат данных");
+			}
 
 			// Фильтруем пользователей по ролям
-			const admins = (usersData.users || []).filter((user: User) => user.role === "admin");
-			const managers = (usersData.users || []).filter((user: User) => user.role === "manager");
+			const admins = usersData.users.filter((user: User) => user.role === "admin");
+			const managers = usersData.users.filter((user: User) => user.role === "manager");
 
 			setAvailableAdmins(admins);
 			setAvailableManagers(managers);
 
-			// Отладочная информация
-			setDebugInfo(`
-				Всего пользователей без отдела: ${usersData.users?.length || 0} из ${usersData.total || 0}
-				Администраторов без отдела: ${admins.length}
-				Менеджеров без отдела: ${managers.length}
-				Роли пользователей: ${JSON.stringify(
-					(usersData.users || []).reduce((acc: Record<string, number>, user: User) => {
-						const role = user.role || "unknown";
-						acc[role] = (acc[role] || 0) + 1;
-						return acc;
-					}, {})
-				)}
-			`);
+			// Проверяем, возможно ли наличие дополнительных пользователей
+			// Если количество пользователей равно лимиту, возможно есть еще
+			setHasMoreAdmins(usersData.users.length === INITIAL_LOAD_LIMIT && admins.length > 0);
+			setHasMoreManagers(usersData.users.length === INITIAL_LOAD_LIMIT && managers.length > 0);
 		} catch (err) {
 			console.error("Ошибка загрузки пользователей:", err);
 			setError(err instanceof Error ? err.message : "Неизвестная ошибка");
@@ -112,19 +106,16 @@ export default function CreateDepartmentForm() {
 		setLoadingAdmins(true);
 		try {
 			// Загружаем администраторов без отдела
-			console.log(`Загружаем администраторов без отдела (страница ${page})...`);
 			const adminsRes = await fetch(`/api/users?withoutDepartment=true&role=admin&page=${page}&limit=${PAGE_SIZE}`, {
 				credentials: "include",
 			});
 
 			if (!adminsRes.ok) {
 				const errorText = await adminsRes.text();
-				console.error("Ошибка загрузки администраторов:", adminsRes.status, errorText);
 				throw new Error(`Не удалось загрузить администраторов: ${adminsRes.status} ${errorText}`);
 			}
 
 			const adminsData = await adminsRes.json();
-			console.log("Полученные администраторы:", adminsData);
 
 			// Обновляем список администраторов
 			if (page === 1) {
@@ -151,19 +142,16 @@ export default function CreateDepartmentForm() {
 		setLoadingManagers(true);
 		try {
 			// Загружаем менеджеров без отдела
-			console.log(`Загружаем менеджеров без отдела (страница ${page})...`);
 			const managersRes = await fetch(`/api/users?withoutDepartment=true&role=manager&page=${page}&limit=${PAGE_SIZE}`, {
 				credentials: "include",
 			});
 
 			if (!managersRes.ok) {
 				const errorText = await managersRes.text();
-				console.error("Ошибка загрузки менеджеров:", managersRes.status, errorText);
 				throw new Error(`Не удалось загрузить менеджеров: ${managersRes.status} ${errorText}`);
 			}
 
 			const managersData = await managersRes.json();
-			console.log("Полученные менеджеры:", managersData);
 
 			// Обновляем список менеджеров
 			if (page === 1) {
@@ -186,12 +174,8 @@ export default function CreateDepartmentForm() {
 	// Загрузка пользователей при загрузке категорий
 	useEffect(() => {
 		if (!loading) {
-			// Используем альтернативный подход - загружаем всех пользователей сразу
+			// Загружаем всех пользователей сразу
 			loadAllUsersWithoutDepartment();
-
-			// Если альтернативный подход не сработает, можно вернуться к раздельной загрузке
-			// loadAdmins(1);
-			// loadManagers(1);
 		}
 	}, [loading]);
 
@@ -231,40 +215,33 @@ export default function CreateDepartmentForm() {
 
 		setLoading(true);
 		try {
-			// Создаем отдел
+			// Создаем отдел с пользователями
+			const userIds = [...selectedAdmins, ...selectedManagers];
 			const departmentRes = await fetch("/api/departments", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
 					name: formName,
 					categoryIds: formCategories,
+					userIds: userIds,
 				}),
 				credentials: "include",
 			});
 
 			if (!departmentRes.ok) {
-				const errorData = await departmentRes.json();
-				throw new Error(errorData.error || "Ошибка при создании отдела");
+				let errorMessage = "Ошибка при создании отдела";
+				try {
+					const errorData = await departmentRes.json();
+					errorMessage = errorData.error || errorMessage;
+				} catch {
+					// Если не удалось распарсить JSON, используем текст ответа
+					errorMessage = (await departmentRes.text()) || errorMessage;
+				}
+				throw new Error(errorMessage);
 			}
 
 			const departmentData = await departmentRes.json();
 			const departmentId = departmentData.id;
-
-			// Если есть выбранные пользователи, добавляем их в отдел
-			if (selectedAdmins.length > 0 || selectedManagers.length > 0) {
-				const userIds = [...selectedAdmins, ...selectedManagers];
-				const usersRes = await fetch(`/api/departments/${departmentId}/users`, {
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ userIds }),
-					credentials: "include",
-				});
-
-				if (!usersRes.ok) {
-					const errorData = await usersRes.json();
-					throw new Error(errorData.error || "Ошибка при добавлении пользователей");
-				}
-			}
 
 			showSuccessToast("Отдел успешно создан");
 			router.push(`/admin/departments/${departmentId}`);
@@ -276,9 +253,6 @@ export default function CreateDepartmentForm() {
 		}
 	};
 
-	console.log("Доступные администраторы:", availableAdmins);
-	console.log("Доступные менеджеры:", availableManagers);
-
 	// Отображаем загрузку, если данные еще не получены
 	if (loading) {
 		return <Loading />;
@@ -287,62 +261,55 @@ export default function CreateDepartmentForm() {
 	// Отображаем ошибку, если она есть
 	if (error) {
 		return (
-			<div>
+			<div className="errorContainer">
 				<h3>Ошибка загрузки данных</h3>
 				<p>{error}</p>
-				<button onClick={() => window.location.reload()}>Попробовать снова</button>
+				<button className="button" onClick={() => window.location.reload()}>
+					Попробовать снова
+				</button>
 			</div>
 		);
 	}
 
 	return (
-		<div>
-			<div>
-				<div>
-					<h3>Название отдела</h3>
-					<input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Введите название отдела" />
+		<div className="createDepartmentForm">
+			<div className="formSection">
+				<div className="formGroup">
+					<h3 className="sectionTitle">Название отдела</h3>
+					<input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Введите название отдела" className="formInput" />
 				</div>
 			</div>
 
-			<div>
-				<div>
-					<h3>Доступные категории</h3>
-					<div>
+			<div className="formSection">
+				<div className="formGroup">
+					<h3 className="sectionTitle">Доступные категории</h3>
+					<div className="categoriesList">
 						{categories.map((category) => (
-							<div key={category.id} onClick={() => toggleCategory(category.id)}>
-								<div>
-									<div>{formCategories.includes(category.id) ? "✓" : ""}</div>
+							<div key={category.id} onClick={() => toggleCategory(category.id)} className="categoryItem">
+								<div className="checkboxWrapper">
+									<div className="checkbox">{formCategories.includes(category.id) ? "✓" : ""}</div>
 								</div>
-								<div>{category.title}</div>
+								<div className="categoryTitle">{category.title}</div>
 							</div>
 						))}
-						{categories.length === 0 && <div>Нет доступных категорий</div>}
+						{categories.length === 0 && <div className="emptyMessage">Нет доступных категорий</div>}
 					</div>
 				</div>
 			</div>
 
-			{/* Отладочная информация */}
-			{debugInfo && (
-				<div style={{ margin: "10px 0", padding: "10px", border: "1px solid #ccc", background: "#f5f5f5", fontSize: "12px" }}>
-					<h4>Отладочная информация:</h4>
-					<pre>{debugInfo}</pre>
-					<button onClick={loadAllUsersWithoutDepartment}>Перезагрузить пользователей</button>
-				</div>
-			)}
-
-			<div>
-				<div>
-					<h3>Администраторы</h3>
-					<div>
+			<div className="formSection">
+				<div className="formGroup">
+					<h3 className="sectionTitle">Администраторы</h3>
+					<div className="usersContainer">
 						{/* Выбранные администраторы */}
 						{selectedAdmins.length > 0 && (
-							<div>
-								<h4>Выбранные администраторы</h4>
+							<div className="selectedUsers">
+								<h4 className="subsectionTitle">Выбранные администраторы</h4>
 								{availableAdmins
 									.filter((admin) => selectedAdmins.includes(admin.id))
 									.map((admin) => (
-										<div key={admin.id}>
-											<div onClick={() => toggleAdmin(admin.id)}>
+										<div key={admin.id} className="userItem selected">
+											<div onClick={() => toggleAdmin(admin.id)} className="userName">
 												{admin.first_name} {admin.last_name} ({admin.phone})
 											</div>
 										</div>
@@ -351,20 +318,23 @@ export default function CreateDepartmentForm() {
 						)}
 
 						{/* Доступные администраторы (без отдела) */}
-						<div>
-							<h4>Доступные администраторы</h4>
+						<div className="availableUsers">
+							<h4 className="subsectionTitle">Доступные администраторы</h4>
 							{availableAdmins
 								.filter((admin) => !selectedAdmins.includes(admin.id))
 								.map((admin) => (
-									<div key={admin.id} onClick={() => toggleAdmin(admin.id)}>
+									<div key={admin.id} onClick={() => toggleAdmin(admin.id)} className="userItem">
 										{admin.first_name} {admin.last_name} ({admin.phone})
 									</div>
 								))}
-							{availableAdmins.length === 0 && !loadingAdmins && <div>Нет доступных администраторов</div>}
-							{loadingAdmins && <div>Загрузка администраторов...</div>}
+							{availableAdmins.length === 0 && !loadingAdmins && <div className="emptyMessage">Нет доступных администраторов</div>}
+							{loadingAdmins && <div className="loadingMessage">Загрузка администраторов...</div>}
+							{/* Показываем кнопку "Загрузить еще" только если есть вероятность наличия дополнительных администраторов */}
 							{hasMoreAdmins && availableAdmins.length > 0 && !loadingAdmins && (
-								<div>
-									<button onClick={() => loadAdmins(adminPage + 1)}>Загрузить еще администраторов</button>
+								<div className="loadMoreContainer">
+									<button onClick={() => loadAdmins(adminPage + 1)} className="loadMoreButton">
+										Загрузить еще администраторов
+									</button>
 								</div>
 							)}
 						</div>
@@ -372,19 +342,19 @@ export default function CreateDepartmentForm() {
 				</div>
 			</div>
 
-			<div>
-				<div>
-					<h3>Менеджеры</h3>
-					<div>
+			<div className="formSection">
+				<div className="formGroup">
+					<h3 className="sectionTitle">Менеджеры</h3>
+					<div className="usersContainer">
 						{/* Выбранные менеджеры */}
 						{selectedManagers.length > 0 && (
-							<div>
-								<h4>Выбранные менеджеры</h4>
+							<div className="selectedUsers">
+								<h4 className="subsectionTitle">Выбранные менеджеры</h4>
 								{availableManagers
 									.filter((manager) => selectedManagers.includes(manager.id))
 									.map((manager) => (
-										<div key={manager.id}>
-											<div onClick={() => toggleManager(manager.id)}>
+										<div key={manager.id} className="userItem selected">
+											<div onClick={() => toggleManager(manager.id)} className="userName">
 												{manager.first_name} {manager.last_name} ({manager.phone})
 											</div>
 										</div>
@@ -393,20 +363,23 @@ export default function CreateDepartmentForm() {
 						)}
 
 						{/* Доступные менеджеры (без отдела) */}
-						<div>
-							<h4>Доступные менеджеры</h4>
+						<div className="availableUsers">
+							<h4 className="subsectionTitle">Доступные менеджеры</h4>
 							{availableManagers
 								.filter((manager) => !selectedManagers.includes(manager.id))
 								.map((manager) => (
-									<div key={manager.id} onClick={() => toggleManager(manager.id)}>
+									<div key={manager.id} onClick={() => toggleManager(manager.id)} className="userItem">
 										{manager.first_name} {manager.last_name} ({manager.phone})
 									</div>
 								))}
-							{availableManagers.length === 0 && !loadingManagers && <div>Нет доступных менеджеров</div>}
-							{loadingManagers && <div>Загрузка менеджеров...</div>}
+							{availableManagers.length === 0 && !loadingManagers && <div className="emptyMessage">Нет доступных менеджеров</div>}
+							{loadingManagers && <div className="loadingMessage">Загрузка менеджеров...</div>}
+							{/* Показываем кнопку "Загрузить еще" только если есть вероятность наличия дополнительных менеджеров */}
 							{hasMoreManagers && availableManagers.length > 0 && !loadingManagers && (
-								<div>
-									<button onClick={() => loadManagers(managerPage + 1)}>Загрузить еще менеджеров</button>
+								<div className="loadMoreContainer">
+									<button onClick={() => loadManagers(managerPage + 1)} className="loadMoreButton">
+										Загрузить еще менеджеров
+									</button>
 								</div>
 							)}
 						</div>
@@ -414,16 +387,211 @@ export default function CreateDepartmentForm() {
 				</div>
 			</div>
 
-			<div>
-				<button onClick={handleSubmit} disabled={!formName.trim()}>
+			<div className="formActions">
+				<button onClick={handleSubmit} disabled={!formName.trim()} className="submitButton">
 					<Check />
 					Создать отдел
 				</button>
-				<button onClick={() => router.push("/admin/departments")}>
+				<button onClick={() => router.push("/admin/departments")} className="cancelButton">
 					<X />
 					Отмена
 				</button>
 			</div>
+
+			<style jsx>{`
+				.createDepartmentForm {
+					max-width: 800px;
+					margin: 0 auto;
+					padding: 20px;
+				}
+
+				.formSection {
+					margin-bottom: 30px;
+					background: #fff;
+					border-radius: 8px;
+					box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+					padding: 20px;
+				}
+
+				.sectionTitle {
+					font-size: 18px;
+					margin-top: 0;
+					margin-bottom: 15px;
+					color: #333;
+					border-bottom: 1px solid #eee;
+					padding-bottom: 10px;
+				}
+
+				.subsectionTitle {
+					font-size: 16px;
+					margin-top: 0;
+					margin-bottom: 10px;
+					color: #555;
+				}
+
+				.formInput {
+					width: 100%;
+					padding: 10px;
+					border: 1px solid #ddd;
+					border-radius: 4px;
+					font-size: 16px;
+				}
+
+				.categoriesList {
+					display: flex;
+					flex-wrap: wrap;
+					gap: 10px;
+					margin-top: 10px;
+				}
+
+				.categoryItem {
+					display: flex;
+					align-items: center;
+					padding: 8px 12px;
+					border: 1px solid #ddd;
+					border-radius: 4px;
+					cursor: pointer;
+					transition: background-color 0.2s;
+				}
+
+				.categoryItem:hover {
+					background-color: #f5f5f5;
+				}
+
+				.checkboxWrapper {
+					margin-right: 8px;
+				}
+
+				.checkbox {
+					width: 18px;
+					height: 18px;
+					border: 1px solid #aaa;
+					border-radius: 3px;
+					display: flex;
+					align-items: center;
+					justify-content: center;
+					color: #0066cc;
+					font-weight: bold;
+				}
+
+				.usersContainer {
+					margin-top: 15px;
+				}
+
+				.selectedUsers {
+					margin-bottom: 20px;
+					padding: 15px;
+					background: #f0f7ff;
+					border-radius: 6px;
+				}
+
+				.userItem {
+					padding: 8px 12px;
+					border-radius: 4px;
+					margin-bottom: 5px;
+					cursor: pointer;
+					transition: background-color 0.2s;
+				}
+
+				.userItem:hover {
+					background-color: #f0f0f0;
+				}
+
+				.userItem.selected {
+					background-color: #e6f0ff;
+				}
+
+				.emptyMessage,
+				.loadingMessage {
+					padding: 10px;
+					color: #666;
+					font-style: italic;
+				}
+
+				.loadMoreContainer {
+					margin-top: 15px;
+					text-align: center;
+				}
+
+				.loadMoreButton {
+					background: #f5f5f5;
+					border: 1px solid #ddd;
+					padding: 8px 15px;
+					border-radius: 4px;
+					cursor: pointer;
+					color: #555;
+				}
+
+				.loadMoreButton:hover {
+					background: #eee;
+				}
+
+				.formActions {
+					display: flex;
+					gap: 15px;
+					margin-top: 20px;
+				}
+
+				.submitButton,
+				.cancelButton {
+					display: flex;
+					align-items: center;
+					gap: 8px;
+					padding: 10px 20px;
+					border-radius: 4px;
+					cursor: pointer;
+					font-weight: 500;
+					border: none;
+					transition: background-color 0.2s;
+				}
+
+				.submitButton {
+					background-color: #0066cc;
+					color: white;
+				}
+
+				.submitButton:hover {
+					background-color: #0055aa;
+				}
+
+				.submitButton:disabled {
+					background-color: #cccccc;
+					cursor: not-allowed;
+				}
+
+				.cancelButton {
+					background-color: #f5f5f5;
+					color: #333;
+					border: 1px solid #ddd;
+				}
+
+				.cancelButton:hover {
+					background-color: #eee;
+				}
+
+				.errorContainer {
+					text-align: center;
+					padding: 30px;
+					background: #fff;
+					border-radius: 8px;
+					box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+				}
+
+				.button {
+					background-color: #0066cc;
+					color: white;
+					padding: 10px 20px;
+					border: none;
+					border-radius: 4px;
+					cursor: pointer;
+					font-weight: 500;
+					margin-top: 15px;
+				}
+
+				.button:hover {
+					background-color: #0055aa;
+				}
+			`}</style>
 		</div>
 	);
 }

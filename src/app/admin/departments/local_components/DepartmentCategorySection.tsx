@@ -1,218 +1,86 @@
 "use client";
 
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
-import { Tags, Trash2, ArrowRightLeft } from "lucide-react";
+import { Tags, Trash2, ArrowRightLeft, Save, X } from "lucide-react";
 import { showErrorToast, showSuccessToast } from "@/components/ui/toast/ToastProvider";
 import ConfirmPopup from "@/components/ui/confirmPopup/ConfirmPopup";
 import CustomSelect from "@/components/ui/customSelect/CustomSelect";
 import styles from "./styles.module.scss";
 import { Department, Category } from "@/lib/types";
 
+// Интерфейс для категории с количеством товаров
+interface CategoryWithCount {
+	id: number;
+	title: string;
+	order: number;
+	isAllowed: boolean;
+	productCount: number;
+}
+
+interface DepartmentCategorySectionProps {
+	departmentId?: number;
+	onFormChange?: (changed: boolean) => void;
+	onSave?: () => Promise<void>;
+	onCancel?: () => void;
+	// Новые пропсы для передачи данных в родительский компонент
+	selectedCategories?: number[];
+	onSelectedCategoriesChange?: (categories: number[]) => void;
+	// Добавляем пропс для категорий
+	categories?: CategoryWithCount[];
+	loading?: boolean;
+	// Добавляем пропс для количества товаров без категории
+	uncategorizedCount?: number;
+	// Добавляем пропс для проверки прав на редактирование
+	canEdit?: boolean;
+}
+
 export default function DepartmentCategorySection({
-	categories,
-	formCategories,
-	setFormCategories,
-	department,
-	isEditable = true, // По умолчанию редактируемый
-}: {
-	categories: Category[];
-	formCategories: number[];
-	setFormCategories: Dispatch<SetStateAction<number[]>>;
-	department: Department;
-	isEditable?: boolean;
-}) {
-	const [categoryCounts, setCategoryCounts] = useState<Record<number, number>>({});
-	const [selectedTargetCategories, setSelectedTargetCategories] = useState<Record<number, number>>({});
-	const [activeMoveCategoryId, setActiveMoveCategoryId] = useState<number | null>(null);
+	departmentId,
+	onFormChange,
+	onSave,
+	onCancel,
+	selectedCategories = [],
+	onSelectedCategoriesChange,
+	categories = [],
+	loading = false,
+	uncategorizedCount = 0,
+	canEdit = true,
+}: DepartmentCategorySectionProps) {
+	// Состояние для отслеживания изменений
+	const [originalCategories, setOriginalCategories] = useState<number[]>([]);
+	// Состояние загрузки
+	const [saving, setSaving] = useState(false);
+	// Состояние для модального окна подтверждения
+	const [showConfirmModal, setShowConfirmModal] = useState(false);
+	const [categoriesToRemove, setCategoriesToRemove] = useState<CategoryWithCount[]>([]);
 
+	// Инициализируем исходное состояние категорий при загрузке
 	useEffect(() => {
-		console.log(categoryCounts);
-	}, [categoryCounts]);
+		if (categories.length > 0) {
+			const allowedIds = categories.filter((cat: CategoryWithCount) => cat.isAllowed).map((cat: CategoryWithCount) => cat.id);
+			setOriginalCategories(allowedIds);
+		}
+	}, [categories]);
 
-	// состояние модалки
-	const [modalOpen, setModalOpen] = useState(false);
-	const [modalType, setModalType] = useState<"move" | null>(null);
-	const [modalPayload, setModalPayload] = useState<{ sourceId: number; targetId?: number }>({ sourceId: 0 });
-
-	// Состояния для "Без категории"
-	const [emptyMoveTarget, setEmptyMoveTarget] = useState<number | null>(null);
-	const [emptyMoveActive, setEmptyMoveActive] = useState(false);
-	const [emptyModalType, setEmptyModalType] = useState<"move" | null>(null);
-	const [emptyModalOpen, setEmptyModalOpen] = useState(false);
-
-	// Состояния для перемещения в "Без категории"
-	const [moveToEmptyActive, setMoveToEmptyActive] = useState<number | null>(null); // id категории, из которой переносим
-	const [moveToEmptyModalOpen, setMoveToEmptyModalOpen] = useState(false);
-
-	// Состояния для перемещения между категориями
-	const [moveSource, setMoveSource] = useState<number | null>(null); // id исходной категории (или null для "Без категории")
-	const [moveTarget, setMoveTarget] = useState<number | null>(null); // id целевой категории (или null для "Без категории")
-	const [moveModalOpen, setMoveModalOpen] = useState(false);
-
+	// Синхронизируем originalCategories с родительским компонентом
 	useEffect(() => {
-		if (!department?.id) return;
-		const fetchCounts = async () => {
-			try {
-				const res = await fetch(`/api/departments/${department.id}/products-by-category`, { credentials: "include" });
-				const data = await res.json();
-				setCategoryCounts(data);
-			} catch (err) {
-				console.error("Ошибка получения количества товаров:", err);
-			}
-		};
-		fetchCounts();
-	}, [department?.id]);
-
-	// вызывается по клику "Переместить" в ConfirmPopup
-	const moveProductsConfirmed = async (sourceCategoryId: number, targetCategoryId: number) => {
-		try {
-			console.log("Отправляем запрос на перемещение:", { sourceCategoryId, targetCategoryId });
-			const res = await fetch(`/api/departments/${department.id}/move-products-to-category`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				credentials: "include",
-				body: JSON.stringify({ sourceCategoryId, targetCategoryId }),
-			});
-			if (res.ok) {
-				showSuccessToast("Товары перемещены");
-				setCategoryCounts((prev) => ({
-					...prev,
-					[sourceCategoryId]: 0,
-					[targetCategoryId]: (prev[targetCategoryId] || 0) + (prev[sourceCategoryId] || 0),
-				}));
-			} else {
-				const { error } = await res.json();
-				console.error("Ошибка сервера:", error);
-				showErrorToast(error || "Ошибка перемещения");
-			}
-		} catch {
-			showErrorToast("Ошибка запроса");
-		} finally {
-			setModalOpen(false);
-			setActiveMoveCategoryId(null);
+		if (selectedCategories.length > 0) {
+			setOriginalCategories(selectedCategories);
 		}
-	};
+	}, [selectedCategories]);
 
-	// Обработчик перемещения товаров без категории
-	const moveEmptyCategoryConfirmed = async (targetCategoryId: number) => {
-		try {
-			console.log('Отправляем запрос на перемещение из "Без категории":', { sourceCategoryId: 0, targetCategoryId });
-			const res = await fetch(`/api/departments/${department.id}/move-products-to-category`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				credentials: "include",
-				body: JSON.stringify({ sourceCategoryId: 0, targetCategoryId }),
-			});
-			if (res.ok) {
-				showSuccessToast("Товары перемещены");
-				setCategoryCounts((prev) => ({
-					...prev,
-					0: 0,
-					[targetCategoryId]: (prev[targetCategoryId] || 0) + (prev[0] || 0),
-				}));
-			} else {
-				const { error } = await res.json();
-				console.error("Ошибка сервера:", error);
-				showErrorToast(error || "Ошибка перемещения");
-			}
-		} catch {
-			showErrorToast("Ошибка запроса");
-		} finally {
-			setEmptyModalOpen(false);
-			setEmptyMoveActive(false);
-			setEmptyMoveTarget(null);
-		}
-	};
+	// Функция для обработки изменения выбора категории
+	const handleCategoryToggle = (categoryId: number) => {
+		// Если у пользователя нет прав на редактирование, не выполняем действие
+		if (!canEdit) return;
 
-	// Обработчик перемещения товаров в "Без категории"
-	const moveToEmptyCategoryConfirmed = async (sourceCategoryId: number) => {
-		try {
-			console.log('Отправляем запрос на перемещение в "Без категории":', { sourceCategoryId, targetCategoryId: 0 });
-			const res = await fetch(`/api/departments/${department.id}/move-products-to-category`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				credentials: "include",
-				body: JSON.stringify({ sourceCategoryId, targetCategoryId: 0 }),
-			});
-			if (res.ok) {
-				showSuccessToast("Товары перемещены в 'Без категории'");
-				setCategoryCounts((prev) => ({
-					...prev,
-					0: (prev[0] || 0) + (prev[sourceCategoryId] || 0),
-					[sourceCategoryId]: 0,
-				}));
-			} else {
-				const { error } = await res.json();
-				console.error("Ошибка сервера:", error);
-				showErrorToast(error || "Ошибка перемещения");
-			}
-		} catch {
-			showErrorToast("Ошибка запроса");
-		} finally {
-			setMoveToEmptyModalOpen(false);
-			setMoveToEmptyActive(null);
-		}
-	};
+		const newSelected = selectedCategories.includes(categoryId) ? selectedCategories.filter((id) => id !== categoryId) : [...selectedCategories, categoryId];
 
-	// Обработчик перемещения товаров между категориями
-	const moveCategoryConfirmed = async (sourceCategoryId: number | null, targetCategoryId: number | null) => {
-		try {
-			const sourceId = sourceCategoryId === null ? 0 : sourceCategoryId;
-			const targetId = targetCategoryId === null ? 0 : targetCategoryId;
-			console.log("Отправляем запрос на перемещение между категориями:", { sourceId, targetId });
-			const res = await fetch(`/api/departments/${department.id}/move-products-to-category`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				credentials: "include",
-				body: JSON.stringify({ sourceCategoryId: sourceId, targetCategoryId: targetId }),
-			});
-			if (res.ok) {
-				showSuccessToast("Товары перемещены");
-				setCategoryCounts((prev) => {
-					const countFrom = prev[sourceId] || 0;
-					const countTo = prev[targetId] || 0;
-					return {
-						...prev,
-						[sourceId]: 0,
-						[targetId]: countTo + countFrom,
-					};
-				});
-			} else {
-				const { error } = await res.json();
-				showErrorToast(error || "Ошибка перемещения");
-			}
-		} catch {
-			showErrorToast("Ошибка запроса");
-		} finally {
-			setMoveModalOpen(false);
-			setMoveSource(null);
-			setMoveTarget(null);
-		}
-	};
+		onSelectedCategoriesChange?.(newSelected);
 
-	// Функция для добавления/удаления категории
-	const toggleCategory = (categoryId: number) => {
-		if (!isEditable) return; // Если нет прав на редактирование, не делаем ничего
-
-		if (formCategories.includes(categoryId)) {
-			setFormCategories(formCategories.filter((id) => id !== categoryId));
-		} else {
-			setFormCategories([...formCategories, categoryId]);
-		}
-	};
-
-	// Обработчик для открытия модального окна
-	const openModal = (type: "move", sourceId: number, targetId?: number) => {
-		if (!isEditable) return; // Если нет прав на редактирование, не открываем модалку
-
-		setModalType(type);
-		setModalPayload({ sourceId, targetId });
-		if (targetId === 0) {
-			setMoveToEmptyActive(sourceId);
-			setMoveToEmptyModalOpen(true);
-		} else {
-			setModalOpen(true);
-		}
+		// Проверяем, есть ли изменения
+		const hasChanges = JSON.stringify(newSelected.sort()) !== JSON.stringify(originalCategories.sort());
+		onFormChange?.(hasChanges);
 	};
 
 	return (
@@ -222,202 +90,50 @@ export default function DepartmentCategorySection({
 				Категории отдела
 			</h2>
 
-			<div className={`columnList ${styles.columnList}`}>
-				{/* Список категорий */}
-				{categories.map((category) => {
-					const isSelected = formCategories.includes(category.id);
-					const count = categoryCounts[category.id] || 0;
+			{loading ? (
+				<div className="loadingBlock">Загрузка категорий...</div>
+			) : (
+				<>
+					<div className={`categoriesList ${styles.categoriesList}`}>
+						{categories.length > 0 ? (
+							categories.map((category) => {
+								return (
+									<div key={category.id} className={`categoryItem ${styles.categoryItem}`}>
+										<label className={`categoryCheckbox ${styles.categoryCheckbox}`}>
+											<input
+												type="checkbox"
+												checked={selectedCategories.includes(category.id)}
+												onChange={() => handleCategoryToggle(category.id)}
+												className={styles.checkboxInput}
+												disabled={!canEdit}
+											/>
+											<span className={styles.checkboxLabel}>
+												{category.title}
+												{selectedCategories.includes(category.id) && (
+													<span className={`productCount ${styles.productCount}`}>
+														({category.productCount === 0 ? "0 товаров" : `${category.productCount} товаров`})
+													</span>
+												)}
+											</span>
+										</label>
+									</div>
+								);
+							})
+						) : (
+							<p className={`emptyItem ${styles.emptyItem}`}>Нет доступных категорий</p>
+						)}
 
-					return (
-						<div key={category.id} className={`borderBlock categoryItem ${styles.borderBlock} ${styles.categoryItem}`}>
-							<div className={`itemTitleBlock ${styles.itemTitleBlock}`} onClick={() => toggleCategory(category.id)}>
-								<div className={`icon ${styles.icon} ${isSelected ? styles.active : ""}`}>
-									<div className={`line ${styles.line}`}></div>
-									<div className={`line ${styles.line}`}></div>
-								</div>
-								<div className={`itemTitle ${styles.itemTitle}`}>{category.title}</div>
-							</div>
-							<div className={`itemInfoBlock ${styles.itemInfoBlock}`}>
-								{count > 0 && isEditable ? (
-									activeMoveCategoryId === category.id ? (
-										<>
-											<div className={`itemInfo ${styles.itemInfo}`}>{count} товаров</div>
-											<div className={`moveButtonBlock ${styles.moveButtonBlock}`}>
-												<CustomSelect
-													options={[
-														{ value: "0", label: "Без категории" },
-														...categories
-															.filter((c) => c.id !== category.id && formCategories.includes(c.id))
-															.map((c) => ({ value: c.id.toString(), label: c.title })),
-													]}
-													value={selectedTargetCategories[category.id]?.toString() || ""}
-													onChange={(value) => {
-														setSelectedTargetCategories((prev) => ({
-															...prev,
-															[category.id]: value === "0" ? 0 : parseInt(value),
-														}));
-													}}
-													placeholder="Выберите категорию"
-												/>
-												<button
-													onClick={() => {
-														const targetId = selectedTargetCategories[category.id];
-														if (targetId !== undefined) {
-															openModal("move", category.id, targetId === 0 ? 0 : targetId);
-														}
-													}}
-													disabled={selectedTargetCategories[category.id] === undefined}
-													className="button"
-												>
-													Переместить
-												</button>
-												<button onClick={() => setActiveMoveCategoryId(null)} className="button">
-													Отмена
-												</button>
-											</div>
-										</>
-									) : (
-										<>
-											<div className={`itemInfo ${styles.itemInfo}`}>{count} товаров</div>
-											<div className={`moveButtonBlock ${styles.moveButtonBlock}`}>
-												<button onClick={() => setActiveMoveCategoryId(category.id)} className="button">
-													Переместить
-												</button>
-											</div>
-										</>
-									)
-								) : (
-									<div className={`itemInfo ${styles.itemInfo}`}>{count} товаров</div>
-								)}
+						{/* Отображение товаров без категории */}
+						<div className={`categoryItem ${styles.categoryItem}`}>
+							<div className={`categoryInfo ${styles.categoryInfo}`}>
+								<span className={styles.categoryTitle}>
+									Товары без категории
+									<span className={`productCount ${styles.productCount}`}>({uncategorizedCount} товаров)</span>
+								</span>
 							</div>
 						</div>
-					);
-				})}
-
-				{/* Товары без категории */}
-				<div className={`emptyItem ${styles.categoryItem} ${styles.emptyItem}`}>
-					<div className={`itemTitleBlock ${styles.itemTitleBlock}`}>
-						<div className={`itemTitle ${styles.itemTitle}`}>Без категории</div>
 					</div>
-					<div className={`itemInfoBlock ${styles.itemInfoBlock}`}>
-						<div className={`itemInfo ${styles.itemInfo}`}>{categoryCounts[0] || 0} товаров</div>
-						{isEditable && categoryCounts[0] > 0 && (
-							<div className={styles.moveButtonBlock}>
-								{emptyMoveActive ? (
-									<div className={`moveButtonBlock ${styles.moveButtonBlock}`}>
-										<CustomSelect
-											options={categories.filter((c) => formCategories.includes(c.id)).map((c) => ({ value: c.id.toString(), label: c.title }))}
-											value={emptyMoveTarget?.toString() || ""}
-											onChange={(value) => setEmptyMoveTarget(parseInt(value))}
-											placeholder="Выберите категорию"
-										/>
-										<button
-											onClick={() => {
-												if (emptyMoveTarget) {
-													setEmptyModalType("move");
-													setEmptyModalOpen(true);
-												}
-											}}
-											disabled={!emptyMoveTarget}
-											className="button"
-										>
-											Переместить
-										</button>
-										<button
-											onClick={() => {
-												setEmptyMoveActive(false);
-												setEmptyMoveTarget(null);
-											}}
-											className="button"
-										>
-											Отмена
-										</button>
-									</div>
-								) : (
-									<button onClick={() => setEmptyMoveActive(true)} className="button">
-										Переместить
-									</button>
-								)}
-							</div>
-						)}
-					</div>
-				</div>
-			</div>
-
-			{/* Модальное окно подтверждения */}
-			{modalOpen && modalType === "move" && modalPayload.targetId && (
-				<ConfirmPopup
-					open={modalOpen}
-					title="Подтверждение перемещения"
-					message={`Вы уверены, что хотите переместить все товары из категории "${categories.find((c) => c.id === modalPayload.sourceId)?.title}" в категорию "${
-						categories.find((c) => c.id === modalPayload.targetId)?.title
-					}"?`}
-					onConfirm={() => moveProductsConfirmed(modalPayload.sourceId, modalPayload.targetId!)}
-					onCancel={() => setModalOpen(false)}
-					confirmText="Переместить"
-					confirmButtonClassName="blueButton"
-				/>
-			)}
-			{emptyModalOpen && emptyModalType === "move" && emptyMoveTarget && (
-				<ConfirmPopup
-					open={emptyModalOpen}
-					title="Подтверждение перемещения"
-					message={`Вы уверены, что хотите переместить все товары без категории в категорию "${categories.find((c) => c.id === emptyMoveTarget)?.title}"?`}
-					onConfirm={() => moveEmptyCategoryConfirmed(emptyMoveTarget)}
-					onCancel={() => setEmptyModalOpen(false)}
-					confirmText="Переместить"
-					confirmButtonClassName="blueButton"
-				/>
-			)}
-
-			{/* Модальное окно подтверждения для перемещения в "Без категории" */}
-			{moveToEmptyModalOpen && moveToEmptyActive && (
-				<ConfirmPopup
-					open={moveToEmptyModalOpen}
-					title="Подтверждение перемещения"
-					message={`Вы уверены, что хотите переместить все товары из категории "${categories.find((c) => c.id === moveToEmptyActive)?.title}" в 'Без категории'?`}
-					onConfirm={() => moveToEmptyCategoryConfirmed(moveToEmptyActive)}
-					onCancel={() => setMoveToEmptyModalOpen(false)}
-					confirmText="Переместить"
-					confirmButtonClassName="blueButton"
-				/>
-			)}
-
-			{/* Модальное окно подтверждения для перемещения между категориями */}
-			{moveModalOpen && (
-				<div>
-					<div style={{ marginBottom: 16 }}>
-						<CustomSelect
-							options={[
-								{ value: "0", label: "Без категории" },
-								...categories.filter((c) => formCategories.includes(c.id)).map((c) => ({ value: c.id.toString(), label: c.title })),
-							]}
-							value={moveTarget !== null ? moveTarget.toString() : ""}
-							onChange={(value) => setMoveTarget(value === "0" ? null : parseInt(value))}
-							placeholder="Выберите категорию"
-						/>
-					</div>
-					<ConfirmPopup
-						open={moveModalOpen}
-						title="Подтверждение перемещения"
-						message={
-							moveSource === null
-								? `Вы уверены, что хотите переместить все товары без категории в выбранную категорию?`
-								: `Вы уверены, что хотите переместить все товары из категории "${categories.find((c) => c.id === moveSource)?.title}" в выбранную категорию?`
-						}
-						onConfirm={() => {
-							if (moveTarget === null && moveSource === null) return;
-							moveCategoryConfirmed(moveSource, moveTarget);
-						}}
-						onCancel={() => {
-							setMoveModalOpen(false);
-							setMoveSource(null);
-							setMoveTarget(null);
-						}}
-						confirmText="Переместить"
-						confirmButtonClassName="blueButton"
-					/>
-				</div>
+				</>
 			)}
 		</div>
 	);

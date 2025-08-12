@@ -13,7 +13,7 @@ export const GET = withPermission(
 
 			const [imports, products, bulk] = await Promise.all([
 				prisma.importLog.findMany({
-					where: scope === "department" ? { user: { departmentId: user.departmentId } } : undefined,
+					where: undefined, // Логи импорта доступны всем авторизованным пользователям
 					include: {
 						user: {
 							select: {
@@ -26,7 +26,7 @@ export const GET = withPermission(
 					},
 				}),
 				prisma.productLog.findMany({
-					where: scope === "department" ? { departmentId: user.departmentId } : undefined,
+					where: undefined, // Логи продуктов доступны всем авторизованным пользователям
 					include: {
 						user: {
 							select: {
@@ -41,7 +41,7 @@ export const GET = withPermission(
 					},
 				}),
 				prisma.bulkActionLog.findMany({
-					where: scope === "department" ? { departmentId: user.departmentId } : undefined,
+					where: undefined, // Логи массовых действий доступны всем авторизованным пользователям
 					include: {
 						user: {
 							select: {

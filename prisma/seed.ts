@@ -107,6 +107,25 @@ async function main() {
 		}),
 	]);
 
+	// Создаём менеджеров без отделов с номерами, содержащими только 7, 8, 9
+	const managersWithoutDepartments = [
+		{ first_name: "Менеджер", last_name: "Без отдела 1", phone: "7777777777" },
+		{ first_name: "Менеджер", last_name: "Без отдела 2", phone: "8888888888" },
+		{ first_name: "Менеджер", last_name: "Без отдела 3", phone: "9999999999" },
+	];
+
+	for (const managerData of managersWithoutDepartments) {
+		await prisma.user.create({
+			data: {
+				...managerData,
+				password: hash,
+				role: "manager",
+				status: "verified",
+				// departmentId не указываем - менеджер без отдела
+			},
+		});
+	}
+
 	// Категории
 	const categories = [
 		{ title: "Масла", image: "/images/maslo.svg" },

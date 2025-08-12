@@ -36,8 +36,8 @@ export async function GET() {
 				id: true,
 				first_name: true,
 				last_name: true,
+				middle_name: true,
 				phone: true,
-				avatar: true,
 				role: true,
 				department: {
 					select: {

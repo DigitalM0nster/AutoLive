@@ -19,7 +19,9 @@ interface PaginationProps {
  */
 export default function Pagination({ currentPage, totalPages, onPageChange, className = "" }: PaginationProps) {
 	// Если всего одна страница, не показываем пагинацию
-	if (totalPages <= 1) return null;
+	if (totalPages <= 1) {
+		return null;
+	}
 
 	// Формируем массив страниц для отображения
 	const renderPageNumbers = () => {

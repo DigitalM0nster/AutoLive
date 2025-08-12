@@ -1,0 +1,217 @@
+.dateFilterPopup {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 100;
+}
+.dateFilterPopup .dateFilterOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+}
+.dateFilterPopup .dateRangePickerContent {
+  position: relative;
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+  padding: 20px;
+  width: 280px;
+  height: -moz-fit-content;
+  height: fit-content;
+  z-index: 1;
+}
+.dateFilterPopup .dateFilterTitle {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 16px;
+}
+.dateFilterPopup .dateFilterTitle span {
+  font-weight: 600;
+  font-size: 16px;
+}
+.dateFilterPopup .dateFilterTitle .selectionInfo {
+  font-size: 13px;
+  color: #666;
+  font-style: italic;
+}
+.dateFilterPopup .dateFilterTitle .dateInputs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+.dateFilterPopup .dateFilterTitle .dateInputs .dateInputGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dateFilterPopup .dateFilterTitle .dateInputs .dateInputGroup label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #555;
+  min-width: 30px;
+}
+.dateFilterPopup .dateFilterTitle .dateInputs .dateInputGroup input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 14px;
+  background-color: #f9f9f9;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.dateFilterPopup .dateFilterTitle .dateInputs .dateInputGroup input:hover {
+  background-color: #f0f0f0;
+}
+.dateFilterPopup .dateFilterTitle .dateInputs .dateInputGroup input.active {
+  border-color: #2196f3;
+  background-color: #e3f2fd;
+}
+.dateFilterPopup .dateFilterTitle .dateInputs .dateInputGroup input::-moz-placeholder {
+  color: #999;
+}
+.dateFilterPopup .dateFilterTitle .dateInputs .dateInputGroup input::placeholder {
+  color: #999;
+}
+.dateFilterPopup .calendarHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+.dateFilterPopup .calendarHeader .currentMonth {
+  font-weight: 600;
+  font-size: 15px;
+}
+.dateFilterPopup .calendarHeader .monthNavButton {
+  width: 30px;
+  height: 30px;
+  border: none;
+  background-color: #f5f5f5;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: background-color 0.2s;
+}
+.dateFilterPopup .calendarHeader .monthNavButton:hover {
+  background-color: #e0e0e0;
+}
+.dateFilterPopup .calendarGrid {
+  margin-bottom: 15px;
+}
+.dateFilterPopup .calendarGrid .weekDays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 5px;
+}
+.dateFilterPopup .calendarGrid .weekDays div {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+  padding: 5px 0;
+}
+.dateFilterPopup .calendarGrid .daysGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.dateFilterPopup .calendarGrid .daysGrid .calendarDay {
+  height: 35px;
+  width: 35px;
+  min-width: 35px;
+  min-height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.dateFilterPopup .calendarGrid .daysGrid .calendarDay:hover:not(.otherMonth) {
+  background-color: #f0f0f0;
+}
+.dateFilterPopup .calendarGrid .daysGrid .calendarDay.otherMonth {
+  color: #ccc;
+  cursor: default;
+}
+.dateFilterPopup .calendarGrid .daysGrid .calendarDay.today {
+  border: 1px solid #2196f3;
+}
+.dateFilterPopup .calendarGrid .daysGrid .calendarDay.selected {
+  background-color: #2196f3;
+  color: white;
+  font-weight: 600;
+}
+.dateFilterPopup .calendarGrid .daysGrid .calendarDay.inRange {
+  background-color: rgba(33, 150, 243, 0.2);
+}
+.dateFilterPopup .selectedDatesInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 15px;
+  padding: 10px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+}
+.dateFilterPopup .selectedDatesInfo .dateInfo {
+  display: flex;
+  align-items: center;
+}
+.dateFilterPopup .selectedDatesInfo .dateInfo .dateLabel {
+  width: 70px;
+  font-weight: 600;
+  font-size: 13px;
+  color: #555;
+}
+.dateFilterPopup .selectedDatesInfo .dateInfo .dateValue {
+  font-size: 14px;
+}
+.dateFilterPopup .dateFilterActions {
+  display: flex;
+  justify-content: space-between;
+}
+.dateFilterPopup .dateFilterActions button {
+  padding: 8px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+.dateFilterPopup .dateFilterActions button.applyFilterButton {
+  background: linear-gradient(to right, var(--green-color), var(--dark-green-color));
+  color: white;
+}
+.dateFilterPopup .dateFilterActions button.applyFilterButton:hover:not(:disabled) {
+  background: linear-gradient(to right, var(--green-color), var(--dark-green-color));
+}
+.dateFilterPopup .dateFilterActions button.applyFilterButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.dateFilterPopup .dateFilterActions button.resetFilterButton {
+  background: transparent;
+  color: var(--blue-color);
+  box-shadow: none;
+}
+.dateFilterPopup .dateFilterActions button.resetFilterButton:hover {
+  text-decoration: underline;
+}/*# sourceMappingURL=DateRangePicker.module.css.map */

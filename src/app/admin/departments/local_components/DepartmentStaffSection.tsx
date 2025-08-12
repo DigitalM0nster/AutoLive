@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Users, UserPlus, X, Trash2 } from "lucide-react";
 import Link from "next/link";
 import styles from "./styles.module.scss";
@@ -9,116 +9,112 @@ import { useAuthStore } from "@/store/authStore";
 import UserSelectionPopup from "./UserSelectionPopup";
 import { User } from "@/lib/types";
 
-export default function DepartmentStaffSection({ users, isEditable }: { users?: User[]; isEditable?: boolean }) {
-	const { user: currentUser } = useAuthStore();
-	const [departmentUsers, setDepartmentUsers] = useState<User[]>(users || []);
-	const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
-	const [isManagerModalOpen, setIsManagerModalOpen] = useState(false);
-	const [availableUsers, setAvailableUsers] = useState<User[]>([]);
-	const [occupiedUsers, setOccupiedUsers] = useState<User[]>([]);
-	const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
+interface DepartmentStaffSectionProps {
+	departmentId?: number;
+	onFormChange?: (changed: boolean) => void;
+	currentAdmins?: User[];
+	currentManagers?: User[];
+	availableUsers?: User[];
+	setCurrentAdmins?: (admins: User[]) => void;
+	setCurrentManagers?: (managers: User[]) => void;
+	setAvailableUsers?: (users: User[]) => void;
+	// Добавляем пропс для проверки прав на редактирование
+	canEdit?: boolean;
+}
+
+export default function DepartmentStaffSection({
+	departmentId,
+	onFormChange,
+	currentAdmins = [],
+	currentManagers = [],
+	availableUsers = [],
+	setCurrentAdmins,
+	setCurrentManagers,
+	setAvailableUsers,
+	canEdit = true,
+}: DepartmentStaffSectionProps) {
+	const { user } = useAuthStore();
 	const [loading, setLoading] = useState(false);
-	const [currentDepartmentId, setCurrentDepartmentId] = useState<number | undefined>(undefined);
 
-	const admins = departmentUsers.filter((u) => u.role === "admin");
-	const managers = departmentUsers.filter((u) => u.role === "manager");
+	// Состояния для модальных окон
+	const [showAdminPopup, setShowAdminPopup] = useState(false);
+	const [showManagerPopup, setShowManagerPopup] = useState(false);
+	const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
 
-	// Проверяем права на управление отделом с учетом параметра isEditable
-	const canManageDepartment = isEditable !== false && (currentUser?.role === "superadmin" || currentUser?.role === "admin");
-	const canAddAdmins = isEditable !== false && currentUser?.role === "superadmin"; // Только суперадмин может добавлять администраторов
-	const canAddManagers = isEditable !== false && (currentUser?.role === "superadmin" || currentUser?.role === "admin"); // Суперадмин и админ могут добавлять менеджеров
+	// Добавление пользователей в отдел (накапливаем изменения)
+	const addUsersToDepartment = (userIds: number[], role: "admin" | "manager") => {
+		// Если у пользователя нет прав на редактирование, не выполняем действие
+		if (!canEdit) return;
 
-	const openModal = async (role: string) => {
-		if (!canManageDepartment) return;
-
-		setLoading(true);
-		try {
-			// Получаем данные о доступных пользователях из API
-			const departmentId = window.location.pathname.split("/").pop();
-			const departmentIdNumber = departmentId ? parseInt(departmentId) : undefined;
-			setCurrentDepartmentId(departmentIdNumber);
-
-			const res = await fetch(`/api/departments/${departmentId}/users`, {
-				credentials: "include",
-			});
-
-			if (!res.ok) throw new Error("Не удалось загрузить данные");
-
-			const data = await res.json();
-			setAvailableUsers(data.availableUsers || []);
-			setOccupiedUsers(data.occupiedUsers || []);
-			setSelectedUsers([]);
-
-			if (role === "admin") {
-				setIsAdminModalOpen(true);
-			} else {
-				setIsManagerModalOpen(true);
-			}
-		} catch (err) {
-			console.error("Ошибка загрузки пользователей:", err);
-			showErrorToast("Ошибка загрузки данных");
-		} finally {
-			setLoading(false);
+		// Обновляем состояние в родительском компоненте
+		const usersToAdd = availableUsers.filter((user) => userIds.includes(user.id));
+		if (role === "admin") {
+			const newAdmins = [...currentAdmins, ...usersToAdd];
+			setCurrentAdmins?.(newAdmins);
+		} else {
+			const newManagers = [...currentManagers, ...usersToAdd];
+			setCurrentManagers?.(newManagers);
 		}
+
+		// Удаляем добавленных пользователей из списка доступных
+		const updatedAvailableUsers = availableUsers.filter((user) => !userIds.includes(user.id));
+		// Обновляем список доступных пользователей в родительском компоненте
+		// Для этого нужно добавить setAvailableUsers в props
+		if (setAvailableUsers) {
+			setAvailableUsers(updatedAvailableUsers);
+		}
+
+		// Уведомляем родительский компонент об изменениях
+		onFormChange?.(true);
 	};
 
-	const handleSaveUsers = async () => {
-		if (selectedUsers.length === 0) return;
+	// Удаление пользователя из отдела (накапливаем изменения)
+	const removeUserFromDepartment = (userId: number) => {
+		// Если у пользователя нет прав на редактирование, не выполняем действие
+		if (!canEdit) return;
 
-		setLoading(true);
-		try {
-			const departmentId = window.location.pathname.split("/").pop();
-			const res = await fetch(`/api/departments/${departmentId}/users`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ userIds: selectedUsers }),
-				credentials: "include",
-			});
+		// Находим удаляемого пользователя
+		const removedUser = currentAdmins.find((admin) => admin.id === userId) || currentManagers.find((manager) => manager.id === userId);
 
-			if (!res.ok) {
-				const errorData = await res.json();
-				throw new Error(errorData.error || "Не удалось добавить сотрудников");
-			}
+		// Обновляем состояние в родительском компоненте
+		const newAdmins = currentAdmins.filter((admin) => admin.id !== userId);
+		const newManagers = currentManagers.filter((manager) => manager.id !== userId);
 
-			const data = await res.json();
-			setDepartmentUsers(data.users);
-			setIsAdminModalOpen(false);
-			setIsManagerModalOpen(false);
-			showSuccessToast("Сотрудники успешно добавлены");
-		} catch (err) {
-			console.error("Ошибка добавления сотрудников:", err);
-			showErrorToast(err instanceof Error ? err.message : "Ошибка добавления сотрудников");
-		} finally {
-			setLoading(false);
+		setCurrentAdmins?.(newAdmins);
+		setCurrentManagers?.(newManagers);
+
+		// Добавляем удаленного пользователя обратно в список доступных
+		if (removedUser && setAvailableUsers) {
+			setAvailableUsers([...availableUsers, removedUser]);
 		}
+
+		// Уведомляем родительский компонент об изменениях
+		onFormChange?.(true);
 	};
 
-	const handleRemoveUser = async (userId: number) => {
-		if (!confirm("Вы уверены, что хотите удалить сотрудника из отдела?")) return;
+	// Обработчики для модальных окон
+	const handleAddAdmins = () => {
+		setSelectedUsers([]);
+		setShowAdminPopup(true);
+	};
 
-		setLoading(true);
-		try {
-			const departmentId = window.location.pathname.split("/").pop();
-			const res = await fetch(`/api/departments/${departmentId}/users`, {
-				method: "DELETE",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ userId }),
-				credentials: "include",
-			});
+	const handleAddManagers = () => {
+		setSelectedUsers([]);
+		setShowManagerPopup(true);
+	};
 
-			if (!res.ok) {
-				const errorData = await res.json();
-				throw new Error(errorData.error || "Не удалось удалить сотрудника");
-			}
-
-			setDepartmentUsers(departmentUsers.filter((u) => u.id !== userId));
-			showSuccessToast("Сотрудник удален из отдела");
-		} catch (err) {
-			console.error("Ошибка удаления сотрудника:", err);
-			showErrorToast(err instanceof Error ? err.message : "Ошибка удаления сотрудника");
-		} finally {
-			setLoading(false);
+	const handleSaveAdmins = () => {
+		if (selectedUsers.length > 0) {
+			addUsersToDepartment(selectedUsers, "admin");
 		}
+		setShowAdminPopup(false);
+	};
+
+	const handleSaveManagers = () => {
+		if (selectedUsers.length > 0) {
+			addUsersToDepartment(selectedUsers, "manager");
+		}
+		setShowManagerPopup(false);
 	};
 
 	return (
@@ -130,96 +126,120 @@ export default function DepartmentStaffSection({ users, isEditable }: { users?: 
 				</h2>
 			</div>
 
-			<div className={`columnList ${styles.columnList}`}>
-				<div className={`borderBlock staffBlock ${styles.borderBlock} ${styles.staffBlock}`}>
-					<div className={`borderBlockHeader ${styles.borderBlockHeader}`}>
-						<h3>Администраторы</h3>
+			{loading ? (
+				<div className="loadingBlock">Загрузка сотрудников...</div>
+			) : (
+				<div className={`columnList ${styles.columnList}`}>
+					{/* Секция администраторов */}
+					<div className={`borderBlock staffBlock ${styles.borderBlock} ${styles.staffBlock}`}>
+						<div className={`borderBlockHeader ${styles.borderBlockHeader}`}>
+							<h3>Администраторы ({currentAdmins.length})</h3>
+							{canEdit && (
+								<button onClick={handleAddAdmins} className="addButton" title="Добавить администратора">
+									<UserPlus size={16} />
+									Добавить
+								</button>
+							)}
+						</div>
+						<div className="usersList">
+							{currentAdmins.length > 0 ? (
+								currentAdmins.map((admin) => (
+									<div key={admin.id} className="userItem">
+										<div className="userInfo">
+											<span className="userName">
+												{admin.first_name} {admin.last_name}
+											</span>
+											<span className="userPhone">{admin.phone}</span>
+										</div>
+										<div className="userActions">
+											<Link href={`/admin/users/${admin.id}`} className="userLink" target="_blank">
+												Профиль
+											</Link>
+											{canEdit && (
+												<button onClick={() => removeUserFromDepartment(admin.id)} className="removeButton" title="Удалить из отдела">
+													<Trash2 size={14} />
+												</button>
+											)}
+										</div>
+									</div>
+								))
+							) : (
+								<p className="emptyItem">Нет администраторов в отделе</p>
+							)}
+						</div>
 					</div>
-					<div className={`columnList ${styles.columnList}`}>
-						{admins.length > 0 ? (
-							admins.map((admin) => (
-								<div key={admin.id} className={`staffItem listItem ${styles.staffItem}`}>
-									<Link href={`/admin/users/${admin.id}`}>
-										{admin.first_name} {admin.last_name}
-										<span>({admin.phone})</span>
-									</Link>
-									{canAddAdmins && (
-										<button onClick={() => handleRemoveUser(admin.id)} className={`removeButton ${styles.removeButton}`} title="Удалить из отдела">
-											<Trash2 size={16} />
-										</button>
-									)}
-								</div>
-							))
-						) : (
-							<p className={`emptyItem ${styles.emptyItem}`}>Нет администраторов</p>
-						)}
-						{canAddAdmins && (
-							<button onClick={() => openModal("admin")} disabled={loading} className={`addButton ${styles.addButton}`}>
-								<UserPlus className={styles.addIcon} />
-								Добавить администратора
-							</button>
-						)}
-					</div>
-				</div>
 
-				<div className={`borderBlock staffBlock ${styles.borderBlock} ${styles.staffBlock}`}>
-					<div className={`borderBlockHeader ${styles.borderBlockHeader}`}>
-						<h3>Менеджеры</h3>
-					</div>
-					<div className={`columnList ${styles.columnList}`}>
-						{managers.length > 0 ? (
-							managers.map((manager) => (
-								<div key={manager.id} className={`listItem ${styles.listItem}`}>
-									<Link href={`/admin/users/${manager.id}`}>
-										{manager.first_name} {manager.last_name}
-										<span>({manager.phone})</span>
-									</Link>
-									{canAddManagers && (
-										<button onClick={() => handleRemoveUser(manager.id)} className={`removeButton ${styles.removeButton}`} title="Удалить из отдела">
-											<Trash2 size={16} />
-										</button>
-									)}
-								</div>
-							))
-						) : (
-							<p className={`emptyItem ${styles.emptyItem}`}>Нет менеджеров</p>
-						)}
-						{canAddManagers && (
-							<button onClick={() => openModal("manager")} disabled={loading} className={`addButton ${styles.addButton}`}>
-								<UserPlus className={styles.addIcon} />
-								Добавить менеджера
-							</button>
-						)}
+					{/* Секция менеджеров */}
+					<div className={`borderBlock staffBlock ${styles.borderBlock} ${styles.staffBlock}`}>
+						<div className={`borderBlockHeader ${styles.borderBlockHeader}`}>
+							<h3>Менеджеры ({currentManagers.length})</h3>
+							{canEdit && (
+								<button onClick={handleAddManagers} className="addButton" title="Добавить менеджера">
+									<UserPlus size={16} />
+									Добавить
+								</button>
+							)}
+						</div>
+						<div className="usersList">
+							{currentManagers.length > 0 ? (
+								currentManagers.map((manager) => (
+									<div key={manager.id} className="userItem">
+										<div className="userInfo">
+											<span className="userName">
+												{manager.last_name} {manager.first_name} {manager.middle_name}
+											</span>
+											<span className="userPhone">{manager.phone}</span>
+										</div>
+										<div className="userActions">
+											<Link href={`/admin/users/${manager.id}`} className="userLink" target="_blank">
+												Профиль
+											</Link>
+											{canEdit && (
+												<button onClick={() => removeUserFromDepartment(manager.id)} className="removeButton" title="Удалить из отдела">
+													<Trash2 size={14} />
+												</button>
+											)}
+										</div>
+									</div>
+								))
+							) : (
+								<p className="emptyItem">Нет менеджеров в отделе</p>
+							)}
+						</div>
 					</div>
 				</div>
-			</div>
+			)}
 
 			{/* Модальное окно выбора администраторов */}
 			<UserSelectionPopup
-				isOpen={isAdminModalOpen}
-				onClose={() => setIsAdminModalOpen(false)}
+				isOpen={showAdminPopup}
+				onClose={() => setShowAdminPopup(false)}
 				availableUsers={availableUsers}
-				occupiedUsers={occupiedUsers}
+				occupiedUsers={[]}
 				selectedUsers={selectedUsers}
 				setSelectedUsers={setSelectedUsers}
-				onSave={handleSaveUsers}
-				title="Добавление администраторов"
+				onSave={handleSaveAdmins}
+				title="Добавить администраторов"
 				roleFilter="admin"
-				currentDepartmentId={currentDepartmentId}
+				currentDepartmentId={departmentId}
+				currentAdmins={currentAdmins}
+				currentManagers={currentManagers}
 			/>
 
 			{/* Модальное окно выбора менеджеров */}
 			<UserSelectionPopup
-				isOpen={isManagerModalOpen}
-				onClose={() => setIsManagerModalOpen(false)}
+				isOpen={showManagerPopup}
+				onClose={() => setShowManagerPopup(false)}
 				availableUsers={availableUsers}
-				occupiedUsers={occupiedUsers}
+				occupiedUsers={[]}
 				selectedUsers={selectedUsers}
 				setSelectedUsers={setSelectedUsers}
-				onSave={handleSaveUsers}
-				title="Добавление менеджеров"
+				onSave={handleSaveManagers}
+				title="Добавить менеджеров"
 				roleFilter="manager"
-				currentDepartmentId={currentDepartmentId}
+				currentDepartmentId={departmentId}
+				currentAdmins={currentAdmins}
+				currentManagers={currentManagers}
 			/>
 		</div>
 	);

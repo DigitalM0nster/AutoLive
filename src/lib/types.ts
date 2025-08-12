@@ -36,25 +36,26 @@ export type UserLogAction = "create" | "update" | "delete" | "Создание" 
 export type UserLog = {
 	id: number;
 	createdAt: string;
-	action: UserLogAction;
+	action?: UserLogAction; // Поле для совместимости с компонентом
+	actions: UserLogAction[]; // Массив действий
 	message?: string | null;
-	adminId: number;
-	admin: {
+	adminId?: number;
+	admin?: {
 		id: number;
 		first_name: string | null;
 		last_name: string | null;
 		role: string;
-		department?: { name: string } | null;
+		department?: { id: number; name: string } | null;
 	};
 	targetUserId?: number | null;
-	targetUser?: {
+	targetUser: {
 		id: number;
 		first_name: string | null;
 		last_name: string | null;
 		phone: string;
 		role: string;
-		department?: { name: string } | null;
-	} | null;
+		department?: { id: number; name: string } | null;
+	};
 	departmentId?: number | null;
 	department?: {
 		id: number;
@@ -62,20 +63,42 @@ export type UserLog = {
 	} | null;
 	snapshotBefore?: any;
 	snapshotAfter?: any;
-	details?: {
-		before?: Record<string, any>;
-		after?: Record<string, any>;
-		diff?: Array<{
-			key: string;
-			fieldName: string;
-			before: any;
-			after: any;
-		}>;
-	};
+	adminSnapshot?: any;
 };
 
 export type UserLogResponse = {
 	data: UserLog[];
+	total: number;
+	page: number;
+	totalPages: number;
+	error?: string;
+};
+
+// Типы для логов отделов
+export type DepartmentLogAction = "create_department" | "change_name" | "change_categories" | "add_employees" | "remove_employees" | "delete_department";
+
+export type DepartmentLog = {
+	id: number;
+	createdAt: string;
+	actions: DepartmentLogAction[]; // Массив действий
+	message?: string | null;
+	adminId?: number;
+	admin?: {
+		id: number;
+		first_name: string | null;
+		last_name: string | null;
+		role: string;
+		department?: { id: number; name: string } | null;
+	};
+	targetDepartmentId?: number | null;
+	targetDepartment: Department;
+	snapshotBefore?: any;
+	snapshotAfter?: any;
+	adminSnapshot?: any;
+};
+
+export type DepartmentLogResponse = {
+	data: DepartmentLog[];
 	total: number;
 	page: number;
 	totalPages: number;
@@ -267,3 +290,26 @@ export type AdminData = {
 	role: string;
 	permissions: string[];
 };
+
+// Типы для фильтров
+export interface FilterOption {
+	value: string;
+	label: string;
+}
+
+export interface ActiveFilter {
+	key: string;
+	label: string;
+	value: string;
+}
+
+export interface FiltersBlockProps {
+	activeFilters: ActiveFilter[];
+	onResetFilters: () => void;
+	searchValue?: string;
+	onSearchChange?: (value: string) => void;
+	searchPlaceholder?: string;
+	showSearch?: boolean;
+	disabled?: boolean;
+	className?: string;
+}

@@ -13,6 +13,8 @@ type UserPopupProps = {
 	title: string;
 	roleFilter?: string;
 	currentDepartmentId?: number;
+	currentAdmins?: User[]; // Добавляем текущих администраторов
+	currentManagers?: User[]; // Добавляем текущих менеджеров
 };
 
 export default function UserSelectionPopup({
@@ -26,11 +28,18 @@ export default function UserSelectionPopup({
 	title,
 	roleFilter,
 	currentDepartmentId,
+	currentAdmins = [],
+	currentManagers = [],
 }: UserPopupProps) {
 	if (!isOpen) return null;
 
-	// Фильтруем пользователей по роли, если указан фильтр
-	const filteredAvailableUsers = roleFilter ? availableUsers.filter((user) => user.role === roleFilter) : availableUsers;
+	// Получаем ID всех сотрудников, которые уже в отделе
+	const currentDepartmentUserIds = [...currentAdmins, ...currentManagers].map((user) => user.id);
+
+	// Фильтруем пользователей: исключаем уже добавленных в отдел и фильтруем по роли
+	const filteredAvailableUsers = availableUsers
+		.filter((user) => !currentDepartmentUserIds.includes(user.id)) // Исключаем уже добавленных
+		.filter((user) => (roleFilter ? user.role === roleFilter : true)); // Фильтруем по роли
 
 	const toggleUser = (userId: number, event?: React.MouseEvent) => {
 		// Предотвращаем всплытие события, если оно передано

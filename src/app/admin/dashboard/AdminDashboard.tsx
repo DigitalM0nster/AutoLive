@@ -20,7 +20,7 @@ type Props = {
 };
 
 export default function AdminDashboard({ user }: Props) {
-	const sections: Section[] = ["departments", "users", "orders", "service-records", "content", "product-management"]
+	const sections: Section[] = ["departments", "users", "orders", "categories", "content", "product-management"]
 		.map((key): Section | null => {
 			const meta = adminRoutesMeta[key];
 			if (!meta || !meta.icon || !meta.bg) return null;
