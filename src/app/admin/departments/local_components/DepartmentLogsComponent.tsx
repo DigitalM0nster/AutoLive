@@ -270,24 +270,10 @@ export default function DepartmentLogsComponent({ departmentId }: { departmentId
 			{/* Используем переиспользуемый блок фильтров */}
 			<FiltersBlock activeFilters={getActiveFilters()} onResetFilters={resetAllFilters} />
 
-			{/* Информация о фильтрации */}
-			{actionFilter && (
-				<div className={styles.filterInfo}>
-					🔍 Показаны логи с действием: <strong>{actionOptions.find((option) => option.value === actionFilter)?.label}</strong>
-				</div>
-			)}
-
 			<DepartmentLogsTable departmentId={departmentId} tableHeaders={tableHeaders} queryParams={queryParams} onLogsUpdate={handleLogsUpdate} />
 
 			{/* Пагинация */}
 			<Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} className={styles.logsPagination} />
-
-			{/* Информация о количестве записей */}
-			{totalCount > 0 && (
-				<div className={styles.logsInfo}>
-					Показана {getRecordsText(totalCount)} из {totalCount}
-				</div>
-			)}
 		</div>
 	);
 }

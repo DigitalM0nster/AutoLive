@@ -117,10 +117,25 @@ export default function DepartmentStaffSection({
 		setShowManagerPopup(false);
 	};
 
+	// Функция для форматирования телефона в формат +7 (ххх) ххх-хх-хх
+	const formatPhoneNumber = (phone: string): string => {
+		// Убираем все нецифровые символы
+		const digits = phone.replace(/\D/g, "");
+
+		// Проверяем, что номер содержит 10 цифр (без кода страны)
+		if (digits.length === 10) {
+			// Форматируем: +7 (ччч) ччч-чч-чч
+			return `+7 (${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 8)}-${digits.slice(8, 10)}`;
+		}
+
+		// Если номер не соответствует формату, возвращаем как есть
+		return phone;
+	};
+
 	return (
 		<div className={`block sectionBlock ${styles.sectionBlock}`}>
 			<div className={`blockHeader ${styles.blockHeader}`}>
-				<h2 className={`blockTitle ${styles.blockTitle}`}>
+				<h2 className={`sectionTitle`}>
 					<Users className={`${styles.icon} ${styles.usersIcon}`} />
 					Сотрудники отдела
 				</h2>
@@ -129,81 +144,83 @@ export default function DepartmentStaffSection({
 			{loading ? (
 				<div className="loadingBlock">Загрузка сотрудников...</div>
 			) : (
-				<div className={`columnList ${styles.columnList}`}>
+				<div className={`columnList`}>
 					{/* Секция администраторов */}
-					<div className={`borderBlock staffBlock ${styles.borderBlock} ${styles.staffBlock}`}>
-						<div className={`borderBlockHeader ${styles.borderBlockHeader}`}>
+					<div className={`borderBlock staffBlock`}>
+						<div className={`borderBlockHeader`}>
 							<h3>Администраторы ({currentAdmins.length})</h3>
-							{canEdit && (
-								<button onClick={handleAddAdmins} className="addButton" title="Добавить администратора">
-									<UserPlus size={16} />
-									Добавить
-								</button>
-							)}
 						</div>
-						<div className="usersList">
+						<div className="staffList">
 							{currentAdmins.length > 0 ? (
 								currentAdmins.map((admin) => (
 									<div key={admin.id} className="userItem">
 										<div className="userInfo">
 											<span className="userName">
-												{admin.first_name} {admin.last_name}
+												<strong>
+													{admin.last_name} {admin.first_name} {admin.middle_name}
+												</strong>
+												<span className="userPhone">{formatPhoneNumber(admin.phone)}</span>
 											</span>
-											<span className="userPhone">{admin.phone}</span>
-										</div>
-										<div className="userActions">
 											<Link href={`/admin/users/${admin.id}`} className="userLink" target="_blank">
-												Профиль
+												Перейти в профиль <img src="/images/linkIcon.svg" alt="переход в профиль" />
 											</Link>
-											{canEdit && (
-												<button onClick={() => removeUserFromDepartment(admin.id)} className="removeButton" title="Удалить из отдела">
-													<Trash2 size={14} />
-												</button>
-											)}
 										</div>
+										{canEdit && (
+											<button onClick={() => removeUserFromDepartment(admin.id)} className="button removeButton" title="Удалить из отдела">
+												<Trash2 size={14} />
+												Удалить
+											</button>
+										)}
 									</div>
 								))
 							) : (
 								<p className="emptyItem">Нет администраторов в отделе</p>
 							)}
+							{canEdit && (
+								<div onClick={handleAddAdmins} className="button addButton">
+									<UserPlus size={16} />
+									Добавить
+								</div>
+							)}
 						</div>
 					</div>
 
 					{/* Секция менеджеров */}
-					<div className={`borderBlock staffBlock ${styles.borderBlock} ${styles.staffBlock}`}>
-						<div className={`borderBlockHeader ${styles.borderBlockHeader}`}>
+					<div className={`borderBlock staffBlock`}>
+						<div className={`borderBlockHeader`}>
 							<h3>Менеджеры ({currentManagers.length})</h3>
-							{canEdit && (
-								<button onClick={handleAddManagers} className="addButton" title="Добавить менеджера">
-									<UserPlus size={16} />
-									Добавить
-								</button>
-							)}
 						</div>
-						<div className="usersList">
+						<div className="staffList">
 							{currentManagers.length > 0 ? (
 								currentManagers.map((manager) => (
 									<div key={manager.id} className="userItem">
 										<div className="userInfo">
 											<span className="userName">
-												{manager.last_name} {manager.first_name} {manager.middle_name}
+												<strong>
+													{manager.last_name} {manager.first_name} {manager.middle_name}
+												</strong>
+												<span className="userPhone">{formatPhoneNumber(manager.phone)}</span>
 											</span>
-											<span className="userPhone">{manager.phone}</span>
-										</div>
-										<div className="userActions">
 											<Link href={`/admin/users/${manager.id}`} className="userLink" target="_blank">
-												Профиль
+												Перейти в профиль <img src="/images/linkIcon.svg" alt="переход в профиль" />
 											</Link>
-											{canEdit && (
-												<button onClick={() => removeUserFromDepartment(manager.id)} className="removeButton" title="Удалить из отдела">
-													<Trash2 size={14} />
-												</button>
-											)}
 										</div>
+										{canEdit && (
+											<button onClick={() => removeUserFromDepartment(manager.id)} className="button removeButton" title="Удалить из отдела">
+												<Trash2 size={14} />
+												Удалить
+											</button>
+										)}
 									</div>
 								))
 							) : (
 								<p className="emptyItem">Нет менеджеров в отделе</p>
+							)}
+							{canEdit && (
+								<div onClick={handleAddManagers} className="button addButton">
+									<UserPlus size={16} />
+									Добавить
+								</div>
 							)}
 						</div>
 					</div>
@@ -219,7 +236,7 @@ export default function DepartmentStaffSection({
 				selectedUsers={selectedUsers}
 				setSelectedUsers={setSelectedUsers}
 				onSave={handleSaveAdmins}
-				title="Добавить администраторов"
+				title="Добавление администраторов"
 				roleFilter="admin"
 				currentDepartmentId={departmentId}
 				currentAdmins={currentAdmins}
@@ -235,7 +252,7 @@ export default function DepartmentStaffSection({
 				selectedUsers={selectedUsers}
 				setSelectedUsers={setSelectedUsers}
 				onSave={handleSaveManagers}
-				title="Добавить менеджеров"
+				title="Добавление менеджеров"
 				roleFilter="manager"
 				currentDepartmentId={departmentId}
 				currentAdmins={currentAdmins}

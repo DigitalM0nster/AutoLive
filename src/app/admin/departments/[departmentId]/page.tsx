@@ -19,9 +19,10 @@ interface DepartmentPageProps {
 	departmentId?: string | number;
 	initialDepartment?: Department | null;
 	initialCategories?: Category[];
+	isCreateMode?: boolean; // Новый пропс для определения режима создания
 }
 
-export default function DepartmentPage({ initialDepartment = null, initialCategories = [] }: DepartmentPageProps) {
+export default function DepartmentPage({ initialDepartment = null, initialCategories = [], isCreateMode = false }: DepartmentPageProps) {
 	const router = useRouter();
 	const { user } = useAuthStore();
 	const params = useParams();
@@ -56,6 +57,9 @@ export default function DepartmentPage({ initialDepartment = null, initialCatego
 	const canEditDepartment = () => {
 		if (!user) return false;
 
+		// В режиме создания всегда можно редактировать
+		if (isCreateMode) return true;
+
 		// Для существующего департамента проверяем права доступа
 		if (!department) return false;
 
@@ -73,6 +77,7 @@ export default function DepartmentPage({ initialDepartment = null, initialCatego
 	// Проверка, может ли пользователь удалить этот отдел
 	const canDeleteDepartment = () => {
 		if (!user) return false;
+		if (isCreateMode) return false; // В режиме создания нельзя удалить
 		return user.role === "superadmin";
 	};
 
@@ -114,7 +119,7 @@ export default function DepartmentPage({ initialDepartment = null, initialCatego
 
 	useEffect(() => {
 		const fetchDepartment = async () => {
-			if (!departmentId) {
+			if (isCreateMode || !departmentId) {
 				// В режиме создания инициализируем пустой департамент
 				setDepartment({
 					id: 0,
@@ -183,7 +188,34 @@ export default function DepartmentPage({ initialDepartment = null, initialCatego
 
 		fetchDepartment();
 		loadAvailableUsers();
-	}, [departmentId]);
+	}, [departmentId, isCreateMode]);
+
+	// В режиме создания загружаем категории отдельно
+	useEffect(() => {
+		const loadCategoriesForCreate = async () => {
+			if (isCreateMode && !loading) {
+				try {
+					const allCategoriesRes = await fetch("/api/categories", {
+						credentials: "include",
+					});
+					if (allCategoriesRes.ok) {
+						const allCategories = await allCategoriesRes.json();
+						const categoriesWithFlags = allCategories.map((cat: any) => ({
+							...cat,
+							isAllowed: false,
+							productCount: 0,
+						}));
+						setCategories(categoriesWithFlags);
+					}
+				} catch (err) {
+					console.error("Ошибка загрузки категорий:", err);
+					showErrorToast("Ошибка загрузки категорий");
+				}
+			}
+		};
+
+		loadCategoriesForCreate();
+	}, [isCreateMode, loading]);
 
 	const isDirty = formName !== originalName;
 
@@ -309,9 +341,18 @@ export default function DepartmentPage({ initialDepartment = null, initialCatego
 				requestBody.removeUsers = removeUsers;
 			}
 
-			// Отправляем все изменения одним запросом
-			const method = "PATCH";
-			const url = `/api/departments/${departmentId}`;
+			// В режиме создания добавляем всех выбранных пользователей
+			if (isCreateMode) {
+				const allSelectedUsers = [
+					...currentAdmins.map((admin) => ({ userId: admin.id, role: "admin" as const })),
+					...currentManagers.map((manager) => ({ userId: manager.id, role: "manager" as const })),
+				];
+				requestBody.userIds = allSelectedUsers.map((user) => user.userId);
+			}
+
+			// Отправляем запрос в зависимости от режима
+			const method = isCreateMode ? "POST" : "PATCH";
+			const url = isCreateMode ? "/api/departments" : `/api/departments/${departmentId}`;
 
 			const res = await fetch(url, {
 				method,
@@ -322,6 +363,14 @@ export default function DepartmentPage({ initialDepartment = null, initialCatego
 
 			if (res.ok) {
 				const updated = await res.json();
+
+				if (isCreateMode) {
+					// В режиме создания перенаправляем на страницу редактирования нового отдела
+					showSuccessToast("Отдел успешно создан");
+					router.push(`/admin/departments/${updated.id}`);
+					return;
+				}
+
 				setDepartment(updated);
 				setOriginalName(formName);
 				setOriginalCategories(selectedCategories);
@@ -378,6 +427,39 @@ export default function DepartmentPage({ initialDepartment = null, initialCatego
 	// Функция для получения детального описания изменений
 	const getChangesDescription = () => {
 		const changes: ChangeItem[] = [];
+
+		if (isCreateMode) {
+			changes.push({
+				type: "name" as const,
+				title: "Создание нового отдела",
+				description: `Будет создан отдел с названием "${formName}"`,
+			});
+
+			if (selectedCategories.length > 0) {
+				const categoryNames = categories.filter((cat) => selectedCategories.includes(cat.id)).map((cat) => cat.title);
+				changes.push({
+					type: "categories_added" as const,
+					title: "Доступные категории",
+					description: `Отделу будут доступны следующие категории:`,
+					items: categoryNames,
+				});
+			}
+
+			const allSelectedUsers = [...currentAdmins, ...currentManagers];
+			if (allSelectedUsers.length > 0) {
+				const userNames = allSelectedUsers.map(
+					(user) => `${user.last_name || ""} ${user.first_name || ""} ${user.middle_name || ""} ${user.role === "manager" ? "(Менеджер)" : "(Администратор)"}`
+				);
+				changes.push({
+					type: "staff_added" as const,
+					title: "Сотрудники отдела",
+					description: `В отдел будут добавлены следующие сотрудники:`,
+					items: userNames,
+				});
+			}
+
+			return changes;
+		}
 
 		if (isFormChanged && originalName !== formName) {
 			changes.push({
@@ -456,7 +538,7 @@ export default function DepartmentPage({ initialDepartment = null, initialCatego
 
 	// Функция для показа модального окна подтверждения
 	const handleSaveClick = () => {
-		if (hasAnyChanges) {
+		if (hasAnyChanges || isCreateMode) {
 			setShowConfirmChangesModal(true);
 		}
 	};
@@ -465,14 +547,16 @@ export default function DepartmentPage({ initialDepartment = null, initialCatego
 		<>
 			<div className="screenContent">
 				<div className="tableContainer">
-					<div className="tabsContainer">
-						<Link href={`/admin/departments/${departmentId}`} className={`tabButton active`}>
-							Управление отделом
-						</Link>
-						<Link href={`/admin/departments/${departmentId}/logs`} className={`tabButton`}>
-							История изменений отдела
-						</Link>
-					</div>
+					{!isCreateMode && (
+						<div className="tabsContainer">
+							<Link href={`/admin/departments/${departmentId}`} className={`tabButton active`}>
+								Управление отделом
+							</Link>
+							<Link href={`/admin/departments/${departmentId}/logs`} className={`tabButton`}>
+								История изменений отдела
+							</Link>
+						</div>
+					)}
 
 					{loading ? (
 						<div className="tableContent">
@@ -482,7 +566,7 @@ export default function DepartmentPage({ initialDepartment = null, initialCatego
 						<>
 							<div className="tableContent">
 								{/* Показываем предупреждение если пользователь не может редактировать отдел */}
-								{!canEditDepartment() && user && (
+								{!canEditDepartment() && user && !isCreateMode && (
 									<div
 										style={{
 											backgroundColor: "#fef3c7",
@@ -498,17 +582,17 @@ export default function DepartmentPage({ initialDepartment = null, initialCatego
 									</div>
 								)}
 
-								<div className={`${styles.titleRow}`}>
+								<div className={`titleBlock`}>
 									<input
 										type="text"
 										value={formName}
 										onChange={(e) => setFormName(e.target.value)}
-										className="formInput"
-										placeholder="Введите название отдела"
+										className="formInput titleInput"
+										placeholder={isCreateMode ? "Введите название нового отдела" : "Введите название отдела"}
 										disabled={!canEditDepartment()}
 									/>
-									{canDeleteDepartment() && departmentId && (
-										<button onClick={handleDeleteDepartment} className={styles.deleteDepartmentButton} title="Удалить отдел">
+									{canDeleteDepartment() && departmentId && !isCreateMode && (
+										<button onClick={handleDeleteDepartment} className={`button cancelButton`}>
 											<Trash2 size={18} />
 											Удалить отдел
 										</button>
@@ -517,7 +601,7 @@ export default function DepartmentPage({ initialDepartment = null, initialCatego
 
 								<div className={`sectionsContent ${styles.sectionsContent}`}>
 									<DepartmentCategorySection
-										departmentId={departmentId ? Number(departmentId) : undefined}
+										departmentId={isCreateMode ? undefined : departmentId ? Number(departmentId) : undefined}
 										onFormChange={setIsFormChanged}
 										onSave={handleSave}
 										selectedCategories={selectedCategories}
@@ -529,7 +613,7 @@ export default function DepartmentPage({ initialDepartment = null, initialCatego
 
 									{/* Показываем секцию сотрудников */}
 									<DepartmentStaffSection
-										departmentId={departmentId ? Number(departmentId) : undefined}
+										departmentId={isCreateMode ? undefined : departmentId ? Number(departmentId) : undefined}
 										onFormChange={handleStaffChange}
 										currentAdmins={currentAdmins}
 										currentManagers={currentManagers}
@@ -542,15 +626,19 @@ export default function DepartmentPage({ initialDepartment = null, initialCatego
 								</div>
 							</div>
 
-							{canEditDepartment() && hasAnyChanges && (
+							{canEditDepartment() && (hasAnyChanges || isCreateMode) && (
 								<div className="fixedButtonsBlock">
 									<div className="buttonsContent">
-										<button onClick={handleSaveClick} disabled={!hasAnyChanges} className={`acceptButton ${!hasAnyChanges ? "disabled" : ""}`}>
+										<button
+											onClick={handleSaveClick}
+											disabled={!formName.trim() && isCreateMode}
+											className={`acceptButton ${!formName.trim() && isCreateMode ? "disabled" : ""}`}
+										>
 											<Check className="" />
-											Сохранить
+											{isCreateMode ? "Создать отдел" : "Сохранить"}
 										</button>
 
-										{hasAnyChanges && (
+										{hasAnyChanges && !isCreateMode && (
 											<button
 												onClick={() => {
 													setFormName(originalName);
@@ -589,6 +677,13 @@ export default function DepartmentPage({ initialDepartment = null, initialCatego
 												Отменить
 											</button>
 										)}
+
+										{isCreateMode && (
+											<button onClick={() => router.push("/admin/departments")} className="cancelButton">
+												<X className="" />
+												Отмена
+											</button>
+										)}
 									</div>
 								</div>
 							)}
@@ -602,14 +697,12 @@ export default function DepartmentPage({ initialDepartment = null, initialCatego
 				open={showConfirmChangesModal}
 				onCancel={() => setShowConfirmChangesModal(false)}
 				onConfirm={handleSave}
-				title="Подтверждение изменений"
-				confirmText="Сохранить изменения"
+				title={isCreateMode ? "Подтверждение создания" : "Подтверждение изменений"}
+				confirmText={isCreateMode ? "Создать отдел" : "Сохранить изменения"}
 				cancelText="Отмена"
 			>
 				<div>
-					<p style={{ marginBottom: "16px", color: "#6b7280", fontSize: "14px" }}>
-						Вы собираетесь сохранить следующие изменения в отделе <strong>"{department?.name}"</strong>:
-					</p>
+					<p>{isCreateMode ? `Вы собираетесь создать новый отдел:` : `Вы собираетесь сохранить следующие изменения в отделе <strong>"${department?.name}"</strong>:`}</p>
 					<ChangesDisplay changes={getChangesDescription()} />
 				</div>
 			</ConfirmPopup>

@@ -85,7 +85,7 @@ export default function DepartmentCategorySection({
 
 	return (
 		<div className={`block sectionBlock ${styles.sectionBlock}`}>
-			<h2 className={`blockTitle ${styles.blockTitle}`}>
+			<h2 className={`sectionTitle`}>
 				<Tags className={`${styles.icon}`} />
 				Категории отдела
 			</h2>
@@ -100,38 +100,31 @@ export default function DepartmentCategorySection({
 								return (
 									<div key={category.id} className={`categoryItem ${styles.categoryItem}`}>
 										<label className={`categoryCheckbox ${styles.categoryCheckbox}`}>
-											<input
-												type="checkbox"
-												checked={selectedCategories.includes(category.id)}
-												onChange={() => handleCategoryToggle(category.id)}
-												className={styles.checkboxInput}
-												disabled={!canEdit}
-											/>
-											<span className={styles.checkboxLabel}>
-												{category.title}
-												{selectedCategories.includes(category.id) && (
-													<span className={`productCount ${styles.productCount}`}>
-														({category.productCount === 0 ? "0 товаров" : `${category.productCount} товаров`})
-													</span>
-												)}
-											</span>
+											<div className="categoryRow">
+												<input
+													type="checkbox"
+													checked={selectedCategories.includes(category.id)}
+													onChange={() => handleCategoryToggle(category.id)}
+													className={styles.checkboxInput}
+													disabled={!canEdit}
+												/>
+												<span className={styles.checkboxLabel}>{category.title}</span>
+											</div>
+											{selectedCategories.includes(category.id) && (
+												<span className={`productCount`}>{category.productCount === 0 ? "0 товаров" : `${category.productCount} товаров`}</span>
+											)}
 										</label>
 									</div>
 								);
 							})
 						) : (
-							<p className={`emptyItem ${styles.emptyItem}`}>Нет доступных категорий</p>
+							<p className={`emptyItem`}>Нет доступных категорий</p>
 						)}
-
-						{/* Отображение товаров без категории */}
-						<div className={`categoryItem ${styles.categoryItem}`}>
-							<div className={`categoryInfo ${styles.categoryInfo}`}>
-								<span className={styles.categoryTitle}>
-									Товары без категории
-									<span className={`productCount ${styles.productCount}`}>({uncategorizedCount} товаров)</span>
-								</span>
-							</div>
-						</div>
+					</div>
+					{/* Отображение товаров без категории */}
+					<div className={`noCategoryItem`}>
+						<span className={`categoryTitle`}>Товаров без категории:</span>
+						<span className={`productCount`}>{uncategorizedCount} шт.</span>
 					</div>
 				</>
 			)}

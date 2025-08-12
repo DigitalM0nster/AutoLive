@@ -469,9 +469,6 @@ export default function UserComponent({ userId, isCreating = false }: UserPagePr
 	if (loading) {
 		return (
 			<div className={`screenContent ${styles.userPageContainer}`}>
-				<Link href="/admin/users" className={styles.backLink}>
-					← К списку пользователей
-				</Link>
 				<Loading />
 			</div>
 		);
@@ -480,9 +477,6 @@ export default function UserComponent({ userId, isCreating = false }: UserPagePr
 	if (error) {
 		return (
 			<div className={`screenContent ${styles.userPageContainer}`}>
-				<Link href="/admin/users" className={styles.backLink}>
-					← К списку пользователей
-				</Link>
 				<h3>Ошибка: {error}</h3>
 			</div>
 		);
@@ -491,9 +485,6 @@ export default function UserComponent({ userId, isCreating = false }: UserPagePr
 	if (!userData && !isCreating) {
 		return (
 			<div className={`screenContent ${styles.userPageContainer}`}>
-				<Link href="/admin/users" className={styles.backLink}>
-					← К списку пользователей
-				</Link>
 				<h3>Пользователь не найден</h3>
 			</div>
 		);

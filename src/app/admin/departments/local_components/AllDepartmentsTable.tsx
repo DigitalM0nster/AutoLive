@@ -2,14 +2,12 @@
 
 import React, { useEffect, useState } from "react";
 import styles from "./styles.module.scss";
-import { Trash2 } from "lucide-react";
 import FiltersBlock from "@/components/ui/filtersBlock/FiltersBlock";
 import { ActiveFilter } from "@/lib/types";
 import Link from "next/link";
 import ConfirmPopup from "@/components/ui/confirmPopup/ConfirmPopup";
 import { showSuccessToast, showErrorToast } from "@/components/ui/toast/ToastProvider";
 import { useAuthStore } from "@/store/authStore";
-import { hasPermission } from "@/lib/rolesConfig";
 import Loading from "@/components/ui/loading/Loading";
 
 // Тип для отдела с категориями
@@ -110,13 +108,6 @@ export default function AllDepartmentsTable() {
 
 		return data.filter((dept) => dept.name.toLowerCase().includes(search.toLowerCase()));
 	};
-
-	// Функция для удаления отдела
-	const handleDeleteDepartment = async (department: Department) => {
-		setDepartmentToDelete(department);
-		setShowDeleteModal(true);
-	};
-
 	// Функция для подтверждения удаления
 	const confirmDelete = async () => {
 		if (!departmentToDelete) return;
@@ -208,19 +199,18 @@ export default function AllDepartmentsTable() {
 									Название отдела
 								</th>
 								<th className={styles.tableHeaderCell}>Категории</th>
-								<th className={styles.tableHeaderCell}>Действия</th>
 							</tr>
 						</thead>
 						<tbody className={styles.tableBody}>
 							{loading ? (
 								<tr>
-									<td colSpan={4} className={styles.loadingCell}>
+									<td colSpan={3} className={styles.loadingCell}>
 										<Loading />
 									</td>
 								</tr>
 							) : processedDepartments.length === 0 ? (
 								<tr>
-									<td colSpan={4} className={styles.emptyCell}>
+									<td colSpan={3} className={styles.emptyCell}>
 										{search ? "Отделы не найдены" : "Нет отделов"}
 									</td>
 								</tr>
@@ -245,20 +235,6 @@ export default function AllDepartmentsTable() {
 											) : (
 												"—"
 											)}
-										</td>
-										<td>
-											<div className={styles.buttonsBlock}>
-												<Link href={`/admin/departments/${dept.id}`} className="button">
-													Просмотр
-												</Link>
-												{/* Показываем кнопку удаления только суперадмину */}
-												{canDeleteDepartments() && (
-													<button onClick={() => handleDeleteDepartment(dept)} className="button cancelButton">
-														Удалить отдел
-														<Trash2 size={16} />
-													</button>
-												)}
-											</div>
 										</td>
 									</tr>
 								))

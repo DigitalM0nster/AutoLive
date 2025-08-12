@@ -625,7 +625,9 @@ export default function DepartmentLogsTable({
 						localLogs.map((log: DepartmentLog) => {
 							return (
 								<tr key={log.id} className={styles.tableRow}>
-									<td className={styles.tableCell}>{formatDate(log.createdAt)}</td>
+									<td className={styles.tableCell}>
+										<div className="dateCell">{formatDate(log.createdAt)}</div>
+									</td>
 									<td className={styles.tableCell}>{log.admin ? renderUserLink(log, log.admin, log.id, "admin") : "—"}</td>
 									<td className={styles.tableCell}>{getResultBlock(log)}</td>
 								</tr>

@@ -7,6 +7,15 @@
 
 .tableHeaderCell {
 	&:last-child {
-		text-align: center;
+		text-align: left;
 	}
+}
+
+.sectionsContent {
+	flex-wrap: wrap;
+	gap: 10px;
+}
+
+.sectionBlock {
+	width: calc(50% - 5px - 48px - 2px);
 }

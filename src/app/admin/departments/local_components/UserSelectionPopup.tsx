@@ -1,6 +1,7 @@
 import { Check, X } from "lucide-react";
 import styles from "./styles.module.scss";
 import { User } from "@/lib/types";
+import Link from "next/link";
 
 type UserPopupProps = {
 	isOpen: boolean;
@@ -54,62 +55,63 @@ export default function UserSelectionPopup({
 		}
 	};
 
-	// Функция для отображения названия роли
-	const getRoleName = (role: string) => {
-		return role === "admin" ? "Администратор" : "Менеджер";
+	// Функция для форматирования телефона в формат +7 (ххх) ххх-хх-хх
+	const formatPhoneNumber = (phone: string): string => {
+		// Убираем все нецифровые символы
+		const digits = phone.replace(/\D/g, "");
+
+		// Проверяем, что номер содержит 10 цифр (без кода страны)
+		if (digits.length === 10) {
+			// Форматируем: +7 (ччч) ччч-чч-чч
+			return `+7 (${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 8)}-${digits.slice(8, 10)}`;
+		}
+
+		// Если номер не соответствует формату, возвращаем как есть
+		return phone;
 	};
 
 	return (
 		<div className={`popup ${styles.popup}`}>
 			<div className="background" />
-			<div className={`contentBlock ${styles.contentBlock}`}>
-				<div className={`popupHeader ${styles.popupHeader}`}>
-					<h2 className={`title ${styles.title}`}>{title}</h2>
+			<div className={`contentBlock `}>
+				<div className={`popupHeader`}>
+					<h2 className={`title `}>{title}</h2>
 				</div>
-				<div className={`popupBody ${styles.popupBody}`}>
-					<div className={`columnList usersBlock ${styles.usersBlock} ${styles.columnList}`}>
+				<div className={`popupBody`}>
+					<div className={`columnList usersBlock`}>
 						<div className={styles.columnItem}>
 							{filteredAvailableUsers.length > 0 ? (
-								<div className={`usersList ${styles.usersList}`}>
+								<div className={`staffList`}>
 									{filteredAvailableUsers.map((user) => (
 										<div
 											key={user.id}
-											className={`borderBlock userCard ${styles.userCard} ${selectedUsers.includes(user.id) ? styles.selected : ""}`}
+											className={`userItem clickable ${selectedUsers.includes(user.id) ? "selected" : ""}`}
 											onClick={() => toggleUser(user.id)}
 										>
-											<div className={styles.userButton} onClick={(e) => toggleUser(user.id, e)}>
-												<div className={styles.circle}></div>
-											</div>
-											<div className={`userInfo ${styles.userInfo}`}>
-												<div className={styles.userTop}>
-													<div className={`userRole ${styles.userRole}`}>{getRoleName(user.role)}</div>
-												</div>
-												<div className={styles.userBottom}>
-													<div className={`userName ${styles.userName}`}>
-														{user.first_name} {user.last_name}
-													</div>
-													<a
-														className={`borderBlock ${styles.userLink} ${styles.borderBlock}`}
-														href={`/admin/users/${user.id}`}
-														target="_blank"
-														onClick={(e) => e.stopPropagation()}
-													>
-														Перейти в профиль пользователя <img src="/images/linkIcon.svg" alt="переход в профиль" />
-													</a>
-												</div>
+											<div className={`userInfo`}>
+												<span className="userName">
+													<strong>
+														{user.last_name} {user.first_name} {user.middle_name}
+													</strong>
+													<span className="userPhone">{formatPhoneNumber(user.phone)}</span>
+												</span>
+												<Link href={`/admin/users/${user.id}`} className="userLink" target="_blank" onClick={(e) => e.stopPropagation()}>
+													Перейти в профиль
+													<img src="/images/linkIcon.svg" alt="переход в профиль" />
+												</Link>
 											</div>
 										</div>
 									))}
 								</div>
 							) : (
-								<p className={`emptyItem ${styles.emptyItem}`}>Нет доступных сотрудников</p>
+								<p className={`emptyItem`}>Нет доступных сотрудников</p>
 							)}
 						</div>
 					</div>
 				</div>
-				<div className={`popupFooter ${styles.popupFooter}`}>
+				<div className={`popupFooter`}>
 					<div className="buttonsBlock">
-						<button onClick={onClose} className={`cancelButton ${styles.removeButton} redBorder`}>
+						<button onClick={onClose} className={`cancelButton redBorder`}>
 							Отмена
 						</button>
 						<button onClick={onSave} disabled={selectedUsers.length === 0} className={`${selectedUsers.length === 0 ? "disabled" : ""}`}>
