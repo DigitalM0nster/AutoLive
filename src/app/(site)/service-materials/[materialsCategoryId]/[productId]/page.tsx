@@ -2,16 +2,15 @@ import styles from "./styles.module.scss";
 import NavigationMenu from "@/components/user/navigationMenu/NavigationMenu";
 
 type PageParams = {
-	params: {
+	params: Promise<{
 		materialsCategoryId: string;
 		productId: string;
-	};
+	}>;
 };
 
 export default async function ProductPage({ params }: PageParams) {
 	// безопасно извлекаем значения
-	const categoryId = params?.materialsCategoryId || "";
-	const productId = params?.productId || "";
+	const { materialsCategoryId, productId } = await params;
 
 	if (!productId) {
 		return <div className="text-center">Загрузка...</div>;

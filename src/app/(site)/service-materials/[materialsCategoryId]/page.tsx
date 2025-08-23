@@ -6,13 +6,14 @@ import CategoryPageClient from "./CategoryPageClient";
 import type { Category } from "@/lib/types";
 
 type PageParams = {
-	params: {
+	params: Promise<{
 		materialsCategoryId: string;
-	};
+	}>;
 };
 
 export default async function MaterialPageByCategory({ params }: PageParams) {
-	const categoryId = decodeURIComponent(params?.materialsCategoryId || "");
+	const { materialsCategoryId } = await params;
+	const categoryId = decodeURIComponent(materialsCategoryId || "");
 
 	if (!categoryId) {
 		return <div className="text-center">Загрузка...</div>;

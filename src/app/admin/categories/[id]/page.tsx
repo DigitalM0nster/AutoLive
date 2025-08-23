@@ -4,11 +4,12 @@ import { notFound } from "next/navigation";
 import CategoryManager from "../local_components/categoryManager/CategoryManager"; // 👈 заменили импорт
 
 type Props = {
-	params: { id: string };
+	params: Promise<{ id: string }>;
 };
 
 export default async function EditCategoryPage({ params }: Props) {
-	const categoryId = Number(params.id);
+	const { id } = await params;
+	const categoryId = Number(id);
 
 	const category = await prisma.category.findUnique({
 		where: { id: categoryId },

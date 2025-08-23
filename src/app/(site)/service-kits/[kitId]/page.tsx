@@ -6,14 +6,16 @@ import type { ServiceKit } from "@/lib/types";
 import CONFIG from "@/lib/config";
 
 type PageParams = {
-	params: {
+	params: Promise<{
 		kitId: string;
-	};
+	}>;
 };
 
 // ✅ SSR-метаданные
 export async function generateMetadata({ params }: PageParams) {
-	const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/service-kits/${params.kitId}`, {
+	const { kitId } = await params;
+
+	const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/service-kits/${kitId}`, {
 		cache: "no-store",
 	});
 
@@ -33,7 +35,9 @@ export async function generateMetadata({ params }: PageParams) {
 
 // ✅ Страница комплекта ТО
 export default async function ServiceKitPage({ params }: PageParams) {
-	const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/service-kits/${params.kitId}`, {
+	const { kitId } = await params;
+
+	const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/service-kits/${kitId}`, {
 		cache: "no-store",
 	});
 
