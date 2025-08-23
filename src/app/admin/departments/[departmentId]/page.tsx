@@ -86,7 +86,6 @@ export default async function DepartmentPage({ params }: PageParams) {
 			orders: [],
 		})),
 		products: [],
-		orders: [],
 	};
 
 	const initialData = {
