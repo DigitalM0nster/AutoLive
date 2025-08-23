@@ -16,15 +16,26 @@ export async function generateMetadata() {
 }
 
 export default async function ServiceKitsPage() {
-	const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/get-kits`, {
-		next: { revalidate: 3600 },
-	});
+	let kits: ServiceKit[] = [];
 
-	if (!res.ok) {
-		return <div className="text-center">Ошибка загрузки комплектов ТО</div>;
+	try {
+		// Проверяем, что мы не в процессе сборки
+		if (process.env.NODE_ENV === "production" || process.env.NEXT_PUBLIC_BASE_URL) {
+			const baseUrl = CONFIG.BASE_URL;
+			const res = await fetch(`${baseUrl}/api/get-kits`, {
+				next: { revalidate: 3600 },
+			});
+
+			if (res.ok) {
+				kits = await res.json();
+			} else {
+				console.warn("Не удалось загрузить комплекты ТО:", res.status);
+			}
+		}
+	} catch (error) {
+		console.warn("Ошибка при загрузке комплектов ТО:", error);
+		// В случае ошибки продолжаем работу с пустым массивом
 	}
-
-	const kits: ServiceKit[] = await res.json();
 
 	return (
 		<div className={`screen ${styles.screen}`}>
@@ -32,27 +43,34 @@ export default async function ServiceKitsPage() {
 				<NavigationMenu />
 				<h1 className={`pageTitle ${styles.pageTitle}`}>Комплекты ТО</h1>
 				<div className={`screenBlock ${styles.screenBlock}`}>
-					{kits.map((kit) => (
-						<div key={kit.id} className={styles.serviceKitItem}>
-							<div className={styles.imageBlock}>
-								<img src={kit.image} alt={kit.name} />
-							</div>
-							<div className={styles.contentBlock}>
-								<div className={styles.titleBlock}>
-									<div className={styles.title}>{kit.name}</div>
-									<div className={styles.description}>
-										<p>{kit.description}</p>
+					{kits.length > 0 ? (
+						kits.map((kit) => (
+							<div key={kit.id} className={styles.serviceKitItem}>
+								<div className={styles.imageBlock}>
+									<img src={kit.image} alt={kit.name} />
+								</div>
+								<div className={styles.contentBlock}>
+									<div className={styles.titleBlock}>
+										<div className={styles.title}>{kit.name}</div>
+										<div className={styles.description}>
+											<p>{kit.description}</p>
+										</div>
+									</div>
+									<div className={styles.buttonBlock}>
+										<div className={styles.price}>Стоимость: {kit.price} рублей.</div>
+										<Link href={`/service-kits/${kit.id}`} className={`button ${styles.button}`}>
+											Выбрать
+										</Link>
 									</div>
 								</div>
-								<div className={styles.buttonBlock}>
-									<div className={styles.price}>Стоимость: {kit.price} рублей.</div>
-									<Link href={`/service-kits/${kit.id}`} className={`button ${styles.button}`}>
-										Выбрать
-									</Link>
-								</div>
 							</div>
+						))
+					) : (
+						<div className={styles.noKits}>
+							<p>Комплекты ТО временно недоступны</p>
+							<p>Попробуйте обновить страницу позже</p>
 						</div>
-					))}
+					)}
 				</div>
 			</div>
 		</div>

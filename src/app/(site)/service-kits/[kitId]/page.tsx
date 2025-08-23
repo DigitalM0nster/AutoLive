@@ -15,35 +15,67 @@ type PageParams = {
 export async function generateMetadata({ params }: PageParams) {
 	const { kitId } = await params;
 
-	const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/service-kits/${kitId}`, {
-		cache: "no-store",
-	});
+	try {
+		// Проверяем, что мы не в процессе сборки
+		if (process.env.NODE_ENV === "production" || process.env.NEXT_PUBLIC_BASE_URL) {
+			const baseUrl = CONFIG.BASE_URL;
+			const res = await fetch(`${baseUrl}/api/service-kits/${kitId}`, {
+				cache: "no-store",
+			});
 
-	if (!res.ok) {
-		return {
-			title: `Комплект ТО не найден | ${CONFIG.STORE_NAME}`,
-		};
+			if (res.ok) {
+				const kit: ServiceKit = await res.json();
+				return {
+					title: `${kit.title} – Комплект ТО в ${CONFIG.STORE_NAME} | ${CONFIG.CITY}`,
+					description: `Купить ${kit.title} в ${CONFIG.STORE_NAME}. Состав: ${kit.parts?.map((p) => p.name).join(", ")}`,
+				};
+			}
+		}
+	} catch (error) {
+		console.warn("Ошибка при загрузке метаданных комплекта:", error);
 	}
 
-	const kit: ServiceKit = await res.json();
-
 	return {
-		title: `${kit.title} – Комплект ТО в ${CONFIG.STORE_NAME} | ${CONFIG.CITY}`,
-		description: `Купить ${kit.title} в ${CONFIG.STORE_NAME}. Состав: ${kit.parts?.map((p) => p.name).join(", ")}`,
+		title: `Комплект ТО не найден | ${CONFIG.STORE_NAME}`,
 	};
 }
 
 // ✅ Страница комплекта ТО
 export default async function ServiceKitPage({ params }: PageParams) {
 	const { kitId } = await params;
+	let kit: ServiceKit | null = null;
 
-	const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/service-kits/${kitId}`, {
-		cache: "no-store",
-	});
+	try {
+		// Проверяем, что мы не в процессе сборки
+		if (process.env.NODE_ENV === "production" || process.env.NEXT_PUBLIC_BASE_URL) {
+			const baseUrl = CONFIG.BASE_URL;
+			const res = await fetch(`${baseUrl}/api/service-kits/${kitId}`, {
+				cache: "no-store",
+			});
 
-	if (!res.ok) return <div className="screenContent">Комплект не найден</div>;
+			if (res.ok) {
+				kit = await res.json();
+			}
+		}
+	} catch (error) {
+		console.warn("Ошибка при загрузке комплекта ТО:", error);
+	}
 
-	const kit: ServiceKit = await res.json();
+	if (!kit) {
+		return (
+			<div className={`screen ${styles.screen}`}>
+				<div className="screenContent">
+					<NavigationMenu />
+					<div className={`screenBlock ${styles.screenBlock}`}>
+						<div className={styles.noKits}>
+							<p>Комплект не найден</p>
+							<p>Попробуйте обновить страницу позже</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div className={`screen ${styles.screen}`}>
