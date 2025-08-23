@@ -2,7 +2,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 // Функция генерации 4-х значного кода
 const generateCode = () => Math.floor(1000 + Math.random() * 9000).toString();
