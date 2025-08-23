@@ -8,7 +8,7 @@ import FiltersBlock from "@/components/ui/filtersBlock/FiltersBlock";
 import type { User, ActiveFilter } from "@/lib/types";
 import Link from "next/link";
 
-export default function UsersTable() {
+export default function AllUsersTable() {
 	const [users, setUsers] = useState<User[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [page, setPage] = useState(1);
