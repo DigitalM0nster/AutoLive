@@ -37,7 +37,7 @@ export default function Header() {
 	// Авторизация при загрузке
 	useEffect(() => {
 		initAuth();
-	}, []);
+	}, [initAuth]);
 
 	return (
 		<>

@@ -13,6 +13,7 @@ const CustomStyledInput = forwardRef<HTMLInputElement, React.InputHTMLAttributes
 	// Здесь просто пробрасываем все полученные пропсы (включая className)
 	return <input ref={ref} {...props} />;
 });
+CustomStyledInput.displayName = "CustomStyledInput";
 
 export default function PhoneInput({ value, onValueChange, inputClassName = "", ...rest }: PhoneInputProps) {
 	return (

@@ -29,7 +29,7 @@ export default function Header() {
 
 	useEffect(() => {
 		initAuth().finally(() => setLoading(false));
-	}, []);
+	}, [initAuth]);
 
 	const handleLogout = async () => {
 		await fetch("/api/admin/auth/logout", { method: "POST" });

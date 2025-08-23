@@ -3,18 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import styles from "./styles.module.scss";
+import { Product, Category } from "@/lib/types";
 
 type NavigationMenuProps = {
 	productId?: string | number;
-};
-
-type Category = {
-	id: number;
-	title: string;
-};
-
-type Product = {
-	title: string;
 };
 
 export default function NavigationMenu({ productId }: NavigationMenuProps) {
@@ -79,7 +71,7 @@ export default function NavigationMenu({ productId }: NavigationMenuProps) {
 				return { name, path: fullPath };
 			})
 			.filter(Boolean);
-	}, [pathname, categories, product]);
+	}, [pathname, categories, product, getCategoryTitle, pages]);
 
 	return (
 		<div className={styles.navigationMenu}>
