@@ -13,12 +13,12 @@ export async function POST(req: NextRequest) {
 		}
 
 		// Находим актуальный (неиспользованный) код
-		const smsCode = await prisma.smsCode.findFirst({
+		const smsCode = await prisma.sms_code.findFirst({
 			where: {
 				phone,
 				code,
 				used: false,
-				expiresAt: { gt: new Date() },
+				expires_at: { gt: new Date() },
 			},
 		});
 
@@ -49,13 +49,13 @@ export async function POST(req: NextRequest) {
 		});
 
 		// Отмечаем код как использованный
-		await prisma.smsCode.update({
+		await prisma.sms_code.update({
 			where: { id: smsCode.id },
 			data: { used: true },
 		});
 
 		// Удалим все старые коды
-		await prisma.smsCode.deleteMany({ where: { phone } });
+		await prisma.sms_code.deleteMany({ where: { phone } });
 
 		if (!process.env.JWT_SECRET) {
 			console.error("❌ JWT_SECRET не задан");

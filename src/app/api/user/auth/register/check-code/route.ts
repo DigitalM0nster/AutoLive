@@ -9,17 +9,17 @@ export async function POST(request: NextRequest) {
 		}
 
 		// Ищем актуальный неиспользованный код
-		const code = await prisma.smsCode.findFirst({
+		const code = await prisma.sms_code.findFirst({
 			where: {
 				phone,
-				expiresAt: { gt: new Date() },
+				expires_at: { gt: new Date() },
 				used: false,
 			},
-			orderBy: { expiresAt: "desc" },
+			orderBy: { expires_at: "desc" },
 		});
 
 		if (code) {
-			const expiresIn = Math.max(0, Math.floor((code.expiresAt.getTime() - Date.now()) / 1000));
+			const expiresIn = Math.max(0, Math.floor((code.expires_at.getTime() - Date.now()) / 1000));
 			return NextResponse.json({
 				success: true,
 				message: "Код ещё активен",

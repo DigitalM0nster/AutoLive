@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
-import { Role, ROLE_PERMISSIONS, Permission } from "@/lib/rolesConfig";
+import { Role, ROLE_PERMISSIONS, Permission, RolePermission } from "@/lib/rolesConfig";
 import { prisma } from "@/lib/prisma";
 
 type Decoded = {
@@ -30,7 +30,7 @@ export async function GET() {
 		console.log("✅ JWT расшифрован:", user);
 
 		// ✅ допускаем все роли
-		if (!["client", "user", "superadmin", "admin", "manager"].includes(user.role)) {
+		if (!["client", "superadmin", "admin", "manager"].includes(user.role)) {
 			return NextResponse.json({ error: "Недостаточно прав" }, { status: 403 });
 		}
 
@@ -44,7 +44,7 @@ export async function GET() {
 
 		console.log("🧑 Пользователь в базе:", dbUser);
 
-		const permissions: Permission[] = ROLE_PERMISSIONS[user.role] || [];
+		const permissions: RolePermission[] = ROLE_PERMISSIONS[user.role] || [];
 
 		return NextResponse.json({
 			id: user.id,

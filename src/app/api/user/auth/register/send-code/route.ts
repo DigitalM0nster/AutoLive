@@ -20,31 +20,31 @@ export async function POST(req: NextRequest) {
 		}
 
 		// Проверка: уже есть активный код?
-		const existingCode = await prisma.smsCode.findFirst({
+		const existingCode = await prisma.sms_code.findFirst({
 			where: {
 				phone,
-				expiresAt: { gt: new Date() },
+				expires_at: { gt: new Date() },
 				used: false,
 			},
-			orderBy: { expiresAt: "desc" },
+			orderBy: { expires_at: "desc" },
 		});
 
 		if (existingCode) {
-			const expiresIn = Math.max(0, Math.floor((existingCode.expiresAt.getTime() - Date.now()) / 1000));
+			const expiresIn = Math.max(0, Math.floor((existingCode.expires_at.getTime() - Date.now()) / 1000));
 			return NextResponse.json({ error: "Код уже отправлен", remainingTime: expiresIn }, { status: 429 });
 		}
 
 		// Удаляем старые коды
-		await prisma.smsCode.deleteMany({ where: { phone } });
+		await prisma.sms_code.deleteMany({ where: { phone } });
 
 		const code = generateCode();
 		const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 минут
 
-		await prisma.smsCode.create({
+		await prisma.sms_code.create({
 			data: {
 				phone,
 				code,
-				expiresAt,
+				expires_at: expiresAt,
 				used: false,
 			},
 		});

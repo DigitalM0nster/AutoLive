@@ -10,12 +10,12 @@ export async function POST(req: NextRequest) {
 		}
 
 		// Находим актуальный (неиспользованный) код
-		const smsCode = await prisma.smsCode.findFirst({
+		const smsCode = await prisma.sms_code.findFirst({
 			where: {
 				phone,
 				code,
 				used: false,
-				expiresAt: { gt: new Date() },
+				expires_at: { gt: new Date() },
 			},
 		});
 
