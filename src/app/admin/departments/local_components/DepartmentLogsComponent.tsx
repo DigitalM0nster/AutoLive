@@ -1,3 +1,5 @@
+"use client";
+
 import styles from "./styles.module.scss";
 import Pagination from "@/components/ui/pagination/Pagination";
 import CustomSelect from "@/components/ui/customSelect/CustomSelect";
