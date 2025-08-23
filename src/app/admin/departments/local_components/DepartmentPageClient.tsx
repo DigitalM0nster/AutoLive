@@ -34,7 +34,6 @@ export default function DepartmentPageClient({ initialData, isCreateMode = false
 		allowedCategories: [],
 		users: [],
 		products: [],
-		orders: [],
 	};
 
 	const [department, setDepartment] = useState<Department | null>(isCreateMode ? defaultDepartment : initialData?.department || null);
