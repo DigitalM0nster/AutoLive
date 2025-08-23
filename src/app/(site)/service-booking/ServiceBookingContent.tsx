@@ -23,6 +23,13 @@ export default function ServiceBookingContent() {
 
 	const services: string[] = ["Замена масла", "Комплексное ТО", "Диагностика двигателя", "Шиномонтаж"];
 
+	// Обработчик изменения даты
+	const handleDateChange = (value: any) => {
+		if (value instanceof Date) {
+			setSelectedDate(value);
+		}
+	};
+
 	// Типизированный submit
 	const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
@@ -73,7 +80,7 @@ export default function ServiceBookingContent() {
 			<div className={styles.timeBlock}>
 				<div className={styles.blockDescription}>Выберите удобную дату и время для прохождения ТО:</div>
 				<div className={styles.calendarWrapper}>
-					<Calendar onChange={(date: Date) => setSelectedDate(date)} value={selectedDate} minDate={new Date()} />
+					<Calendar onChange={handleDateChange} value={selectedDate} minDate={new Date()} />
 				</div>
 				<select value={selectedTime} onChange={(e) => setSelectedTime(e.target.value)} required>
 					<option value="" disabled>
