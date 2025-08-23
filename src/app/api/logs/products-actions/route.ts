@@ -1,7 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { withPermission } from "@/middleware/permissionMiddleware";
-import { Role, Scope } from "@/lib/rolesConfig";
+import { User, Department, Category } from "@/lib/types";
+
+// 📸 Типы для снимков (упрощенные версии основных типов)
+type UserSnapshot = Pick<User, "id" | "first_name" | "last_name" | "role"> & {
+	department?: Pick<Department, "id" | "name">;
+};
+
+type DepartmentSnapshot = Pick<Department, "id" | "name" | "allowedCategories">;
 
 export const GET = withPermission(
 	async (req: NextRequest, { user, scope }) => {
@@ -12,82 +19,89 @@ export const GET = withPermission(
 			const actionFilter = searchParams.get("action");
 
 			const [imports, products, bulk] = await Promise.all([
-				prisma.importLog.findMany({
+				// ✅ Читаем без include - используем только снимки
+				prisma.import_log.findMany({
 					where: undefined, // Логи импорта доступны всем авторизованным пользователям
-					include: {
-						user: {
-							select: {
-								first_name: true,
-								last_name: true,
-								role: true,
-								department: { select: { name: true } },
-							},
-						},
-					},
+					orderBy: { created_at: "desc" },
 				}),
-				prisma.productLog.findMany({
+				prisma.product_log.findMany({
 					where: undefined, // Логи продуктов доступны всем авторизованным пользователям
-					include: {
-						user: {
-							select: {
-								id: true,
-								first_name: true,
-								last_name: true,
-								role: true,
-								department: { select: { name: true } },
-							},
-						},
-						department: true,
-					},
+					orderBy: { created_at: "desc" },
 				}),
-				prisma.bulkActionLog.findMany({
+				prisma.bulk_action_log.findMany({
 					where: undefined, // Логи массовых действий доступны всем авторизованным пользователям
-					include: {
-						user: {
-							select: {
-								first_name: true,
-								last_name: true,
-								role: true,
-								department: { select: { name: true } },
-							},
-						},
-						department: true,
-					},
+					orderBy: { created_at: "desc" },
 				}),
 			]);
 
-			const importTimes = new Set(imports.map((i) => `${i.userId}|${i.createdAt.toISOString().slice(0, 19)}`));
+			// ✅ Получаем ID пользователя из снимка
+			const importTimes = new Set(
+				imports.map((i) => {
+					const userSnapshot = i.user_snapshot as UserSnapshot | null;
+					const userId = userSnapshot?.id || i.user_id; // Fallback на старое поле
+					return `${userId}|${i.created_at.toISOString().slice(0, 19)}`;
+				})
+			);
 
 			const filteredProductLogs = products.filter((log) => {
-				const timeKey = `${log.user.id}|${log.createdAt.toISOString().slice(0, 19)}`;
+				const userSnapshot = log.user_snapshot as UserSnapshot | null;
+				const userId = userSnapshot?.id || log.user_id; // Fallback на старое поле
+				const timeKey = `${userId}|${log.created_at.toISOString().slice(0, 19)}`;
 				if (log.action === "create" && importTimes.has(timeKey)) return false;
 				if (log.action === "bulk") return false;
 				return true;
 			});
 
 			const unifiedLogs = [
-				...imports.map((log) => ({
-					id: log.id,
-					createdAt: log.createdAt,
-					type: "import" as const,
-					message: log.message,
-					user: log.user,
-					department: log.user.department,
-					action: "Импорт товаров",
-					details: {
-						fileName: log.fileName,
-						created: log.created,
-						updated: log.updated,
-						skipped: (log as any).skipped ?? 0,
-						imagePolicy: (log as any).imagePolicy ?? null,
-						markupSummary: (log as any).markupSummary ?? null,
-						snapshots: log.snapshots ?? [],
-					},
-				})),
+				...imports.map((log) => {
+					// ✅ Получаем данные пользователя из снимка или создаем заглушку
+					const userSnapshot = log.user_snapshot as UserSnapshot | null;
+					const departmentSnapshot = log.department_snapshot as DepartmentSnapshot | null;
+					const productsSnapshot = log.products_snapshot as any[] | null;
+
+					const user = userSnapshot || {
+						id: log.user_id || 0,
+						first_name: "Неизвестно",
+						last_name: "",
+						role: "unknown",
+						department: { name: "Неизвестно" },
+					};
+
+					return {
+						id: log.id,
+						createdAt: log.created_at,
+						type: "import" as const,
+						message: log.message,
+						user: user,
+						department: departmentSnapshot || user.department,
+						action: "Импорт товаров",
+						details: {
+							fileName: log.file_name,
+							created: log.created,
+							updated: log.updated,
+							skipped: log.skipped ?? 0,
+							imagePolicy: log.image_policy ?? null,
+							markupSummary: log.markup_summary ?? null,
+							snapshots: productsSnapshot || [],
+						},
+					};
+				}),
 
 				...filteredProductLogs.map((log) => {
-					const before = (log.snapshotBefore || {}) as Record<string, any>;
-					const after = (log.snapshotAfter || {}) as Record<string, any>;
+					// ✅ Получаем данные из снимков
+					const userSnapshot = log.user_snapshot as UserSnapshot | null;
+					const departmentSnapshot = log.department_snapshot as DepartmentSnapshot | null;
+
+					const user = userSnapshot || {
+						id: log.user_id || 0,
+						first_name: "Неизвестно",
+						last_name: "",
+						role: "unknown",
+						department: { name: "Неизвестно" },
+					};
+
+					const before = (log.snapshot_before || {}) as Record<string, any>;
+					const after = (log.snapshot_after || {}) as Record<string, any>;
 					const diff = [];
 
 					if (log.action === "update") {
@@ -100,29 +114,44 @@ export const GET = withPermission(
 
 					return {
 						id: log.id,
-						createdAt: log.createdAt,
+						createdAt: log.created_at,
 						type: "product" as const,
 						message: log.message,
-						user: log.user,
-						department: log.department,
+						user: user,
+						department: departmentSnapshot || user.department,
 						action: log.action === "create" ? "Создание" : log.action === "delete" ? "Удаление" : "Редактирование",
 						details: log.action === "create" ? { after } : log.action === "delete" ? { before } : { before, after, diff },
 					};
 				}),
 
-				...bulk.map((log) => ({
-					id: log.id,
-					createdAt: log.createdAt,
-					type: "bulk" as const,
-					message: log.message,
-					user: log.user,
-					department: log.department,
-					action: "Массовое удаление",
-					details: {
-						count: log.count,
-						snapshots: log.snapshots ?? [],
-					},
-				})),
+				...bulk.map((log) => {
+					// ✅ Получаем данные из снимков
+					const userSnapshot = log.user_snapshot as UserSnapshot | null;
+					const departmentSnapshot = log.department_snapshot as DepartmentSnapshot | null;
+					const productsSnapshot = log.products_snapshot as any[] | null;
+
+					const user = userSnapshot || {
+						id: log.user_id || 0,
+						first_name: "Неизвестно",
+						last_name: "",
+						role: "unknown",
+						department: { name: "Неизвестно" },
+					};
+
+					return {
+						id: log.id,
+						createdAt: log.created_at,
+						type: "bulk" as const,
+						message: log.message,
+						user: user,
+						department: departmentSnapshot || user.department,
+						action: "Массовое удаление",
+						details: {
+							count: log.count,
+							snapshots: productsSnapshot || [],
+						},
+					};
+				}),
 			].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
 			const filteredLogs = actionFilter ? unifiedLogs.filter((log) => log.action === actionFilter) : unifiedLogs;

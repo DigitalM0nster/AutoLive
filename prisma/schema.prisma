@@ -240,14 +240,21 @@ model drizzle_migrations {
 }
 
 model bulk_action_log {
-    id            Int      @id @default(autoincrement())
-    user_id       Int?
-    department_id Int?
-    created_at    DateTime @default(now()) @db.Timestamp(0)
-    action        String   @db.VarChar(255)
-    message       String?  @db.Text
-    snapshots     String
-    count         Int
+    id         Int      @id @default(autoincrement())
+    created_at DateTime @default(now()) @db.Timestamp(0)
+    action     String   @db.VarChar(255)
+    message    String?  @db.Text
+    count      Int
+
+    // 📸 Снимки данных (без дублирования ID)
+    user_snapshot       Json? // Содержит {id, first_name, last_name, role, department}
+    department_snapshot Json? // Содержит {id, name}
+    products_snapshot   Json? // Массив удаленных товаров
+
+    // 📦 Старые поля (временно для совместимости)
+    user_id       Int? // TODO: удалить после миграции
+    department_id Int? // TODO: удалить после миграции
+    snapshots     String // TODO: удалить после миграции
 }
 
 model department_log {
@@ -260,24 +267,35 @@ model department_log {
     snapshot_before String?  @db.Text
     snapshot_after  String?  @db.Text
     admin_snapshot  String?  @db.Text
+
+    // 🆕 Новые Json поля для снимков
+    user_snapshot       Json?
+    department_snapshot Json?
 }
 
 model import_log {
-    id              Int      @id @default(autoincrement())
-    file_name       String   @db.VarChar(255)
-    created         Int
-    updated         Int
-    skipped         Int      @default(0)
-    image_policy    String?  @db.VarChar(255)
-    markup_summary  String?  @db.VarChar(255)
-    created_at      DateTime @default(now()) @db.Timestamp(0)
-    user_id         Int?
-    message         String?  @db.Text
-    count           Int
-    department_id   Int?
-    snapshots       String?
-    snapshot_before String?
-    snapshot_after  String?
+    id             Int      @id @default(autoincrement())
+    file_name      String   @db.VarChar(255)
+    created        Int
+    updated        Int
+    skipped        Int      @default(0)
+    image_policy   String?  @db.VarChar(255)
+    markup_summary String?  @db.VarChar(255)
+    created_at     DateTime @default(now()) @db.Timestamp(0)
+    message        String?  @db.Text
+    count          Int
+
+    // 📸 Снимки данных (без дублирования ID)
+    user_snapshot       Json? // Содержит {id, first_name, last_name, role, department}
+    department_snapshot Json? // Содержит {id, name, created_at}
+    products_snapshot   Json? // Массив товаров для импорта
+
+    // 📦 Старые поля (временно для совместимости)
+    user_id         Int? // TODO: удалить после миграции
+    department_id   Int? // TODO: удалить после миграции
+    snapshots       String? // TODO: удалить после миграции
+    snapshot_before String? // TODO: удалить после миграции
+    snapshot_after  String? // TODO: удалить после миграции
 }
 
 model price_format {
@@ -288,15 +306,22 @@ model price_format {
 }
 
 model product_log {
-    id              Int      @id @default(autoincrement())
-    created_at      DateTime @default(now()) @db.Timestamp(0)
-    action          String   @db.VarChar(255)
-    message         String?  @db.Text
-    user_id         Int?
-    department_id   Int?
-    product_id      Int?
-    snapshot_before String?
-    snapshot_after  String?
+    id         Int      @id @default(autoincrement())
+    created_at DateTime @default(now()) @db.Timestamp(0)
+    action     String   @db.VarChar(255)
+    message    String?  @db.Text
+
+    // 📸 Снимки данных (без дублирования ID)
+    user_snapshot       Json? // Содержит {id, first_name, last_name, role, department}
+    department_snapshot Json? // Содержит {id, name}
+    product_snapshot    Json? // Содержит {id, title, price, sku, brand}
+
+    // 📦 Старые поля (временно для совместимости)
+    user_id         Int? // TODO: удалить после миграции
+    department_id   Int? // TODO: удалить после миграции
+    product_id      Int? // TODO: удалить после миграции
+    snapshot_before String? // TODO: удалить после миграции
+    snapshot_after  String? // TODO: удалить после миграции
 }
 
 model sms_code {
@@ -327,17 +352,23 @@ model Promotion {
 }
 
 model user_log {
-    id              Int      @id @default(autoincrement())
-    created_at      DateTime @default(now()) @db.Timestamp(0)
-    action          String   @db.VarChar(255)
-    message         String?  @db.Text
-    admin_id        Int?
-    target_user_id  Int?
-    department_id   Int?
-    snapshot_before String?  @db.Text
-    snapshot_after  String?  @db.Text
-    admin_snapshot  String?  @db.Text
-    user_id         Int?
+    id         Int      @id @default(autoincrement())
+    created_at DateTime @default(now()) @db.Timestamp(0)
+    action     String   @db.VarChar(255)
+    message    String?  @db.Text
+
+    // 📸 Снимки данных (без дублирования ID)
+    admin_snapshot       Json? // Админ который сделал действие
+    target_user_snapshot Json? // Пользователь над которым совершили действие
+    department_snapshot  Json? // Отдел
+
+    // 📦 Старые поля (временно для совместимости)
+    admin_id        Int? // TODO: удалить после миграции
+    target_user_id  Int? // TODO: удалить после миграции
+    department_id   Int? // TODO: удалить после миграции
+    user_id         Int? // TODO: удалить после миграции
+    snapshot_before String? // TODO: удалить после миграции
+    snapshot_after  String? // TODO: удалить после миграции
 }
 
 // Универсальная модель для всех логов изменений

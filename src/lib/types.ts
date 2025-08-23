@@ -9,7 +9,6 @@ export type Department = {
 	allowedCategories: { category: Category }[];
 	users: User[];
 	products: { id: number; title: string; sku: string; brand: string; price: number }[];
-	orders: { id: number; title: string; status: string; createdAt: string }[];
 };
 
 export type User = {
