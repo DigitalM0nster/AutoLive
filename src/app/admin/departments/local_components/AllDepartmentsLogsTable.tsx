@@ -1,3 +1,5 @@
+"use client";
+
 import styles from "./styles.module.scss";
 import { useCallback, useEffect, useState } from "react";
 import { DepartmentLog, DepartmentLogResponse, User } from "@/lib/types";

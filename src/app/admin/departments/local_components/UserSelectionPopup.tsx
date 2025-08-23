@@ -1,4 +1,3 @@
-import { Check, X } from "lucide-react";
 import styles from "./styles.module.scss";
 import { User } from "@/lib/types";
 import Link from "next/link";
