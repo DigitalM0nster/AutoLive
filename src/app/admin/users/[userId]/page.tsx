@@ -1,13 +1,14 @@
-"use client";
-
-import { useParams } from "next/navigation";
 import Link from "next/link";
-import styles from "../local_components/styles.module.scss";
 import UserComponent from "../local_components/UserComponent";
 
-export default function UserDetailPage() {
-	const params = useParams();
-	const userId = Array.isArray(params.userId) ? params.userId[0] : params.userId;
+type PageParams = {
+	params: Promise<{
+		userId: string;
+	}>;
+};
+
+export default async function UserDetailPage({ params }: PageParams) {
+	const { userId } = await params;
 
 	return (
 		<div className={`screenContent`}>
@@ -18,7 +19,7 @@ export default function UserDetailPage() {
 						История изменений пользователя
 					</Link>
 				</div>
-				<UserComponent userId={userId} />;
+				<UserComponent userId={userId} />
 			</div>
 		</div>
 	);

@@ -2,13 +2,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import ImageUploader from "../imageUploader";
 import Loading from "@/components/ui/loading/Loading";
 
-export default function EditPromotionPage() {
+type PageParams = {
+	params: Promise<{
+		id: string;
+	}>;
+};
+
+export default function EditPromotionPage({ params }: PageParams) {
 	const router = useRouter();
-	const { id } = useParams();
+	const [id, setId] = useState<string>("");
 
 	const [title, setTitle] = useState("");
 	const [description, setDescription] = useState("");
@@ -18,7 +24,18 @@ export default function EditPromotionPage() {
 
 	const [loading, setLoading] = useState(true);
 
+	// Получаем параметры при монтировании компонента
 	useEffect(() => {
+		const getParams = async () => {
+			const resolvedParams = await params;
+			setId(resolvedParams.id);
+		};
+		getParams();
+	}, [params]);
+
+	useEffect(() => {
+		if (!id) return;
+		
 		const fetchPromo = async () => {
 			setLoading(true);
 			const res = await fetch(`/api/promotions/${id}`);

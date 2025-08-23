@@ -1,12 +1,14 @@
-"use client";
-
-import { useParams } from "next/navigation";
 import Link from "next/link";
 import DepartmentLogsComponent from "../../local_components/DepartmentLogsComponent";
 
-export default function DepartmentLogsPage() {
-	const params = useParams();
-	const departmentId = Array.isArray(params.departmentId) ? params.departmentId[0] : params.departmentId;
+type PageParams = {
+	params: Promise<{
+		departmentId: string;
+	}>;
+};
+
+export default async function DepartmentLogsPage({ params }: PageParams) {
+	const { departmentId } = await params;
 
 	return (
 		<div className={`screenContent`}>

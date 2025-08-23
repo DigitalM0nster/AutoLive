@@ -1,12 +1,14 @@
-"use client";
-
-import { useParams } from "next/navigation";
 import Link from "next/link";
 import UserLogsComponent from "../../local_components/UserLogsComponent";
 
-export default function UserDetailLogsPage() {
-	const params = useParams();
-	const userId = Array.isArray(params.userId) ? params.userId[0] : params.userId;
+type PageParams = {
+	params: Promise<{
+		userId: string;
+	}>;
+};
+
+export default async function UserDetailLogsPage({ params }: PageParams) {
+	const { userId } = await params;
 
 	return (
 		<div className={`screenContent`}>

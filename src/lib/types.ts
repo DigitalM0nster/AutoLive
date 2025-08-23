@@ -21,6 +21,7 @@ export type User = {
 	phone: string;
 	role: Role;
 	department?: Department;
+	departmentId?: number | null;
 	status: string;
 	orders: {
 		id: number;

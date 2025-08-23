@@ -1,722 +1,110 @@
-"use client";
-
-import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/store/authStore";
-import { showSuccessToast, showErrorToast } from "@/components/ui/toast/ToastProvider";
-import DepartmentCategorySection from "../local_components/DepartmentCategorySection";
-import DepartmentStaffSection from "../local_components/DepartmentStaffSection";
+import { prisma } from "@/lib/prisma";
+import { notFound } from "next/navigation";
+import DepartmentPageClient from "../local_components/DepartmentPageClient";
 import { Category, Department, User } from "@/lib/types";
-import { Check, X, Trash2 } from "lucide-react";
-import styles from "../local_components/styles.module.scss";
-import Loading from "@/components/ui/loading/Loading";
-import Link from "next/link";
-import ConfirmPopup from "@/components/ui/confirmPopup/ConfirmPopup";
-import ChangesDisplay, { ChangeItem } from "../local_components/ChangesDisplay";
 
-interface DepartmentPageProps {
-	departmentId?: string | number;
-	initialDepartment?: Department | null;
-	initialCategories?: Category[];
-	isCreateMode?: boolean; // Новый пропс для определения режима создания
-}
+type PageParams = {
+	params: Promise<{
+		departmentId: string;
+	}>;
+};
 
-export default function DepartmentPage({ initialDepartment = null, initialCategories = [], isCreateMode = false }: DepartmentPageProps) {
-	const router = useRouter();
-	const { user } = useAuthStore();
-	const params = useParams();
-	const departmentId = params.departmentId as string;
+// Типы для данных из Prisma
+type DepartmentWithUsers = {
+	id: number;
+	name: string;
+	users: User[];
+};
 
-	const [department, setDepartment] = useState<Department | null>(initialDepartment);
-	const [loading, setLoading] = useState(true);
-	const [showDeleteModal, setShowDeleteModal] = useState(false);
-	const [showConfirmChangesModal, setShowConfirmChangesModal] = useState(false);
+export default async function DepartmentPage({ params }: PageParams) {
+	const { departmentId } = await params;
 
-	const [formName, setFormName] = useState("");
-	const [isFormChanged, setIsFormChanged] = useState(false);
+	// Получаем данные отдела
+	const department = (await prisma.department.findUnique({
+		where: { id: Number(departmentId) },
+		include: {
+			users: {
+				select: {
+					id: true,
+					first_name: true,
+					last_name: true,
+					middle_name: true,
+					role: true,
+					phone: true,
+				},
+			},
+		},
+	})) as DepartmentWithUsers | null;
 
-	const [originalName, setOriginalName] = useState("");
+	if (!department) {
+		return notFound();
+	}
 
-	// Состояние для категорий отдела
-	const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
-	const [originalCategories, setOriginalCategories] = useState<number[]>([]);
-	const [isCategoriesChanged, setIsCategoriesChanged] = useState(false);
-	const [categories, setCategories] = useState<any[]>([]);
-	const [uncategorizedCount, setUncategorizedCount] = useState<number>(0);
+	// Получаем все категории для выбора
+	const categories = await prisma.category.findMany({
+		orderBy: { title: "asc" },
+	});
 
-	// Состояние для сотрудников отдела
-	const [originalAdmins, setOriginalAdmins] = useState<User[]>([]);
-	const [originalManagers, setOriginalManagers] = useState<User[]>([]);
-	const [currentAdmins, setCurrentAdmins] = useState<User[]>([]);
-	const [currentManagers, setCurrentManagers] = useState<User[]>([]);
-	const [availableUsers, setAvailableUsers] = useState<User[]>([]);
-	const [isStaffChanged, setIsStaffChanged] = useState(false);
+	// Получаем категории, связанные с отделом
+	const departmentCategories = await prisma.departmentCategory.findMany({
+		where: { departmentId: Number(departmentId) },
+		include: { category: true },
+	});
 
-	// Проверка, может ли пользователь редактировать этот отдел
-	const canEditDepartment = () => {
-		if (!user) return false;
+	// Получаем всех пользователей для выбора в отдел
+	const availableUsers = (await prisma.user.findMany({
+		where: {
+			OR: [{ departmentId: null }, { departmentId: Number(departmentId) }],
+		},
+		select: {
+			id: true,
+			first_name: true,
+			last_name: true,
+			middle_name: true,
+			role: true,
+			phone: true,
+			departmentId: true,
+		},
+		orderBy: [{ last_name: "asc" }, { first_name: "asc" }],
+	})) as User[];
 
-		// В режиме создания всегда можно редактировать
-		if (isCreateMode) return true;
-
-		// Для существующего департамента проверяем права доступа
-		if (!department) return false;
-
-		// Суперадмин может редактировать любой отдел
-		if (user.role === "superadmin") return true;
-
-		// Админ может редактировать только свой отдел
-		if (user.role === "admin" && user.department?.id === Number(departmentId)) {
-			return true;
-		}
-
-		return false;
+	// Подготавливаем данные для клиентского компонента
+	// Создаем объект отдела с правильной структурой
+	const departmentData: Department = {
+		id: department.id,
+		name: department.name,
+		allowedCategories: departmentCategories.map((dc) => ({ category: dc.category })),
+		users: department.users.map((user) => ({
+			id: user.id,
+			first_name: user.first_name || "",
+			last_name: user.last_name || "",
+			middle_name: user.middle_name || "",
+			avatar: "",
+			phone: user.phone,
+			role: user.role as any,
+			status: "verified",
+			orders: [],
+		})),
+		products: [],
+		orders: [],
 	};
 
-	// Проверка, может ли пользователь удалить этот отдел
-	const canDeleteDepartment = () => {
-		if (!user) return false;
-		if (isCreateMode) return false; // В режиме создания нельзя удалить
-		return user.role === "superadmin";
+	const initialData = {
+		department: departmentData,
+		categories,
+		departmentCategories: departmentCategories.map((dc) => dc.category),
+		availableUsers: availableUsers.map((user) => ({
+			id: user.id,
+			first_name: user.first_name || "",
+			last_name: user.last_name || "",
+			middle_name: user.middle_name || "",
+			avatar: "",
+			phone: user.phone,
+			role: user.role as any,
+			status: "verified",
+			orders: [],
+		})),
 	};
 
-	// Функция для удаления отдела
-	const handleDeleteDepartment = () => {
-		setShowDeleteModal(true);
-	};
-
-	// Функция для подтверждения удаления
-	const confirmDelete = async () => {
-		if (!departmentId) return;
-
-		try {
-			const res = await fetch(`/api/departments/${departmentId}`, {
-				method: "DELETE",
-			});
-
-			if (res.ok) {
-				const result = await res.json();
-				showSuccessToast("Отдел успешно удален");
-
-				// Показываем дополнительную информацию о том, что было удалено
-				if (result.deletedProducts > 0 || result.deletedUsers > 0) {
-					setTimeout(() => {
-						alert(`Дополнительная информация:\nУдалено товаров: ${result.deletedProducts}\nПользователей освобождено от отдела: ${result.deletedUsers}`);
-					}, 1000);
-				}
-
-				router.push("/admin/departments");
-			} else {
-				const error = await res.json();
-				showErrorToast(`Ошибка: ${error.error}`);
-			}
-		} catch (error) {
-			console.error("Ошибка при удалении отдела:", error);
-			showErrorToast("Произошла ошибка при удалении отдела");
-		}
-	};
-
-	useEffect(() => {
-		const fetchDepartment = async () => {
-			if (isCreateMode || !departmentId) {
-				// В режиме создания инициализируем пустой департамент
-				setDepartment({
-					id: 0,
-					name: "",
-					allowedCategories: [],
-					users: [],
-					products: [],
-					orders: [],
-				});
-				setFormName("");
-				setOriginalName("");
-				setUncategorizedCount(0);
-				setLoading(false);
-				return;
-			}
-
-			try {
-				const res = await fetch(`/api/departments/${departmentId}`, {
-					credentials: "include",
-				});
-				if (!res.ok) throw new Error("Не удалось загрузить отдел");
-				const data = await res.json();
-				setDepartment(data);
-				setFormName(data.name);
-				setOriginalName(data.name);
-
-				// Обрабатываем категории из единого ответа
-				if (data.categories) {
-					// Получаем все доступные категории для отображения
-					const allCategoriesRes = await fetch("/api/categories", {
-						credentials: "include",
-					});
-					if (allCategoriesRes.ok) {
-						const allCategories = await allCategoriesRes.json();
-
-						// Создаем массив всех категорий с флагом isAllowed
-						const categoriesWithFlags = allCategories.map((cat: any) => ({
-							...cat,
-							isAllowed: data.categories.some((allowedCat: any) => allowedCat.id === cat.id),
-							productCount: data.categories.find((allowedCat: any) => allowedCat.id === cat.id)?.productCount || 0,
-						}));
-
-						setCategories(categoriesWithFlags);
-						setUncategorizedCount(data.uncategorizedCount || 0);
-					}
-				}
-
-				// Обрабатываем сотрудников из единого ответа
-				if (data.users) {
-					const allUsers = data.users || [];
-					const adminsList = allUsers.filter((user: any) => user.role === "admin");
-					const managersList = allUsers.filter((user: any) => user.role === "manager");
-
-					setOriginalAdmins(adminsList);
-					setOriginalManagers(managersList);
-					setCurrentAdmins(adminsList);
-					setCurrentManagers(managersList);
-				}
-			} catch (err) {
-				console.error("Ошибка загрузки отдела:", err);
-				showErrorToast("Ошибка загрузки данных отдела");
-			} finally {
-				setLoading(false);
-			}
-		};
-
-		fetchDepartment();
-		loadAvailableUsers();
-	}, [departmentId, isCreateMode]);
-
-	// В режиме создания загружаем категории отдельно
-	useEffect(() => {
-		const loadCategoriesForCreate = async () => {
-			if (isCreateMode && !loading) {
-				try {
-					const allCategoriesRes = await fetch("/api/categories", {
-						credentials: "include",
-					});
-					if (allCategoriesRes.ok) {
-						const allCategories = await allCategoriesRes.json();
-						const categoriesWithFlags = allCategories.map((cat: any) => ({
-							...cat,
-							isAllowed: false,
-							productCount: 0,
-						}));
-						setCategories(categoriesWithFlags);
-					}
-				} catch (err) {
-					console.error("Ошибка загрузки категорий:", err);
-					showErrorToast("Ошибка загрузки категорий");
-				}
-			}
-		};
-
-		loadCategoriesForCreate();
-	}, [isCreateMode, loading]);
-
-	const isDirty = formName !== originalName;
-
-	// Отслеживаем изменения в форме
-	useEffect(() => {
-		setIsFormChanged(isDirty);
-	}, [isDirty, formName, originalName]);
-
-	// Синхронизируем selectedCategories при изменении categories
-	useEffect(() => {
-		if (categories.length > 0) {
-			const allowedIds = categories.filter((cat: any) => cat.isAllowed).map((cat: any) => cat.id);
-			setSelectedCategories(allowedIds);
-			setOriginalCategories(allowedIds);
-		}
-	}, [categories]);
-
-	// Отслеживаем изменения в категориях
-	useEffect(() => {
-		const hasChanges = JSON.stringify(selectedCategories.sort()) !== JSON.stringify(originalCategories.sort());
-		setIsCategoriesChanged(hasChanges);
-	}, [selectedCategories, originalCategories]);
-
-	// Отслеживаем изменения в сотрудниках
-	useEffect(() => {
-		const realChanges = hasStaffChanges();
-		setIsStaffChanged(realChanges);
-	}, [currentAdmins, currentManagers, originalAdmins, originalManagers]);
-
-	// Обработчик изменения выбранных категорий
-	const handleSelectedCategoriesChange = (categories: number[]) => {
-		setSelectedCategories(categories);
-	};
-
-	// Функции для вычисления изменений сотрудников
-	const getStaffChanges = () => {
-		const addUsers: { userId: number; role: "admin" | "manager" }[] = [];
-		const removeUsers: number[] = [];
-
-		// Находим добавленных администраторов
-		currentAdmins.forEach((admin) => {
-			if (!originalAdmins.find((orig) => orig.id === admin.id)) {
-				addUsers.push({ userId: admin.id, role: "admin" });
-			}
-		});
-
-		// Находим добавленных менеджеров
-		currentManagers.forEach((manager) => {
-			if (!originalManagers.find((orig) => orig.id === manager.id)) {
-				addUsers.push({ userId: manager.id, role: "manager" });
-			}
-		});
-
-		// Находим удаленных администраторов
-		originalAdmins.forEach((admin) => {
-			if (!currentAdmins.find((curr) => curr.id === admin.id)) {
-				removeUsers.push(admin.id);
-			}
-		});
-
-		// Находим удаленных менеджеров
-		originalManagers.forEach((manager) => {
-			if (!currentManagers.find((curr) => curr.id === manager.id)) {
-				removeUsers.push(manager.id);
-			}
-		});
-
-		return { addUsers, removeUsers };
-	};
-
-	// Функция для проверки, есть ли реальные изменения в сотрудниках
-	const hasStaffChanges = () => {
-		const { addUsers, removeUsers } = getStaffChanges();
-		return addUsers.length > 0 || removeUsers.length > 0;
-	};
-
-	// Обработчики изменений сотрудников
-	const handleStaffChange = (changed: boolean) => {
-		// Проверяем реальные изменения вместо просто флага
-		const realChanges = hasStaffChanges();
-		setIsStaffChanged(realChanges);
-	};
-
-	// Загрузка доступных пользователей
-	const loadAvailableUsers = async () => {
-		try {
-			// Получаем пользователей без отдела (только менеджеры и админы)
-			const res = await fetch("/api/users?withoutDepartment=true&role=admin&role=manager", {
-				credentials: "include",
-			});
-
-			if (res.ok) {
-				const data = await res.json();
-				// API уже фильтрует по ролям, но дополнительно проверяем что у пользователей нет отдела
-				const staffUsers = data.users?.filter((user: User) => !user.department) || [];
-				setAvailableUsers(staffUsers);
-			}
-		} catch (error) {
-			console.error("Ошибка загрузки доступных пользователей:", error);
-		}
-	};
-
-	// Функция для сохранения всех изменений отдела
-	// Обрабатывает изменения названия, категорий и сотрудников одним запросом к API
-	// После успешного сохранения обновляет все локальные состояния актуальными данными
-	const handleSave = async () => {
-		if (!formName.trim()) {
-			showErrorToast("Введите название отдела");
-			return;
-		}
-
-		try {
-			// Подготавливаем данные для отправки
-			const requestBody: any = {
-				name: formName,
-				categoryIds: selectedCategories,
-			};
-
-			// Добавляем изменения сотрудников, если они есть
-			const { addUsers, removeUsers } = getStaffChanges();
-			if (addUsers.length > 0 || removeUsers.length > 0) {
-				requestBody.addUsers = addUsers;
-				requestBody.removeUsers = removeUsers;
-			}
-
-			// В режиме создания добавляем всех выбранных пользователей
-			if (isCreateMode) {
-				const allSelectedUsers = [
-					...currentAdmins.map((admin) => ({ userId: admin.id, role: "admin" as const })),
-					...currentManagers.map((manager) => ({ userId: manager.id, role: "manager" as const })),
-				];
-				requestBody.userIds = allSelectedUsers.map((user) => user.userId);
-			}
-
-			// Отправляем запрос в зависимости от режима
-			const method = isCreateMode ? "POST" : "PATCH";
-			const url = isCreateMode ? "/api/departments" : `/api/departments/${departmentId}`;
-
-			const res = await fetch(url, {
-				method,
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(requestBody),
-				credentials: "include",
-			});
-
-			if (res.ok) {
-				const updated = await res.json();
-
-				if (isCreateMode) {
-					// В режиме создания перенаправляем на страницу редактирования нового отдела
-					showSuccessToast("Отдел успешно создан");
-					router.push(`/admin/departments/${updated.id}`);
-					return;
-				}
-
-				setDepartment(updated);
-				setOriginalName(formName);
-				setOriginalCategories(selectedCategories);
-
-				// Обновляем оригинальные списки сотрудников
-				setOriginalAdmins(currentAdmins);
-				setOriginalManagers(currentManagers);
-
-				// Обновляем состояние категорий после сохранения
-				if (updated.categories) {
-					// Получаем все доступные категории для отображения
-					const allCategoriesRes = await fetch("/api/categories", {
-						credentials: "include",
-					});
-					if (allCategoriesRes.ok) {
-						const allCategories = await allCategoriesRes.json();
-
-						// Создаем массив всех категорий с флагом isAllowed
-						const categoriesWithFlags = allCategories.map((cat: any) => ({
-							...cat,
-							isAllowed: updated.categories.some((allowedCat: any) => allowedCat.id === cat.id),
-							productCount: updated.categories.find((allowedCat: any) => allowedCat.id === cat.id)?.productCount || 0,
-						}));
-
-						setCategories(categoriesWithFlags);
-						setUncategorizedCount(updated.uncategorizedCount || 0);
-					}
-				}
-
-				// Сбрасываем флаги изменений
-				setIsFormChanged(false);
-				setIsCategoriesChanged(false);
-				setIsStaffChanged(false);
-
-				showSuccessToast("Изменения сохранены");
-			} else {
-				const { error } = await res.json();
-				showErrorToast(error || "Ошибка при сохранении изменений");
-				return;
-			}
-		} catch (err) {
-			console.error(err);
-			showErrorToast("Ошибка запроса при сохранении изменений");
-			return;
-		}
-
-		// Закрываем модальное окно
-		setShowConfirmChangesModal(false);
-	};
-
-	// Проверяем общие изменения (название, категории или сотрудники)
-	const hasAnyChanges = isFormChanged || isCategoriesChanged || isStaffChanged;
-
-	// Функция для получения детального описания изменений
-	const getChangesDescription = () => {
-		const changes: ChangeItem[] = [];
-
-		if (isCreateMode) {
-			changes.push({
-				type: "name" as const,
-				title: "Создание нового отдела",
-				description: `Будет создан отдел с названием "${formName}"`,
-			});
-
-			if (selectedCategories.length > 0) {
-				const categoryNames = categories.filter((cat) => selectedCategories.includes(cat.id)).map((cat) => cat.title);
-				changes.push({
-					type: "categories_added" as const,
-					title: "Доступные категории",
-					description: `Отделу будут доступны следующие категории:`,
-					items: categoryNames,
-				});
-			}
-
-			const allSelectedUsers = [...currentAdmins, ...currentManagers];
-			if (allSelectedUsers.length > 0) {
-				const userNames = allSelectedUsers.map(
-					(user) => `${user.last_name || ""} ${user.first_name || ""} ${user.middle_name || ""} ${user.role === "manager" ? "(Менеджер)" : "(Администратор)"}`
-				);
-				changes.push({
-					type: "staff_added" as const,
-					title: "Сотрудники отдела",
-					description: `В отдел будут добавлены следующие сотрудники:`,
-					items: userNames,
-				});
-			}
-
-			return changes;
-		}
-
-		if (isFormChanged && originalName !== formName) {
-			changes.push({
-				type: "name" as const,
-				title: "Изменение названия отдела",
-				description: `Название отдела будет изменено с "${originalName}" на "${formName}"`,
-			});
-		}
-
-		if (isCategoriesChanged) {
-			const addedCategories = selectedCategories.filter((id) => !originalCategories.includes(id));
-			const removedCategories = originalCategories.filter((id) => !selectedCategories.includes(id));
-
-			if (addedCategories.length > 0) {
-				const addedNames = categories.filter((cat) => addedCategories.includes(cat.id)).map((cat) => cat.title);
-				changes.push({
-					type: "categories_added" as const,
-					title: "Добавление категорий",
-					description: `В отдел добавятся следующие категории:`,
-					items: addedNames,
-				});
-			}
-
-			if (removedCategories.length > 0) {
-				const removedNames = categories.filter((cat) => removedCategories.includes(cat.id)).map((cat) => cat.title);
-				changes.push({
-					type: "categories_removed" as const,
-					title: "Удаление категорий",
-					description: `Из отдела удалятся следующие категории:`,
-					items: removedNames,
-				});
-			}
-		}
-
-		if (isStaffChanged) {
-			const { addUsers, removeUsers } = getStaffChanges();
-			if (addUsers.length > 0) {
-				// Получаем имена добавляемых сотрудников
-				const addUserNames = addUsers.map((addUser: { userId: number; role: "admin" | "manager" }) => {
-					const user = availableUsers.find((u) => u.id === addUser.userId);
-					return user
-						? `${user.last_name || ""} ${user.first_name || ""} ${user.middle_name || ""} ${user.role === "manager" ? "(Менеджер)" : "(Администратор)"}`
-						: `Сотрудник ${addUser.userId}`;
-				});
-
-				changes.push({
-					type: "staff_added" as const,
-					title: "Добавление сотрудников",
-					description: `В отдел добавятся следующие сотрудники:`,
-					items: addUserNames,
-				});
-			}
-
-			if (removeUsers.length > 0) {
-				// Получаем имена удаляемых сотрудников
-				const removeUserNames = removeUsers.map((userId: number) => {
-					const admin = originalAdmins.find((a) => a.id === userId);
-					const manager = originalManagers.find((m) => m.id === userId);
-					const user = admin || manager;
-					return user
-						? `${user.last_name || ""} ${user.first_name || ""} ${user.middle_name || ""} ${user.role === "manager" ? "(Менеджер)" : "(Администратор)"}`
-						: `Сотрудник ${userId}`;
-				});
-
-				changes.push({
-					type: "staff_removed" as const,
-					title: "Удаление сотрудников",
-					description: `Из отдела удалятся следующие сотрудники:`,
-					items: removeUserNames,
-				});
-			}
-		}
-
-		return changes;
-	};
-
-	// Функция для показа модального окна подтверждения
-	const handleSaveClick = () => {
-		if (hasAnyChanges || isCreateMode) {
-			setShowConfirmChangesModal(true);
-		}
-	};
-
-	return (
-		<>
-			<div className="screenContent">
-				<div className="tableContainer">
-					{!isCreateMode && (
-						<div className="tabsContainer">
-							<Link href={`/admin/departments/${departmentId}`} className={`tabButton active`}>
-								Управление отделом
-							</Link>
-							<Link href={`/admin/departments/${departmentId}/logs`} className={`tabButton`}>
-								История изменений отдела
-							</Link>
-						</div>
-					)}
-
-					{loading ? (
-						<div className="tableContent">
-							<Loading />
-						</div>
-					) : (
-						<>
-							<div className="tableContent">
-								{/* Показываем предупреждение если пользователь не может редактировать отдел */}
-								{!canEditDepartment() && user && !isCreateMode && (
-									<div
-										style={{
-											backgroundColor: "#fef3c7",
-											border: "1px solid #f59e0b",
-											borderRadius: "8px",
-											padding: "12px 16px",
-											marginBottom: "16px",
-											color: "#92400e",
-											fontSize: "14px",
-										}}
-									>
-										⚠️ У вас нет прав на редактирование этого отдела. Вы можете только просматривать информацию.
-									</div>
-								)}
-
-								<div className={`titleBlock`}>
-									<input
-										type="text"
-										value={formName}
-										onChange={(e) => setFormName(e.target.value)}
-										className="formInput titleInput"
-										placeholder={isCreateMode ? "Введите название нового отдела" : "Введите название отдела"}
-										disabled={!canEditDepartment()}
-									/>
-									{canDeleteDepartment() && departmentId && !isCreateMode && (
-										<button onClick={handleDeleteDepartment} className={`button cancelButton`}>
-											<Trash2 size={18} />
-											Удалить отдел
-										</button>
-									)}
-								</div>
-
-								<div className={`sectionsContent ${styles.sectionsContent}`}>
-									<DepartmentCategorySection
-										departmentId={isCreateMode ? undefined : departmentId ? Number(departmentId) : undefined}
-										onFormChange={setIsFormChanged}
-										onSave={handleSave}
-										selectedCategories={selectedCategories}
-										onSelectedCategoriesChange={handleSelectedCategoriesChange}
-										categories={categories}
-										uncategorizedCount={uncategorizedCount}
-										canEdit={canEditDepartment()}
-									/>
-
-									{/* Показываем секцию сотрудников */}
-									<DepartmentStaffSection
-										departmentId={isCreateMode ? undefined : departmentId ? Number(departmentId) : undefined}
-										onFormChange={handleStaffChange}
-										currentAdmins={currentAdmins}
-										currentManagers={currentManagers}
-										availableUsers={availableUsers}
-										setCurrentAdmins={setCurrentAdmins}
-										setCurrentManagers={setCurrentManagers}
-										setAvailableUsers={setAvailableUsers}
-										canEdit={canEditDepartment()}
-									/>
-								</div>
-							</div>
-
-							{canEditDepartment() && (hasAnyChanges || isCreateMode) && (
-								<div className="fixedButtonsBlock">
-									<div className="buttonsContent">
-										<button
-											onClick={handleSaveClick}
-											disabled={!formName.trim() && isCreateMode}
-											className={`acceptButton ${!formName.trim() && isCreateMode ? "disabled" : ""}`}
-										>
-											<Check className="" />
-											{isCreateMode ? "Создать отдел" : "Сохранить"}
-										</button>
-
-										{hasAnyChanges && !isCreateMode && (
-											<button
-												onClick={() => {
-													setFormName(originalName);
-													setSelectedCategories(originalCategories);
-													setCurrentAdmins(originalAdmins);
-													setCurrentManagers(originalManagers);
-													setIsFormChanged(false);
-													setIsCategoriesChanged(false);
-													setIsStaffChanged(false);
-
-													// Восстанавливаем список доступных пользователей
-													// Находим пользователей, которые были добавлены после загрузки
-													const addedUserIds = [...currentAdmins.map((admin) => admin.id), ...currentManagers.map((manager) => manager.id)].filter(
-														(id) => !originalAdmins.find((admin) => admin.id === id) && !originalManagers.find((manager) => manager.id === id)
-													);
-
-													// Добавляем их обратно в availableUsers
-													const usersToRestore = [
-														...currentAdmins.filter((admin) => addedUserIds.includes(admin.id)),
-														...currentManagers.filter((manager) => addedUserIds.includes(manager.id)),
-													];
-
-													// Удаляем пользователей, которые были удалены после загрузки
-													const removedUserIds = [...originalAdmins.map((admin) => admin.id), ...originalManagers.map((manager) => manager.id)].filter(
-														(id) => !currentAdmins.find((admin) => admin.id === id) && !currentManagers.find((manager) => manager.id === id)
-													);
-
-													// Удаляем их из availableUsers
-													const updatedAvailableUsers = availableUsers.filter((user) => !removedUserIds.includes(user.id)).concat(usersToRestore);
-
-													setAvailableUsers(updatedAvailableUsers);
-												}}
-												className="cancelButton"
-											>
-												<X className="" />
-												Отменить
-											</button>
-										)}
-
-										{isCreateMode && (
-											<button onClick={() => router.push("/admin/departments")} className="cancelButton">
-												<X className="" />
-												Отмена
-											</button>
-										)}
-									</div>
-								</div>
-							)}
-						</>
-					)}
-				</div>
-			</div>
-
-			{/* Модальное окно подтверждения изменений */}
-			<ConfirmPopup
-				open={showConfirmChangesModal}
-				onCancel={() => setShowConfirmChangesModal(false)}
-				onConfirm={handleSave}
-				title={isCreateMode ? "Подтверждение создания" : "Подтверждение изменений"}
-				confirmText={isCreateMode ? "Создать отдел" : "Сохранить изменения"}
-				cancelText="Отмена"
-			>
-				<div>
-					<p>{isCreateMode ? `Вы собираетесь создать новый отдел:` : `Вы собираетесь сохранить следующие изменения в отделе <strong>"${department?.name}"</strong>:`}</p>
-					<ChangesDisplay changes={getChangesDescription()} />
-				</div>
-			</ConfirmPopup>
-
-			{/* Модальное окно подтверждения удаления */}
-			<ConfirmPopup
-				open={showDeleteModal}
-				onCancel={() => setShowDeleteModal(false)}
-				onConfirm={confirmDelete}
-				title="Подтверждение удаления"
-				message={`Вы действительно хотите удалить отдел "${department?.name}"?\n\n⚠️ Это действие нельзя отменить. При удалении отдела:\n• Все товары в этом отделе будут удалены\n• У пользователей будет убран отдел (они останутся в системе)\n• Все связи с категориями будут удалены`}
-				confirmText="Удалить"
-				cancelText="Отмена"
-			/>
-		</>
-	);
+	return <DepartmentPageClient initialData={initialData} />;
 }
