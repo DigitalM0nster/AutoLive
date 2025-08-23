@@ -23,6 +23,7 @@ const AdminSearchField = React.memo(
 		</div>
 	)
 );
+AdminSearchField.displayName = "AdminSearchField";
 
 // Компонент для фильтра даты
 const DateFilterField = React.memo(
@@ -52,6 +53,7 @@ const DateFilterField = React.memo(
 		</div>
 	)
 );
+DateFilterField.displayName = "DateFilterField";
 
 type UserLogsComponentProps = {
 	userId?: number; // Опциональный параметр для фильтрации логов по конкретному пользователю

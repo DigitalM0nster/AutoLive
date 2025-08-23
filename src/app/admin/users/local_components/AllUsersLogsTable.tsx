@@ -176,7 +176,7 @@ export default function AllUsersLogsTable({
 				);
 			}
 		},
-		[existingDepartments, departmentsData, styles.departmentLink, styles.deletedDepartmentIndicator]
+		[existingDepartments, departmentsData]
 	);
 
 	// Функция для форматирования даты
@@ -260,7 +260,7 @@ export default function AllUsersLogsTable({
 				</div>
 			);
 		},
-		[activeBlocks, toggleActiveBlock, getUserName, getRoleName, existingUsers]
+		[activeBlocks, toggleActiveBlock, getUserName, getRoleName, existingUsers, renderDepartment]
 	);
 
 	// Функция для получения блока с результатами
@@ -538,7 +538,7 @@ export default function AllUsersLogsTable({
 			}
 			return null;
 		},
-		[activeBlocks, toggleActiveBlock, getRoleName, getStatusName, existingUsers]
+		[activeBlocks, toggleActiveBlock, getRoleName, getStatusName, existingUsers, renderDepartment]
 	);
 
 	useEffect(() => {
@@ -591,7 +591,7 @@ export default function AllUsersLogsTable({
 		};
 
 		fetchLogs();
-	}, [queryParams, checkUsersExistence, checkDepartmentsExistence]);
+	}, [queryParams, checkUsersExistence, checkDepartmentsExistence, onLogsUpdate]);
 
 	// Загружаем данные отделов при монтировании компонента
 	useEffect(() => {
