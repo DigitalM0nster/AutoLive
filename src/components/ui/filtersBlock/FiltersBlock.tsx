@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import { X } from "lucide-react";
 import { FiltersBlockProps } from "@/lib/types";
@@ -45,18 +47,14 @@ export default function FiltersBlock({
 							</span>
 						))}
 						{/* Отображаем поиск как фильтр, если он есть */}
-						{showSearch && searchValue.trim() !== "" && (
-							<span className={styles.filterBadge}>Поиск: {searchValue}</span>
-						)}
+						{showSearch && searchValue.trim() !== "" && <span className={styles.filterBadge}>Поиск: {searchValue}</span>}
 					</div>
 				)}
 
 				{/* Кнопка сброса фильтров */}
 				<button
 					onClick={onResetFilters}
-					className={`resetFiltersButton ${styles.resetFiltersButton} ${
-						!hasActiveFilters ? styles.disabled : ""
-					}`}
+					className={`resetFiltersButton ${styles.resetFiltersButton} ${!hasActiveFilters ? styles.disabled : ""}`}
 					disabled={!hasActiveFilters || disabled}
 				>
 					<X size={16} />
@@ -79,4 +77,4 @@ export default function FiltersBlock({
 			)}
 		</div>
 	);
-} 
+}
