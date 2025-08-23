@@ -4,12 +4,13 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { withPermission } from "@/middleware/permissionMiddleware";
 
-type Params = { params: { id: string } };
+type Params = { params: Promise<{ id: string }> };
 
 // --- GET: можно оставить открытым ---
 export async function GET(_: Request, { params }: Params) {
+	const { id } = await params;
 	const category = await prisma.category.findUnique({
-		where: { id: Number(params.id) },
+		where: { id: Number(id) },
 	});
 	if (!category) return new NextResponse("Не найдено", { status: 404 });
 	return NextResponse.json(category);
