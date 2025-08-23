@@ -254,7 +254,7 @@ export default function AllDepartmentsTable() {
 			<ConfirmPopup open={showDeleteModal} title="Подтверждение удаления" confirmText="Удалить" cancelText="Отмена" onConfirm={confirmDelete} onCancel={cancelDelete}>
 				<div>
 					<p>
-						Вы действительно хотите удалить отдел <strong>"{departmentToDelete?.name}"</strong>?
+						Вы действительно хотите удалить отдел <strong>&ldquo;{departmentToDelete?.name}&rdquo;</strong>?
 					</p>
 					<p className={styles.warningText}>⚠️ Это действие нельзя отменить. При удалении отдела:</p>
 					<ul className={styles.warningList}>

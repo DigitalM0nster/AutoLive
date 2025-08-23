@@ -21,6 +21,7 @@ const AdminSearchField = React.memo(
 		</div>
 	)
 );
+AdminSearchField.displayName = "AdminSearchField";
 
 // Отдельный компонент для фильтра даты
 const DateFilterField = React.memo(
@@ -50,6 +51,7 @@ const DateFilterField = React.memo(
 		</div>
 	)
 );
+DateFilterField.displayName = "DateFilterField";
 
 export default function DepartmentLogsComponent({ departmentId }: { departmentId: number }) {
 	const [page, setPage] = useState(1);
@@ -186,13 +188,10 @@ export default function DepartmentLogsComponent({ departmentId }: { departmentId
 	}, []);
 
 	// Мемоизируем обработчик изменения действия
-	const handleActionChange = useCallback(
-		(value: string) => {
-			setActionFilter(value === "all" ? null : value);
-			setPage(1); // Сбрасываем страницу при изменении фильтра
-		},
-		[actionFilter]
-	);
+	const handleActionChange = useCallback((value: string) => {
+		setActionFilter(value === "all" ? null : value);
+		setPage(1); // Сбрасываем страницу при изменении фильтра
+	}, []);
 
 	// Функция для правильного склонения слов
 	const getRecordsText = useCallback((count: number) => {

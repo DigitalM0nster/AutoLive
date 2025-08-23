@@ -21,6 +21,7 @@ const AdminSearchField = React.memo(
 		</div>
 	)
 );
+AdminSearchField.displayName = "AdminSearchField";
 
 // Отдельный компонент для поля поиска целевого пользователя
 const TargetDepartmentSearchField = React.memo(
@@ -34,6 +35,7 @@ const TargetDepartmentSearchField = React.memo(
 		</div>
 	)
 );
+TargetDepartmentSearchField.displayName = "TargetDepartmentSearchField";
 
 // Отдельный компонент для фильтра даты
 const DateFilterField = React.memo(
@@ -63,6 +65,7 @@ const DateFilterField = React.memo(
 		</div>
 	)
 );
+DateFilterField.displayName = "DateFilterField";
 
 export default function AllDepartmentsLogsComponent() {
 	const [page, setPage] = useState(1);

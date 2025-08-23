@@ -183,7 +183,7 @@ export default function DepartmentLogsTable({
 				);
 			}
 		},
-		[existingDepartments, departmentsData, styles.departmentLink, styles.deletedDepartmentIndicator]
+		[existingDepartments, departmentsData]
 	);
 	// Функция для форматирования даты
 	const formatDate = useCallback((dateString: string) => {
@@ -263,7 +263,7 @@ export default function DepartmentLogsTable({
 				</div>
 			);
 		},
-		[activeBlocks, toggleActiveBlock, getUserName, getRoleName, existingUsers]
+		[activeBlocks, toggleActiveBlock, getUserName, getRoleName, existingUsers, renderDepartment]
 	);
 
 	// Функция для получения блока с результатами
@@ -603,7 +603,7 @@ export default function DepartmentLogsTable({
 		};
 
 		fetchLogs();
-	}, [queryParams, checkUsersExistence, checkDepartmentsExistence]);
+	}, [queryParams, checkUsersExistence, checkDepartmentsExistence, onLogsUpdate, departmentId]);
 
 	// Загружаем данные отделов при монтировании компонента
 	useEffect(() => {
