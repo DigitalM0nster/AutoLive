@@ -1,3 +1,5 @@
+"use client";
+
 import styles from "./styles.module.scss";
 import Pagination from "@/components/ui/pagination/Pagination";
 import Loading from "@/components/ui/loading/Loading";
