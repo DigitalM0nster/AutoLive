@@ -449,7 +449,7 @@ export default function DepartmentPageClient({ initialData }: DepartmentPageClie
 			>
 				<div>
 					<p>
-						Вы собираетесь сохранить следующие изменения в отделе <strong>"{department?.name}"</strong>:
+						Вы собираетесь сохранить следующие изменения в отделе <strong>{`"${department?.name}"`}</strong>:
 					</p>
 					<ChangesDisplay changes={getChangesDescription()} />
 				</div>
