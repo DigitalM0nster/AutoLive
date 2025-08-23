@@ -1,13 +1,11 @@
-"use client";
-
-import DepartmentPage from "../[departmentId]/page";
+import DepartmentPageClient from "../local_components/DepartmentPageClient";
 
 export default function DepartmentCreatePage() {
 	return (
 		<div className="screenContent">
-			<div className="screenTitle">Создание отдела</div>
+			<div className="screenTitle">Создание нового отдела</div>
 			<div className="borderBlock">
-				<DepartmentPage isCreateMode={true} />
+				<DepartmentPageClient isCreateMode={true} />
 			</div>
 		</div>
 	);

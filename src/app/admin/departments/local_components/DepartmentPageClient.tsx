@@ -14,45 +14,62 @@ import ConfirmPopup from "@/components/ui/confirmPopup/ConfirmPopup";
 import ChangesDisplay, { ChangeItem } from "./ChangesDisplay";
 
 interface DepartmentPageClientProps {
-	initialData: {
+	initialData?: {
 		department: Department;
 		categories: Category[];
 		departmentCategories: Category[];
 		availableUsers: User[];
 	};
+	isCreateMode?: boolean;
 }
 
-export default function DepartmentPageClient({ initialData }: DepartmentPageClientProps) {
+export default function DepartmentPageClient({ initialData, isCreateMode = false }: DepartmentPageClientProps) {
 	const router = useRouter();
 	const { user } = useAuthStore();
-	const [department, setDepartment] = useState<Department | null>(initialData.department);
+
+	// Если это режим создания, используем пустые значения
+	const defaultDepartment: Department = {
+		id: 0,
+		name: "",
+		allowedCategories: [],
+		users: [],
+		products: [],
+		orders: [],
+	};
+
+	const [department, setDepartment] = useState<Department | null>(isCreateMode ? defaultDepartment : initialData?.department || null);
 	const [loading, setLoading] = useState(false);
 	const [showDeleteModal, setShowDeleteModal] = useState(false);
 	const [showConfirmChangesModal, setShowConfirmChangesModal] = useState(false);
 
-	const [formName, setFormName] = useState(initialData.department.name);
+	const [formName, setFormName] = useState(isCreateMode ? "" : initialData?.department?.name || "");
 	const [isFormChanged, setIsFormChanged] = useState(false);
 
-	const [originalName, setOriginalName] = useState(initialData.department.name);
+	const [originalName, setOriginalName] = useState(isCreateMode ? "" : initialData?.department?.name || "");
 
 	// Состояние для категорий отдела
-	const [selectedCategories, setSelectedCategories] = useState<number[]>(initialData.departmentCategories.map((cat) => cat.id));
-	const [originalCategories, setOriginalCategories] = useState<number[]>(initialData.departmentCategories.map((cat) => cat.id));
+	const [selectedCategories, setSelectedCategories] = useState<number[]>(isCreateMode ? [] : initialData?.departmentCategories?.map((cat) => cat.id) || []);
+	const [originalCategories, setOriginalCategories] = useState<number[]>(isCreateMode ? [] : initialData?.departmentCategories?.map((cat) => cat.id) || []);
 	const [isCategoriesChanged, setIsCategoriesChanged] = useState(false);
 	const [isStaffChanged, setIsStaffChanged] = useState(false);
-	const [categories, setCategories] = useState<any[]>(initialData.categories);
+	const [categories, setCategories] = useState<any[]>(isCreateMode ? [] : initialData?.categories || []);
 	const [uncategorizedCount, setUncategorizedCount] = useState<number>(0);
 
 	// Состояние для сотрудников отдела
-	const [originalAdmins, setOriginalAdmins] = useState<User[]>(initialData.department.users.filter((u) => u.role === "admin"));
-	const [originalManagers, setOriginalManagers] = useState<User[]>(initialData.department.users.filter((u) => u.role === "manager"));
-	const [currentAdmins, setCurrentAdmins] = useState<User[]>(initialData.department.users.filter((u) => u.role === "admin"));
-	const [currentManagers, setCurrentManagers] = useState<User[]>(initialData.department.users.filter((u) => u.role === "manager"));
-	const [availableUsers, setAvailableUsers] = useState<User[]>(initialData.availableUsers);
+	const [originalAdmins, setOriginalAdmins] = useState<User[]>(isCreateMode ? [] : initialData?.department?.users?.filter((u) => u.role === "admin") || []);
+	const [originalManagers, setOriginalManagers] = useState<User[]>(isCreateMode ? [] : initialData?.department?.users?.filter((u) => u.role === "manager") || []);
+	const [currentAdmins, setCurrentAdmins] = useState<User[]>(isCreateMode ? [] : initialData?.department?.users?.filter((u) => u.role === "admin") || []);
+	const [currentManagers, setCurrentManagers] = useState<User[]>(isCreateMode ? [] : initialData?.department?.users?.filter((u) => u.role === "manager") || []);
+	const [availableUsers, setAvailableUsers] = useState<User[]>(isCreateMode ? [] : initialData?.availableUsers || []);
 
 	// Проверка, может ли пользователь редактировать этот отдел
 	const canEditDepartment = () => {
 		if (!user) return false;
+
+		// В режиме создания проверяем права на создание
+		if (isCreateMode) {
+			return user.role === "superadmin" || user.role === "admin";
+		}
 
 		// Суперадмин может редактировать любой отдел
 		if (user.role === "superadmin") return true;
@@ -124,6 +141,33 @@ export default function DepartmentPageClient({ initialData }: DepartmentPageClie
 		const realChanges = hasStaffChanges();
 		setIsStaffChanged(realChanges);
 	}, [currentAdmins, currentManagers, originalAdmins, originalManagers]);
+
+	// Загружаем данные для создания отдела
+	useEffect(() => {
+		if (isCreateMode) {
+			const loadDataForCreation = async () => {
+				try {
+					// Загружаем все категории
+					const categoriesRes = await fetch("/api/categories");
+					if (categoriesRes.ok) {
+						const categoriesData = await categoriesRes.json();
+						setCategories(categoriesData);
+					}
+
+					// Загружаем доступных пользователей (без отдела)
+					const usersRes = await fetch("/api/users?departmentId=null");
+					if (usersRes.ok) {
+						const usersData = await usersRes.json();
+						setAvailableUsers(usersData.data || []);
+					}
+				} catch (error) {
+					console.error("Ошибка загрузки данных для создания отдела:", error);
+				}
+			};
+
+			loadDataForCreation();
+		}
+	}, [isCreateMode]);
 
 	// Обработчик изменения выбранных категорий
 	const handleSelectedCategoriesChange = (categories: number[]) => {
@@ -200,30 +244,51 @@ export default function DepartmentPageClient({ initialData }: DepartmentPageClie
 				requestBody.removeUsers = removeUsers;
 			}
 
-			const res = await fetch(`/api/departments/${department?.id}`, {
-				method: "PATCH",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(requestBody),
-				credentials: "include",
-			});
+			let res;
+
+			if (isCreateMode) {
+				// Создание нового отдела
+				res = await fetch(`/api/departments`, {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify(requestBody),
+					credentials: "include",
+				});
+			} else {
+				// Обновление существующего отдела
+				res = await fetch(`/api/departments/${department?.id}`, {
+					method: "PATCH",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify(requestBody),
+					credentials: "include",
+				});
+			}
 
 			if (res.ok) {
 				const updated = await res.json();
 
-				setDepartment(updated);
-				setOriginalName(formName);
-				setOriginalCategories(selectedCategories);
+				if (isCreateMode) {
+					// После создания перенаправляем на страницу отдела
+					showSuccessToast("Отдел успешно создан");
+					router.push(`/admin/departments/${updated.id}`);
+					return;
+				} else {
+					// Обновление существующего отдела
+					setDepartment(updated);
+					setOriginalName(formName);
+					setOriginalCategories(selectedCategories);
 
-				// Обновляем оригинальные списки сотрудников
-				setOriginalAdmins(currentAdmins);
-				setOriginalManagers(currentManagers);
+					// Обновляем оригинальные списки сотрудников
+					setOriginalAdmins(currentAdmins);
+					setOriginalManagers(currentManagers);
 
-				// Сбрасываем флаги изменений
-				setIsFormChanged(false);
-				setIsCategoriesChanged(false);
-				setIsStaffChanged(false);
+					// Сбрасываем флаги изменений
+					setIsFormChanged(false);
+					setIsCategoriesChanged(false);
+					setIsStaffChanged(false);
 
-				showSuccessToast("Изменения сохранены");
+					showSuccessToast("Изменения сохранены");
+				}
 			} else {
 				const { error } = await res.json();
 				showErrorToast(error || "Ошибка при сохранении изменений");
@@ -240,12 +305,61 @@ export default function DepartmentPageClient({ initialData }: DepartmentPageClie
 	};
 
 	// Проверяем общие изменения (название, категории или сотрудники)
-	const hasAnyChanges = isFormChanged || isCategoriesChanged || isStaffChanged;
+	const hasAnyChanges = isCreateMode
+		? formName.trim() !== "" || selectedCategories.length > 0 || currentAdmins.length > 0 || currentManagers.length > 0
+		: isFormChanged || isCategoriesChanged || isStaffChanged;
 
 	// Функция для получения детального описания изменений
 	const getChangesDescription = () => {
 		const changes: ChangeItem[] = [];
 
+		if (isCreateMode) {
+			// Для режима создания показываем что будет создано
+			if (formName.trim() !== "") {
+				changes.push({
+					type: "name" as const,
+					title: "Создание отдела",
+					description: `Будет создан отдел с названием "${formName}"`,
+				});
+			}
+
+			if (selectedCategories.length > 0) {
+				const categoryNames = categories.filter((cat) => selectedCategories.includes(cat.id)).map((cat) => cat.title);
+				changes.push({
+					type: "categories_added" as const,
+					title: "Категории отдела",
+					description: `В отдел будут добавлены следующие категории:`,
+					items: categoryNames,
+				});
+			}
+
+			if (currentAdmins.length > 0 || currentManagers.length > 0) {
+				const adminNames = currentAdmins.map((admin) => `${admin.last_name || ""} ${admin.first_name || ""} ${admin.middle_name || ""} (Администратор)`);
+				const managerNames = currentManagers.map((manager) => `${manager.last_name || ""} ${manager.first_name || ""} ${manager.middle_name || ""} (Менеджер)`);
+
+				if (adminNames.length > 0) {
+					changes.push({
+						type: "staff_added" as const,
+						title: "Администраторы отдела",
+						description: `В отдел будут добавлены следующие администраторы:`,
+						items: adminNames,
+					});
+				}
+
+				if (managerNames.length > 0) {
+					changes.push({
+						type: "staff_added" as const,
+						title: "Менеджеры отдела",
+						description: `В отдел будут добавлены следующие менеджеры:`,
+						items: managerNames,
+					});
+				}
+			}
+
+			return changes;
+		}
+
+		// Для режима редактирования показываем изменения
 		if (isFormChanged && originalName !== formName) {
 			changes.push({
 				type: "name" as const,
@@ -337,12 +451,18 @@ export default function DepartmentPageClient({ initialData }: DepartmentPageClie
 			<div className="screenContent">
 				<div className="tableContainer">
 					<div className="tabsContainer">
-						<Link href={`/admin/departments/${department.id}`} className={`tabButton active`}>
-							Управление отделом
-						</Link>
-						<Link href={`/admin/departments/${department.id}/logs`} className={`tabButton`}>
-							История изменений отдела
-						</Link>
+						{isCreateMode ? (
+							<div className={`tabButton active`}>Создание нового отдела</div>
+						) : (
+							<>
+								<Link href={`/admin/departments/${department.id}`} className={`tabButton active`}>
+									Управление отделом
+								</Link>
+								<Link href={`/admin/departments/${department.id}/logs`} className={`tabButton`}>
+									История изменений отдела
+								</Link>
+							</>
+						)}
 					</div>
 
 					<div className="tableContent">
@@ -412,24 +532,33 @@ export default function DepartmentPageClient({ initialData }: DepartmentPageClie
 							<div className="buttonsContent">
 								<button onClick={handleSaveClick} className="acceptButton">
 									<Check className="" />
-									Сохранить
+									{isCreateMode ? "Создать отдел" : "Сохранить"}
 								</button>
 
 								{hasAnyChanges && (
 									<button
 										onClick={() => {
-											setFormName(originalName);
-											setSelectedCategories(originalCategories);
-											setCurrentAdmins(originalAdmins);
-											setCurrentManagers(originalManagers);
-											setIsFormChanged(false);
-											setIsCategoriesChanged(false);
-											setIsStaffChanged(false);
+											if (isCreateMode) {
+												// В режиме создания сбрасываем форму
+												setFormName("");
+												setSelectedCategories([]);
+												setCurrentAdmins([]);
+												setCurrentManagers([]);
+											} else {
+												// В режиме редактирования возвращаем к исходным значениям
+												setFormName(originalName);
+												setSelectedCategories(originalCategories);
+												setCurrentAdmins(originalAdmins);
+												setCurrentManagers(originalManagers);
+												setIsFormChanged(false);
+												setIsCategoriesChanged(false);
+												setIsStaffChanged(false);
+											}
 										}}
 										className="cancelButton"
 									>
 										<X className="" />
-										Отменить
+										{isCreateMode ? "Очистить" : "Отменить"}
 									</button>
 								)}
 							</div>
@@ -443,13 +572,15 @@ export default function DepartmentPageClient({ initialData }: DepartmentPageClie
 				open={showConfirmChangesModal}
 				onCancel={() => setShowConfirmChangesModal(false)}
 				onConfirm={handleSave}
-				title="Подтверждение изменений"
-				confirmText="Сохранить изменения"
+				title={isCreateMode ? "Подтверждение создания отдела" : "Подтверждение изменений"}
+				confirmText={isCreateMode ? "Создать отдел" : "Сохранить изменения"}
 				cancelText="Отмена"
 			>
 				<div>
 					<p>
-						Вы собираетесь сохранить следующие изменения в отделе <strong>{`"${department?.name}"`}</strong>:
+						{isCreateMode
+							? "Вы собираетесь создать новый отдел со следующими параметрами:"
+							: `Вы собираетесь сохранить следующие изменения в отделе <strong>${department?.name}</strong>:`}
 					</p>
 					<ChangesDisplay changes={getChangesDescription()} />
 				</div>
