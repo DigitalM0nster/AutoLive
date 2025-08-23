@@ -3,10 +3,10 @@ import Pagination from "@/components/ui/pagination/Pagination";
 import CustomSelect from "@/components/ui/customSelect/CustomSelect";
 import DateRangePicker from "@/components/ui/dateRangePicker/DateRangePicker";
 import FiltersBlock from "@/components/ui/filtersBlock/FiltersBlock";
-import { UserLog, ActiveFilter } from "@/lib/types";
+import { ActiveFilter } from "@/lib/types";
 import { useAuthStore } from "@/store/authStore";
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import React from "react"; // Added missing import for React
+import { useState, useCallback, useMemo } from "react";
+import React from "react";
 import AllDepartmentsLogsTable from "./AllDepartmentsLogsTable";
 
 // Отдельный компонент для поля поиска администратора

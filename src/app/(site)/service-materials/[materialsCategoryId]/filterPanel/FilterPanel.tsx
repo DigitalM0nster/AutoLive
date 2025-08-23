@@ -1,8 +1,8 @@
-// src\app\service-materials\[materialsCategoryId]\filterPanel\FilterPanel.jsx
+// src\app\service-materials\[materialsCategoryId]\filterPanel\FilterPanel.tsx
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import styles from "./styles.module.scss";
 import type { Product, Category } from "@/lib/types";
 
@@ -22,46 +22,64 @@ export default function FilterPanel({ products = [], filters = [], setFilteredPr
 	const [inputMinPrice, setInputMinPrice] = useState<number>(minPriceDefault);
 	const [inputMaxPrice, setInputMaxPrice] = useState<number>(maxPriceDefault);
 
-	useEffect(() => {
-		applyFilters();
-	}, [selectedFilters, minPrice, maxPrice]);
-
-	const applyFilters = () => {
+	// Используем useCallback для оптимизации
+	const applyFilters = useCallback(() => {
 		let filtered = products.filter((product) => product.price >= minPrice && product.price <= maxPrice);
 
 		Object.entries(selectedFilters).forEach(([filterId, valueId]) => {
 			if (valueId) {
-				filtered = filtered.filter((product) => product.filters?.some((f) => f.filter_id === Number(filterId) && f.value_id === Number(valueId)));
+				// Исправляем названия полей согласно типам
+				filtered = filtered.filter((product) => product.filters?.some((f) => f.filterId === Number(filterId) && f.valueId === Number(valueId)));
 			}
 		});
 
 		setFilteredProducts(filtered);
-	};
+	}, [products, selectedFilters, minPrice, maxPrice, setFilteredProducts]);
 
-	const handleMinPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const newMinPrice = Number(e.target.value);
-		if (!isNaN(newMinPrice) && newMinPrice >= minPriceDefault && newMinPrice <= maxPrice) {
-			setMinPrice(newMinPrice);
-			setInputMinPrice(newMinPrice);
-		}
-	};
+	useEffect(() => {
+		applyFilters();
+	}, [applyFilters]);
 
-	const handleMaxPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const newMaxPrice = Number(e.target.value);
-		if (!isNaN(newMaxPrice) && newMaxPrice >= minPrice && newMaxPrice <= maxPriceDefault) {
-			setMaxPrice(newMaxPrice);
-			setInputMaxPrice(newMaxPrice);
-		}
-	};
-
-	const resetFilters = () => {
+	// Используем useCallback для resetFilters
+	const resetFilters = useCallback(() => {
 		setSelectedFilters({});
 		setMinPrice(minPriceDefault);
 		setMaxPrice(maxPriceDefault);
 		setInputMinPrice(minPriceDefault);
 		setInputMaxPrice(maxPriceDefault);
 		setFilteredProducts(products);
-	};
+	}, [minPriceDefault, maxPriceDefault, products, setFilteredProducts]);
+
+	// Используем useCallback для обработчиков изменения цены
+	const handleMinPriceChange = useCallback(
+		(e: React.ChangeEvent<HTMLInputElement>) => {
+			const newMinPrice = Number(e.target.value);
+			if (!isNaN(newMinPrice) && newMinPrice >= minPriceDefault && newMinPrice <= maxPrice) {
+				setMinPrice(newMinPrice);
+				setInputMinPrice(newMinPrice);
+			}
+		},
+		[minPriceDefault, maxPrice]
+	);
+
+	const handleMaxPriceChange = useCallback(
+		(e: React.ChangeEvent<HTMLInputElement>) => {
+			const newMaxPrice = Number(e.target.value);
+			if (!isNaN(newMaxPrice) && newMaxPrice >= minPrice && newMaxPrice <= maxPriceDefault) {
+				setMaxPrice(newMaxPrice);
+				setInputMaxPrice(newMaxPrice);
+			}
+		},
+		[minPrice, maxPriceDefault]
+	);
+
+	// Используем useCallback для изменения выбранных фильтров
+	const handleFilterChange = useCallback((filterId: number, value: string) => {
+		setSelectedFilters((prev) => ({
+			...prev,
+			[filterId]: Number(value) || "",
+		}));
+	}, []);
 
 	return (
 		<div className={styles.filterPanel}>
@@ -121,16 +139,8 @@ export default function FilterPanel({ products = [], filters = [], setFilteredPr
 				{filters.length > 0 &&
 					filters.map((filter) => (
 						<div key={filter.id} className={styles.filterBlock}>
-							<div className={styles.filterName}>{filter.name}</div>
-							<select
-								value={selectedFilters[filter.id] || ""}
-								onChange={(e) =>
-									setSelectedFilters({
-										...selectedFilters,
-										[filter.id]: Number(e.target.value) || "",
-									})
-								}
-							>
+							<div className={styles.filterName}>{filter.title}</div>
+							<select value={selectedFilters[filter.id] || ""} onChange={(e) => handleFilterChange(filter.id, e.target.value)}>
 								<option value="">Все</option>
 								{filter.values.map((value) => (
 									<option key={value.id} value={value.id}>
