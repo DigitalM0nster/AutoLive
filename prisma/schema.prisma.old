@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-    provider = "postgresql"
+    provider = "mysql"
     url      = env("DB_URL")
 }
 
@@ -48,8 +48,8 @@ model Product {
     title         String   @map("title") @db.VarChar(255)
     sku           String   @map("sku") @db.VarChar(255)
     brand         String   @default("UNKNOWN") @map("brand") @db.VarChar(255)
-    price         Float    @map("price")
-    supplierPrice Float?   @map("supplier_price")
+    price         Float    @map("price") @db.Float
+    supplierPrice Float?   @map("supplier_price") @db.Float
     description   String?  @map("description") @db.Text
     image         String?  @map("image") @db.VarChar(255)
     createdAt     DateTime @default(now()) @map("created_at") @db.Timestamp(0)
@@ -128,7 +128,7 @@ model ServiceKit {
     title       String   @map("title") @db.VarChar(255)
     description String?  @map("description") @db.Text
     image       String?  @map("image") @db.VarChar(255)
-    price       Float    @map("price")
+    price       Float    @map("price") @db.Float
     createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp(0)
 
     // Связи
@@ -161,7 +161,7 @@ model OrderItem {
     orderId       Int     @map("order_id")
     product_sku   String  @db.VarChar(255)
     product_title String  @db.VarChar(255)
-    product_price Float
+    product_price Float   @db.Float
     product_brand String  @db.VarChar(255)
     product_image String? @db.VarChar(255)
     quantity      Int     @default(1)
@@ -205,9 +205,9 @@ model MarkupRule {
     departmentId Int?     @map("department_id")
     categoryId   Int?     @map("category_id")
     brand        String?  @map("brand") @db.VarChar(255)
-    priceFrom    Float    @default(0) @map("price_from")
-    priceTo      Float?   @map("price_to")
-    markup       Float    @default(1) @map("markup")
+    priceFrom    Float    @default(0) @map("price_from") @db.Float
+    priceTo      Float?   @map("price_to") @db.Float
+    markup       Float    @default(1) @map("markup") @db.Float
     createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp(0)
 
     // Связи
@@ -232,7 +232,7 @@ model ServiceKitItem {
 }
 
 model drizzle_migrations {
-    id         BigInt  @id @default(autoincrement())
+    id         BigInt  @id @default(autoincrement()) @db.UnsignedBigInt
     hash       String  @db.Text
     created_at BigInt?
 
@@ -246,7 +246,7 @@ model bulk_action_log {
     created_at    DateTime @default(now()) @db.Timestamp(0)
     action        String   @db.VarChar(255)
     message       String?  @db.Text
-    snapshots     String
+    snapshots     String   @db.LongText
     count         Int
 }
 
@@ -275,15 +275,15 @@ model import_log {
     message         String?  @db.Text
     count           Int
     department_id   Int?
-    snapshots       String?
-    snapshot_before String?
-    snapshot_after  String?
+    snapshots       String?  @db.LongText
+    snapshot_before String?  @db.LongText
+    snapshot_after  String?  @db.LongText
 }
 
 model price_format {
     id          Int      @id @default(autoincrement())
     supplier_id Int
-    columns     String
+    columns     String   @db.LongText
     created_at  DateTime @default(now()) @db.Timestamp(0)
 }
 
@@ -295,8 +295,8 @@ model product_log {
     user_id         Int?
     department_id   Int?
     product_id      Int?
-    snapshot_before String?
-    snapshot_after  String?
+    snapshot_before String?  @db.LongText
+    snapshot_after  String?  @db.LongText
 }
 
 model sms_code {
