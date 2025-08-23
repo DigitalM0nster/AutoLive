@@ -272,8 +272,32 @@ export const POST = withPermission(
 			if (logsToCreate.length > 0) {
 				await Promise.all(
 					logsToCreate.map((log) =>
-						prisma.productLog.create({
-							data: log,
+						prisma.product_log.create({
+							data: {
+								action: log.action,
+								message: log.message,
+								user_snapshot: {
+									id: log.userId,
+									// Дополнительные данные пользователя можно получить отдельным запросом если нужно
+								},
+								department_snapshot: {
+									id: log.departmentId,
+									name: null,
+								},
+								product_snapshot: {
+									id: log.productId,
+									title: log.snapshotAfter?.title || log.snapshotBefore?.title || null,
+									price: log.snapshotAfter?.price || log.snapshotBefore?.price || null,
+									sku: log.snapshotAfter?.sku || log.snapshotBefore?.sku || null,
+									brand: log.snapshotAfter?.brand || log.snapshotBefore?.brand || null,
+								},
+								// Временные поля для совместимости
+								user_id: log.userId,
+								department_id: log.departmentId,
+								product_id: log.productId,
+								snapshot_before: log.snapshotBefore ? JSON.stringify(log.snapshotBefore) : null,
+								snapshot_after: log.snapshotAfter ? JSON.stringify(log.snapshotAfter) : null,
+							},
 						})
 					)
 				);
@@ -328,11 +352,9 @@ export const POST = withPermission(
 				];
 
 				console.log("🟡 Сохраняем importLog со snapshots:", JSON.stringify(snapshots, null, 2));
-				await prisma.importLog.create({
+				await prisma.import_log.create({
 					data: {
-						userId: user.id,
-						departmentId,
-						fileName: `Импорт chunk ${chunkIndex + 1}/${totalChunks}`,
+						file_name: `Импорт chunk ${chunkIndex + 1}/${totalChunks}`,
 						created: toCreate.length,
 						updated: toUpdate.length,
 						skipped,
@@ -350,7 +372,19 @@ export const POST = withPermission(
 						]
 							.filter(Boolean)
 							.join("\n"),
-						snapshots,
+						user_snapshot: {
+							id: user.id,
+							// Дополнительные данные пользователя можно получить отдельным запросом если нужно
+						},
+						department_snapshot: {
+							id: departmentId,
+							name: userDepartment?.name,
+						},
+						products_snapshot: snapshots,
+						// Временные поля для совместимости
+						user_id: user.id,
+						department_id: departmentId,
+						snapshots: JSON.stringify(snapshots),
 					},
 				});
 			}

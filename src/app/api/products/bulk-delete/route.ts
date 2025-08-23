@@ -51,22 +51,38 @@ export const POST = withPermission(
 			});
 
 			// логируем заранее
-			await prisma.productLog.createMany({
+			await prisma.product_log.createMany({
 				data: productsToDelete.map((product) => ({
 					action: "bulk",
-					userId: user.id,
-					departmentId: product.departmentId,
-					productId: product.id,
-					message: null, // не отображаем как отдельное ручное удаление
-					snapshotBefore: product,
+					message: "Массовое удаление товаров",
+					user_snapshot: {
+						id: user.id,
+						// Дополнительные данные пользователя можно получить отдельным запросом если нужно
+					},
+					department_snapshot: {
+						id: product.departmentId,
+						name: null, // Будет заполнено позже
+					},
+					product_snapshot: {
+						id: product.id,
+						title: product.title,
+						price: product.price,
+						sku: product.sku,
+						brand: product.brand,
+					},
+					// Временные поля для совместимости
+					user_id: user.id,
+					department_id: product.departmentId,
+					product_id: product.id,
+					snapshot_before: JSON.stringify(product),
 				})),
 			});
 
 			// обнуляем ссылки на удаляемые продукты
 			await chunkedDeleteMany(numericIds, (chunk) =>
-				prisma.productLog.updateMany({
-					where: { productId: { in: chunk } },
-					data: { productId: null },
+				prisma.product_log.updateMany({
+					where: { product_id: { in: chunk } },
+					data: { product_id: null },
 				})
 			);
 
@@ -99,7 +115,7 @@ export const POST = withPermission(
 			await chunkedDeleteMany(numericIds, (chunk) =>
 				prisma.serviceKitItem.deleteMany({
 					where: {
-						OR: [{ productId: { in: chunk } }, { analogProductId: { in: chunk } }],
+						OR: [{ product_id: { in: chunk } }, { analog_product_id: { in: chunk } }],
 					},
 				})
 			);
@@ -139,14 +155,20 @@ export const POST = withPermission(
 				})
 				.join(", ");
 
-			await prisma.bulkActionLog.create({
+			await prisma.bulk_action_log.create({
 				data: {
-					userId: user.id,
-					departmentId: user.departmentId ?? null,
 					action: "delete_products",
 					message: `Удалено ${productsToDelete.length} товаров: ${detailsPerDept}`,
 					count: productsToDelete.length,
-					snapshots: productsToDelete.map((p) => ({
+					user_snapshot: {
+						id: user.id,
+						// Дополнительные данные пользователя можно получить отдельным запросом если нужно
+					},
+					department_snapshot: {
+						id: user.departmentId,
+						name: null,
+					},
+					products_snapshot: productsToDelete.map((p) => ({
 						id: p.id,
 						title: p.title,
 						sku: p.sku,
@@ -156,6 +178,21 @@ export const POST = withPermission(
 						department: p.department ? { name: p.department.name } : undefined,
 						category: p.category ? { title: p.category.title } : undefined,
 					})),
+					// Временные поля для совместимости
+					user_id: user.id,
+					department_id: user.departmentId ?? null,
+					snapshots: JSON.stringify(
+						productsToDelete.map((p) => ({
+							id: p.id,
+							title: p.title,
+							sku: p.sku,
+							brand: p.brand,
+							price: p.price,
+							supplierPrice: p.supplierPrice,
+							department: p.department ? { name: p.department.name } : undefined,
+							category: p.category ? { title: p.category.title } : undefined,
+						}))
+					),
 				},
 			});
 

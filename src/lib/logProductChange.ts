@@ -38,15 +38,31 @@ export async function logProductChange({ productId, userId, action, message = nu
 		snapshotBefore = product;
 	}
 
-	await prisma.productLog.create({
+	await prisma.product_log.create({
 		data: {
 			action,
-			userId,
-			departmentId,
-			productId,
 			message,
-			snapshotBefore: snapshotBefore ?? Prisma.JsonNull,
-			snapshotAfter: snapshotAfter ?? Prisma.JsonNull,
+			user_snapshot: {
+				id: userId,
+				// Дополнительные данные пользователя можно получить отдельным запросом если нужно
+			},
+			department_snapshot: {
+				id: departmentId,
+				name: product.department?.name,
+			},
+			product_snapshot: {
+				id: product.id,
+				title: product.title,
+				price: product.price,
+				sku: product.sku,
+				brand: product.brand,
+			},
+			// Временные поля для совместимости
+			user_id: userId,
+			department_id: departmentId,
+			product_id: productId,
+			snapshot_before: snapshotBefore ? JSON.stringify(snapshotBefore) : null,
+			snapshot_after: snapshotAfter ? JSON.stringify(snapshotAfter) : null,
 		},
 	});
 }

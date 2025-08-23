@@ -192,15 +192,34 @@ export const PUT = withPermission(
 				},
 			});
 
-			await prisma.productLog.create({
+			await prisma.product_log.create({
 				data: {
 					action: "update",
-					userId: user.id,
-					departmentId: updated.departmentId,
-					productId: updated.id,
-					message: null,
-					snapshotBefore: existing,
-					snapshotAfter: updatedFull!,
+					message: "Товар обновлён",
+					user_snapshot: {
+						id: user.id,
+						first_name: user.first_name,
+						last_name: user.last_name,
+						role: user.role,
+						department: user.departmentId,
+					},
+					department_snapshot: {
+						id: updated.departmentId,
+						name: updatedFull?.department?.name,
+					},
+					product_snapshot: {
+						id: updated.id,
+						title: updatedFull?.title,
+						price: updatedFull?.price,
+						sku: updatedFull?.sku,
+						brand: updatedFull?.brand,
+					},
+					// Временные поля для совместимости
+					user_id: user.id,
+					department_id: updated.departmentId,
+					product_id: updated.id,
+					snapshot_before: JSON.stringify(existing),
+					snapshot_after: JSON.stringify(updatedFull),
 				},
 			});
 
@@ -237,18 +256,38 @@ export const DELETE = withPermission(
 
 			await prisma.productFilterValue.deleteMany({ where: { productId } });
 			await prisma.productAnalog.deleteMany({ where: { OR: [{ productId }, { analogId: productId }] } });
-			await prisma.serviceKitItem.deleteMany({ where: { OR: [{ productId }, { analogProductId: productId }] } });
+			await prisma.serviceKitItem.deleteMany({ where: { OR: [{ product_id: productId }, { analog_product_id: productId }] } });
 
 			await prisma.product.delete({ where: { id: productId } });
 
 			// ✅ логируем удаление
-			await prisma.productLog.create({
+			await prisma.product_log.create({
 				data: {
 					action: "delete",
-					userId: user.id,
-					departmentId: existing.departmentId,
 					message: "Товар удалён вручную",
-					snapshotBefore: existing,
+					user_snapshot: {
+						id: user.id,
+						first_name: user.first_name,
+						last_name: user.last_name,
+						role: user.role,
+						department: user.departmentId,
+					},
+					department_snapshot: {
+						id: existing.departmentId,
+						name: null, // Отдел может быть уже удалён
+					},
+					product_snapshot: {
+						id: existing.id,
+						title: existing.title,
+						price: existing.price,
+						sku: existing.sku,
+						brand: existing.brand,
+					},
+					// Временные поля для совместимости
+					user_id: user.id,
+					department_id: existing.departmentId,
+					product_id: existing.id,
+					snapshot_before: JSON.stringify(existing),
 				},
 			});
 
