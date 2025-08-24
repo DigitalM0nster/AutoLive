@@ -7,6 +7,12 @@ import { withPermission } from "@/middleware/permissionMiddleware";
 // --- GET (оставим открытым, если категории видны клиентам) ---
 export async function GET() {
 	try {
+		console.log("API: Начинаем получение категорий...");
+
+		// Проверяем подключение к базе данных
+		await prisma.$connect();
+		console.log("API: Подключение к БД успешно");
+
 		const categories = await prisma.category.findMany({
 			orderBy: { order: "asc" },
 			include: {
@@ -16,6 +22,8 @@ export async function GET() {
 			},
 		});
 
+		console.log(`API: Получено ${categories.length} категорий`);
+
 		const result = categories.map((cat) => ({
 			id: cat.id,
 			title: cat.title,
@@ -23,10 +31,37 @@ export async function GET() {
 			productCount: cat.products.length,
 		}));
 
-		return NextResponse.json(result);
+		console.log("API: Формируем ответ:", JSON.stringify(result, null, 2));
+
+		// Устанавливаем правильные заголовки для JSON
+		return new NextResponse(JSON.stringify(result), {
+			status: 200,
+			headers: {
+				"Content-Type": "application/json",
+				"Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
+			},
+		});
 	} catch (error) {
-		console.error("Ошибка при получении категорий:", error);
-		return new NextResponse("Ошибка сервера", { status: 500 });
+		console.error("API: Ошибка при получении категорий:", error);
+
+		// Возвращаем JSON с ошибкой
+		return new NextResponse(
+			JSON.stringify({
+				error: "Ошибка сервера",
+				message: error instanceof Error ? error.message : "Неизвестная ошибка",
+				timestamp: new Date().toISOString(),
+			}),
+			{
+				status: 500,
+				headers: {
+					"Content-Type": "application/json",
+				},
+			}
+		);
+	} finally {
+		// Закрываем подключение к базе данных
+		await prisma.$disconnect();
+		console.log("API: Подключение к БД закрыто");
 	}
 }
 
