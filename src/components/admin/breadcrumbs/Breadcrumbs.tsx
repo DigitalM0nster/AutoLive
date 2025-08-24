@@ -66,7 +66,10 @@ export default function Breadcrumbs() {
 						</li>
 						{breadcrumbs.slice(1).map((crumb, i) => (
 							<li key={crumb!.href}>
-								<ChevronRight />
+								<div className="arrowsRight">
+									<div className="arrow" />
+									<div className="arrow" />
+								</div>
 								<Link href={crumb!.href}>{crumb!.label}</Link>
 							</li>
 						))}

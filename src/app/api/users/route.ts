@@ -149,6 +149,16 @@ export const POST = withPermission(
 				return NextResponse.json({ error: "Номер телефона обязателен" }, { status: 400 });
 			}
 
+			// Запрещаем создание пользователей с ролью суперадминистратора
+			if (role === "superadmin") {
+				return NextResponse.json({ error: "Нельзя создать пользователя с ролью суперадминистратора" }, { status: 403 });
+			}
+
+			// Только суперадминистраторы могут создавать администраторов
+			if (role === "admin" && user.role !== "superadmin") {
+				return NextResponse.json({ error: "Только суперадминистраторы могут создавать администраторов" }, { status: 403 });
+			}
+
 			// Проверка формата телефона
 			if (!phone.match(/^\+?[0-9]{10,15}$/)) {
 				return NextResponse.json({ error: "Некорректный формат номера телефона" }, { status: 400 });

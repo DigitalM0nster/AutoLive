@@ -9,6 +9,7 @@ import { User, Department } from "@/lib/types";
 import { showSuccessToast, showErrorToast } from "@/components/ui/toast/ToastProvider";
 import Loading from "@/components/ui/loading/Loading";
 import ConfirmPopup from "@/components/ui/confirmPopup/ConfirmPopup";
+import Skeleton from "./Skeleton";
 
 type UserPageProps = {
 	userId?: string | number; // Если не указан, значит создаем нового пользователя
@@ -201,9 +202,19 @@ export default function UserComponent({ userId, isCreating = false }: UserPagePr
 
 	// Проверка прав на редактирование полей
 	const canEditRole = () => {
-		if (isCreating) return user?.role === "superadmin" || user?.role === "admin" || user?.role === "manager";
+		// Никто не может изменять роль суперадминистратора
+		if (!isCreating && userData?.role === "superadmin") return false;
 
-		// Суперадмин может редактировать роли всех пользователей
+		if (isCreating) {
+			// Только суперадминистраторы могут создавать администраторов
+			if (user?.role === "superadmin") return true;
+			// Обычные админы не могут создавать других админов
+			if (user?.role === "admin") return true;
+			if (user?.role === "manager") return true;
+			return false;
+		}
+
+		// Суперадмин может редактировать роли всех пользователей, кроме других суперадминов
 		if (user?.role === "superadmin") return true;
 
 		// Админ может менять роль между менеджером и пользователем если:
@@ -224,8 +235,8 @@ export default function UserComponent({ userId, isCreating = false }: UserPagePr
 	};
 
 	const canEditDepartment = () => {
-		// Суперадмин может редактировать отдел любого пользователя
-		if (user?.role === "superadmin") return true;
+		// Суперадмин может редактировать отдел любого пользователя, кроме других суперадминов
+		if (user?.role === "superadmin" && userData?.role !== "superadmin") return true;
 
 		// При создании пользователя только админы могут выбрать отдел
 		if (isCreating) {
@@ -263,8 +274,11 @@ export default function UserComponent({ userId, isCreating = false }: UserPagePr
 		// Если создаем нового пользователя
 		if (isCreating) return true;
 
-		// Суперадмин может редактировать статус всех пользователей
-		if (user?.role === "superadmin") return true;
+		// Суперадмин может редактировать статус всех пользователей, кроме других суперадминов
+		if (user?.role === "superadmin" && userData?.role !== "superadmin") return true;
+
+		// Суперадмин может редактировать свой статус
+		if (user?.role === "superadmin" && isOwnProfile()) return true;
 
 		// Админ может редактировать статус:
 		// - свой собственный
@@ -286,8 +300,11 @@ export default function UserComponent({ userId, isCreating = false }: UserPagePr
 		// Если создаем нового пользователя
 		if (isCreating) return true;
 
-		// Суперадмин может редактировать имена всех пользователей
-		if (user?.role === "superadmin") return true;
+		// Суперадмин может редактировать имена всех пользователей, кроме других суперадминов
+		if (user?.role === "superadmin" && userData?.role !== "superadmin") return true;
+
+		// Суперадмин может редактировать свои данные
+		if (user?.role === "superadmin" && isOwnProfile()) return true;
 
 		// Админ может редактировать имена:
 		// - свои собственные
@@ -468,8 +485,9 @@ export default function UserComponent({ userId, isCreating = false }: UserPagePr
 
 	if (loading) {
 		return (
-			<div className={`screenContent ${styles.userPageContainer}`}>
+			<div className={`tableContent ${styles.userPageContainer}`}>
 				<Loading />
+				<Skeleton />
 			</div>
 		);
 	}
@@ -499,197 +517,170 @@ export default function UserComponent({ userId, isCreating = false }: UserPagePr
 			<>
 				{/* Карточка пользователя */}
 				<div className={`borderBlock ${styles.userCard}`}>
-					<div className={styles.userInfoContainer}>
-						{/* Информация о пользователе */}
-						<div className={styles.userDetailsContainer}>
-							<form onSubmit={handleSaveChanges} className={styles.editForm}>
-								<div className={styles.userDetailsList}>
-									{!isCreating && (
-										<div className={styles.detailItem}>
-											<h3 className={styles.detailLabel}>ID пользователя:</h3>
-											<div className={styles.inputField}>{userData?.id}</div>
-										</div>
-									)}
-									{isCreating ? (
-										<div className={styles.detailItem}>
-											<label className={styles.detailLabel} htmlFor="phone">
-												Телефон *
-											</label>
-											<input
-												id="phone"
-												name="phone"
-												type="text"
-												value={formData.phone || ""}
-												onChange={handleInputChange}
-												className={styles.inputField}
-												required
-												placeholder="+79001234567"
-											/>
-										</div>
-									) : (
-										<div className={styles.detailItem}>
-											<label className={styles.detailLabel}>Телефон:</label>
-											<p className={styles.detailValue}>{userData?.phone}</p>
-										</div>
-									)}
-									<div className={styles.detailItem}>
-										<label className={styles.detailLabel} htmlFor="last_name">
-											Фамилия:
-										</label>
-										{canEditName() ? (
-											<input
-												id="last_name"
-												name="last_name"
-												type="text"
-												value={formData.last_name}
-												onChange={handleInputChange}
-												className={styles.inputField}
-											/>
-										) : (
-											<p className={styles.detailValue}>{userData?.last_name || "—"}</p>
-										)}
-									</div>
-									<div className={styles.detailItem}>
-										<label className={styles.detailLabel} htmlFor="first_name">
-											Имя:
-										</label>
-										{canEditName() ? (
-											<input
-												id="first_name"
-												name="first_name"
-												type="text"
-												value={formData.first_name}
-												onChange={handleInputChange}
-												className={styles.inputField}
-											/>
-										) : (
-											<p className={styles.detailValue}>{userData?.first_name || "—"}</p>
-										)}
-									</div>
-									<div className={styles.detailItem}>
-										<label className={styles.detailLabel} htmlFor="middle_name">
-											Отчество:
-										</label>
-										{canEditName() ? (
-											<input
-												id="middle_name"
-												name="middle_name"
-												type="text"
-												value={formData.middle_name}
-												onChange={handleInputChange}
-												className={styles.inputField}
-											/>
-										) : (
-											<p className={styles.detailValue}>{userData?.middle_name || "—"}</p>
-										)}
-									</div>
-									<div className={styles.detailItem}>
-										<label className={styles.detailLabel} htmlFor="role">
-											Роль:
-										</label>
-										{canEditRole() ? (
-											<>
-												<select id="role" name="role" value={formData.role} onChange={handleInputChange} className={styles.selectField}>
-													{/* Убираем возможность выбора роли суперадмина */}
-													{user?.role === "superadmin" && <option value="admin">Администратор</option>}
-													{/* Менеджеры не могут создавать других менеджеров */}
-													{user?.role !== "manager" && <option value="manager">Менеджер</option>}
-													<option value="client">Пользователь</option>
-												</select>
-											</>
-										) : (
-											<p className={styles.detailValue}>{userData ? formatRole(userData.role) : "Пользователь"}</p>
-										)}
-									</div>
-									<div className={styles.detailItem}>
-										<label className={styles.detailLabel} htmlFor="status">
-											Статус:
-										</label>
-										{canEditStatus() ? (
-											<select id="status" name="status" value={formData.status} onChange={handleInputChange} className={styles.selectField}>
-												<option value="verified">Подтверждён</option>
-												<option value="unverified">Не подтверждён</option>
-											</select>
-										) : (
-											<p className={styles.detailValue}>{userData ? formatStatus(userData.status) : "Не подтверждён"}</p>
-										)}
-									</div>
-									<div className={styles.detailItem}>
-										<label className={styles.detailLabel} htmlFor="departmentId">
-											Отдел:
-										</label>
-										{canEditDepartment() ? (
-											<>
-												<select
-													id="departmentId"
-													name="departmentId"
-													value={formData.role === "client" || formData.role === "superadmin" ? "" : formData.departmentId}
-													onChange={handleInputChange}
-													className={styles.selectField}
-													disabled={formData.role === "client" || formData.role === "superadmin"}
-												>
-													<option value="">Не выбрано</option>
-													{formData.role !== "client" &&
-														formData.role !== "superadmin" &&
-														departments.map((dept) => {
-															// При создании пользователя админы могут выбрать только свой отдел
-															if (isCreating && user?.role === "admin") {
-																if (dept.id === user?.department?.id) {
-																	return (
-																		<option key={dept.id} value={dept.id.toString()}>
-																			{dept.name}
-																		</option>
-																	);
-																}
-																return null;
-															}
-															// При редактировании админ может выбрать только свой отдел
-															if (!isCreating && user?.role === "admin" && dept.id !== user?.department?.id) {
-																return null;
-															}
+					{/* Информация о пользователе */}
+					<form onSubmit={handleSaveChanges} className="editForm">
+						<div className="detailsList">
+							{!isCreating && (
+								<div className="detailItem noBorder">
+									<div className="label">ID пользователя:</div>
+									<div className="value">{userData?.id}</div>
+								</div>
+							)}
+							{isCreating ? (
+								<div className="detailItem">
+									<label className="label" htmlFor="phone">
+										Телефон *
+									</label>
+									<input
+										id="phone"
+										name="phone"
+										type="text"
+										value={formData.phone || ""}
+										onChange={handleInputChange}
+										className="value"
+										required
+										placeholder="+79001234567"
+									/>
+								</div>
+							) : (
+								<div className="detailItem noBorder">
+									<div className="label">Телефон:</div>
+									<div className="value">{userData?.phone}</div>
+								</div>
+							)}
+							<div className="detailItem">
+								<label className="label" htmlFor="last_name">
+									Фамилия:
+								</label>
+								{canEditName() ? (
+									<input id="last_name" name="last_name" type="text" value={formData.last_name} onChange={handleInputChange} className="value" />
+								) : (
+									<p className="value">{userData?.last_name || "—"}</p>
+								)}
+							</div>
+							<div className="detailItem">
+								<label className="label" htmlFor="first_name">
+									Имя:
+								</label>
+								{canEditName() ? (
+									<input id="first_name" name="first_name" type="text" value={formData.first_name} onChange={handleInputChange} className="value" />
+								) : (
+									<p className="value">{userData?.first_name || "—"}</p>
+								)}
+							</div>
+							<div className="detailItem">
+								<label className="label" htmlFor="middle_name">
+									Отчество:
+								</label>
+								{canEditName() ? (
+									<input id="middle_name" name="middle_name" type="text" value={formData.middle_name} onChange={handleInputChange} className="value" />
+								) : (
+									<p className="value">{userData?.middle_name || "—"}</p>
+								)}
+							</div>
+							<div className="detailItem">
+								<label className="label" htmlFor="role">
+									Роль:
+								</label>
+								{canEditRole() ? (
+									<>
+										<select id="role" name="role" value={formData.role} onChange={handleInputChange} className="value">
+											{/* Никто не может создать или изменить роль на суперадминистратора */}
+											{/* Только суперадминистраторы могут создавать администраторов */}
+											{user?.role === "superadmin" && <option value="admin">Администратор</option>}
+											{/* Менеджеры не могут создавать других менеджеров */}
+											{user?.role !== "manager" && <option value="manager">Менеджер</option>}
+											<option value="client">Пользователь</option>
+										</select>
+										{/* Показываем предупреждение если редактируем суперадминистратора */}
+										{!isCreating && userData?.role === "superadmin" && <div className={styles.infoText}>* Роль суперадминистратора не может быть изменена</div>}
+									</>
+								) : (
+									<p className="value">{userData ? formatRole(userData.role) : "Пользователь"}</p>
+								)}
+							</div>
+							<div className="detailItem">
+								<label className="label" htmlFor="status">
+									Статус:
+								</label>
+								{canEditStatus() ? (
+									<select id="status" name="status" value={formData.status} onChange={handleInputChange} className="value">
+										<option value="verified">Подтверждён</option>
+										<option value="unverified">Не подтверждён</option>
+									</select>
+								) : (
+									<p className="value">{userData ? formatStatus(userData.status) : "Не подтверждён"}</p>
+								)}
+							</div>
+							<div className="detailItem">
+								<label className="label" htmlFor="departmentId">
+									Отдел:
+								</label>
+								{canEditDepartment() ? (
+									<>
+										<select
+											id="departmentId"
+											name="departmentId"
+											value={formData.role === "client" || formData.role === "superadmin" ? "" : formData.departmentId}
+											onChange={handleInputChange}
+											className="value"
+											disabled={formData.role === "client" || formData.role === "superadmin"}
+										>
+											<option value="">Не выбрано</option>
+											{formData.role !== "client" &&
+												formData.role !== "superadmin" &&
+												departments.map((dept) => {
+													// При создании пользователя админы могут выбрать только свой отдел
+													if (isCreating && user?.role === "admin") {
+														if (dept.id === user?.department?.id) {
 															return (
 																<option key={dept.id} value={dept.id.toString()}>
 																	{dept.name}
 																</option>
 															);
-														})}
-												</select>
-												{formData.role === "client" && <div className={styles.infoText}>* Пользователи не могут быть привязаны к отделам</div>}
-												{formData.role === "superadmin" && <div className={styles.infoText}>* Суперадмины не могут быть привязаны к отделам</div>}
-											</>
+														}
+														return null;
+													}
+													// При редактировании админ может выбрать только свой отдел
+													if (!isCreating && user?.role === "admin" && dept.id !== user?.department?.id) {
+														return null;
+													}
+													return (
+														<option key={dept.id} value={dept.id.toString()}>
+															{dept.name}
+														</option>
+													);
+												})}
+										</select>
+										{formData.role === "client" && <div className={styles.infoText}>* Пользователи не могут быть привязаны к отделам</div>}
+										{formData.role === "superadmin" && <div className={styles.infoText}>* Суперадмины не могут быть привязаны к отделам</div>}
+									</>
+								) : (
+									<p className="value">
+										{userData?.department ? (
+											<Link href={`/admin/departments/${userData.department.id}`} className={styles.departmentLink}>
+												{userData.department.name}
+											</Link>
 										) : (
-											<p className={styles.detailValue}>
-												{userData?.department ? (
-													<Link href={`/admin/departments/${userData.department.id}`} className={styles.departmentLink}>
-														{userData.department.name}
-													</Link>
-												) : (
-													"—"
-												)}
-											</p>
+											"—"
 										)}
-									</div>
-								</div>
-
-								{/* Кнопки действий */}
-								{canEditAnyField() && (
-									<div className={styles.formActions}>
-										<button type="submit" className={`button acceptButton ${styles.saveButton}`} disabled={isSaving || !checkForChanges()}>
-											{isSaving ? (isCreating ? "Создание..." : "Сохранение...") : isCreating ? "Создать пользователя" : "Сохранить изменения"}
-										</button>
-										<button
-											type="button"
-											className={`button cancelButton ${styles.cancelButton}`}
-											onClick={handleCancelEdit}
-											disabled={isSaving || !checkForChanges()}
-										>
-											Отмена
-										</button>
-									</div>
+									</p>
 								)}
-							</form>
+							</div>
 						</div>
-					</div>
+
+						{/* Кнопки действий */}
+						{canEditAnyField() && (
+							<div className="rowBlock">
+								<button type="submit" className={`button acceptButton ${styles.saveButton}`} disabled={isSaving || !checkForChanges()}>
+									{isSaving ? (isCreating ? "Создание..." : "Сохранение...") : isCreating ? "Создать пользователя" : "Сохранить изменения"}
+								</button>
+								<button type="button" className={`button cancelButton ${styles.cancelButton}`} onClick={handleCancelEdit} disabled={isSaving || !checkForChanges()}>
+									Отмена
+								</button>
+							</div>
+						)}
+					</form>
 				</div>
 
 				{/* Блок для заявок пользователя - только для существующих пользователей */}

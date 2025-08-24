@@ -7,10 +7,12 @@
   font-display: swap;
 }
 :root {
-  --maxContentWidth: 1680px;
+  --maxContentWidth: 1600px;
   --text-color: rgba(14, 14, 14, 1);
-  --light-grey: rgba(235, 230, 231, 1);
-  --light-grey2: rgba(215, 215, 215, 1);
+  --light-grey: rgba(248, 249, 250, 1);
+  --light-grey2: rgba(233, 236, 239, 1);
+  --grey: rgba(235, 230, 231, 1);
+  --grey2: rgba(215, 215, 215, 1);
   --blue-color: rgba(59, 130, 246, 1);
   --dark-blue-color: rgba(25, 65, 143, 1);
   --red-color: rgba(239, 68, 68, 1);
@@ -90,6 +92,11 @@ button {
   padding: 0px;
 }
 
+.rowBlock {
+  display: flex;
+  gap: 10px;
+}
+
 .tableContainer {
   border-radius: 12px;
   word-break: break-word;
@@ -101,7 +108,7 @@ button {
   width: calc(100% - 20px);
   justify-content: flex-start;
   flex-wrap: wrap;
-  background-color: var(--light-grey);
+  background-color: var(--grey);
   border-radius: 10px 10px 0px 0px;
   padding: 10px 10px 0px 10px;
 }
@@ -193,11 +200,10 @@ button {
   position: relative;
   flex-direction: column;
   width: calc((100% - 60px) / 3 - 50px - 2px);
-  height: -moz-fit-content;
-  height: fit-content;
+  height: auto;
   background-color: white;
   border-radius: 20px;
-  border: 1px solid var(--light-grey);
+  border: 1px solid var(--grey);
   padding: 25px;
   box-shadow: 0 10px 20px var(--shadow), 0px 5px 20px var(--shadow);
   text-decoration: none;
@@ -225,9 +231,9 @@ button {
   align-items: center;
   width: 55px;
   height: 55px;
-  border: 1px solid var(--light-grey);
+  border: 1px solid var(--grey);
   border-radius: 10px;
-  background-color: var(--light-grey);
+  background-color: var(--grey);
   box-shadow: inset 0 0 10px var(--shadow);
   margin: 0px 0px 15px 0px;
 }
@@ -274,6 +280,36 @@ button {
   opacity: 0.5;
 }
 
+.detailsList {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.detailsList .detailItem {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid var(--grey);
+}
+.detailsList .detailItem.noBorder {
+  border: none;
+  padding: 0px 10px;
+}
+.detailsList .detailItem.noBorder .label {
+  width: -moz-fit-content;
+  width: fit-content;
+  font-weight: 600;
+}
+.detailsList .detailItem h3.label {
+  width: -moz-fit-content;
+  width: fit-content;
+}
+.detailsList .detailItem .label {
+  width: 110px;
+}
+
 button,
 .button {
   display: flex;
@@ -287,7 +323,7 @@ button,
   background: linear-gradient(135deg, rgb(59, 130, 246), rgb(37, 99, 235));
   border-radius: 8px;
   text-decoration: none;
-  border: 1px solid var(--light-grey);
+  border: 1px solid var(--grey);
   box-shadow: 0 5px 10px var(--shadow), 0px 2px 10px var(--shadow);
   text-transform: uppercase;
   font-family: "Manrope";
@@ -369,12 +405,24 @@ button.disabled,
 
 input {
   font-family: "Manrope";
+  padding: 6px 8px;
+  border: 1px solid var(--grey);
+  border-radius: 4px;
+  background: rgb(255, 255, 255);
+  color: var(--text-color);
+}
+input:hover {
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.05);
+}
+input:focus {
+  outline: none;
+  border: 1px solid var(--blue-color);
 }
 
 select {
   font-family: "Manrope";
   padding: 5px 10px;
-  border: 1px solid var(--light-grey);
+  border: 1px solid var(--grey);
   border-radius: 5px;
 }
 select:focus {
@@ -388,7 +436,7 @@ select option {
   cursor: pointer;
 }
 select option:hover, select option:focus {
-  background-color: var(--light-grey);
+  background-color: var(--grey);
 }
 select option:first-child {
   border-radius: 5px 5px 0 0;
@@ -445,7 +493,7 @@ select option:last-child {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  border: 1px solid var(--light-grey);
+  border: 1px solid var(--grey);
   border-radius: 10px;
   width: -moz-fit-content;
   width: fit-content;
@@ -492,7 +540,7 @@ select option:last-child {
 }
 .staffList .userItem {
   position: relative;
-  border: 1px solid var(--light-grey);
+  border: 1px solid var(--grey);
   border-radius: 10px;
   padding: 10px;
   font-size: 14px;
@@ -553,10 +601,47 @@ select option:last-child {
 .borderBlock {
   padding: 20px;
   border-radius: 10px;
-  border: 1px solid var(--light-grey);
+  border: 1px solid var(--grey);
 }
 .borderBlock .borderBlockHeader {
   margin: 0px 0px 10px 0px;
+}
+
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+}
+.skeleton .titleField {
+  width: 25vw;
+  height: 30px;
+  background-color: var(--light-grey);
+  border-radius: 10px;
+  border: 1px solid var(--light-grey2);
+}
+.skeleton .listField {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  height: -moz-fit-content;
+  height: fit-content;
+  min-height: 200px;
+  border-radius: 10px;
+  background-color: var(--light-grey);
+  border: 1px solid var(--light-grey2);
+  padding: 10px;
+}
+.skeleton .listField .listItem {
+  width: 300px;
+  height: 75px;
+  background-color: var(--light-grey);
+  border: 1px solid var(--light-grey2);
+  border-radius: 10px;
+  cursor: default;
+}
+.skeleton .listField .listItem:before {
+  display: none;
 }
 
 .listItem {
@@ -632,7 +717,7 @@ select option:last-child {
   padding: 20px;
   gap: 25px;
   overflow-y: auto;
-  border: 1px solid var(--light-grey);
+  border: 1px solid var(--grey);
 }
 .popup .closeIcon {
   display: flex;
@@ -703,7 +788,7 @@ select option:last-child {
 }
 .tabsContainer .tabButton {
   position: relative;
-  background: var(--light-grey);
+  background: var(--grey);
   border-radius: 10px 10px 0px 0px;
   cursor: pointer;
   padding: 10px 25px;
@@ -718,7 +803,7 @@ select option:last-child {
   background: var(--dark-blue-color);
 }
 .tabsContainer .tabButton:hover {
-  background: var(--light-grey2);
+  background: var(--grey2);
 }
 .tabsContainer .tabButton:nth-child(1) {
   border-radius: 10px 0px 0px 0px;
@@ -764,7 +849,7 @@ select option:last-child {
   font-family: "Manrope";
   width: calc(100% - 16px);
   padding: 6px 8px;
-  border: 1px solid var(--light-grey);
+  border: 1px solid var(--grey);
   border-radius: 4px;
   background: rgb(255, 255, 255);
   color: var(--text-color);
@@ -823,11 +908,12 @@ table thead th,
   font-size: 14px;
   color: #374151;
   border-bottom: 1px solid #e2e8f0;
-  vertical-align: bottom;
+  vertical-align: center;
   transition: all 0.2s ease;
 }
 table thead th.sortableHeader,
 .table thead th.sortableHeader {
+  padding: 16px 12px 16px 25px;
   cursor: pointer;
   position: relative;
 }
@@ -840,7 +926,7 @@ table thead th.sortableHeader::after,
 .table thead th.sortableHeader::after {
   content: "↕";
   position: absolute;
-  left: 0px;
+  left: 12px;
   top: 50%;
   transform: translateY(-60%);
   font-size: 12px;
@@ -940,7 +1026,7 @@ table .fullInfoBlock,
   position: relative;
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--light-grey);
+  border: 1px solid var(--grey);
   border-radius: 10px;
   padding: 10px;
   background: white;
@@ -1079,7 +1165,7 @@ table .fullInfoBlock .openingBlock.active,
   display: flex;
   height: -moz-fit-content;
   height: fit-content;
-  border-top: 1px solid var(--light-grey);
+  border-top: 1px solid var(--grey);
   margin: 10px 0px 0px 0px;
   padding: 10px 0px 0px 0px;
 }
@@ -1130,7 +1216,7 @@ table .fullInfoBlock .openingBlock .infoField .value .categoriesList,
 table .actionBlock,
 .table .actionBlock {
   display: flex;
-  border: 1px solid var(--light-grey);
+  border: 1px solid var(--grey);
   border-radius: 5px;
   padding: 5px 15px;
   font-size: 12px;
@@ -1199,7 +1285,7 @@ table .dateFilterHeader .dateFilter,
   font-family: "Manrope";
   width: calc(100% - 16px);
   padding: 6px 8px;
-  border: 1px solid var(--light-grey);
+  border: 1px solid var(--grey);
   border-radius: 4px;
   background: rgb(255, 255, 255);
   color: rgb(182, 208, 251);
@@ -1238,6 +1324,12 @@ table tr td .category:nth-child(1),
 table tr td .category:last-child,
 .table tr td .category:last-child {
   margin: 2px 0px 2px 2px;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .changesTable {
@@ -1320,4 +1412,30 @@ span.oldName:after {
   border-radius: 20px;
   background-color: var(--green-color);
   color: var(--dark-green-color);
+}
+
+@media (max-width: 1680px) {
+  :root {
+    --maxContentWidth: 1440px;
+  }
+}
+@media (max-width: 1440px) {
+  :root {
+    --maxContentWidth: 1200px;
+  }
+}
+@media (max-width: 1280px) {
+  :root {
+    --maxContentWidth: 90vw;
+  }
+}
+@media (max-width: 980px) {
+  :root {
+    --maxContentWidth: 90vw;
+  }
+}
+@media (max-width: 768px) {
+  :root {
+    --maxContentWidth: 90vw;
+  }
 }/*# sourceMappingURL=globals.css.map */

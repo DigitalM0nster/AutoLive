@@ -7,6 +7,7 @@ import Pagination from "@/components/ui/pagination/Pagination";
 import FiltersBlock from "@/components/ui/filtersBlock/FiltersBlock";
 import type { User, ActiveFilter } from "@/lib/types";
 import Link from "next/link";
+import Loading from "@/components/ui/loading/Loading";
 
 export default function AllUsersTable() {
 	const [users, setUsers] = useState<User[]>([]);
@@ -49,7 +50,7 @@ export default function AllUsersTable() {
 		{ value: "client", label: "Пользователь" },
 	];
 
-	const [sortBy, setSortBy] = useState<"createdAt" | "fullName" | "phone" | null>(null);
+	const [sortBy, setSortBy] = useState<"id" | "createdAt" | "fullName" | "phone" | null>(null);
 	const [sortOrder, setSortOrder] = useState<"asc" | "desc" | null>(null);
 	const limit = 10;
 
@@ -196,7 +197,7 @@ export default function AllUsersTable() {
 			filters.push({
 				key: "sort",
 				label: "Сортировка",
-				value: `${sortBy === "fullName" ? "ФИО" : "Телефон"} ${sortOrder === "asc" ? "↑" : "↓"}`,
+				value: `${sortBy === "id" ? "ID" : sortBy === "fullName" ? "ФИО" : "Телефон"} ${sortOrder === "asc" ? "↑" : "↓"}`,
 			});
 		}
 
@@ -219,9 +220,27 @@ export default function AllUsersTable() {
 				<table className={styles.table}>
 					<thead className={styles.tableHeader}>
 						<tr>
-							<th className={styles.tableHeaderCell}>ID</th>
 							<th
-								className={`${styles.tableHeaderCell} ${styles.sortableHeader}`}
+								className={`${styles.tableHeaderCell} idCell sortableHeader ${sortBy === "id" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
+								onClick={() => {
+									if (sortBy !== "id") {
+										setSortBy("id");
+										setSortOrder("asc");
+										setPage(1);
+									} else if (sortOrder === "asc") {
+										setSortOrder("desc");
+										setPage(1);
+									} else {
+										setSortBy(null);
+										setSortOrder(null);
+										setPage(1);
+									}
+								}}
+							>
+								ID
+							</th>
+							<th
+								className={`${styles.tableHeaderCell} sortableHeader ${sortBy === "fullName" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
 								onClick={() => {
 									if (sortBy !== "fullName") {
 										setSortBy("fullName");
@@ -234,10 +253,10 @@ export default function AllUsersTable() {
 									}
 								}}
 							>
-								ФИО {sortBy === "fullName" ? (sortOrder === "asc" ? "↑" : "↓") : ""}
+								ФИО
 							</th>
 							<th
-								className={`${styles.tableHeaderCell} ${styles.sortableHeader}`}
+								className={`${styles.tableHeaderCell} sortableHeader ${sortBy === "phone" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
 								onClick={() => {
 									if (sortBy !== "phone") {
 										setSortBy("phone");
@@ -253,7 +272,7 @@ export default function AllUsersTable() {
 									}
 								}}
 							>
-								Телефон {sortBy === "phone" ? (sortOrder === "asc" ? "↑" : "↓") : ""}
+								Телефон
 							</th>
 							<th className={styles.tableHeaderCell}>
 								<CustomSelect options={roleOptions} value={roleFilter} onChange={handleRoleChange} placeholder="Выберите роль" className={styles.roleSelect} />
@@ -282,7 +301,7 @@ export default function AllUsersTable() {
 						{loading ? (
 							<tr>
 								<td colSpan={6} className={styles.loadingCell}>
-									Загрузка...
+									<Loading />
 								</td>
 							</tr>
 						) : users.length === 0 ? (
@@ -295,7 +314,7 @@ export default function AllUsersTable() {
 							users.map((u) => {
 								return (
 									<tr key={u.id} className={styles.tableRow}>
-										<td className={styles.tableCell}>{u.id}</td>
+										<td className={`idCell ${styles.tableCell}`}>{u.id}</td>
 										<td className={styles.tableCell}>
 											<a href={`/admin/users/${u.id}`} className={styles.userLink}>
 												{`${u.last_name ?? ""} ${u.first_name ?? ""} ${u.middle_name ?? ""}`.trim() || "—"}
@@ -319,7 +338,7 @@ export default function AllUsersTable() {
 						)}
 					</tbody>
 				</table>
-				<Link href="/admin/users/create" className={`button createButton`}>
+				<Link href="/admin/users/create" className={`createButton`}>
 					+ Создать пользователя
 				</Link>
 			</div>

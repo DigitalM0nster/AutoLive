@@ -4,7 +4,7 @@ import React from "react";
 import ToastProvider from "@/components/ui/toast/ToastProvider";
 
 export const metadata = {
-	title: "Админка",
+	title: "Административная панель",
 	description: "Панель управления магазином автозапчастей",
 };
 

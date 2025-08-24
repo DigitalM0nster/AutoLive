@@ -11,7 +11,7 @@
 	align-items: center;
 	gap: 5px;
 	padding: 5px 10px;
-	border: 1px solid var(--light-grey);
+	border: 1px solid var(--grey);
 	border-radius: 5px;
 	background-color: white;
 	cursor: pointer;
@@ -46,7 +46,7 @@
 	max-height: 200px;
 	overflow-y: auto;
 	background-color: white;
-	border: 1px solid var(--light-grey);
+	border: 1px solid var(--grey);
 	border-radius: 5px;
 	margin-top: 5px;
 	z-index: 10;
@@ -60,7 +60,7 @@
 	transition: background-color 0.2s;
 
 	&:hover {
-		background-color: var(--light-grey);
+		background-color: var(--grey);
 	}
 
 	&.selected {

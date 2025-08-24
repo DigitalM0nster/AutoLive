@@ -6,7 +6,10 @@
   top: 0;
   left: 0;
   width: 100%;
-  height: var(--header-height);
+  height: -moz-fit-content;
+  height: fit-content;
+  z-index: 999;
+  background-color: white;
 }
 .header div {
   display: flex;
@@ -16,11 +19,26 @@
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  height: 50%;
+  height: -moz-fit-content;
+  height: fit-content;
+  padding: 5px 0px;
+  min-height: 44px;
   max-width: var(--maxContentWidth);
 }
 .header .userProfile {
+  display: flex;
+  gap: 10px;
   align-items: center;
+  cursor: pointer;
+}
+.header .userProfile .userIcon {
+  justify-content: center;
+  align-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--light-grey);
+  border: 1px solid var(--light-grey2);
 }
 .header .userProfile .userAvatar {
   width: 30px;
@@ -28,4 +46,12 @@
 }
 .header .userProfile .userDetails {
   flex-direction: column;
+}
+.header .userProfile .userRole {
+  color: var(--text-color);
+  opacity: 0.5;
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }/*# sourceMappingURL=styles.css.map */

@@ -5,9 +5,9 @@
 	gap: 16px;
 	margin-bottom: 20px;
 	padding: 16px;
-	background: #f8f9fa;
+	background: var(--light-grey);
 	border-radius: 8px;
-	border: 1px solid #e9ecef;
+	border: 1px solid var(--light-grey2);
 }
 
 // Информационный блок с фильтрами и кнопкой сброса

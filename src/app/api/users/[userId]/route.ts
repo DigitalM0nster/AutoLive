@@ -207,6 +207,16 @@ async function updateUserHandler(req: NextRequest, context: { user: any; scope: 
 		const data = await req.json();
 		const { first_name, last_name, middle_name, phone, role, status, departmentId } = data;
 
+		// Запрещаем изменение роли суперадминистратора
+		if (userBeforeUpdate.role === "superadmin" && role && role !== "superadmin") {
+			return NextResponse.json({ error: "Роль суперадминистратора не может быть изменена" }, { status: 403 });
+		}
+
+		// Запрещаем изменение любых полей суперадминистратора другими пользователями
+		if (userBeforeUpdate.role === "superadmin" && user.role !== "superadmin") {
+			return NextResponse.json({ error: "Недостаточно прав для редактирования суперадминистратора" }, { status: 403 });
+		}
+
 		// Проверка прав доступа
 		let canUpdate = false;
 

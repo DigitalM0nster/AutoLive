@@ -43,18 +43,20 @@ export default function Header() {
 				{loading ? (
 					<Loading />
 				) : user ? (
-					<div className="userProfile" onClick={() => router.push("/admin/profile")}>
-						<img src={user.avatar || "/images/user_placeholder.png"} alt="avatar" className="userAvatar" />
+					<div className="userProfile" onClick={() => router.push(`/admin/users/${user.id}`)}>
+						<div className="userIcon">
+							<img src={user.avatar || "/images/user_placeholder.png"} alt="avatar" className="userAvatar" />
+						</div>
 						<div className="userDetails">
+							<span className="userRole">
+								{getRoleName(user.role)}
+								{(user.role === "admin" || user.role === "manager") && user.department?.name && <> — Отдел: {user.department.name}</>}
+							</span>
 							<span>
 								{user.last_name ? `${user.last_name} ` : ""}
 								{user.first_name || ""}
 								{user.middle_name ? ` ${user.middle_name}` : ""}
 								{!user.first_name && !user.last_name ? "Пользователь" : ""}
-							</span>
-							<span className="userRole">
-								Роль: {getRoleName(user.role)}
-								{(user.role === "admin" || user.role === "manager") && user.department?.name && <> | Отдел: {user.department.name}</>}
 							</span>
 						</div>
 					</div>

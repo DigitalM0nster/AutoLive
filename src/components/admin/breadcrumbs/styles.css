@@ -5,10 +5,10 @@
   height: -moz-fit-content;
   height: fit-content;
   padding: 10px 0px;
-  border-bottom: 1px solid var(--light-grey2);
-  border-top: 1px solid var(--light-grey2);
-  border-radius: 0px 0px 20px 20px;
-  background-color: var(--light-grey);
+  border-bottom: 1px solid var(--grey2);
+  border-top: 1px solid var(--grey2);
+  border-radius: 0px;
+  background-color: var(--grey);
 }
 .breadcrumbs .breadcrumbsList {
   display: flex;
@@ -17,6 +17,31 @@
   padding: 0;
 }
 .breadcrumbs .breadcrumbsList li {
+  font-size: 15px;
+  color: var(--text-color);
   display: flex;
   align-items: center;
+}
+.breadcrumbs .breadcrumbsList li a {
+  color: var(--text-color);
+}
+.breadcrumbs .arrowsRight {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 20px;
+  height: 20px;
+}
+.breadcrumbs .arrowsRight .arrow {
+  position: absolute;
+  left: 50%;
+  width: 7px;
+  height: 1px;
+  background-color: var(--text-color);
+}
+.breadcrumbs .arrowsRight .arrow:nth-child(1) {
+  transform: rotate(-135deg) translate(50%, 0%);
+}
+.breadcrumbs .arrowsRight .arrow:nth-child(2) {
+  transform: rotate(-225deg) translate(50%, 0%);
 }/*# sourceMappingURL=styles.css.map */
