@@ -18,9 +18,13 @@ export async function generateMetadata() {
 export default async function ServiceKitsPage() {
 	let kits: ServiceKit[] = [];
 
-	try {
-		// Проверяем, что мы не в процессе сборки
-		if (process.env.NODE_ENV === "production" || process.env.NEXT_PUBLIC_BASE_URL) {
+	// Проверяем, что мы не в процессе сборки
+	// Во время сборки (build time) мы не должны делать API вызовы
+	if (typeof window === "undefined" && process.env.NODE_ENV !== "production") {
+		// Мы в процессе сборки, не делаем API вызовы
+		console.log("Сборка в процессе, пропускаем API вызовы");
+	} else {
+		try {
 			const baseUrl = CONFIG.BASE_URL;
 			const res = await fetch(`${baseUrl}/api/get-kits`, {
 				next: { revalidate: 3600 },
@@ -31,10 +35,10 @@ export default async function ServiceKitsPage() {
 			} else {
 				console.warn("Не удалось загрузить комплекты ТО:", res.status);
 			}
+		} catch (error) {
+			console.warn("Ошибка при загрузке комплектов ТО:", error);
+			// В случае ошибки продолжаем работу с пустым массивом
 		}
-	} catch (error) {
-		console.warn("Ошибка при загрузке комплектов ТО:", error);
-		// В случае ошибки продолжаем работу с пустым массивом
 	}
 
 	return (

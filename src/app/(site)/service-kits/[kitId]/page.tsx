@@ -15,21 +15,26 @@ type PageParams = {
 export async function generateMetadata({ params }: PageParams) {
 	const { kitId } = await params;
 
-	try {
-		// Проверяем, что мы не в процессе сборки
-		if (process.env.NODE_ENV === "production" || process.env.NEXT_PUBLIC_BASE_URL) {
-			const baseUrl = CONFIG.BASE_URL;
-			const res = await fetch(`${baseUrl}/api/service-kits/${kitId}`, {
-				cache: "no-store",
-			});
+	// Проверяем, что мы не в процессе сборки
+	if (typeof window === "undefined" && process.env.NODE_ENV !== "production") {
+		// Мы в процессе сборки, не делаем API вызовы
+		return {
+			title: `Комплект ТО | ${CONFIG.STORE_NAME}`,
+		};
+	}
 
-			if (res.ok) {
-				const kit: ServiceKit = await res.json();
-				return {
-					title: `${kit.title} – Комплект ТО в ${CONFIG.STORE_NAME} | ${CONFIG.CITY}`,
-					description: `Купить ${kit.title} в ${CONFIG.STORE_NAME}. Состав: ${kit.parts?.map((p) => p.name).join(", ")}`,
-				};
-			}
+	try {
+		const baseUrl = CONFIG.BASE_URL;
+		const res = await fetch(`${baseUrl}/api/service-kits/${kitId}`, {
+			cache: "no-store",
+		});
+
+		if (res.ok) {
+			const kit: ServiceKit = await res.json();
+			return {
+				title: `${kit.title} – Комплект ТО в ${CONFIG.STORE_NAME} | ${CONFIG.CITY}`,
+				description: `Купить ${kit.title} в ${CONFIG.STORE_NAME}. Состав: ${kit.parts?.map((p) => p.name).join(", ")}`,
+			};
 		}
 	} catch (error) {
 		console.warn("Ошибка при загрузке метаданных комплекта:", error);
@@ -45,9 +50,12 @@ export default async function ServiceKitPage({ params }: PageParams) {
 	const { kitId } = await params;
 	let kit: ServiceKit | null = null;
 
-	try {
-		// Проверяем, что мы не в процессе сборки
-		if (process.env.NODE_ENV === "production" || process.env.NEXT_PUBLIC_BASE_URL) {
+	// Проверяем, что мы не в процессе сборки
+	if (typeof window === "undefined" && process.env.NODE_ENV !== "production") {
+		// Мы в процессе сборки, не делаем API вызовы
+		console.log("Сборка в процессе, пропускаем API вызовы");
+	} else {
+		try {
 			const baseUrl = CONFIG.BASE_URL;
 			const res = await fetch(`${baseUrl}/api/service-kits/${kitId}`, {
 				cache: "no-store",
@@ -56,9 +64,9 @@ export default async function ServiceKitPage({ params }: PageParams) {
 			if (res.ok) {
 				kit = await res.json();
 			}
+		} catch (error) {
+			console.warn("Ошибка при загрузке комплекта ТО:", error);
 		}
-	} catch (error) {
-		console.warn("Ошибка при загрузке комплекта ТО:", error);
 	}
 
 	if (!kit) {
