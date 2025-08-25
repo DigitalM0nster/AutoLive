@@ -33,6 +33,18 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 					const filters = JSON.parse(filtersJson);
 
 					// Удаляем все существующие фильтры для этой категории
+					// Сначала удаляем связи с товарами
+					await tx.productFilterValue.deleteMany({
+						where: {
+							filterValue: {
+								filter: {
+									categoryId: categoryId,
+								},
+							},
+						},
+					});
+
+					// Потом удаляем значения фильтров
 					await tx.filterValue.deleteMany({
 						where: {
 							filter: {
@@ -41,6 +53,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 						},
 					});
 
+					// И наконец удаляем сами фильтры
 					await tx.filter.deleteMany({
 						where: { categoryId: categoryId },
 					});
