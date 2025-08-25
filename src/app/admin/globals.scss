@@ -9,10 +9,10 @@
 :root {
 	--maxContentWidth: 1600px;
 	--text-color: rgba(14, 14, 14, 1);
-	--light-grey: rgba(248, 249, 250, 1);
-	--light-grey2: rgba(233, 236, 239, 1);
-	--grey: rgba(235, 230, 231, 1);
-	--grey2: rgba(215, 215, 215, 1);
+	--light-grey-color: rgba(248, 249, 250, 1);
+	--light-grey2-color: rgba(233, 236, 239, 1);
+	--grey-color: rgba(235, 230, 231, 1);
+	--grey2-color: rgba(215, 215, 215, 1);
 	--blue-color: rgba(59, 130, 246, 1);
 	--dark-blue-color: rgba(25, 65, 143, 1);
 	--red-color: rgba(239, 68, 68, 1);
@@ -27,6 +27,7 @@
 	--h1Size: 32px;
 	--h2Size: 18px;
 	--h3Size: 16px;
+	--inputFontSize: 13px;
 	--littleFontSize: 10px;
 	--mainFont: "Manrope";
 }
@@ -62,288 +63,35 @@ a {
 	}
 }
 
-button {
-	cursor: pointer;
-}
-
-.screen {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: flex-start;
-	min-height: calc(100dvh - var(--header-height) - var(--content-padding));
-	padding: calc(var(--header-height) + var(--content-padding)) 0px 0px 0px;
-}
-
-.screenContent {
-	display: flex;
-	position: relative;
-	flex-direction: column;
-	justify-content: flex-start;
-	width: 100%;
-	height: 100%;
-	max-width: var(--maxContentWidth);
-}
-
-.screenTitle {
-	font-size: var(--h1Size);
-	font-weight: 700;
-	margin: 0px 0px 20px 0px;
-	padding: 0px;
-}
-
-.rowBlock {
-	display: flex;
-	gap: 10px;
-}
-
-.tableContainer {
-	border-radius: 12px;
-	word-break: break-word;
-	margin: 0px 0px 75px 0px;
-
-	.tabsContainer {
-		display: flex;
-		position: relative;
-		width: calc(100% - 20px);
-		justify-content: flex-start;
-		flex-wrap: wrap;
-		background-color: var(--grey);
-		border-radius: 10px 10px 0px 0px;
-		padding: 10px 10px 0px 10px;
-	}
-
-	.table {
-		width: 100%;
-		height: fit-content;
-	}
-
-	.tableContent {
-		display: flex;
-		flex-direction: column;
-		width: calc(100% - 22px);
-		min-height: 350px;
-		padding: 10px;
-		gap: 10px;
-		background: white;
-		border-radius: 0px 0px 10px 10px;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-		overflow: hidden;
-		border: 1px solid #e2e8f0;
-
-		.titleBlock {
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-			width: 100%;
-			gap: 10px;
-			height: fit-content;
-
-			input {
-				// width: max-content;
-			}
-
-			.button {
-				min-width: max-content;
-				width: max-content;
-				padding: 15px 25px;
-			}
-		}
-
-		.createButton {
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			position: relative;
-			color: var(--blue-color);
-			padding: 10px 25px;
-			border: 1px solid var(--blue-color);
-			border-radius: 8px;
-			width: fit-content;
-			height: fit-content;
-			margin: 10px 0px 0px 0px;
-			text-decoration: none;
-			transition: all 0.2s ease;
-
-			&:hover {
-				background: var(--blue-color);
-				color: white;
-				transform: translateY(-1px);
-			}
-		}
-	}
-
-	.formInput {
-		width: calc(100% - 32px);
-		padding: 12px 16px;
-		border: 2px solid #e5e7eb;
-		border-radius: 8px;
-		font-size: 16px;
-		transition: all 0.3s ease;
-
-		&:focus {
-			outline: none;
-			border-color: var(--blue-color);
-			box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-		}
-
-		&::placeholder {
-			color: var(--blue-color);
-		}
-	}
-}
-
-.cardsList {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 30px;
-	width: 100%;
-	.cardItem,
-	a.cardItem {
-		display: flex;
-		position: relative;
-		flex-direction: column;
-		width: calc((100% - 60px) / 3 - 50px - 2px);
-		height: auto;
-		background-color: white;
-		border-radius: 20px;
-		border: 1px solid var(--grey);
-		padding: 25px;
-		box-shadow: 0 10px 20px var(--shadow), 0px 5px 20px var(--shadow);
-		text-decoration: none;
-		color: var(--text-color);
-		transform: translate(0px, 0px);
-		transition: 0.25s;
-
-		&:hover {
-			transform: translate(0px, -3px);
-			box-shadow: 0 10px 20px var(--shadow-hover), 0px 5px 20px var(--shadow-hover);
-
-			.cardTitle {
-				color: var(--blue-color);
-			}
-
-			.cardButton {
-				text-decoration: underline;
-			}
-		}
-
-		.cardIcon {
-			display: flex;
-			justify-content: center;
-			align-items: center;
-			width: 55px;
-			height: 55px;
-			border: 1px solid var(--grey);
-			border-radius: 10px;
-			background-color: var(--grey);
-			box-shadow: inset 0 0 10px var(--shadow);
-			margin: 0px 0px 15px 0px;
-
-			&.indigo {
-				background: linear-gradient(135deg, rgb(164 128 245), rgb(126, 34, 206));
-			}
-
-			&.green {
-				background: linear-gradient(135deg, rgb(16, 185, 129), rgb(26, 127, 93));
-			}
-
-			&.blue {
-				background: linear-gradient(135deg, rgb(59, 130, 246), rgb(37, 99, 235));
-			}
-
-			&.orange {
-				background: linear-gradient(135deg, rgb(239, 68, 68), rgb(239, 35, 68));
-			}
-
-			&.pink {
-				background: linear-gradient(135deg, rgb(236, 72, 153), rgb(219, 39, 119));
-			}
-
-			svg {
-				stroke: white;
-			}
-		}
-
-		.cardTitle,
-		a.cardTitle {
-			margin: 0;
-			font-size: 20px;
-			font-weight: 600;
-			text-decoration: none;
-			color: var(--text-color);
-			transition: 0.25s;
-		}
-
-		.cardButton {
-			margin: 5px 0px 0px 0px;
-			font-size: 15px;
-			font-weight: 500;
-			// color: var(--grey);
-			opacity: 0.5;
-		}
-	}
-}
-
-.detailsList {
-	display: flex;
-	flex-direction: column;
-	gap: 5px;
-
-	.detailItem {
-		display: flex;
-		align-items: center;
-		gap: 5px;
-		padding: 10px;
-		border-radius: 5px;
-		border: 1px solid var(--grey);
-
-		&.noBorder {
-			border: none;
-			padding: 0px 10px;
-
-			.label {
-				width: fit-content;
-				font-weight: 600;
-			}
-		}
-
-		h3 {
-			&.label {
-				width: fit-content;
-			}
-		}
-
-		.label {
-			width: 110px;
-		}
-	}
-}
-
 button,
-.button {
+.button,
+a.button {
 	display: flex;
 	align-items: center;
 	gap: 5px;
 	width: fit-content;
 	height: fit-content;
 	padding: 10px 25px;
-	background: linear-gradient(135deg, rgb(59, 130, 246), rgb(37, 99, 235));
+	background: linear-gradient(135deg, var(--blue-color), var(--dark-blue-color));
 	border-radius: 8px;
 	text-decoration: none;
-	border: 1px solid var(--grey);
-	box-shadow: 0 5px 10px var(--shadow), 0px 2px 10px var(--shadow);
-	text-transform: uppercase;
+	border: 1px solid var(--grey-color);
+	box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+	// text-transform: uppercase;
 	font-family: "Manrope";
-	font-size: 14px;
-	font-weight: 600;
-	letter-spacing: 1px;
+	font-size: 12px;
+	font-weight: 500;
 	color: white;
-	transition: 0.25s;
+	transition: 0.2s;
 	cursor: pointer;
 
 	&:hover {
-		box-shadow: 0 5px 10px var(--shadow-hover), 0px 2px 10px var(--shadow-hover);
+		transform: translateY(-1px);
+		box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+	}
+
+	&:visited {
+		color: white;
 	}
 
 	&.logoutButton {
@@ -394,6 +142,339 @@ button,
 	}
 }
 
+.screen {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: flex-start;
+	min-height: calc(100dvh - var(--header-height) - var(--content-padding));
+	padding: calc(var(--header-height) + var(--content-padding)) 0px 0px 0px;
+}
+
+.screenContent {
+	display: flex;
+	position: relative;
+	flex-direction: column;
+	justify-content: flex-start;
+	width: 100%;
+	height: 100%;
+	max-width: var(--maxContentWidth);
+}
+
+.screenTitle {
+	font-size: var(--h1Size);
+	font-weight: 700;
+	margin: 0px 0px 20px 0px;
+	padding: 0px;
+}
+
+.rowBlock {
+	display: flex;
+	gap: 10px;
+}
+
+.tableContainer {
+	border-radius: 12px;
+	word-break: break-word;
+	margin: 0px 0px 75px 0px;
+
+	.tabsContainer {
+		display: flex;
+		position: relative;
+		width: calc(100% - 20px);
+		justify-content: flex-start;
+		flex-wrap: wrap;
+		background-color: var(--light-grey-color);
+		border: 1px solid var(--light-grey2-color);
+		border-radius: 10px 10px 0px 0px;
+		padding: 10px 10px 0px 10px;
+
+		.tabButton {
+			position: relative;
+			background: var(--light-grey-color);
+			border-radius: 10px 10px 0px 0px;
+			cursor: pointer;
+			padding: 10px 25px;
+			text-decoration: none;
+			color: var(--text-color);
+
+			&.active {
+				background: var(--blue-color);
+				color: white;
+				&:hover {
+					background: var(--dark-blue-color);
+				}
+			}
+
+			&:hover {
+				background: var(--grey2-color);
+			}
+
+			&:nth-child(1) {
+				border-radius: 10px 0px 0px 0px;
+				margin: 0px -10px 0px 0px;
+				padding: 10px 35px 10px 25px;
+				z-index: 0;
+
+				&.active {
+					padding: 10px 25px 10px 25px;
+					border-radius: 10px 10px 0px 0px;
+					left: 0px;
+					z-index: 1;
+				}
+			}
+
+			&:nth-child(2) {
+				padding: 10px 25px 10px 35px;
+				border-radius: 0px 10px 0px 0px;
+				left: -10px;
+				z-index: 0;
+
+				&.active {
+					padding: 10px 25px 10px 25px;
+					border-radius: 10px 10px 0px 0px;
+					left: 0px;
+					z-index: 1;
+				}
+			}
+		}
+
+		.tabTitle {
+			font-size: 24px;
+			font-weight: 700;
+			color: var(--text-color);
+			margin: 0px 0px 0px 0px;
+			padding: 0px 0px 10px 10px;
+		}
+	}
+
+	.table {
+		width: 100%;
+		height: fit-content;
+	}
+
+	.tableContent {
+		display: flex;
+		flex-direction: column;
+		width: calc(100% - 20px);
+		min-height: 350px;
+		padding: 10px;
+		gap: 10px;
+		background: white;
+		border-radius: 0px 0px 10px 10px;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+		overflow: hidden;
+		border: 1px solid var(--light-grey2-color);
+		border-top: none;
+
+		&.allBorderRadius {
+			border-radius: 10px;
+			border-top: 1px solid var(--light-grey2-color);
+		}
+
+		.titleBlock {
+			display: flex;
+			justify-content: space-between;
+			align-items: flex-start;
+			width: 100%;
+			gap: 10px;
+			height: fit-content;
+
+			input {
+				// width: max-content;
+			}
+
+			.button {
+				min-width: max-content;
+				width: max-content;
+				padding: 15px 25px;
+			}
+		}
+
+		.createButton {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			position: relative;
+			color: var(--blue-color);
+			padding: 10px 25px;
+			border: 1px solid var(--blue-color);
+			border-radius: 8px;
+			width: fit-content;
+			height: fit-content;
+			margin: 10px 0px 0px 0px;
+			text-decoration: none;
+			transition: all 0.2s ease;
+
+			&:hover {
+				background: var(--blue-color);
+				color: white;
+				transform: translateY(-1px);
+			}
+		}
+	}
+
+	.titleInputWrapper {
+		width: 100%;
+	}
+
+	.formInput {
+		width: calc(100% - 32px);
+		padding: 12px 16px;
+		border: 2px solid #e5e7eb;
+		border-radius: 8px;
+		font-size: 16px;
+		transition: all 0.3s ease;
+
+		&:focus {
+			outline: none;
+			border-color: var(--blue-color);
+			box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+		}
+
+		&.error {
+			border-color: var(--red-color);
+
+			&::placeholder {
+				color: var(--red-color);
+				opacity: 0.5;
+			}
+		}
+
+		&::placeholder {
+			color: var(--blue-color);
+			opacity: 0.5;
+		}
+	}
+}
+
+.cardsList {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 30px;
+	width: 100%;
+	.cardItem,
+	a.cardItem {
+		display: flex;
+		position: relative;
+		flex-direction: column;
+		width: calc((100% - 60px) / 3 - 50px - 2px);
+		height: auto;
+		background-color: white;
+		border-radius: 20px;
+		border: 1px solid var(--grey-color);
+		padding: 25px;
+		box-shadow: 0 10px 20px var(--shadow), 0px 5px 20px var(--shadow);
+		text-decoration: none;
+		color: var(--text-color);
+		transform: translate(0px, 0px);
+		transition: 0.25s;
+
+		&:hover {
+			transform: translate(0px, -3px);
+			box-shadow: 0 10px 20px var(--shadow-hover), 0px 5px 20px var(--shadow-hover);
+
+			.cardTitle {
+				color: var(--blue-color);
+			}
+
+			.cardButton {
+				text-decoration: underline;
+			}
+		}
+
+		.cardIcon {
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			width: 55px;
+			height: 55px;
+			border: 1px solid var(--grey-color);
+			border-radius: 10px;
+			background-color: var(--grey-color);
+			box-shadow: inset 0 0 10px var(--shadow);
+			margin: 0px 0px 15px 0px;
+
+			&.indigo {
+				background: linear-gradient(135deg, rgb(164 128 245), rgb(126, 34, 206));
+			}
+
+			&.green {
+				background: linear-gradient(135deg, rgb(16, 185, 129), rgb(26, 127, 93));
+			}
+
+			&.blue {
+				background: linear-gradient(135deg, rgb(59, 130, 246), rgb(37, 99, 235));
+			}
+
+			&.orange {
+				background: linear-gradient(135deg, rgb(239, 68, 68), rgb(239, 35, 68));
+			}
+
+			&.pink {
+				background: linear-gradient(135deg, rgb(236, 72, 153), rgb(219, 39, 119));
+			}
+
+			svg {
+				stroke: white;
+			}
+		}
+
+		.cardTitle,
+		a.cardTitle {
+			margin: 0;
+			font-size: 20px;
+			font-weight: 600;
+			text-decoration: none;
+			color: var(--text-color);
+			transition: 0.25s;
+		}
+
+		.cardButton {
+			margin: 5px 0px 0px 0px;
+			font-size: 15px;
+			font-weight: 500;
+			// color: var(--grey-color);
+			opacity: 0.5;
+		}
+	}
+}
+
+.detailsList {
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+
+	.detailItem {
+		display: flex;
+		align-items: center;
+		gap: 5px;
+		padding: 10px;
+		border-radius: 5px;
+		border: 1px solid var(--grey-color);
+
+		&.noBorder {
+			border: none;
+			padding: 0px 10px;
+
+			.label {
+				width: fit-content;
+				font-weight: 600;
+			}
+		}
+
+		h3 {
+			&.label {
+				width: fit-content;
+			}
+		}
+
+		.label {
+			width: 110px;
+		}
+	}
+}
+
 .fixedButtonsBlock {
 	display: flex;
 	position: fixed;
@@ -413,8 +494,9 @@ button,
 
 input {
 	font-family: "Manrope";
+	font-size: var(--inputFontSize);
 	padding: 6px 8px;
-	border: 1px solid var(--grey);
+	border: 1px solid var(--grey-color);
 	border-radius: 4px;
 	background: rgb(255, 255, 255);
 	color: var(--text-color);
@@ -427,12 +509,22 @@ input {
 		outline: none;
 		border: 1px solid var(--blue-color);
 	}
+
+	&.error {
+		border-color: var(--red-color);
+
+		&::placeholder {
+			color: var(--red-color);
+			opacity: 0.5;
+		}
+	}
 }
 
 select {
 	font-family: "Manrope";
-	padding: 5px 10px;
-	border: 1px solid var(--grey);
+	font-size: var(--inputFontSize);
+	padding: 5px 8px;
+	border: 1px solid var(--grey-color);
 	border-radius: 5px;
 
 	&:focus {
@@ -448,7 +540,7 @@ select {
 
 		&:hover,
 		&:focus {
-			background-color: var(--grey);
+			background-color: var(--grey-color);
 		}
 
 		&:first-child {
@@ -459,6 +551,31 @@ select {
 			border-radius: 0 0 5px 5px;
 		}
 	}
+
+	&.error {
+		border-color: var(--red-color);
+
+		&::placeholder {
+			color: var(--red-color);
+			opacity: 0.5;
+		}
+	}
+}
+
+textarea {
+	&.error {
+		border-color: var(--red-color);
+
+		&::placeholder {
+			color: var(--red-color);
+			opacity: 0.5;
+		}
+	}
+}
+
+.errorMessage {
+	font-size: 12px;
+	color: var(--red-color);
 }
 
 .sectionsContent {
@@ -473,11 +590,26 @@ select {
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 		border: 1px solid #e5e7eb;
 
+		.ssectionHeaderBlock {
+			margin-bottom: 16px;
+
+			.sectionTitle {
+				margin-bottom: 0px;
+			}
+		}
+
 		.sectionTitle {
 			font-size: 18px;
 			font-weight: 600;
-			color: #1f2937;
+			color: var(--text-color);
 			margin-bottom: 16px;
+		}
+
+		.sectionDescription {
+			font-size: 14px;
+			font-weight: 400;
+			color: var(--text-color);
+			opacity: 0.5;
 		}
 
 		.sectionContent {
@@ -517,7 +649,7 @@ select {
 			display: flex;
 			flex-direction: column;
 			justify-content: center;
-			border: 1px solid var(--grey);
+			border: 1px solid var(--grey-color);
 			border-radius: 10px;
 			width: fit-content;
 			height: fit-content;
@@ -568,7 +700,7 @@ select {
 	gap: 10px;
 	.userItem {
 		position: relative;
-		border: 1px solid var(--grey);
+		border: 1px solid var(--grey-color);
 		border-radius: 10px;
 		padding: 10px;
 		font-size: 14px;
@@ -635,7 +767,7 @@ select {
 .borderBlock {
 	padding: 20px;
 	border-radius: 10px;
-	border: 1px solid var(--grey);
+	border: 1px solid var(--grey-color);
 
 	.borderBlockHeader {
 		margin: 0px 0px 10px 0px;
@@ -651,9 +783,9 @@ select {
 	.titleField {
 		width: 25vw;
 		height: 30px;
-		background-color: var(--light-grey);
+		background-color: var(--light-grey-color);
 		border-radius: 10px;
-		border: 1px solid var(--light-grey2);
+		border: 1px solid var(--light-grey2-color);
 	}
 
 	.listField {
@@ -663,15 +795,15 @@ select {
 		height: fit-content;
 		min-height: 200px;
 		border-radius: 10px;
-		background-color: var(--light-grey);
-		border: 1px solid var(--light-grey2);
+		background-color: var(--light-grey-color);
+		border: 1px solid var(--light-grey2-color);
 		padding: 10px;
 
 		.listItem {
 			width: 300px;
 			height: 75px;
-			background-color: var(--light-grey);
-			border: 1px solid var(--light-grey2);
+			background-color: var(--light-grey-color);
+			border: 1px solid var(--light-grey2-color);
 			border-radius: 10px;
 			cursor: default;
 
@@ -758,7 +890,7 @@ select {
 		padding: 20px;
 		gap: 25px;
 		overflow-y: auto;
-		border: 1px solid var(--grey);
+		border: 1px solid var(--grey-color);
 	}
 
 	.closeIcon {
@@ -832,62 +964,6 @@ select {
 	}
 }
 
-.tabsContainer {
-	width: 100%;
-	padding: 0;
-	background: transparent;
-
-	.tabButton {
-		position: relative;
-		background: var(--grey);
-		border-radius: 10px 10px 0px 0px;
-		cursor: pointer;
-		padding: 10px 25px;
-		text-decoration: none;
-		color: var(--text-color);
-
-		&.active {
-			background: var(--blue-color);
-			color: white;
-			&:hover {
-				background: var(--dark-blue-color);
-			}
-		}
-
-		&:hover {
-			background: var(--grey2);
-		}
-
-		&:nth-child(1) {
-			border-radius: 10px 0px 0px 0px;
-			margin: 0px -10px 0px 0px;
-			padding: 10px 35px 10px 25px;
-			z-index: 0;
-
-			&.active {
-				padding: 10px 25px 10px 25px;
-				border-radius: 10px 10px 0px 0px;
-				left: 0px;
-				z-index: 1;
-			}
-		}
-
-		&:nth-child(2) {
-			padding: 10px 25px 10px 35px;
-			border-radius: 0px 10px 0px 0px;
-			left: -10px;
-			z-index: 0;
-
-			&.active {
-				padding: 10px 25px 10px 25px;
-				border-radius: 10px 10px 0px 0px;
-				left: 0px;
-				z-index: 1;
-			}
-		}
-	}
-}
-
 .searchHeader {
 	display: flex;
 	flex-direction: column;
@@ -904,7 +980,7 @@ select {
 		font-family: "Manrope";
 		width: calc(100% - 16px);
 		padding: 6px 8px;
-		border: 1px solid var(--grey);
+		border: 1px solid var(--grey-color);
 		border-radius: 4px;
 		background: rgba(255, 255, 255, 1);
 		color: var(--text-color);
@@ -1002,7 +1078,16 @@ table,
 			}
 
 			&.idCell {
-				width: 65px;
+				width: 25px;
+			}
+
+			&.dragCell {
+				width: 30px;
+			}
+
+			&.imageCell {
+				width: 130px;
+				text-align: center;
 			}
 
 			&:last-child {
@@ -1015,6 +1100,12 @@ table,
 		tr {
 			transition: all 0.2s ease;
 			border-bottom: 1px solid #f3f4f6;
+
+			&.verticalCenter {
+				td {
+					vertical-align: middle;
+				}
+			}
 
 			&:hover {
 				background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
@@ -1033,6 +1124,49 @@ table,
 
 				&.capitalize {
 					text-transform: capitalize;
+				}
+
+				&.dragCell {
+					position: relative;
+					cursor: grab;
+					width: 30px;
+					text-align: center;
+					vertical-align: middle;
+
+					&:hover {
+						.dragCellIcon {
+							opacity: 1;
+						}
+					}
+
+					&.disabled {
+						&:hover {
+							cursor: not-allowed;
+							.dragCellIcon {
+								opacity: 0.5;
+							}
+						}
+					}
+
+					.dragCellIcon {
+						width: 30px;
+						height: 30px;
+						display: flex;
+						justify-content: center;
+						align-items: center;
+						opacity: 0.5;
+						transition: 0.25s;
+
+						svg {
+							width: 100%;
+							height: 100%;
+						}
+					}
+				}
+
+				&.imageCell {
+					width: 130px;
+					text-align: center;
 				}
 
 				.userLink {
@@ -1060,6 +1194,17 @@ table,
 						text-decoration: underline;
 					}
 				}
+
+				a {
+					&:visited {
+						color: var(--text-color);
+					}
+				}
+
+				.image {
+					width: 45px;
+					height: 45px;
+				}
 			}
 		}
 
@@ -1086,7 +1231,7 @@ table,
 		position: relative;
 		display: flex;
 		flex-direction: column;
-		border: 1px solid var(--grey);
+		border: 1px solid var(--grey-color);
 		border-radius: 10px;
 		padding: 10px;
 		background: white;
@@ -1203,7 +1348,7 @@ table,
 			&.active {
 				display: flex;
 				height: fit-content;
-				border-top: 1px solid var(--grey);
+				border-top: 1px solid var(--grey-color);
 				margin: 10px 0px 0px 0px;
 				padding: 10px 0px 0px 0px;
 			}
@@ -1253,7 +1398,7 @@ table,
 
 	.actionBlock {
 		display: flex;
-		border: 1px solid var(--grey);
+		border: 1px solid var(--grey-color);
 		border-radius: 5px;
 		padding: 5px 15px;
 		font-size: 12px;
@@ -1320,7 +1465,7 @@ table,
 			font-family: "Manrope";
 			width: calc(100% - 16px);
 			padding: 6px 8px;
-			border: 1px solid var(--grey);
+			border: 1px solid var(--grey-color);
 			border-radius: 4px;
 			background: rgb(255, 255, 255);
 			color: rgba(182, 208, 251, 1);

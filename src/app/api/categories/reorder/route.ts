@@ -1,31 +1,37 @@
 // src/app/api/categories/reorder/route.ts
 
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
-import { withPermission } from "@/middleware/permissionMiddleware";
 
-// reorder доступен только superadmin
-export const POST = withPermission(
-	async (req) => {
-		try {
-			const { ids } = await req.json(); // массив id в новом порядке
-			if (!Array.isArray(ids)) return new NextResponse("Неверный формат", { status: 400 });
+export async function POST(request: NextRequest) {
+	try {
+		// Получаем данные из запроса
+		// ids - массив ID категорий в новом порядке
+		// orders - массив объектов с id и новым порядком для каждой категории
+		const { ids, orders } = await request.json();
 
-			await Promise.all(
-				ids.map((id, index) =>
-					prisma.category.update({
-						where: { id: Number(id) },
-						data: { order: index },
-					})
-				)
-			);
-
-			return new NextResponse(null, { status: 204 });
-		} catch (error) {
-			console.error("Ошибка reorder категорий:", error);
-			return new NextResponse("Ошибка сервера", { status: 500 });
+		// Проверяем корректность данных
+		if (!ids || !orders || !Array.isArray(ids) || !Array.isArray(orders)) {
+			return NextResponse.json({ error: "Неверный формат данных" }, { status: 400 });
 		}
-	},
-	"edit_categories",
-	["superadmin"]
-);
+
+		// Обновляем порядок всех категорий в базе данных
+		// Используем Promise.all для параллельного выполнения всех обновлений
+		// Это значительно быстрее, чем последовательное обновление
+		const updatePromises = orders.map(({ id, order }) =>
+			prisma.category.update({
+				where: { id: Number(id) }, // ID категории для поиска
+				data: { order: Number(order) }, // Новый порядок для этой категории
+			})
+		);
+
+		// Ждем завершения всех обновлений
+		await Promise.all(updatePromises);
+
+		// Возвращаем успешный ответ
+		return NextResponse.json({ message: "Порядок категорий обновлен" });
+	} catch (error) {
+		console.error("Ошибка при изменении порядка категорий:", error);
+		return NextResponse.json({ error: "Ошибка при изменении порядка категорий" }, { status: 500 });
+	}
+}

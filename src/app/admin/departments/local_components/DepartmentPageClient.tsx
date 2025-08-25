@@ -451,7 +451,7 @@ export default function DepartmentPageClient({ initialData, isCreateMode = false
 				<div className="tableContainer">
 					<div className="tabsContainer">
 						{isCreateMode ? (
-							<div className={`tabButton active`}>Создание нового отдела</div>
+							<div className="tabTitle">Создание нового отдела</div>
 						) : (
 							<>
 								<Link href={`/admin/departments/${department.id}`} className={`tabButton active`}>
@@ -464,7 +464,7 @@ export default function DepartmentPageClient({ initialData, isCreateMode = false
 						)}
 					</div>
 
-					<div className="tableContent">
+					<div className={`tableContent`}>
 						{/* Показываем предупреждение если пользователь не может редактировать отдел */}
 						{!canEditDepartment() && user && (
 							<div
@@ -491,11 +491,13 @@ export default function DepartmentPageClient({ initialData, isCreateMode = false
 								placeholder="Введите название отдела"
 								disabled={!canEditDepartment()}
 							/>
-							{canDeleteDepartment() && department.id && (
+							{canDeleteDepartment() && department.id ? (
 								<button onClick={handleDeleteDepartment} className={`button cancelButton`}>
 									<Trash2 size={18} />
 									Удалить отдел
 								</button>
+							) : (
+								<></>
 							)}
 						</div>
 

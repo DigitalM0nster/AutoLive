@@ -1,17 +1,8 @@
-// src/app/admin/products/categories/create/page.tsx
+// src/app/admin/categories/create/page.tsx
 "use client";
 
-import CategoryManager from "../local_components/categoryManager/CategoryManager";
+import CategoryPageClient from "../local_components/CategoryPageClient";
 
-export default function CreateCategoryPage() {
-	return (
-		<CategoryManager
-			isEdit={false}
-			initialCategory={{
-				title: "",
-				image: undefined,
-			}}
-			initialFilters={[]}
-		/>
-	);
+export default function CategoryCreatePage() {
+	return <CategoryPageClient isCreateMode={true} />;
 }

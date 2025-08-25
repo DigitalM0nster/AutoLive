@@ -1,90 +1,126 @@
 // src/app/api/categories/route.ts
 
-import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import { withPermission } from "@/middleware/permissionMiddleware";
+import { prisma } from "@/lib/prisma";
 
-// --- GET (оставим открытым, если категории видны клиентам) ---
 export async function GET() {
 	try {
-		console.log("API: Начинаем получение категорий...");
-
-		// Проверяем подключение к базе данных
-		await prisma.$connect();
-		console.log("API: Подключение к БД успешно");
-
+		// Получаем все категории с количеством связанных фильтров
 		const categories = await prisma.category.findMany({
-			orderBy: { order: "asc" },
-			include: {
-				products: {
-					select: { id: true },
+			select: {
+				id: true,
+				title: true,
+				image: true,
+				order: true,
+				_count: {
+					select: {
+						Filter: true, // Подсчитываем количество фильтров
+					},
 				},
 			},
+			orderBy: { order: "asc" },
 		});
 
-		console.log(`API: Получено ${categories.length} категорий`);
-
-		const result = categories.map((cat) => ({
-			id: cat.id,
-			title: cat.title,
-			image: cat.image,
-			productCount: cat.products.length,
+		// Преобразуем данные в нужный формат, включая поле order
+		const formattedCategories = categories.map((category) => ({
+			id: category.id,
+			title: category.title,
+			image: category.image,
+			order: category.order, // Добавляем поле order в ответ
+			filtersCount: category._count.Filter,
 		}));
 
-		console.log("API: Формируем ответ:", JSON.stringify(result, null, 2));
-
-		// Устанавливаем правильные заголовки для JSON
-		return new NextResponse(JSON.stringify(result), {
-			status: 200,
-			headers: {
-				"Content-Type": "application/json",
-				"Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
-			},
-		});
+		return NextResponse.json(formattedCategories);
 	} catch (error) {
-		console.error("API: Ошибка при получении категорий:", error);
-
-		// Возвращаем JSON с ошибкой
-		return new NextResponse(
-			JSON.stringify({
-				error: "Ошибка сервера",
-				message: error instanceof Error ? error.message : "Неизвестная ошибка",
-				timestamp: new Date().toISOString(),
-			}),
-			{
-				status: 500,
-				headers: {
-					"Content-Type": "application/json",
-				},
-			}
-		);
-	} finally {
-		// Закрываем подключение к базе данных
-		await prisma.$disconnect();
-		console.log("API: Подключение к БД закрыто");
+		console.error("Ошибка при получении категорий:", error);
+		return NextResponse.json({ error: "Ошибка при получении категорий" }, { status: 500 });
 	}
 }
 
-// --- POST (ТОЛЬКО для superadmin с edit_categories) ---
-export const POST = withPermission(
-	async (req) => {
-		try {
-			const body = await req.json();
+export async function POST(request: NextRequest) {
+	try {
+		const formData = await request.formData();
+		const title = formData.get("title") as string;
+		const imageFile = formData.get("image") as File | null;
+		const filtersJson = formData.get("filters") as string;
 
-			const category = await prisma.category.create({
+		if (!title || !title.trim()) {
+			return NextResponse.json({ error: "Название категории обязательно" }, { status: 400 });
+		}
+
+		// Получаем максимальный порядок для установки нового
+		const maxOrder = await prisma.category.aggregate({
+			_max: { order: true },
+		});
+
+		const newOrder = (maxOrder._max.order || 0) + 1;
+
+		// Создаем категорию с фильтрами в транзакции
+		const result = await prisma.$transaction(async (tx) => {
+			// Создаем категорию
+			const category = await tx.category.create({
 				data: {
-					title: body.title,
-					image: body.image,
-					order: 0,
+					title: title.trim(),
+					order: newOrder,
+					// Пока не добавляем изображение, нужно реализовать загрузку файлов
 				},
 			});
 
-			return NextResponse.json(category);
-		} catch (error) {
-			console.error("Ошибка при создании категории:", error);
-			return new NextResponse("Ошибка сервера", { status: 500 });
-		}
-	},
-	"edit_categories",
-	["superadmin"]
-);
+			// Обрабатываем фильтры если они есть
+			if (filtersJson) {
+				try {
+					const filters = JSON.parse(filtersJson);
+
+					// Создаем фильтры для новой категории
+					for (const filter of filters) {
+						if (filter.title && filter.title.trim()) {
+							const newFilter = await tx.filter.create({
+								data: {
+									title: filter.title.trim(),
+									type: filter.type as "select" | "multi_select" | "range" | "boolean",
+									categoryId: category.id,
+								},
+							});
+
+							// Создаем значения для фильтра
+							if (filter.values && filter.values.length > 0) {
+								for (const value of filter.values) {
+									if (value.value && value.value.trim()) {
+										await tx.filterValue.create({
+											data: {
+												value: value.value.trim(),
+												filterId: newFilter.id,
+											},
+										});
+									}
+								}
+							}
+						}
+					}
+				} catch (parseError) {
+					console.error("Ошибка при парсинге фильтров:", parseError);
+					// Не прерываем выполнение, если фильтры не удалось распарсить
+				}
+			}
+
+			return category;
+		});
+
+		// Возвращаем созданную категорию с фильтрами
+		const createdCategory = await prisma.category.findUnique({
+			where: { id: result.id },
+			include: {
+				Filter: {
+					include: {
+						values: true,
+					},
+				},
+			},
+		});
+
+		return NextResponse.json(createdCategory);
+	} catch (error) {
+		console.error("Ошибка при создании категории:", error);
+		return NextResponse.json({ error: "Ошибка при создании категории" }, { status: 500 });
+	}
+}

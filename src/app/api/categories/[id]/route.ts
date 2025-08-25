@@ -1,97 +1,138 @@
 // src/app/api/categories/[id]/route.ts
 
-import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import { withPermission } from "@/middleware/permissionMiddleware";
+import { prisma } from "@/lib/prisma";
 
-type Params = { params: Promise<{ id: string }> };
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+	try {
+		const { id } = await params; // Ожидаем params перед использованием
+		const categoryId = Number(id);
+		const formData = await request.formData();
+		const title = formData.get("title") as string;
+		const imageFile = formData.get("image") as File | null;
+		const filtersJson = formData.get("filters") as string;
 
-// --- GET: можно оставить открытым ---
-export async function GET(_: Request, { params }: Params) {
-	const { id } = await params;
-	const category = await prisma.category.findUnique({
-		where: { id: Number(id) },
-	});
-	if (!category) return new NextResponse("Не найдено", { status: 404 });
-	return NextResponse.json(category);
+		if (!title || !title.trim()) {
+			return NextResponse.json({ error: "Название категории обязательно" }, { status: 400 });
+		}
+
+		// Начинаем транзакцию для обновления категории и фильтров
+		const result = await prisma.$transaction(async (tx) => {
+			// Обновляем категорию
+			const category = await tx.category.update({
+				where: { id: categoryId },
+				data: {
+					title: title.trim(),
+					// Пока не добавляем изображение, нужно реализовать загрузку файлов
+				},
+			});
+
+			// Обрабатываем фильтры если они есть
+			if (filtersJson) {
+				try {
+					const filters = JSON.parse(filtersJson);
+
+					// Удаляем все существующие фильтры для этой категории
+					await tx.filterValue.deleteMany({
+						where: {
+							filter: {
+								categoryId: categoryId,
+							},
+						},
+					});
+
+					await tx.filter.deleteMany({
+						where: { categoryId: categoryId },
+					});
+
+					// Создаем новые фильтры
+					for (const filter of filters) {
+						if (filter.title && filter.title.trim()) {
+							const newFilter = await tx.filter.create({
+								data: {
+									title: filter.title.trim(),
+									type: filter.type || "select",
+									categoryId: categoryId,
+								},
+							});
+
+							// Создаем значения для фильтра
+							if (filter.values && filter.values.length > 0) {
+								for (const value of filter.values) {
+									if (value.value && value.value.trim()) {
+										await tx.filterValue.create({
+											data: {
+												value: value.value.trim(),
+												filterId: newFilter.id,
+											},
+										});
+									}
+								}
+							}
+						}
+					}
+				} catch (parseError) {
+					console.error("Ошибка при парсинге фильтров:", parseError);
+					// Не прерываем выполнение, если фильтры не удалось распарсить
+				}
+			}
+
+			return category;
+		});
+
+		// Возвращаем обновленную категорию с фильтрами
+		const updatedCategory = await prisma.category.findUnique({
+			where: { id: categoryId },
+			include: {
+				Filter: {
+					include: {
+						values: true,
+					},
+				},
+			},
+		});
+
+		return NextResponse.json(updatedCategory);
+	} catch (error) {
+		console.error("Ошибка при обновлении категории:", error);
+		return NextResponse.json({ error: "Ошибка при обновлении категории" }, { status: 500 });
+	}
 }
 
-// --- PUT: только для superadmin с edit_categories ---
-export const PUT = withPermission(
-	async (req, { user }) => {
-		try {
-			const url = new URL(req.url);
-			const id = Number(url.pathname.split("/").pop());
-			const body = await req.json();
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+	try {
+		const { id } = await params; // Ожидаем params перед использованием
+		const categoryId = Number(id);
 
-			const updated = await prisma.category.update({
-				where: { id },
-				data: {
-					title: body.title,
-					image: body.image,
-				},
-			});
-			return NextResponse.json(updated);
-		} catch (error) {
-			console.error("Ошибка при обновлении категории:", error);
-			return new NextResponse("Ошибка сервера", { status: 500 });
-		}
-	},
-	"edit_categories",
-	["superadmin"]
-);
-
-// --- DELETE: только для superadmin с edit_categories ---
-export const DELETE = withPermission(
-	async (req) => {
-		try {
-			const url = new URL(req.url);
-			const categoryId = Number(url.pathname.split("/").pop());
-
-			// 1. Удаляем все значения фильтров товаров этой категории
-			await prisma.productFilterValue.deleteMany({
-				where: {
-					filterValue: {
-						filter: {
-							categoryId,
-						},
+		// Получаем информацию о том, что будет удалено
+		const category = await prisma.category.findUnique({
+			where: { id: categoryId },
+			include: {
+				_count: {
+					select: {
+						products: true,
+						allowedDepartments: true,
 					},
 				},
-			});
+			},
+		});
 
-			// 2. Удаляем все значения фильтров этой категории
-			await prisma.filterValue.deleteMany({
-				where: {
-					filter: {
-						categoryId,
-					},
-				},
-			});
-
-			// 3. Удаляем все фильтры этой категории
-			await prisma.filter.deleteMany({
-				where: {
-					categoryId,
-				},
-			});
-
-			// 4. Отвязываем все товары от этой категории
-			await prisma.product.updateMany({
-				where: { categoryId },
-				data: { categoryId: null },
-			});
-
-			// 5. Удаляем категорию
-			await prisma.category.delete({
-				where: { id: categoryId },
-			});
-
-			return new NextResponse(null, { status: 204 });
-		} catch (error) {
-			console.error("Ошибка при удалении категории:", error);
-			return new NextResponse("Ошибка сервера", { status: 500 });
+		if (!category) {
+			return NextResponse.json({ error: "Категория не найдена" }, { status: 404 });
 		}
-	},
-	"edit_categories",
-	["superadmin"]
-);
+
+		// Удаляем категорию (каскадно удалятся все связанные данные)
+		await prisma.category.delete({
+			where: { id: categoryId },
+		});
+
+		return NextResponse.json({
+			message: "Категория успешно удалена",
+			deletedProducts: category._count.products,
+			deletedDepartments: category._count.allowedDepartments,
+		});
+	} catch (error) {
+		console.error("Ошибка при удалении категории:", error);
+		return NextResponse.json({ error: "Ошибка при удалении категории" }, { status: 500 });
+	}
+}

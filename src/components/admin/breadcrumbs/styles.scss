@@ -4,10 +4,10 @@
 	width: 100%;
 	height: fit-content;
 	padding: 10px 0px;
-	border-bottom: 1px solid var(--grey2);
-	border-top: 1px solid var(--grey2);
+	border-bottom: 1px solid var(--grey2-color);
+	border-top: 1px solid var(--grey2-color);
 	border-radius: 0px;
-	background-color: var(--grey);
+	background-color: var(--grey-color);
 
 	.breadcrumbsList {
 		display: flex;

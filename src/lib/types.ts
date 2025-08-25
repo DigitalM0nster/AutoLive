@@ -105,21 +105,30 @@ export type DepartmentLogResponse = {
 	error?: string;
 };
 
+// Типы для фильтров категорий
+export type FilterType = "select" | "multi_select" | "range" | "boolean";
+
+export type FilterValue = {
+	id: number;
+	value: string;
+};
+
+export type CategoryFilter = {
+	id: number;
+	title: string;
+	type: FilterType;
+	values: FilterValue[];
+};
+
 export type Category = {
 	id: number;
 	title: string;
 	image?: string | null;
 	products?: Product[];
-	filters?: {
-		id: number;
-		title: string;
-		values: {
-			id: number;
-			value: string;
-		}[];
-	}[];
+	filters?: CategoryFilter[]; // Обновленный тип
 	productCount?: number;
 	allowedDepartments?: { departmentId: number }[];
+	order: number;
 };
 
 export type Product = {
@@ -255,30 +264,6 @@ export type Promotion = {
 	order: number;
 	buttonText: string;
 	buttonLink: string;
-};
-
-export type FilterType = "select" | "multi" | "range" | "boolean";
-
-export type FilterValue = {
-	id: number;
-	value: string;
-};
-
-export type Filter = {
-	id: number;
-	title: string;
-	type: FilterType;
-	values: FilterValue[];
-};
-
-export type EditableFilter = {
-	id?: number;
-	title: string;
-	type: FilterType;
-	values: {
-		id?: number;
-		value: string;
-	}[];
 };
 
 export type AdminData = {

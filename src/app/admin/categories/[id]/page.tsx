@@ -1,34 +1,67 @@
-// src/app/admin/products/categories/[id]/page.tsx
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
-import CategoryManager from "../local_components/categoryManager/CategoryManager"; // 👈 заменили импорт
+import CategoryPageClient from "../local_components/CategoryPageClient";
+import { Category, CategoryFilter } from "@/lib/types";
 
-type Props = {
-	params: Promise<{ id: string }>;
+type PageParams = {
+	params: Promise<{
+		id: string;
+	}>;
 };
 
-export default async function EditCategoryPage({ params }: Props) {
+export default async function CategoryPage({ params }: PageParams) {
 	const { id } = await params;
-	const categoryId = Number(id);
 
+	// Получаем данные категории
 	const category = await prisma.category.findUnique({
-		where: { id: categoryId },
+		where: { id: Number(id) },
 		include: {
-			Filter: { include: { values: true } },
+			Filter: {
+				include: {
+					values: true,
+				},
+			},
 		},
 	});
 
-	if (!category) return notFound();
+	if (!category) {
+		return notFound();
+	}
 
-	return (
-		<CategoryManager
-			initialCategory={{
-				id: category.id,
-				title: category.title,
-				image: category.image ?? undefined,
-			}}
-			initialFilters={category.Filter}
-			isEdit={true}
-		/>
-	);
+	// Получаем все фильтры для выбора
+	const allFilters = await prisma.filter.findMany({
+		orderBy: { title: "asc" },
+		include: {
+			values: true,
+		},
+	});
+
+	// Подготавливаем данные для клиентского компонента
+	const categoryData: Category = {
+		id: category.id,
+		title: category.title,
+		image: category.image || "",
+		order: category.order || 0,
+		filters:
+			category.Filter?.map((filter) => ({
+				id: filter.id,
+				title: filter.title,
+				type: filter.type as any, // Временно используем any, пока не обновим схему Prisma
+				description: undefined,
+				required: false,
+				values:
+					filter.values?.map((value) => ({
+						id: value.id,
+						value: value.value,
+						description: undefined,
+					})) || [],
+			})) || [],
+	};
+
+	const initialData = {
+		category: categoryData,
+		filters: categoryData.filters, // Передаем только фильтры, которые уже привязаны к категории
+	};
+
+	return <CategoryPageClient initialData={initialData} />;
 }

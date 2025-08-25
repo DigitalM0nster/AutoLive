@@ -8,8 +8,10 @@ import FiltersBlock from "@/components/ui/filtersBlock/FiltersBlock";
 import type { User, ActiveFilter } from "@/lib/types";
 import Link from "next/link";
 import Loading from "@/components/ui/loading/Loading";
+import { useAuthStore } from "@/store/authStore";
 
 export default function AllUsersTable() {
+	const { user } = useAuthStore();
 	const [users, setUsers] = useState<User[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [page, setPage] = useState(1);
@@ -295,6 +297,7 @@ export default function AllUsersTable() {
 									className={styles.statusSelect}
 								/>
 							</th>
+							{user?.role === "superadmin" && <th className={styles.tableHeaderCell}>Действия</th>}
 						</tr>
 					</thead>
 					<tbody className={styles.tableBody}>
