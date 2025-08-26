@@ -46,8 +46,8 @@ export default function ToastProvider() {
 
 	return (
 		<div
-			className={`fixed bottom-6 right-6 z-50 p-4 rounded-xl shadow-xl text-white text-sm transition-all
-				${toast.type === "success" ? "bg-green-600" : toast.type === "error" ? "bg-red-600" : "bg-yellow-500"}`}
+			className={`toastContainer
+				${toast.type === "success" ? "successToast" : toast.type === "error" ? "errorToast" : "warningToast"}`}
 		>
 			{toast.message}
 		</div>
