@@ -7,13 +7,23 @@ interface ExtendedRequestContext {
 	scope: string;
 }
 
-export const POST = withPermission(
+export const GET = withPermission(
 	async (req: NextRequest, { user }: ExtendedRequestContext) => {
 		try {
-			const { departmentIds } = await req.json();
+			const { searchParams } = new URL(req.url);
+			const departmentIdsParam = searchParams.get("departmentIds");
 
-			if (!Array.isArray(departmentIds)) {
-				return NextResponse.json({ error: "Некорректные данные" }, { status: 400 });
+			if (!departmentIdsParam) {
+				return NextResponse.json({ error: "departmentIds обязателен" }, { status: 400 });
+			}
+
+			const departmentIds = departmentIdsParam
+				.split(",")
+				.map((id) => parseInt(id))
+				.filter((id) => !isNaN(id));
+
+			if (departmentIds.length === 0) {
+				return NextResponse.json({ existingDepartmentIds: [] });
 			}
 
 			// Получаем существующие отделы
@@ -38,6 +48,6 @@ export const POST = withPermission(
 			return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
 		}
 	},
-	"view_departments", // Разрешение на просмотр отделов
+	"view_departments",
 	["superadmin", "admin", "manager"]
 );

@@ -7,13 +7,23 @@ interface ExtendedRequestContext {
 	scope: string;
 }
 
-export const POST = withPermission(
+export const GET = withPermission(
 	async (req: NextRequest, { user }: ExtendedRequestContext) => {
 		try {
-			const { userIds } = await req.json();
+			const { searchParams } = new URL(req.url);
+			const userIdsParam = searchParams.get("userIds");
 
-			if (!Array.isArray(userIds)) {
-				return NextResponse.json({ error: "userIds должен быть массивом" }, { status: 400 });
+			if (!userIdsParam) {
+				return NextResponse.json({ error: "userIds обязателен" }, { status: 400 });
+			}
+
+			const userIds = userIdsParam
+				.split(",")
+				.map((id) => parseInt(id))
+				.filter((id) => !isNaN(id));
+
+			if (userIds.length === 0) {
+				return NextResponse.json({ existingUsers: {} });
 			}
 
 			// Получаем существующих пользователей с полными данными

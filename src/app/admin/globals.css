@@ -1073,6 +1073,10 @@ table thead th.imageCell,
   width: 130px;
   text-align: center;
 }
+table thead th.dateCell,
+.table thead th.dateCell {
+  width: 200px;
+}
 table tbody tr,
 .table tbody tr {
   transition: all 0.2s ease;
@@ -1174,6 +1178,10 @@ table tbody tr td a.departmentLink:hover,
 table tbody tr td a:visited,
 .table tbody tr td a:visited {
   color: var(--text-color);
+}
+table tbody tr td .date,
+.table tbody tr td .date {
+  padding: 10px 0px;
 }
 table tbody tr td .image,
 .table tbody tr td .image {

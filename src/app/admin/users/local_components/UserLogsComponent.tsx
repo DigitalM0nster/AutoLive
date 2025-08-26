@@ -220,7 +220,7 @@ export default function UserLogsComponent({ userId }: UserLogsComponentProps) {
 	const tableHeaders = useMemo(
 		() => (
 			<tr>
-				<th className={styles.tableHeaderCell}>
+				<th className={`${styles.tableHeaderCell} dateCell`}>
 					<DateFilterField
 						startDate={startDate}
 						endDate={endDate}

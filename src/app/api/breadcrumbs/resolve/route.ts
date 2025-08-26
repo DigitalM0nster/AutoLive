@@ -2,11 +2,19 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-export async function POST(request: Request) {
+export async function GET(request: Request) {
 	try {
-		const body = await request.json();
-		const ids: string[] = body?.ids || [];
-		const segments: string[] = body?.segments || [];
+		// Для GET запроса читаем параметры из URL, а не из тела
+		const { searchParams } = new URL(request.url);
+		const idsParam = searchParams.get("ids");
+		const segmentsParam = searchParams.get("segments");
+
+		if (!idsParam || !segmentsParam) {
+			return NextResponse.json({ labels: {} });
+		}
+
+		const ids: string[] = JSON.parse(idsParam);
+		const segments: string[] = JSON.parse(segmentsParam);
 
 		const labels: Record<string, string> = {};
 
@@ -48,6 +56,6 @@ export async function POST(request: Request) {
 		return NextResponse.json({ labels });
 	} catch (error) {
 		console.error("Ошибка при получении динамических заголовков:", error);
-		return new NextResponse("Ошибка сервера", { status: 500 });
+		return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
 	}
 }

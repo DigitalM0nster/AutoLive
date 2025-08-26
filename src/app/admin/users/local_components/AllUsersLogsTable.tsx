@@ -32,13 +32,14 @@ export default function AllUsersLogsTable({
 		if (userIds.length === 0) return;
 
 		try {
-			const response = await fetch(`/api/users/check-existence`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({ userIds }),
+			// Используем GET запрос с параметрами в URL вместо POST
+			const params = new URLSearchParams();
+			userIds.forEach((id) => params.append("userIds", id.toString()));
+
+			const response = await fetch(`/api/users/check-existence?${params.toString()}`, {
+				method: "GET",
 				credentials: "include",
+				// Убираем headers и body - они не нужны для GET запроса
 			});
 
 			if (response.ok) {
@@ -61,13 +62,14 @@ export default function AllUsersLogsTable({
 		if (departmentIds.length === 0) return;
 
 		try {
-			const response = await fetch(`/api/departments/check-existence`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({ departmentIds }),
+			// Используем GET запрос с параметрами в URL вместо POST
+			const params = new URLSearchParams();
+			departmentIds.forEach((id) => params.append("departmentIds", id.toString()));
+
+			const response = await fetch(`/api/departments/check-existence?${params.toString()}`, {
+				method: "GET",
 				credentials: "include",
+				// Убираем headers и body - они не нужны для GET запроса
 			});
 
 			if (response.ok) {

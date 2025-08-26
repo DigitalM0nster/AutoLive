@@ -25,13 +25,17 @@
   min-height: 44px;
   max-width: var(--maxContentWidth);
 }
-.header .userProfile {
+.header .userProfile,
+.header a.userProfile {
   display: flex;
   gap: 10px;
   align-items: center;
+  text-decoration: none;
+  color: var(--text-color);
   cursor: pointer;
 }
-.header .userProfile .userIcon {
+.header .userProfile .userIcon,
+.header a.userProfile .userIcon {
   justify-content: center;
   align-items: center;
   width: 40px;
@@ -40,14 +44,17 @@
   background-color: var(--light-grey-color);
   border: 1px solid var(--light-grey2-color);
 }
-.header .userProfile .userAvatar {
+.header .userProfile .userAvatar,
+.header a.userProfile .userAvatar {
   width: 30px;
   height: 30px;
 }
-.header .userProfile .userDetails {
+.header .userProfile .userDetails,
+.header a.userProfile .userDetails {
   flex-direction: column;
 }
-.header .userProfile .userRole {
+.header .userProfile .userRole,
+.header a.userProfile .userRole {
   color: var(--text-color);
   opacity: 0.5;
   font-size: 10px;

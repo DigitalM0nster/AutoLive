@@ -67,7 +67,10 @@ export default function UserComponent({ userId, isCreating = false }: UserPagePr
 
 			try {
 				setLoading(true);
-				const response = await fetch(`/api/users/${userId}`);
+				const response = await fetch(`/api/users/${userId}`, {
+					method: "GET",
+					credentials: "include",
+				});
 
 				if (!response.ok) {
 					const errorData = await response.json();
@@ -112,7 +115,10 @@ export default function UserComponent({ userId, isCreating = false }: UserPagePr
 	useEffect(() => {
 		const fetchDepartments = async () => {
 			try {
-				const response = await fetch("/api/departments");
+				const response = await fetch("/api/departments", {
+					method: "GET",
+					credentials: "include",
+				});
 				if (response.ok) {
 					const data = await response.json();
 					setDepartments(data);

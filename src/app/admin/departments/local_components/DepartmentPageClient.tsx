@@ -141,6 +141,43 @@ export default function DepartmentPageClient({ initialData, isCreateMode = false
 		setIsStaffChanged(realChanges);
 	}, [currentAdmins, currentManagers, originalAdmins, originalManagers]);
 
+	// Добавляем эффект для загрузки количества товаров по категориям
+	useEffect(() => {
+		if (!isCreateMode && department?.id) {
+			const loadCategoryCounts = async () => {
+				try {
+					// Загружаем данные отдела, которые содержат категории с количеством товаров
+					const res = await fetch(`/api/departments/${department.id}`);
+					if (res.ok) {
+						const departmentData = await res.json();
+
+						// Обновляем категории с количеством товаров
+						if (departmentData.categories) {
+							const categoriesWithCounts = categories.map((cat) => {
+								const matchedCat = departmentData.categories.find((c: any) => c.id === cat.id);
+								return {
+									...cat,
+									productCount: matchedCat ? matchedCat.productCount : 0,
+									isAllowed: selectedCategories.includes(cat.id),
+								};
+							});
+							setCategories(categoriesWithCounts);
+						}
+
+						// Обновляем количество товаров без категории
+						if (departmentData.uncategorizedCount !== undefined) {
+							setUncategorizedCount(departmentData.uncategorizedCount);
+						}
+					}
+				} catch (error) {
+					console.error("Ошибка при загрузке количества товаров по категориям:", error);
+				}
+			};
+
+			loadCategoryCounts();
+		}
+	}, [isCreateMode, department?.id]);
+
 	// Загружаем данные для создания отдела
 	useEffect(() => {
 		if (isCreateMode) {

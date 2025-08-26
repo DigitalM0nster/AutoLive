@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Breadcrumbs from "@/components/admin/breadcrumbs/Breadcrumbs";
 import { useAuthStore } from "@/store/authStore";
+import Link from "next/link"; // Добавляем импорт Link
 import "./styles.scss";
 
 const getRoleName = (role: string) => {
@@ -43,7 +44,7 @@ export default function Header() {
 				{loading ? (
 					<Loading />
 				) : user ? (
-					<div className="userProfile" onClick={() => router.push(`/admin/users/${user.id}`)}>
+					<Link href={`/admin/users/${user.id}`} className="userProfile">
 						<div className="userIcon">
 							<img src={user.avatar || "/images/user_placeholder.png"} alt="avatar" className="userAvatar" />
 						</div>
@@ -59,7 +60,7 @@ export default function Header() {
 								{!user.first_name && !user.last_name ? "Пользователь" : ""}
 							</span>
 						</div>
-					</div>
+					</Link>
 				) : (
 					<span>🔐 Войдите в свою учетную запись</span>
 				)}

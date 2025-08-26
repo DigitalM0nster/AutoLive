@@ -29,13 +29,14 @@ export default function UserLogsTable({
 		if (userIds.length === 0) return;
 
 		try {
-			const response = await fetch(`/api/users/check-existence`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({ userIds }),
+			// Используем GET запрос с параметрами в URL вместо POST
+			const params = new URLSearchParams();
+			userIds.forEach((id) => params.append("userIds", id.toString()));
+
+			const response = await fetch(`/api/users/check-existence?${params.toString()}`, {
+				method: "GET",
 				credentials: "include",
+				// Убираем headers и body - они не нужны для GET запроса
 			});
 
 			if (response.ok) {
@@ -58,13 +59,14 @@ export default function UserLogsTable({
 		if (departmentIds.length === 0) return;
 
 		try {
-			const response = await fetch(`/api/departments/check-existence`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({ departmentIds }),
+			// Используем GET запрос с параметрами в URL вместо POST
+			const params = new URLSearchParams();
+			departmentIds.forEach((id) => params.append("departmentIds", id.toString()));
+
+			const response = await fetch(`/api/departments/check-existence?${params.toString()}`, {
+				method: "GET",
 				credentials: "include",
+				// Убираем headers и body - они не нужны для GET запроса
 			});
 
 			if (response.ok) {
@@ -81,6 +83,7 @@ export default function UserLogsTable({
 
 	// Функция для загрузки актуальных данных отделов
 	const loadDepartmentsData = useCallback(async () => {
+		setLoading(true);
 		try {
 			const response = await fetch(`/api/departments`, {
 				credentials: "include",
@@ -95,6 +98,55 @@ export default function UserLogsTable({
 			}
 		} catch (error) {
 			console.error("Ошибка при загрузке данных отделов:", error);
+		} finally {
+			setLoading(false);
+		}
+	}, []);
+
+	const fetchLogs = useCallback(async () => {
+		setLoading(true);
+		setError(null);
+
+		try {
+			const response = await fetch(`/api/users/${userId}/logs?${queryParams.toString()}`);
+
+			if (!response.ok) {
+				throw new Error("Не удалось загрузить логи пользователей");
+			}
+
+			const data: UserLogResponse = await response.json();
+
+			if (data.error) {
+				throw new Error(data.error);
+			}
+
+			setLocalLogs(data.data || []);
+			console.log(data.data);
+			setTotalPages(data.totalPages || 1);
+
+			// Уведомляем родительский компонент об обновлении данных
+			if (onLogsUpdate) {
+				onLogsUpdate(data.totalPages || 1);
+			}
+
+			// Проверяем существование пользователей из логов (и админов, и целевых пользователей)
+			const userIdsToCheck = (data.data || [])
+				.flatMap((log: UserLog) => [log.admin?.id, log.targetUser?.id])
+				.filter((id: number | undefined) => id !== undefined && id !== 0) as number[];
+
+			await checkUsersExistence(userIdsToCheck);
+
+			// Проверяем существование отделов из логов
+			const departmentIdsToCheck = (data.data || [])
+				.flatMap((log: UserLog) => [log.admin?.department?.id, log.targetUser?.department?.id, log.snapshotBefore?.department?.id, log.snapshotAfter?.department?.id])
+				.filter((id: number | undefined) => id !== undefined && id !== 0) as number[];
+
+			await checkDepartmentsExistence(departmentIdsToCheck);
+		} catch (err) {
+			console.error("Ошибка при загрузке логов:", err);
+			setError(err instanceof Error ? err.message : "Неизвестная ошибка");
+		} finally {
+			setLoading(false);
 		}
 	}, []);
 
@@ -267,7 +319,6 @@ export default function UserLogsTable({
 		(log: UserLog): React.ReactNode => {
 			// Используем только массив actions
 			const actions = log.actions;
-			const firstAction = actions[0];
 			const userExists = existingUsers.has(log.targetUser.id);
 			// Получаем актуальные данные пользователя из existingUsers
 			const actualUser = existingUsers.get(log.targetUser.id);
@@ -541,53 +592,6 @@ export default function UserLogsTable({
 	);
 
 	useEffect(() => {
-		const fetchLogs = async () => {
-			setLoading(false);
-			setError(null);
-
-			try {
-				const response = await fetch(`/api/users/${userId}/logs?${queryParams.toString()}`);
-
-				if (!response.ok) {
-					throw new Error("Не удалось загрузить логи пользователей");
-				}
-
-				const data: UserLogResponse = await response.json();
-
-				if (data.error) {
-					throw new Error(data.error);
-				}
-
-				setLocalLogs(data.data || []);
-				console.log(data.data);
-				setTotalPages(data.totalPages || 1);
-
-				// Уведомляем родительский компонент об обновлении данных
-				if (onLogsUpdate) {
-					onLogsUpdate(data.totalPages || 1);
-				}
-
-				// Проверяем существование пользователей из логов (и админов, и целевых пользователей)
-				const userIdsToCheck = (data.data || [])
-					.flatMap((log: UserLog) => [log.admin?.id, log.targetUser?.id])
-					.filter((id: number | undefined) => id !== undefined && id !== 0) as number[];
-
-				await checkUsersExistence(userIdsToCheck);
-
-				// Проверяем существование отделов из логов
-				const departmentIdsToCheck = (data.data || [])
-					.flatMap((log: UserLog) => [log.admin?.department?.id, log.targetUser?.department?.id, log.snapshotBefore?.department?.id, log.snapshotAfter?.department?.id])
-					.filter((id: number | undefined) => id !== undefined && id !== 0) as number[];
-
-				await checkDepartmentsExistence(departmentIdsToCheck);
-			} catch (err) {
-				console.error("Ошибка при загрузке логов:", err);
-				setError(err instanceof Error ? err.message : "Неизвестная ошибка");
-			} finally {
-				setLoading(false);
-			}
-		};
-
 		fetchLogs();
 	}, [queryParams, checkUsersExistence, checkDepartmentsExistence, onLogsUpdate]);
 
@@ -611,7 +615,9 @@ export default function UserLogsTable({
 						localLogs.map((log: UserLog) => {
 							return (
 								<tr key={log.id} className={styles.tableRow}>
-									<td className={styles.tableCell}>{formatDate(log.createdAt)}</td>
+									<td className={styles.tableCell}>
+										<div className="date">{formatDate(log.createdAt)}</div>
+									</td>
 									<td className={styles.tableCell}>{log.admin ? renderUserLink(log, log.admin, log.id, "admin") : "—"}</td>
 									<td className={styles.tableCell}>{getResultBlock(log)}</td>
 								</tr>

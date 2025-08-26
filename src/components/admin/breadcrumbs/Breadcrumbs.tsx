@@ -27,10 +27,15 @@ export default function Breadcrumbs() {
 			}
 
 			try {
-				const res = await fetch("/api/breadcrumbs/resolve", {
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ ids, segments }),
+				// Используем GET запрос с параметрами в URL, БЕЗ тела запроса
+				const params = new URLSearchParams({
+					ids: JSON.stringify(ids),
+					segments: JSON.stringify(segments),
+				});
+
+				const res = await fetch(`/api/breadcrumbs/resolve?${params.toString()}`, {
+					method: "GET",
+					// Убираем headers и body - они не нужны для GET запроса
 				});
 				const data = await res.json();
 				setDynamicLabels(data.labels || {});

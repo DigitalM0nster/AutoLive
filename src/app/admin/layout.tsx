@@ -2,43 +2,24 @@ import "./globals.css";
 import Header from "@/components/admin/header/Header";
 import React from "react";
 import ToastProvider from "@/components/ui/toast/ToastProvider";
+import GlobalLoadingProvider from "@/components/ui/loading/GlobalLoadingProvider";
+import GlobalLoadingOverlay from "@/components/ui/loading/GlobalLoadingOverlay";
 
 export const metadata = {
 	title: "Административная панель",
 	description: "Панель управления магазином автозапчастей",
 };
 
-export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-	let dbIsAlive = true;
-
-	try {
-		const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/health/database`, {
-			cache: "no-store",
-		});
-		if (!res.ok) dbIsAlive = false;
-	} catch (error) {
-		dbIsAlive = false;
-	}
-
-	if (!dbIsAlive) {
-		return (
-			<html lang="ru">
-				<body>
-					<div className="p-8 text-center">
-						<h1 className="text-2xl font-bold text-red-600">Ошибка подключения к базе данных</h1>
-						<p className="mt-4 text-gray-700">Попробуйте позже или обратитесь к администратору.</p>
-					</div>
-				</body>
-			</html>
-		);
-	}
-
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
 	return (
 		<html lang="ru">
 			<body>
-				<Header />
-				<div className="screen">{children}</div>
-				<ToastProvider />
+				<GlobalLoadingProvider>
+					<Header />
+					<div className="screen">{children}</div>
+					<ToastProvider />
+					<GlobalLoadingOverlay />
+				</GlobalLoadingProvider>
 			</body>
 		</html>
 	);

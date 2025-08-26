@@ -25,12 +25,16 @@
 		max-width: var(--maxContentWidth);
 	}
 
-	.userProfile {
+	.userProfile,
+	a.userProfile {
 		display: flex;
 		gap: 10px;
 		align-items: center;
+		text-decoration: none;
+		color: var(--text-color);
 
 		cursor: pointer;
+
 		.userIcon {
 			justify-content: center;
 			align-items: center;

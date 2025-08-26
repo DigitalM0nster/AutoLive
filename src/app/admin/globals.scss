@@ -1121,6 +1121,10 @@ table,
 				text-align: center;
 			}
 
+			&.dateCell {
+				width: 200px;
+			}
+
 			&:last-child {
 				// justify-items: right;
 			}
@@ -1230,6 +1234,10 @@ table,
 					&:visited {
 						color: var(--text-color);
 					}
+				}
+
+				.date {
+					padding: 10px 0px;
 				}
 
 				.image {

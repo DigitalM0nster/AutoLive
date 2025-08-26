@@ -54,6 +54,26 @@ export default function DepartmentCategorySection({
 	const [showConfirmModal, setShowConfirmModal] = useState(false);
 	const [categoriesToRemove, setCategoriesToRemove] = useState<CategoryWithCount[]>([]);
 
+	// Функция для склонения слова "товар" в зависимости от количества
+	const getProductWordForm = (count: number): string => {
+		const lastDigit = count % 10;
+		const lastTwoDigits = count % 100;
+
+		if (lastTwoDigits >= 11 && lastTwoDigits <= 19) {
+			return "товаров";
+		}
+
+		if (lastDigit === 1) {
+			return "товар";
+		}
+
+		if (lastDigit >= 2 && lastDigit <= 4) {
+			return "товара";
+		}
+
+		return "товаров";
+	};
+
 	// Инициализируем исходное состояние категорий при загрузке
 	useEffect(() => {
 		if (categories.length > 0) {
@@ -111,7 +131,13 @@ export default function DepartmentCategorySection({
 												<span className={styles.checkboxLabel}>{category.title}</span>
 											</div>
 											{selectedCategories.includes(category.id) && (
-												<span className={`productCount`}>{category.productCount === 0 ? "0 товаров" : `${category.productCount} товаров`}</span>
+												<span className={`productCount`}>
+													{category.productCount === undefined
+														? ""
+														: category.productCount === 0
+														? "0 товаров"
+														: `${category.productCount} ${getProductWordForm(category.productCount)}`}
+												</span>
 											)}
 										</label>
 									</div>
