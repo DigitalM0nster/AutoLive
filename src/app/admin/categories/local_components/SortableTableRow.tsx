@@ -18,29 +18,28 @@ type SortableTableRowProps = {
 };
 
 export default function SortableTableRow({ id, title, image, filtersCount, onDeleteRequest, canDelete, canDrag }: SortableTableRowProps) {
-	// Используем useSortable только если можно перетаскивать
-	// Это оптимизация - не создаем лишние обработчики событий когда они не нужны
-	const sortableProps = canDrag ? useSortable({ id }) : null;
+	// Всегда вызываем useSortable - это требование React Hooks
+	// Но используем canDrag для условного применения функциональности
+	const sortableProps = useSortable({ id });
 
 	const { user } = useAuthStore();
 
 	// Применяем стили только если можно перетаскивать
 	// Стили включают transform для анимации перетаскивания и opacity для визуального эффекта
-	const style =
-		canDrag && sortableProps
-			? {
-					transform: CSS.Transform.toString(sortableProps.transform),
-					transition: sortableProps.transition,
-					opacity: sortableProps.isDragging ? 0.5 : 1,
-			  }
-			: {};
+	const style = canDrag
+		? {
+				transform: CSS.Transform.toString(sortableProps.transform),
+				transition: sortableProps.transition,
+				opacity: sortableProps.isDragging ? 0.5 : 1,
+		  }
+		: {};
 
 	// Получаем атрибуты и слушатели только если можно перетаскивать
 	// Атрибуты включают data-* атрибуты для dnd-kit
 	// Слушатели включают onMouseDown, onTouchStart и другие события для начала перетаскивания
-	const dragAttributes = canDrag && sortableProps ? sortableProps.attributes : {};
-	const dragListeners = canDrag && sortableProps ? sortableProps.listeners : {};
-	const dragRef = canDrag && sortableProps ? sortableProps.setNodeRef : undefined;
+	const dragAttributes = canDrag ? sortableProps.attributes : {};
+	const dragListeners = canDrag ? sortableProps.listeners : {};
+	const dragRef = canDrag ? sortableProps.setNodeRef : undefined;
 
 	return (
 		<tr ref={dragRef} style={style} className="tableRow verticalCenter">
