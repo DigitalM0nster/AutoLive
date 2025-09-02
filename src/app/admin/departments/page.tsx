@@ -1,4 +1,4 @@
-import AllDepartmentsTable from "./local_components/AllDepartmentsTable";
+import AllDepartmentsTable from "./local_components/allDepartments/AllDepartmentsTable";
 import styles from "./local_components/styles.module.scss";
 import Link from "next/link";
 

@@ -22,9 +22,9 @@ export default function Header() {
 
 		if (user.first_name && user.last_name) {
 			// Если есть отчество, добавляем его
-			if (user.middle_name) return `${user.first_name} ${user.middle_name} ${user.last_name}`;
+			if (user.middle_name) return `${user.last_name} ${user.first_name} ${user.middle_name}`;
 			// Если нет отчества, показываем только имя и фамилию
-			return `${user.first_name} ${user.last_name}`;
+			return `${user.last_name} ${user.first_name}`;
 		}
 		if (user.first_name) return user.first_name;
 		if (user.last_name) return user.last_name;

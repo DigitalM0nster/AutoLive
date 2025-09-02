@@ -33,12 +33,15 @@ export const GET = withPermission(
 		const brand = searchParams.get("brand") || undefined;
 		const categoryId = searchParams.get("categoryId") || undefined;
 		const departmentId = searchParams.get("departmentId");
-		const search = searchParams.get("search")?.toLowerCase();
+		const search = searchParams.get("search");
 
 		const priceMin = parseFloat(searchParams.get("priceMin") || "0");
 		const priceMax = parseFloat(searchParams.get("priceMax") || "10000000");
 
-		const searchFilter: Prisma.ProductWhereInput[] = search ? [{ title: { contains: search } }, { sku: { contains: search } }, { brand: { contains: search } }] : [];
+		// Создаем фильтр поиска с учетом регистра
+		const searchFilter: Prisma.ProductWhereInput[] = search
+			? [{ title: { contains: search, mode: "insensitive" } }, { sku: { contains: search, mode: "insensitive" } }, { brand: { contains: search, mode: "insensitive" } }]
+			: [];
 
 		const where: Prisma.ProductWhereInput = {
 			...(brand && { brand }),

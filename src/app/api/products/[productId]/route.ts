@@ -233,6 +233,92 @@ export const PUT = withPermission(
 	["admin", "superadmin"]
 );
 
+// ✅ PATCH — быстрое редактирование основных полей
+export const PATCH = withPermission(
+	async (req, { user, scope }) => {
+		const url = new URL(req.url);
+		const productId = parseInt(url.pathname.split("/").pop()!);
+
+		if (isNaN(productId)) {
+			return NextResponse.json({ error: "Некорректный ID" }, { status: 400 });
+		}
+
+		const body = await req.json();
+
+		try {
+			const existing = await prisma.product.findUnique({
+				where: { id: productId },
+				include: {
+					department: { select: { id: true, name: true } },
+				},
+			});
+
+			if (!existing) {
+				return NextResponse.json({ error: "Товар не найден" }, { status: 404 });
+			}
+
+			if (scope === "department" && existing.departmentId !== user.departmentId) {
+				return NextResponse.json({ error: "Недостаточно прав для редактирования этого товара" }, { status: 403 });
+			}
+
+			// Обновляем только переданные поля
+			const updateData: any = {};
+			if (body.title !== undefined) updateData.title = String(body.title).trim();
+			if (body.sku !== undefined) updateData.sku = String(body.sku).trim();
+			if (body.price !== undefined) updateData.price = parseFloat(body.price);
+			if (body.brand !== undefined) updateData.brand = String(body.brand).trim();
+			if (body.description !== undefined) updateData.description = body.description ? String(body.description).trim() : null;
+
+			const updated = await prisma.product.update({
+				where: { id: productId },
+				data: updateData,
+				include: {
+					department: { select: { id: true, name: true } },
+				},
+			});
+
+			// Логируем изменение
+			await prisma.product_log.create({
+				data: {
+					action: "update",
+					message: "Быстрое редактирование товара",
+					user_snapshot: {
+						id: user.id,
+						first_name: user.first_name,
+						last_name: user.last_name,
+						role: user.role,
+						department: user.departmentId,
+					},
+					department_snapshot: {
+						id: updated.departmentId,
+						name: updated.department?.name,
+					},
+					product_snapshot: {
+						id: updated.id,
+						title: updated.title,
+						price: updated.price,
+						sku: updated.sku,
+						brand: updated.brand,
+					},
+					// Временные поля для совместимости
+					user_id: user.id,
+					department_id: updated.departmentId,
+					product_id: updated.id,
+					snapshot_before: JSON.stringify(existing),
+					snapshot_after: JSON.stringify(updated),
+				},
+			});
+
+			return NextResponse.json({ product: updated });
+		} catch (error) {
+			console.error("Ошибка быстрого обновления продукта:", error);
+			return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
+		}
+	},
+	"edit_products",
+	["admin", "superadmin"]
+);
+
 // ✅ DELETE — удаление с подробным логом
 export const DELETE = withPermission(
 	async (req, { user, scope }) => {

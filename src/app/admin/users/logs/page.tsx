@@ -1,6 +1,6 @@
 import styles from "../local_components/styles.module.scss";
 import Link from "next/link";
-import AllUsersLogsComponent from "../local_components/AllUsersLogsComponent";
+import AllUsersLogsComponent from "../local_components/allUsersLogs/AllUsersLogsComponent";
 
 export default function UsersLogsPage() {
 	return (

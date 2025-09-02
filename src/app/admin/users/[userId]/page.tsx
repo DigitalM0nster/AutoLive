@@ -1,5 +1,5 @@
 import Link from "next/link";
-import UserComponent from "../local_components/UserComponent";
+import UserComponent from "../local_components/user/UserComponent";
 
 type PageParams = {
 	params: Promise<{

@@ -14,20 +14,43 @@ interface CustomSelectProps {
 	onChange: (value: string) => void;
 	placeholder?: string;
 	className?: string;
+	showSearch?: boolean; // Показывать ли поле поиска
+	searchPlaceholder?: string; // Плейсхолдер для поля поиска
 }
 
-const CustomSelect: React.FC<CustomSelectProps> = ({ options, value, onChange, placeholder = "Выберите...", className = "" }) => {
+const CustomSelect: React.FC<CustomSelectProps> = ({
+	options,
+	value,
+	onChange,
+	placeholder = "Выберите...",
+	className = "",
+	showSearch = false,
+	searchPlaceholder = "Поиск...",
+}) => {
 	const [isOpen, setIsOpen] = useState(false);
 	const [selectedOption, setSelectedOption] = useState<Option | null>(options.find((option) => option.value === value) || null);
+	const [searchValue, setSearchValue] = useState("");
 	const selectRef = useRef<HTMLDivElement>(null);
 
-	const toggleDropdown = () => setIsOpen(!isOpen);
+	const toggleDropdown = () => {
+		setIsOpen(!isOpen);
+		if (!isOpen) {
+			setSearchValue(""); // Сбрасываем поиск при открытии
+		}
+	};
 
 	const handleOptionClick = (option: Option) => {
 		setSelectedOption(option);
 		onChange(option.value);
 		setIsOpen(false);
+		setSearchValue(""); // Сбрасываем поиск при выборе
 	};
+
+	// Фильтруем опции по поиску
+	const filteredOptions =
+		showSearch && searchValue
+			? options.filter((option) => option.label.toLowerCase().includes(searchValue.toLowerCase()) || option.value.toLowerCase().includes(searchValue.toLowerCase()))
+			: options;
 
 	// Закрытие выпадающего списка при клике вне компонента
 	useEffect(() => {
@@ -49,6 +72,11 @@ const CustomSelect: React.FC<CustomSelectProps> = ({ options, value, onChange, p
 		setSelectedOption(option || null);
 	}, [value, options]);
 
+	// Обработчик изменения поиска
+	const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		setSearchValue(e.target.value);
+	};
+
 	return (
 		<div className={`${styles.customSelect} ${className}`} ref={selectRef}>
 			<div className={styles.selectHeader} onClick={toggleDropdown}>
@@ -61,17 +89,35 @@ const CustomSelect: React.FC<CustomSelectProps> = ({ options, value, onChange, p
 			</div>
 			{isOpen && (
 				<div className={styles.optionsContainer}>
-					{options.map((option, index) => (
+					{/* Поле поиска */}
+					{showSearch && (
+						<div className={styles.searchContainer}>
+							<input
+								type="text"
+								placeholder={searchPlaceholder}
+								value={searchValue}
+								onChange={handleSearchChange}
+								className={styles.searchInput}
+								onClick={(e) => e.stopPropagation()} // Предотвращаем закрытие при клике на поле
+							/>
+						</div>
+					)}
+
+					{/* Список опций */}
+					{filteredOptions.map((option, index) => (
 						<div
 							key={option.value}
-							className={`${styles.option} ${option.value === selectedOption?.value ? styles.selected : ""} ${index === 0 ? styles.firstOption : ""} ${
-								index === options.length - 1 ? styles.lastOption : ""
+							className={`${styles.option} ${option.value === selectedOption?.value ? styles.selected : ""} ${index === 0 && !showSearch ? styles.firstOption : ""} ${
+								index === filteredOptions.length - 1 ? styles.lastOption : ""
 							}`}
 							onClick={() => handleOptionClick(option)}
 						>
 							{option.label}
 						</div>
 					))}
+
+					{/* Сообщение если ничего не найдено */}
+					{showSearch && searchValue && filteredOptions.length === 0 && <div className={styles.noResults}>Ничего не найдено</div>}
 				</div>
 			)}
 		</div>

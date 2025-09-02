@@ -1,6 +1,6 @@
 import styles from "../local_components/styles.module.scss";
 import Link from "next/link";
-import AllDepartmentsLogsComponent from "../local_components/AllDepartmentsLogsComponent";
+import AllDepartmentsLogsComponent from "../local_components/allDepartments/AllDepartmentsLogsComponent";
 
 export default function DepartmentsLogsPage() {
 	return (

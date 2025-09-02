@@ -261,7 +261,7 @@ a.button.disabled {
   display: flex;
   flex-direction: column;
   width: calc(100% - 20px);
-  min-height: 350px;
+  min-height: 65dvh;
   padding: 10px;
   gap: 10px;
   background: white;

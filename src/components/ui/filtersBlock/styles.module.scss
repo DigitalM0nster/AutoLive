@@ -13,7 +13,8 @@
 // Информационный блок с фильтрами и кнопкой сброса
 .filtersInfo {
 	display: flex;
-	justify-content: space-between;
+	flex-direction: column;
+	justify-content: flex-start;
 	align-items: flex-start;
 	gap: 16px;
 	flex-wrap: wrap;
@@ -41,6 +42,22 @@
 	font-size: 12px;
 	font-weight: 500;
 	border: 1px solid #bbdefb;
+	gap: 5px;
+
+	&.checkbox {
+		cursor: pointer;
+	}
+
+	input[type="checkbox"] {
+		width: 16px;
+		height: 16px;
+		border-radius: 4px;
+		border: 1px solid #bbdefb;
+		background: #e3f2fd;
+		color: #1976d2;
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
 }
 
 // Кнопка сброса фильтров

@@ -76,3 +76,20 @@
 		border-radius: 0 0 5px 5px;
 	}
 }
+
+// Контейнер для поиска
+.searchContainer {
+	padding: 8px 12px;
+	border-bottom: 1px solid var(--grey-color);
+	background-color: #f8f9fa;
+}
+
+// Сообщение "ничего не найдено"
+.noResults {
+	padding: 12px;
+	text-align: center;
+	color: #6c757d;
+	font-style: italic;
+	font-size: 14px;
+	background-color: #f8f9fa;
+}

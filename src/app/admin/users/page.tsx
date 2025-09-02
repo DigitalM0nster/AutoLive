@@ -1,5 +1,5 @@
 // src\app\admin\users\page.tsx
-import AllUsersTable from "./local_components/AllUsersTable";
+import AllUsersTable from "./local_components/allUsers/AllUsersTable";
 import styles from "./local_components/styles.module.scss";
 import Link from "next/link";
 

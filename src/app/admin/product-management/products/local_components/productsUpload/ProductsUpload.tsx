@@ -9,7 +9,6 @@ import UploadBox from "./UploadBox";
 import PreviewTable from "./PreviewTable";
 import MarkupRulesEditor, { MarkupRule, DefaultMarkup } from "./MarkupRulesEditor";
 import { OBJECTS_PER_PAGE } from "@/lib/objectsPerPage";
-import Loading from "@/components/ui/loading/Loading";
 import TableSkeleton from "../TableSkeleton";
 import type { User } from "@/lib/types";
 
