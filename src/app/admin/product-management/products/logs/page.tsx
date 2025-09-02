@@ -25,7 +25,7 @@ export default function ProductsLogsPage() {
 						История действий
 					</Link>
 				</div>
-				<AllProductsLogs user={user} />
+				<AllProductsLogs />
 			</div>
 		</div>
 	);
