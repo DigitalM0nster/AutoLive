@@ -1,5 +1,5 @@
 import Link from "next/link";
-import DepartmentLogsComponent from "../../local_components/DepartmentLogsComponent";
+import DepartmentLogsComponent from "../../local_components/departmentLogs/DepartmentLogsComponent";
 
 type PageParams = {
 	params: Promise<{

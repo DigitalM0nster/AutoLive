@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
-import DepartmentPageClient from "../local_components/DepartmentPageClient";
+import DepartmentPageClient from "../local_components/department/DepartmentPageClient";
 import { Category, Department, User } from "@/lib/types";
 
 type PageParams = {

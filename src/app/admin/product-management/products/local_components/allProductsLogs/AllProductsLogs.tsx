@@ -17,7 +17,7 @@ type UnifiedLog = {
 	details: any;
 };
 
-export default function ProductsLogs() {
+export default function AllProductsLogs() {
 	const [logs, setLogs] = useState<UnifiedLog[]>([]);
 	const [loading, setLoading] = useState(true);
 

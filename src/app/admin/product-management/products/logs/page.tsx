@@ -4,7 +4,7 @@
 
 import { useAuthStore } from "@/store/authStore";
 import Link from "next/link";
-import UploadLogs from "../local_components/productsLogs/ProductsLogs";
+import AllProductsLogs from "../local_components/allProductsLogs/AllProductsLogs";
 
 export default function ProductsLogsPage() {
 	const { user } = useAuthStore();
@@ -25,7 +25,7 @@ export default function ProductsLogsPage() {
 						История действий
 					</Link>
 				</div>
-				<UploadLogs user={user} />
+				<AllProductsLogs user={user} />
 			</div>
 		</div>
 	);
