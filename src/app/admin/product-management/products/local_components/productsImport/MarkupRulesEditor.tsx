@@ -66,9 +66,20 @@ export default function MarkupRulesEditor({ rules, setRules, defaultMarkup, setD
 
 	return (
 		<>
-			<h3 className="font-semibold mb-1 mt-6">Установление наценки:</h3>
-			<div className="border border-black/10 p-4 rounded">
-				<div className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-2 text-sm font-medium text-gray-600 mb-1">
+			<h3 style={{ fontWeight: "600", marginBottom: "4px", marginTop: "24px" }}>Установление наценки:</h3>
+			<div className="borderBlock">
+				<div
+					style={{
+						display: "grid",
+						gridTemplateColumns: "1fr 1fr 1fr 1fr auto",
+						gap: "8px",
+						fontSize: "14px",
+						fontWeight: "500",
+						color: "var(--text-color)",
+						opacity: "0.6",
+						marginBottom: "4px",
+					}}
+				>
 					<span>От (₽)</span>
 					<span>До (₽)</span>
 					<span>Тип</span>
@@ -76,60 +87,76 @@ export default function MarkupRulesEditor({ rules, setRules, defaultMarkup, setD
 					<span></span>
 				</div>
 
-				<div className="space-y-2 mb-4">
+				<div className="columnList" style={{ marginBottom: "16px" }}>
 					{rules.map((rule, index) => {
 						const errors = getFieldErrors(rule);
-						const getInputClass = (field: keyof MarkupRule) => `border px-2 py-1 rounded text-sm ${errors[field] ? "border-red-500 bg-red-50 text-red-600" : ""}`;
+						const getInputStyle = (field: keyof MarkupRule) => ({
+							borderColor: errors[field] ? "var(--red-color)" : "var(--grey-color)",
+							backgroundColor: errors[field] ? "rgba(239, 68, 68, 0.1)" : "white",
+							color: errors[field] ? "var(--red-color)" : "var(--text-color)",
+						});
 
 						return (
-							<div key={index} className="grid grid-cols-5 gap-2 items-start">
+							<div key={index} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr auto", gap: "8px", alignItems: "start" }}>
 								{/* from */}
-								<div className="flex flex-col">
+								<div style={{ display: "flex", flexDirection: "column" }}>
 									<input
 										type="number"
 										value={formatValue(rule.from)}
 										onChange={(e) => handleChange(index, "from", e.target.value)}
-										className={getInputClass("from")}
+										style={getInputStyle("from")}
 										placeholder="не задано"
 									/>
-									{errors.from && <span className="text-xs text-red-600 mt-1">{errors.from}</span>}
+									{errors.from && (
+										<span className="errorMessage" style={{ marginTop: "4px" }}>
+											{errors.from}
+										</span>
+									)}
 								</div>
 
 								{/* to */}
-								<div className="flex flex-col">
+								<div style={{ display: "flex", flexDirection: "column" }}>
 									<input
 										type="number"
 										value={formatValue(rule.to)}
 										onChange={(e) => handleChange(index, "to", e.target.value)}
-										className={getInputClass("to")}
+										style={getInputStyle("to")}
 										placeholder="не задано"
 									/>
-									{errors.to && <span className="text-xs text-red-600 mt-1">{errors.to}</span>}
+									{errors.to && (
+										<span className="errorMessage" style={{ marginTop: "4px" }}>
+											{errors.to}
+										</span>
+									)}
 								</div>
 
 								{/* type */}
-								<div className="flex flex-col">
-									<select value={rule.type} onChange={(e) => handleChange(index, "type", e.target.value)} className="border px-2 py-1 rounded text-sm">
+								<div style={{ display: "flex", flexDirection: "column" }}>
+									<select value={rule.type} onChange={(e) => handleChange(index, "type", e.target.value)}>
 										<option value="%">%</option>
 										<option value="₽">₽</option>
 									</select>
 								</div>
 
 								{/* value */}
-								<div className="flex flex-col">
+								<div style={{ display: "flex", flexDirection: "column" }}>
 									<input
 										type="number"
 										value={formatValue(rule.value)}
 										onChange={(e) => handleChange(index, "value", e.target.value)}
-										className={getInputClass("value")}
+										style={getInputStyle("value")}
 										placeholder="наценка"
 									/>
-									{errors.value && <span className="text-xs text-red-600 mt-1">{errors.value}</span>}
+									{errors.value && (
+										<span className="errorMessage" style={{ marginTop: "4px" }}>
+											{errors.value}
+										</span>
+									)}
 								</div>
 
 								{/* delete */}
-								<div className="flex items-center h-full pt-1">
-									<button onClick={() => handleRemove(index)} className="text-red-500 text-xs hover:underline">
+								<div style={{ display: "flex", alignItems: "center", height: "100%", paddingTop: "4px" }}>
+									<button onClick={() => handleRemove(index)} className="removeButton" style={{ fontSize: "12px" }}>
 										Удалить
 									</button>
 								</div>
@@ -138,17 +165,13 @@ export default function MarkupRulesEditor({ rules, setRules, defaultMarkup, setD
 					})}
 				</div>
 
-				<button onClick={handleAdd} className="text-blue-600 text-sm hover:underline mb-4">
+				<button onClick={handleAdd} className="moveButton" style={{ fontSize: "14px", marginBottom: "16px" }}>
 					+ Добавить правило
 				</button>
 
-				<div className="pt-4 border-t border-black/10 mt-4">
-					<label className="font-medium text-sm mr-2">Стандартная наценка:</label>
-					<select
-						value={defaultMarkup.type}
-						onChange={(e) => setDefaultMarkup({ ...defaultMarkup, type: e.target.value as "%" | "₽" })}
-						className="border p-1 rounded mr-2 text-sm"
-					>
+				<div style={{ paddingTop: "16px", borderTop: "1px solid var(--grey-color)", marginTop: "16px" }}>
+					<label style={{ fontWeight: "500", fontSize: "14px", marginRight: "8px" }}>Стандартная наценка:</label>
+					<select value={defaultMarkup.type} onChange={(e) => setDefaultMarkup({ ...defaultMarkup, type: e.target.value as "%" | "₽" })} style={{ marginRight: "8px" }}>
 						<option value="%">%</option>
 						<option value="₽">₽</option>
 					</select>
@@ -156,7 +179,7 @@ export default function MarkupRulesEditor({ rules, setRules, defaultMarkup, setD
 						type="number"
 						value={defaultMarkup.value}
 						onChange={(e) => setDefaultMarkup({ ...defaultMarkup, value: Number(e.target.value) })}
-						className="border p-1 rounded w-24 text-sm"
+						style={{ width: "96px" }}
 					/>
 				</div>
 			</div>

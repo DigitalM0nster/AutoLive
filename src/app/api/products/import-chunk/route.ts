@@ -269,46 +269,14 @@ export const POST = withPermission(
 				});
 			}
 
-			if (logsToCreate.length > 0) {
-				await Promise.all(
-					logsToCreate.map((log) =>
-						prisma.product_log.create({
-							data: {
-								action: log.action,
-								message: log.message,
-								user_snapshot: {
-									id: log.userId,
-									// Дополнительные данные пользователя можно получить отдельным запросом если нужно
-								},
-								department_snapshot: {
-									id: log.departmentId,
-									name: null,
-								},
-								product_snapshot: {
-									id: log.productId,
-									title: log.snapshotAfter?.title || log.snapshotBefore?.title || null,
-									price: log.snapshotAfter?.price || log.snapshotBefore?.price || null,
-									sku: log.snapshotAfter?.sku || log.snapshotBefore?.sku || null,
-									brand: log.snapshotAfter?.brand || log.snapshotBefore?.brand || null,
-								},
-								// Временные поля для совместимости
-								user_id: log.userId,
-								department_id: log.departmentId,
-								product_id: log.productId,
-								snapshot_before: log.snapshotBefore ? JSON.stringify(log.snapshotBefore) : null,
-								snapshot_after: log.snapshotAfter ? JSON.stringify(log.snapshotAfter) : null,
-							},
-						})
-					)
-				);
-			}
-
 			const userDepartment = await prisma.department.findUnique({
 				where: { id: departmentId || undefined },
 				select: { name: true },
 			});
 			const isFinalChunk = chunkIndex + 1 >= totalChunks;
 
+			// Создаем лог импорта сначала, чтобы получить его ID
+			let importLogId: number | null = null;
 			if (isFinalChunk) {
 				const snapshots = [
 					...toCreate.map((p) => ({
@@ -352,7 +320,7 @@ export const POST = withPermission(
 				];
 
 				console.log("🟡 Сохраняем importLog со snapshots:", JSON.stringify(snapshots, null, 2));
-				await prisma.import_log.create({
+				const importLog = await prisma.import_log.create({
 					data: {
 						file_name: `Импорт chunk ${chunkIndex + 1}/${totalChunks}`,
 						created: toCreate.length,
@@ -387,6 +355,44 @@ export const POST = withPermission(
 						snapshots: JSON.stringify(snapshots),
 					},
 				});
+				importLogId = importLog.id;
+			}
+
+			// Создаем логи товаров с ссылкой на лог импорта (только в product_log, НЕ в changeLog)
+			if (logsToCreate.length > 0) {
+				await Promise.all(
+					logsToCreate.map((log) =>
+						prisma.product_log.create({
+							data: {
+								action: log.action,
+								message: log.message,
+								user_snapshot: {
+									id: log.userId,
+									// Дополнительные данные пользователя можно получить отдельным запросом если нужно
+								},
+								department_snapshot: {
+									id: log.departmentId,
+									name: null,
+								},
+								product_snapshot: {
+									id: log.productId,
+									title: log.snapshotAfter?.title || log.snapshotBefore?.title || null,
+									price: log.snapshotAfter?.price || log.snapshotBefore?.price || null,
+									sku: log.snapshotAfter?.sku || log.snapshotBefore?.sku || null,
+									brand: log.snapshotAfter?.brand || log.snapshotBefore?.brand || null,
+								},
+								// Временные поля для совместимости
+								user_id: log.userId,
+								department_id: log.departmentId,
+								product_id: log.productId,
+								snapshot_before: log.snapshotBefore ? JSON.stringify(log.snapshotBefore) : null,
+								snapshot_after: log.snapshotAfter ? JSON.stringify(log.snapshotAfter) : null,
+								// Добавляем ссылку на лог импорта
+								import_log_id: importLogId,
+							},
+						})
+					)
+				);
 			}
 
 			return NextResponse.json({

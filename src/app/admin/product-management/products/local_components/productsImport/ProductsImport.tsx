@@ -16,7 +16,7 @@ type Props = {
 	user: User;
 };
 
-export default function ProductsUpload({ user }: Props) {
+export default function ProductsImport({ user }: Props) {
 	const [file, setFile] = useState<File | null>(null);
 	const [preview, setPreview] = useState<any[][] | null>(null);
 	const [errors, setErrors] = useState<Record<string, string>>({});
@@ -82,29 +82,6 @@ export default function ProductsUpload({ user }: Props) {
 		}
 		return Promise.all(ret);
 	}
-
-	const pagesToShow: (number | "ellipsis")[] = useMemo(() => {
-		if (totalPages <= 1) return [];
-
-		const setPages = new Set<number>();
-		setPages.add(1);
-		setPages.add(totalPages);
-		for (let i = currentPage - 2; i <= currentPage + 2; i++) {
-			if (i > 1 && i < totalPages) setPages.add(i);
-		}
-
-		const sorted = Array.from(setPages).sort((a, b) => a - b);
-		const result: (number | "ellipsis")[] = [];
-		let prev = 0;
-		for (const p of sorted) {
-			if (prev && p > prev + 1) {
-				result.push("ellipsis");
-			}
-			result.push(p);
-			prev = p;
-		}
-		return result;
-	}, [currentPage, totalPages]);
 
 	const parseExcelFile = async (file: File): Promise<any[][]> => {
 		const buffer = await file.arrayBuffer();
@@ -276,108 +253,50 @@ export default function ProductsUpload({ user }: Props) {
 	};
 
 	return (
-		<div className="relative border border-black/10 p-4 mb-6">
-			<h2 className="font-semibold mb-1">Загрузка прайс-листа</h2>
+		<div className="tableContent">
+			<div className="pricelistImportContainer borderBlock">
+				<h2 className="borderBlockHeader">Загрузка прайс-листа</h2>
 
-			<UploadBox
-				file={file}
-				fileInputRef={fileInputRef}
-				setFile={setFile}
-				setPreview={setPreview}
-				setTotalRows={setTotalRows}
-				resetColumns={() => setColumns({ brand: -1, sku: -1, title: -1, description: -1, price: -1, category: -1, image: -1 })}
-				handlePreviewUpload={handlePreviewUpload}
+				<UploadBox
+					file={file}
+					fileInputRef={fileInputRef}
+					setFile={setFile}
+					setPreview={setPreview}
+					setTotalRows={setTotalRows}
+					resetColumns={() => setColumns({ brand: -1, sku: -1, title: -1, description: -1, price: -1, category: -1, image: -1 })}
+					handlePreviewUpload={handlePreviewUpload}
+				/>
+			</div>
+
+			<PreviewTable
+				preview={preview}
+				totalRows={totalRows}
+				columns={columns}
+				setColumns={setColumns}
+				startRow={startRow}
+				setStartRow={setStartRow}
+				currentPage={currentPage}
+				totalPages={totalPages}
+				onPageChange={(page) => {
+					setCurrentPage(page);
+					handlePreviewUpload(file!, page);
+				}}
+				preserveImages={preserveImages}
+				setPreserveImages={setPreserveImages}
+				isSuperadmin={isSuperadmin}
+				selectedDepartmentId={selectedDepartmentId}
+				setSelectedDepartmentId={setSelectedDepartmentId}
+				availableDepartments={availableDepartments}
+				// Передаем функции и данные для блока настроек
+				markupRules={markupRules}
+				setMarkupRules={setMarkupRules}
+				defaultMarkup={defaultMarkup}
+				setDefaultMarkup={setDefaultMarkup}
+				hasMarkupErrors={hasMarkupErrors}
+				setHasMarkupErrors={setHasMarkupErrors}
+				handleImport={handleImport}
+				loading={loading}
 			/>
-
-			{loading ? (
-				<TableSkeleton />
-			) : (
-				preview && (
-					<>
-						<PreviewTable preview={preview} totalRows={totalRows} columns={columns} setColumns={setColumns} startRow={startRow} setStartRow={setStartRow} />
-
-						{isSuperadmin && (
-							<div className="mb-4">
-								<label className="text-sm font-medium">Выберите отдел:</label>
-								<select
-									value={selectedDepartmentId ?? ""}
-									onChange={(e) => setSelectedDepartmentId(Number(e.target.value))}
-									className="border p-1 rounded text-sm mt-1"
-								>
-									<option value="">— Не выбран —</option>
-									{availableDepartments.map((d) => (
-										<option key={d.id} value={d.id}>
-											{d.name}
-										</option>
-									))}
-								</select>
-							</div>
-						)}
-
-						<label className="flex items-center gap-2 text-sm mt-2 mb-4">
-							<input type="checkbox" checked={preserveImages} onChange={(e) => setPreserveImages(e.target.checked)} />
-							<span>Сохранять изображения у уже существующих товаров</span>
-						</label>
-
-						{pagesToShow.length > 0 && (
-							<div className="flex items-center justify-center mt-4 space-x-1">
-								{pagesToShow.map((item, idx) =>
-									item === "ellipsis" ? (
-										<span key={`el${idx}`} className="px-2">
-											…
-										</span>
-									) : (
-										<button
-											key={item}
-											onClick={() => {
-												if (item !== currentPage) {
-													setCurrentPage(item);
-													handlePreviewUpload(file!, item);
-												}
-											}}
-											disabled={item === currentPage}
-											className={`px-2 py-1 rounded transition ${
-												item === currentPage ? "bg-blue-600 text-white" : "bg-gray-200 hover:bg-gray-300 text-black"
-											}`}
-										>
-											{item}
-										</button>
-									)
-								)}
-
-								<span className="ml-4 text-gray-600">
-									Страница {currentPage} из {totalPages}
-								</span>
-							</div>
-						)}
-
-						<MarkupRulesEditor
-							rules={markupRules}
-							setRules={setMarkupRules}
-							defaultMarkup={defaultMarkup}
-							setDefaultMarkup={setDefaultMarkup}
-							onValidationChange={setHasMarkupErrors}
-						/>
-
-						<button
-							className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition disabled:opacity-50"
-							onClick={() => {
-								console.log("columns.category", columns);
-								handleImport();
-							}}
-							disabled={loading || hasMarkupErrors}
-						>
-							{loading ? "Импорт..." : "Импортировать товары"}
-						</button>
-					</>
-				)
-			)}
-			{loading && (
-				<div className="w-full bg-gray-200 rounded mt-3 h-3 overflow-hidden relative">
-					<div className="bg-green-500 h-full transition-all duration-200" style={{ width: `${progress}%` }} />
-					<span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-xs font-medium text-white">{progress}%</span>
-				</div>
-			)}
 		</div>
 	);
 }

@@ -1,7 +1,7 @@
 .pagination {
 	display: flex;
 	gap: 5px;
-	padding: 10px 0px 0px 0px;
+	padding: 0px 0px 0px 0px;
 	align-items: center;
 	justify-content: center;
 	flex-wrap: wrap;
@@ -19,15 +19,76 @@
 		background: transparent;
 		border: 1px solid var(--blue-color);
 		color: var(--blue-color);
+		border-radius: 4px;
+		font-size: 14px;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.2s ease;
 
 		&.active {
 			background: var(--blue-color);
 			color: white;
 		}
 
-		&:hover {
+		&:hover:not(.active) {
 			background: var(--blue-color);
 			color: white;
 		}
+
+		&:disabled {
+			opacity: 0.5;
+			cursor: not-allowed;
+		}
+	}
+
+	.navButton {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		text-align: center;
+		min-width: 40px;
+		width: 40px;
+		max-width: 40px;
+		height: 40px;
+		padding: 0px;
+		background: transparent;
+		border: 1px solid var(--blue-color);
+		color: var(--blue-color);
+		border-radius: 4px;
+		font-size: 18px;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.2s ease;
+
+		&:hover:not(:disabled) {
+			background: var(--blue-color);
+			color: white;
+		}
+
+		&:disabled {
+			opacity: 0.3;
+			cursor: not-allowed;
+		}
+	}
+
+	.dots {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 40px;
+		height: 40px;
+		color: var(--text-color);
+		opacity: 0.6;
+		font-size: 14px;
+		font-weight: 500;
+	}
+
+	.pageInfo {
+		margin-left: 16px;
+		color: var(--text-color);
+		opacity: 0.6;
+		font-size: 14px;
+		font-weight: 500;
+		white-space: nowrap;
 	}
 }

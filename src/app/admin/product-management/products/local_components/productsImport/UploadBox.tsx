@@ -35,32 +35,27 @@ export default function UploadBox({ file, fileInputRef, setFile, setPreview, set
 	};
 
 	return (
-		<div className="space-y-2">
-			<label
-				htmlFor="file-upload"
-				className={`relative flex border-2 border-dashed rounded-md text-center p-6 transition cursor-pointer min-h-[160px] ${
-					file ? "border-green-400 bg-green-50 hover:bg-green-100" : "border-gray-300 hover:bg-gray-50"
-				}`}
-			>
-				<input ref={fileInputRef} type="file" id="file-upload" accept=".xlsx,.xls" className="hidden" onChange={handleFileChange} />
+		<div className="pricelistBlock">
+			<label htmlFor="file-upload" className={file ? "fileSelected" : ""}>
+				<input ref={fileInputRef} type="file" id="file-upload" accept=".xlsx,.xls" style={{ display: "none" }} onChange={handleFileChange} />
 
 				{file ? (
-					<div className="flex flex-col items-center gap-2">
-						<span className="text-3xl">📄</span>
-						<p className="font-medium text-green-700">Выбран файл:</p>
-						<p className="text-sm text-green-800">{file.name}</p>
+					<div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
+						<span style={{ fontSize: "32px" }}>📄</span>
+						<p style={{ fontWeight: "500", color: "var(--dark-green-color)" }}>Выбран файл:</p>
+						<p style={{ fontSize: "14px", color: "var(--dark-green-color)" }}>{file.name}</p>
 					</div>
 				) : (
-					<div className="flex flex-col items-center gap-1">
-						<span className="text-4xl text-gray-400">📁</span>
-						<p className="text-gray-600">Перетащите файл сюда или нажмите для выбора</p>
-						<p className="text-sm text-gray-400">Поддерживаются .xlsx, .xls</p>
+					<div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
+						<span style={{ fontSize: "48px", color: "var(--grey2-color)" }}>📁</span>
+						<p style={{ color: "var(--text-color)", opacity: "0.6" }}>Перетащите файл сюда или нажмите для выбора</p>
+						<p style={{ fontSize: "14px", color: "var(--text-color)", opacity: "0.4" }}>Поддерживаются .xlsx, .xls</p>
 					</div>
 				)}
 			</label>
 
 			{file && (
-				<button onClick={handleClear} type="button" className="text-xs text-red-500 underline hover:text-red-700">
+				<button onClick={handleClear} type="button" className="removeButton">
 					Очистить файл
 				</button>
 			)}

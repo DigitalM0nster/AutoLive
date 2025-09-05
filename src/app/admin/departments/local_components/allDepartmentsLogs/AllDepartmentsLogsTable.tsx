@@ -219,7 +219,7 @@ export default function AllDepartmentsLogsTable({
 								<div className="infoField">
 									<span className="title">Ссылка:</span>
 									<span className="value">
-										<a href={`/admin/departments/${department.id}`} className="userLink">
+										<a href={`/admin/departments/${department.id}`} className="itemLink">
 											{actualName}
 										</a>
 									</span>
@@ -242,7 +242,7 @@ export default function AllDepartmentsLogsTable({
 								<div className="infoField">
 									<span className="title">Ссылка:</span>
 									<span className="value">
-										<a href={`/admin/departments/${department.id}`} className="userLink">
+										<a href={`/admin/departments/${department.id}`} className="itemLink">
 											{actualName}
 										</a>
 									</span>
@@ -338,7 +338,7 @@ export default function AllDepartmentsLogsTable({
 							<div className="infoField">
 								<span className="title maxContent">Профиль:</span>
 								<span className="value">
-									<a href={`/admin/users/${user.id}`} className="userLink">
+									<a href={`/admin/users/${user.id}`} className="itemLink">
 										{actualUser?.last_name || ""} {actualUser?.first_name || ""} {actualUser?.middle_name || ""}
 									</a>
 								</span>
@@ -346,7 +346,7 @@ export default function AllDepartmentsLogsTable({
 						) : (
 							<div className="infoField">
 								<span className="title">Статус:</span>
-								<span className="value deletedUserStatus">Пользователь удален</span>
+								<span className="value deletedItemStatus">Пользователь удален</span>
 							</div>
 						)}
 					</div>

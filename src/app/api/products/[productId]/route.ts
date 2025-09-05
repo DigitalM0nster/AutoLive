@@ -192,35 +192,14 @@ export const PUT = withPermission(
 				},
 			});
 
-			await prisma.product_log.create({
-				data: {
-					action: "update",
-					message: "Товар обновлён",
-					user_snapshot: {
-						id: user.id,
-						first_name: user.first_name,
-						last_name: user.last_name,
-						role: user.role,
-						department: user.departmentId,
-					},
-					department_snapshot: {
-						id: updated.departmentId,
-						name: updatedFull?.department?.name,
-					},
-					product_snapshot: {
-						id: updated.id,
-						title: updatedFull?.title,
-						price: updatedFull?.price,
-						sku: updatedFull?.sku,
-						brand: updatedFull?.brand,
-					},
-					// Временные поля для совместимости
-					user_id: user.id,
-					department_id: updated.departmentId,
-					product_id: updated.id,
-					snapshot_before: JSON.stringify(existing),
-					snapshot_after: JSON.stringify(updatedFull),
-				},
+			// Используем универсальную функцию логирования
+			const { logProductChange } = await import("@/lib/universalLogging");
+			await logProductChange({
+				entityId: updated.id,
+				adminId: user.id,
+				message: "Товар обновлён",
+				beforeData: existing,
+				afterData: updatedFull,
 			});
 
 			return NextResponse.json({ product: updatedFull });
@@ -277,36 +256,14 @@ export const PATCH = withPermission(
 				},
 			});
 
-			// Логируем изменение
-			await prisma.product_log.create({
-				data: {
-					action: "update",
-					message: "Быстрое редактирование товара",
-					user_snapshot: {
-						id: user.id,
-						first_name: user.first_name,
-						last_name: user.last_name,
-						role: user.role,
-						department: user.departmentId,
-					},
-					department_snapshot: {
-						id: updated.departmentId,
-						name: updated.department?.name,
-					},
-					product_snapshot: {
-						id: updated.id,
-						title: updated.title,
-						price: updated.price,
-						sku: updated.sku,
-						brand: updated.brand,
-					},
-					// Временные поля для совместимости
-					user_id: user.id,
-					department_id: updated.departmentId,
-					product_id: updated.id,
-					snapshot_before: JSON.stringify(existing),
-					snapshot_after: JSON.stringify(updated),
-				},
+			// Используем универсальную функцию логирования
+			const { logProductChange } = await import("@/lib/universalLogging");
+			await logProductChange({
+				entityId: updated.id,
+				adminId: user.id,
+				message: "Быстрое редактирование товара",
+				beforeData: existing,
+				afterData: updated,
 			});
 
 			return NextResponse.json({ product: updated });
@@ -346,35 +303,13 @@ export const DELETE = withPermission(
 
 			await prisma.product.delete({ where: { id: productId } });
 
-			// ✅ логируем удаление
-			await prisma.product_log.create({
-				data: {
-					action: "delete",
-					message: "Товар удалён вручную",
-					user_snapshot: {
-						id: user.id,
-						first_name: user.first_name,
-						last_name: user.last_name,
-						role: user.role,
-						department: user.departmentId,
-					},
-					department_snapshot: {
-						id: existing.departmentId,
-						name: null, // Отдел может быть уже удалён
-					},
-					product_snapshot: {
-						id: existing.id,
-						title: existing.title,
-						price: existing.price,
-						sku: existing.sku,
-						brand: existing.brand,
-					},
-					// Временные поля для совместимости
-					user_id: user.id,
-					department_id: existing.departmentId,
-					product_id: existing.id,
-					snapshot_before: JSON.stringify(existing),
-				},
+			// ✅ Используем универсальную функцию логирования
+			const { logProductChange } = await import("@/lib/universalLogging");
+			await logProductChange({
+				entityId: existing.id,
+				adminId: user.id,
+				message: "Товар удалён вручную",
+				beforeData: existing,
 			});
 
 			return NextResponse.json({ success: true });

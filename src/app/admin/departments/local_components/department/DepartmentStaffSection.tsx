@@ -161,7 +161,7 @@ export default function DepartmentStaffSection({
 												</strong>
 												<span className="userPhone">{formatPhoneNumber(admin.phone)}</span>
 											</span>
-											<Link href={`/admin/users/${admin.id}`} className="userLink" target="_blank">
+											<Link href={`/admin/users/${admin.id}`} className="itemLink" target="_blank">
 												Перейти в профиль <img src="/images/linkIcon.svg" alt="переход в профиль" />
 											</Link>
 										</div>
@@ -201,7 +201,7 @@ export default function DepartmentStaffSection({
 												</strong>
 												<span className="userPhone">{formatPhoneNumber(manager.phone)}</span>
 											</span>
-											<Link href={`/admin/users/${manager.id}`} className="userLink" target="_blank">
+											<Link href={`/admin/users/${manager.id}`} className="itemLink" target="_blank">
 												Перейти в профиль <img src="/images/linkIcon.svg" alt="переход в профиль" />
 											</Link>
 										</div>

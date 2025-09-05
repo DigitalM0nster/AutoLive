@@ -8,7 +8,12 @@ const ProductsPage = () => {
 		<div className={`screenContent ${styles.screenContent}`}>
 			<div className={`tableContainer`}>
 				<div className={`tabsContainer ${styles.tabsContainer}`}>
-					<div className={`tabButton active`}>Список товаров</div>
+					<Link href="/admin/product-management/products/" className={`tabButton active`}>
+						Список товаров
+					</Link>
+					<Link href="/admin/product-management/products/import" className={`tabButton`}>
+						Импорт товаров
+					</Link>
 					<Link href="/admin/product-management/products/logs" className={`tabButton`}>
 						История изменений
 					</Link>

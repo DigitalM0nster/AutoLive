@@ -1,10 +1,10 @@
-// src\app\admin\product-management\products\upload\page.tsx
+// src\app\admin\product-management\products\import\page.tsx
 
 "use client";
 
 import { useAuthStore } from "@/store/authStore";
 import Link from "next/link";
-import ProductsUpload from "../local_components/productsUpload/ProductsUpload";
+import ProductsImport from "../local_components/productsImport/ProductsImport";
 
 export default function ProductsUploadPage() {
 	const { user } = useAuthStore();
@@ -17,6 +17,9 @@ export default function ProductsUploadPage() {
 					<div className="tabsContainer">
 						<Link href="/admin/product-management/products" className={`tabButton`}>
 							Список товаров
+						</Link>
+						<Link href="/admin/product-management/products/import" className={`tabButton active`}>
+							Импорт товаров
 						</Link>
 						<Link href="/admin/product-management/products/logs" className={`tabButton`}>
 							История действий
@@ -35,16 +38,14 @@ export default function ProductsUploadPage() {
 					<Link href="/admin/product-management/products" className={`tabButton`}>
 						Список товаров
 					</Link>
-					{user?.role !== "manager" && (
-						<Link href="/admin/product-management/products/upload" className={`tabButton active`}>
-							Загрузка товаров
-						</Link>
-					)}
+					<Link href="/admin/product-management/products/import" className={`tabButton active`}>
+						Импорт товаров
+					</Link>
 					<Link href="/admin/product-management/products/logs" className={`tabButton`}>
-						История действий
+						История изменений
 					</Link>
 				</div>
-				<ProductsUpload user={user} />
+				<ProductsImport user={user} />
 			</div>
 		</div>
 	);

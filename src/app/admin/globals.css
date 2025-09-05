@@ -221,30 +221,6 @@ a.button.disabled {
 .tableContainer .tabsContainer .tabButton:hover {
   background: var(--grey2-color);
 }
-.tableContainer .tabsContainer .tabButton:nth-child(1) {
-  border-radius: 10px 0px 0px 0px;
-  margin: 0px -10px 0px 0px;
-  padding: 10px 35px 10px 25px;
-  z-index: 0;
-}
-.tableContainer .tabsContainer .tabButton:nth-child(1).active {
-  padding: 10px 25px 10px 25px;
-  border-radius: 10px 10px 0px 0px;
-  left: 0px;
-  z-index: 1;
-}
-.tableContainer .tabsContainer .tabButton:nth-child(2) {
-  padding: 10px 25px 10px 35px;
-  border-radius: 0px 10px 0px 0px;
-  left: -10px;
-  z-index: 0;
-}
-.tableContainer .tabsContainer .tabButton:nth-child(2).active {
-  padding: 10px 25px 10px 25px;
-  border-radius: 10px 10px 0px 0px;
-  left: 0px;
-  z-index: 1;
-}
 .tableContainer .tabsContainer .tabTitle {
   font-size: 24px;
   font-weight: 700;
@@ -515,6 +491,9 @@ input.error::placeholder {
   color: var(--red-color);
   opacity: 0.5;
 }
+input[type=checkbox] {
+  cursor: pointer;
+}
 
 select {
   font-family: "Manrope";
@@ -522,6 +501,7 @@ select {
   padding: 5px 8px;
   border: 1px solid var(--grey-color);
   border-radius: 5px;
+  cursor: pointer;
 }
 select:focus {
   outline: none;
@@ -702,19 +682,19 @@ textarea.error::placeholder {
   font-size: 14px;
   opacity: 0.5;
 }
-.staffList .userItem .userLink,
-.staffList .userItem a.userLink {
+.staffList .userItem .itemLink,
+.staffList .userItem a.itemLink {
   display: flex;
   align-items: center;
   gap: 5px;
   color: var(--text-color);
 }
-.staffList .userItem .userLink:visited,
-.staffList .userItem a.userLink:visited {
+.staffList .userItem .itemLink:visited,
+.staffList .userItem a.itemLink:visited {
   color: var(--text-color);
 }
-.staffList .userItem .userLink img,
-.staffList .userItem a.userLink img {
+.staffList .userItem .itemLink img,
+.staffList .userItem a.itemLink img {
   width: 14px;
   height: 14px;
   fill: var(--blue-color);
@@ -903,8 +883,9 @@ textarea.error::placeholder {
   align-items: center;
   text-align: center;
   min-width: 40px;
-  width: 40px;
-  max-width: 40px;
+  width: -moz-fit-content;
+  width: fit-content;
+  max-width: unset;
   height: 40px;
   background: transparent;
   border: 1px solid var(--blue-color);
@@ -1015,6 +996,10 @@ table thead,
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   border-bottom: 2px solid #e2e8f0;
 }
+table thead.centerTableHeader th,
+.table thead.centerTableHeader th {
+  vertical-align: middle;
+}
 table thead th,
 .table thead th {
   padding: 16px 12px;
@@ -1023,7 +1008,7 @@ table thead th,
   font-size: 14px;
   color: #374151;
   border-bottom: 1px solid #e2e8f0;
-  vertical-align: center;
+  vertical-align: bottom;
   transition: all 0.2s ease;
 }
 table thead th.sortableHeader,
@@ -1146,18 +1131,6 @@ table tbody tr td.imageCell,
   width: 130px;
   text-align: center;
 }
-table tbody tr td .userLink,
-.table tbody tr td .userLink {
-  color: #3b82f6;
-  text-decoration: none;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-table tbody tr td .userLink:hover,
-.table tbody tr td .userLink:hover {
-  color: #1d4ed8;
-  text-decoration: underline;
-}
 table tbody tr td .departmentLink,
 table tbody tr td a.departmentLink,
 .table tbody tr td .departmentLink,
@@ -1185,8 +1158,41 @@ table tbody tr td .date,
 }
 table tbody tr td .image,
 .table tbody tr td .image {
-  width: 45px;
-  height: 45px;
+  width: 50px;
+  height: 50px;
+  -o-object-fit: cover;
+     object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+table tbody tr td .image:hover,
+.table tbody tr td .image:hover {
+  transform: scale(1.1);
+}
+table tbody tr td .noImage,
+.table tbody tr td .noImage {
+  width: 50px;
+  height: 50px;
+  background: var(--light-grey-color);
+  border: 1px dashed var(--grey2-color);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: var(--grey2-color);
+  text-align: center;
+}
+table tbody tr td input,
+.table tbody tr td input {
+  width: calc(100% - 16px);
+}
+table tbody tr td textarea,
+.table tbody tr td textarea {
+  padding: 6px 8px;
+  width: calc(100% - 16px);
 }
 table tbody .dateCell,
 .table tbody .dateCell {
@@ -1312,6 +1318,9 @@ table .fullInfoBlock .clickInfoBlock:after,
   content: "подробнее";
   display: flex;
   position: relative;
+  width: -moz-max-content;
+  width: max-content;
+  white-space: nowrap;
   font-size: 10px;
   text-transform: uppercase;
   color: var(--text-color);
@@ -1510,6 +1519,12 @@ table tr td .category:last-child,
 .table tr td .category:last-child {
   margin: 2px 0px 2px 2px;
 }
+table .deletedItemStatus,
+.table .deletedItemStatus {
+  color: #dc3545;
+  font-weight: 500;
+  font-style: italic;
+}
 
 form {
   display: flex;
@@ -1597,6 +1612,373 @@ span.oldName:after {
   border-radius: 20px;
   background-color: var(--green-color);
   color: var(--dark-green-color);
+}
+
+.pricelistBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pricelistBlock label {
+  position: relative;
+  display: flex;
+  border: 2px dashed;
+  border-radius: 12px;
+  text-align: center;
+  padding: 32px 24px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  min-height: 180px;
+  align-items: center;
+  justify-content: center;
+  border-color: var(--grey-color);
+  background: linear-gradient(135deg, rgba(248, 249, 250, 0.5) 0%, rgba(255, 255, 255, 0.8) 100%);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+.pricelistBlock label:hover {
+  border-color: var(--blue-color);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(255, 255, 255, 0.9) 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.15);
+}
+.pricelistBlock label.fileSelected {
+  border-color: var(--green-color);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(255, 255, 255, 0.9) 100%);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+.pricelistBlock label.fileSelected:hover {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(255, 255, 255, 0.95) 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.25);
+}
+.pricelistBlock label div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.pricelistBlock label div span {
+  font-size: 48px;
+  opacity: 0.7;
+  transition: all 0.3s ease;
+}
+.pricelistBlock label div p {
+  margin: 0;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+.pricelistBlock label div p:first-of-type {
+  font-size: 18px;
+  color: var(--text-color);
+}
+.pricelistBlock label div p:last-of-type {
+  font-size: 14px;
+  color: var(--text-color);
+  opacity: 0.6;
+}
+.pricelistBlock label.fileSelected div span {
+  font-size: 40px;
+  opacity: 1;
+}
+.pricelistBlock label.fileSelected div p:first-of-type {
+  color: var(--dark-green-color);
+  font-weight: 600;
+}
+.pricelistBlock label.fileSelected div p:last-of-type {
+  color: var(--dark-green-color);
+  opacity: 0.8;
+}
+.pricelistBlock .removeButton {
+  align-self: flex-start;
+  font-size: 12px;
+  padding: 6px 12px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 6px;
+  color: var(--red-color);
+  transition: all 0.2s ease;
+}
+.pricelistBlock .removeButton:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: var(--red-color);
+  transform: translateY(-1px);
+}
+
+.pricelistPreviewContainer {
+  display: flex;
+  flex-direction: column;
+  overflow-x: auto;
+  gap: 10px;
+}
+.pricelistPreviewContainer .pricelsitSettingsBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, var(--light-grey-color) 0%, rgba(255, 255, 255, 0.8) 100%);
+  border-radius: 8px;
+  border: 1px solid var(--grey-color);
+}
+.pricelistPreviewContainer .pricelsitSettingsBlock .settingsList {
+  display: flex;
+  gap: 30px;
+}
+.pricelistPreviewContainer .pricelsitSettingsBlock .settingsList .settingItem {
+  align-items: center;
+  display: flex;
+  gap: 5px;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid var(--grey-color);
+}
+.pricelistPreviewContainer .pricelsitSettingsBlock .settingsList .settingItem input[type=checkbox] {
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
+}
+.pricelistPreviewContainer .pricelsitSettingsBlock label {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-color);
+  vertical-align: middle;
+  gap: 10px;
+}
+.pricelistPreviewContainer .pricelsitSettingsBlock label.checkboxLabel {
+  cursor: pointer;
+}
+.pricelistPreviewContainer .pricelsitSettingsBlock input {
+  width: 80px;
+  font-size: 14px;
+  background: white;
+}
+.pricelistPreviewContainer .pricelsitSettingsBlock input:focus {
+  border-color: var(--blue-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+.pricelistPreviewContainer table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+.pricelistPreviewContainer table thead {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 2px solid var(--light-grey2-color);
+}
+.pricelistPreviewContainer table thead th {
+  padding: 12px 8px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text-color);
+  border-right: 1px solid var(--light-grey2-color);
+  position: relative;
+}
+.pricelistPreviewContainer table thead th:first-child {
+  width: 50px;
+  background: linear-gradient(135deg, var(--light-grey-color) 0%, #f1f5f9 100%);
+  font-size: 11px;
+  color: var(--text-color);
+  opacity: 0.7;
+}
+.pricelistPreviewContainer table thead th:not(:first-child) {
+  width: 120px;
+  min-width: 120px;
+}
+.pricelistPreviewContainer table thead th:not(:first-child) div {
+  font-size: 11px;
+  color: var(--text-color);
+  opacity: 0.6;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+.pricelistPreviewContainer table thead th:not(:first-child) select {
+  width: 100%;
+  font-size: 12px;
+  padding: 6px 8px;
+  border: 1px solid var(--grey-color);
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.pricelistPreviewContainer table thead th:not(:first-child) select:focus {
+  border-color: var(--blue-color);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+.pricelistPreviewContainer table thead th:not(:first-child) select:hover {
+  border-color: var(--blue-color);
+}
+.pricelistPreviewContainer table thead th:last-child {
+  border-right: none;
+}
+.pricelistPreviewContainer table tbody tr {
+  transition: all 0.2s ease;
+  border-bottom: 1px solid #f3f4f6;
+}
+.pricelistPreviewContainer table tbody tr:hover {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(255, 255, 255, 0.8) 100%);
+}
+.pricelistPreviewContainer table tbody tr:last-child {
+  border-bottom: none;
+}
+.pricelistPreviewContainer table tbody tr td {
+  padding: 8px;
+  font-size: 12px;
+  color: var(--text-color);
+  vertical-align: middle;
+  border-right: 1px solid #f3f4f6;
+  transition: all 0.2s ease;
+}
+.pricelistPreviewContainer table tbody tr td:first-child {
+  text-align: center;
+  font-family: "Courier New", monospace;
+  font-weight: 600;
+  background: var(--light-grey-color);
+  color: var(--text-color);
+  opacity: 0.8;
+  border-right: 2px solid var(--grey-color);
+}
+.pricelistPreviewContainer table tbody tr td:not(:first-child) {
+  text-align: left;
+  word-break: break-word;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pricelistPreviewContainer table tbody tr td:last-child {
+  border-right: none;
+}
+.pricelistPreviewContainer tbody tr[style*="rgba(59, 130, 246, 0.1)"] {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(255, 255, 255, 0.9) 100%) !important;
+  border: 2px solid var(--blue-color);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+}
+.pricelistPreviewContainer tbody tr[style*="rgba(59, 130, 246, 0.1)"] td:first-child {
+  background: var(--blue-color);
+  color: white;
+  font-weight: 700;
+}
+.pricelistPreviewContainer td[style*="rgba(16, 185, 129, 0.1)"] {
+  background: rgba(16, 185, 129, 0.1) !important;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.pricelistPreviewContainer td[style*="rgba(16, 185, 129, 0.2)"] {
+  background: rgba(16, 185, 129, 0.2) !important;
+  border: 2px solid var(--green-color);
+  font-weight: 600;
+}
+.pricelistPreviewContainer .pricelistPreviewFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, var(--light-grey-color) 0%, rgba(255, 255, 255, 0.8) 100%);
+  border-radius: 8px;
+  border: 1px solid var(--grey-color);
+  gap: 20px;
+}
+.pricelistPreviewContainer .pricelistPreviewFooter .pricelistPreviewTotalRows {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-color);
+  opacity: 0.8;
+}
+.pricelistPreviewContainer .pricelistPreviewFooter .pagination {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pricelistPreviewContainer .pricelistPreviewFooter .pagination button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  min-width: 36px;
+  width: -moz-fit-content;
+  width: fit-content;
+  max-width: unset;
+  height: 36px;
+  background: white;
+  border: 1px solid var(--blue-color);
+  color: var(--blue-color);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+.pricelistPreviewContainer .pricelistPreviewFooter .pagination button.active {
+  background: var(--blue-color);
+  color: white;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+.pricelistPreviewContainer .pricelistPreviewFooter .pagination button:hover:not(.active) {
+  background: var(--blue-color);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.2);
+}
+.pricelistPreviewContainer .pricelistPreviewFooter .pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.pricelistPreviewContainer .pricelistPreviewFooter .pagination span {
+  font-size: 12px;
+  color: var(--text-color);
+  opacity: 0.6;
+  font-weight: 500;
+}
+
+.pricelistSettingsBlock {
+  margin-top: 20px;
+}
+.pricelistSettingsBlock .borderBlockHeader {
+  margin-bottom: 20px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-color);
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--light-grey-color);
+}
+.pricelistSettingsBlock .detailsList {
+  margin-bottom: 24px;
+}
+.pricelistSettingsBlock .detailsList .detailItem.noBorder {
+  border: none;
+  padding: 8px 0;
+}
+.pricelistSettingsBlock .detailsList .detailItem.noBorder .label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-color);
+  cursor: pointer;
+}
+.pricelistSettingsBlock .detailsList .detailItem.noBorder .label input[type=checkbox] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--blue-color);
+  cursor: pointer;
+}
+.pricelistSettingsBlock .acceptButton {
+  width: 100%;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 16px 24px;
+  margin-top: 8px;
 }
 
 @media (max-width: 1680px) {

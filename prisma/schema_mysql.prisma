@@ -231,14 +231,6 @@ model ServiceKitItem {
     @@map("service_kit_item")
 }
 
-model drizzle_migrations {
-    id         BigInt  @id @default(autoincrement()) @db.UnsignedBigInt
-    hash       String  @db.Text
-    created_at BigInt?
-
-    @@map("__drizzle_migrations")
-}
-
 model bulk_action_log {
     id            Int      @id @default(autoincrement())
     user_id       Int?

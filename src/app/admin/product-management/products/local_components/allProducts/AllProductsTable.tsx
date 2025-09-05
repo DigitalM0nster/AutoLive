@@ -305,13 +305,13 @@ export default function AllProductsTable() {
 				onResetFilters={resetFilters}
 				searchValue={search}
 				onSearchChange={setSearch}
-				searchPlaceholder="Поиск по названию, SKU или бренду..."
+				searchPlaceholder="Поиск по названию, SKU, бренду или ID..."
 				showSearch={true}
 			/>
 
 			<div className={styles.tableContainer}>
-				<table className={styles.table}>
-					<thead className={styles.tableHeader}>
+				<table>
+					<thead className={`centerTableHeader`}>
 						<tr>
 							<th
 								className={`${styles.tableHeaderCell} idCell sortableHeader ${sortBy === "id" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
@@ -424,7 +424,7 @@ export default function AllProductsTable() {
 									searchPlaceholder="Поиск по бренду..."
 								/>
 							</th>
-							{user?.role === "superadmin" && <th className={styles.tableHeaderCell}>Действия</th>}
+							<th className={styles.tableHeaderCell}>Действия</th>
 						</tr>
 					</thead>
 					<tbody className={styles.tableBody}>
@@ -445,68 +445,45 @@ export default function AllProductsTable() {
 								const isEditing = editingProduct === product.id;
 
 								return (
-									<tr key={product.id} className={styles.tableRow}>
-										<td className={`idCell ${styles.tableCell}`}>{product.id}</td>
-										<td className={styles.tableCell}>
+									<tr key={product.id}>
+										<td className={`idCell`}>{product.id}</td>
+										<td>
 											{isEditing ? (
-												<input
-													type="text"
-													value={editForm.title}
-													onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-													className={styles.editInput}
-												/>
+												<input type="text" value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} />
 											) : (
-												<Link href={`/admin/product-management/products/${product.id}`} className={styles.productLink}>
+												<Link href={`/admin/product-management/products/${product.id}`} className={`itemLink`}>
 													{product.title || "—"}
 												</Link>
 											)}
 										</td>
-										<td className={styles.tableCell}>
+										<td>
 											{isEditing ? (
-												<input
-													type="text"
-													value={editForm.sku}
-													onChange={(e) => setEditForm({ ...editForm, sku: e.target.value })}
-													className={styles.editInput}
-												/>
+												<input type="text" value={editForm.sku} onChange={(e) => setEditForm({ ...editForm, sku: e.target.value })} />
 											) : (
 												product.sku
 											)}
 										</td>
-										<td className={styles.tableCell}>
+										<td>
 											{isEditing ? (
-												<input
-													type="number"
-													value={editForm.price}
-													onChange={(e) => setEditForm({ ...editForm, price: e.target.value })}
-													className={styles.editInput}
-													step="0.01"
-												/>
+												<input type="number" value={editForm.price} onChange={(e) => setEditForm({ ...editForm, price: e.target.value })} step="0.01" />
 											) : (
 												`${product.price} ₽`
 											)}
 										</td>
-										<td className={styles.tableCell}>
-											{product.image ? (
-												<img src={product.image} alt={product.title} className={styles.productImage} />
-											) : (
-												<div className={styles.noImage}>Нет фото</div>
-											)}
-										</td>
-										<td className={styles.tableCell}>
+										<td>{product.image ? <img src={product.image} alt={product.title} className={`image`} /> : <div className={`noImage`}>Нет фото</div>}</td>
+										<td>
 											{isEditing ? (
 												<textarea
 													value={editForm.description}
 													onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-													className={styles.editTextarea}
 													rows={3}
 													placeholder="Описание товара..."
 												/>
 											) : (
-												<div className={styles.descriptionCell}>
+												<div className={`description`}>
 													{product.description ? (
 														<>
-															<div className={styles.descriptionPreview}>
+															<div className={`descriptionPreview`}>
 																{product.description.length > 50 ? `${product.description.substring(0, 50)}...` : product.description}
 															</div>
 															{product.description.length > 50 && (
@@ -522,54 +499,38 @@ export default function AllProductsTable() {
 												</div>
 											)}
 										</td>
-										<td className={styles.tableCell}>
-											{product.category ? (
-												<Link href={`/admin/categories/${product.category.id}`} className={styles.categoryLink}>
-													{product.category.title}
-												</Link>
-											) : (
-												"—"
-											)}
-										</td>
-										<td className={styles.tableCell}>
-											{product.department ? (
-												<Link href={`/admin/departments/${product.department.id}`} className={styles.departmentLink}>
-													{product.department.name}
-												</Link>
-											) : (
-												"—"
-											)}
-										</td>
-										<td className={styles.tableCell}>
+										<td>{product.category ? <Link href={`/admin/categories/${product.category.id}`}>{product.category.title}</Link> : "—"}</td>
+										<td>{product.department ? <Link href={`/admin/departments/${product.department.id}`}>{product.department.name}</Link> : "—"}</td>
+										<td>
 											{isEditing ? (
-												<input
-													type="text"
-													value={editForm.brand}
-													onChange={(e) => setEditForm({ ...editForm, brand: e.target.value })}
-													className={styles.editInput}
-												/>
+												<input type="text" value={editForm.brand} onChange={(e) => setEditForm({ ...editForm, brand: e.target.value })} />
 											) : (
 												product.brand
 											)}
 										</td>
-										{user?.role === "superadmin" && (
-											<td className={styles.tableCell}>
-												{isEditing ? (
-													<div className={styles.editActions}>
-														<button onClick={() => saveProduct(product.id)} className={styles.saveButton} title="Сохранить">
-															💾
-														</button>
-														<button onClick={cancelEditing} className={styles.cancelButton} title="Отменить">
-															❌
-														</button>
-													</div>
-												) : (
-													<button onClick={() => startEditing(product)} className={styles.editButton} title="Редактировать">
-														✏️
+										<td>
+											{isEditing ? (
+												<div className={styles.editActions}>
+													<button onClick={() => saveProduct(product.id)} title="Сохранить">
+														💾
 													</button>
-												)}
-											</td>
-										)}
+													<button onClick={cancelEditing} title="Отменить">
+														❌
+													</button>
+												</div>
+											) : (
+												<div className={`actionButtons`}>
+													{user?.role === "superadmin" && (
+														<button onClick={() => startEditing(product)} title="Редактировать">
+															✏️
+														</button>
+													)}
+													<Link href={`/admin/product-management/products/${product.id}/logs`} title="Логи">
+														📋
+													</Link>
+												</div>
+											)}
+										</td>
 									</tr>
 								);
 							})

@@ -319,7 +319,7 @@ export default function AllUsersTable() {
 									<tr key={u.id} className={styles.tableRow}>
 										<td className={`idCell ${styles.tableCell}`}>{u.id}</td>
 										<td className={styles.tableCell}>
-											<a href={`/admin/users/${u.id}`} className={styles.userLink}>
+											<a href={`/admin/users/${u.id}`} className="itemLink">
 												{`${u.last_name ?? ""} ${u.first_name ?? ""} ${u.middle_name ?? ""}`.trim() || "—"}
 											</a>
 										</td>

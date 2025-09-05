@@ -211,34 +211,6 @@ a.button {
 			&:hover {
 				background: var(--grey2-color);
 			}
-
-			&:nth-child(1) {
-				border-radius: 10px 0px 0px 0px;
-				margin: 0px -10px 0px 0px;
-				padding: 10px 35px 10px 25px;
-				z-index: 0;
-
-				&.active {
-					padding: 10px 25px 10px 25px;
-					border-radius: 10px 10px 0px 0px;
-					left: 0px;
-					z-index: 1;
-				}
-			}
-
-			&:nth-child(2) {
-				padding: 10px 25px 10px 35px;
-				border-radius: 0px 10px 0px 0px;
-				left: -10px;
-				z-index: 0;
-
-				&.active {
-					padding: 10px 25px 10px 25px;
-					border-radius: 10px 10px 0px 0px;
-					left: 0px;
-					z-index: 1;
-				}
-			}
 		}
 
 		.tabTitle {
@@ -520,6 +492,10 @@ input {
 			opacity: 0.5;
 		}
 	}
+
+	&[type="checkbox"] {
+		cursor: pointer;
+	}
 }
 
 select {
@@ -528,6 +504,7 @@ select {
 	padding: 5px 8px;
 	border: 1px solid var(--grey-color);
 	border-radius: 5px;
+	cursor: pointer;
 
 	&:focus {
 		outline: none;
@@ -730,8 +707,8 @@ textarea {
 				}
 			}
 		}
-		.userLink,
-		a.userLink {
+		.itemLink,
+		a.itemLink {
 			display: flex;
 			align-items: center;
 			gap: 5px;
@@ -947,8 +924,8 @@ textarea {
 		align-items: center;
 		text-align: center;
 		min-width: 40px;
-		width: 40px;
-		max-width: 40px;
+		width: fit-content;
+		max-width: unset;
 		height: 40px;
 		background: transparent;
 		border: 1px solid var(--blue-color);
@@ -1061,6 +1038,12 @@ table,
 		background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
 		border-bottom: 2px solid #e2e8f0;
 
+		&.centerTableHeader {
+			th {
+				vertical-align: middle;
+			}
+		}
+
 		th {
 			padding: 16px 12px;
 			text-align: left;
@@ -1068,7 +1051,7 @@ table,
 			font-size: 14px;
 			color: #374151;
 			border-bottom: 1px solid #e2e8f0;
-			vertical-align: center;
+			vertical-align: bottom;
 			transition: all 0.2s ease;
 
 			&.sortableHeader {
@@ -1204,18 +1187,6 @@ table,
 					text-align: center;
 				}
 
-				.userLink {
-					color: #3b82f6;
-					text-decoration: none;
-					font-weight: 500;
-					transition: all 0.2s ease;
-
-					&:hover {
-						color: #1d4ed8;
-						text-decoration: underline;
-					}
-				}
-
 				.departmentLink,
 				a.departmentLink {
 					position: relative;
@@ -1240,9 +1211,43 @@ table,
 					padding: 10px 0px;
 				}
 
+				// Изображения товаров
 				.image {
-					width: 45px;
-					height: 45px;
+					width: 50px;
+					height: 50px;
+					object-fit: cover;
+					border-radius: 4px;
+					border: 1px solid #e0e0e0;
+					cursor: pointer;
+					transition: transform 0.2s;
+
+					&:hover {
+						transform: scale(1.1);
+					}
+				}
+
+				// Заглушка для отсутствующего изображения
+				.noImage {
+					width: 50px;
+					height: 50px;
+					background: var(--light-grey-color);
+					border: 1px dashed var(--grey2-color);
+					border-radius: 4px;
+					display: flex;
+					align-items: center;
+					justify-content: center;
+					font-size: 10px;
+					color: var(--grey2-color);
+					text-align: center;
+				}
+
+				input {
+					width: calc(100% - 16px);
+				}
+
+				textarea {
+					padding: 6px 8px;
+					width: calc(100% - 16px);
 				}
 			}
 		}
@@ -1347,6 +1352,8 @@ table,
 				content: "подробнее";
 				display: flex;
 				position: relative;
+				width: max-content;
+				white-space: nowrap;
 				font-size: 10px;
 				text-transform: uppercase;
 				color: var(--text-color);
@@ -1545,6 +1552,12 @@ table,
 			}
 		}
 	}
+
+	.deletedItemStatus {
+		color: #dc3545;
+		font-weight: 500;
+		font-style: italic;
+	}
 }
 
 form {
@@ -1646,6 +1659,439 @@ span {
 	border-radius: 20px;
 	background-color: var(--green-color);
 	color: var(--dark-green-color);
+}
+
+// Стили для импорта прайс-листа
+.pricelistBlock {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+
+	label {
+		position: relative;
+		display: flex;
+		border: 2px dashed;
+		border-radius: 12px;
+		text-align: center;
+		padding: 32px 24px;
+		transition: all 0.3s ease;
+		cursor: pointer;
+		min-height: 180px;
+		align-items: center;
+		justify-content: center;
+		border-color: var(--grey-color);
+		background: linear-gradient(135deg, rgba(248, 249, 250, 0.5) 0%, rgba(255, 255, 255, 0.8) 100%);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+
+		&:hover {
+			border-color: var(--blue-color);
+			background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(255, 255, 255, 0.9) 100%);
+			transform: translateY(-2px);
+			box-shadow: 0 8px 20px rgba(59, 130, 246, 0.15);
+		}
+
+		&.fileSelected {
+			border-color: var(--green-color);
+			background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(255, 255, 255, 0.9) 100%);
+			box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+
+			&:hover {
+				background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(255, 255, 255, 0.95) 100%);
+				transform: translateY(-2px);
+				box-shadow: 0 8px 20px rgba(16, 185, 129, 0.25);
+			}
+		}
+
+		div {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			gap: 12px;
+
+			span {
+				font-size: 48px;
+				opacity: 0.7;
+				transition: all 0.3s ease;
+			}
+
+			p {
+				margin: 0;
+				font-weight: 500;
+				transition: all 0.3s ease;
+			}
+
+			p:first-of-type {
+				font-size: 18px;
+				color: var(--text-color);
+			}
+
+			p:last-of-type {
+				font-size: 14px;
+				color: var(--text-color);
+				opacity: 0.6;
+			}
+		}
+
+		&.fileSelected div {
+			span {
+				font-size: 40px;
+				opacity: 1;
+			}
+
+			p:first-of-type {
+				color: var(--dark-green-color);
+				font-weight: 600;
+			}
+
+			p:last-of-type {
+				color: var(--dark-green-color);
+				opacity: 0.8;
+			}
+		}
+	}
+
+	.removeButton {
+		align-self: flex-start;
+		font-size: 12px;
+		padding: 6px 12px;
+		background: rgba(239, 68, 68, 0.1);
+		border: 1px solid rgba(239, 68, 68, 0.3);
+		border-radius: 6px;
+		color: var(--red-color);
+		transition: all 0.2s ease;
+
+		&:hover {
+			background: rgba(239, 68, 68, 0.2);
+			border-color: var(--red-color);
+			transform: translateY(-1px);
+		}
+	}
+}
+
+.pricelistPreviewContainer {
+	display: flex;
+	flex-direction: column;
+	overflow-x: auto;
+	gap: 10px;
+
+	.pricelsitSettingsBlock {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 12px;
+		margin: 0;
+		padding: 12px 16px;
+		background: linear-gradient(135deg, var(--light-grey-color) 0%, rgba(255, 255, 255, 0.8) 100%);
+		border-radius: 8px;
+		border: 1px solid var(--grey-color);
+
+		.settingsList {
+			display: flex;
+			gap: 30px;
+
+			.settingItem {
+				align-items: center;
+				display: flex;
+				gap: 5px;
+				padding: 10px;
+				border-radius: 5px;
+				border: 1px solid var(--grey-color);
+
+				input[type="checkbox"] {
+					width: 20px;
+					height: 20px;
+					font-size: 20px;
+				}
+			}
+		}
+
+		label {
+			display: flex;
+			align-items: center;
+			font-size: 14px;
+			font-weight: 600;
+			color: var(--text-color);
+			vertical-align: middle;
+			gap: 10px;
+
+			&.checkboxLabel {
+				cursor: pointer;
+			}
+		}
+
+		input {
+			width: 80px;
+			font-size: 14px;
+			background: white;
+
+			&:focus {
+				border-color: var(--blue-color);
+				box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+			}
+		}
+	}
+
+	table {
+		width: 100%;
+		border-collapse: separate;
+		border-spacing: 0;
+		background: white;
+		border-radius: 8px;
+		overflow: hidden;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+		thead {
+			background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+			border-bottom: 2px solid var(--light-grey2-color);
+
+			th {
+				padding: 12px 8px;
+				text-align: center;
+				font-weight: 600;
+				font-size: 12px;
+				color: var(--text-color);
+				border-right: 1px solid var(--light-grey2-color);
+				position: relative;
+
+				&:first-child {
+					width: 50px;
+					background: linear-gradient(135deg, var(--light-grey-color) 0%, #f1f5f9 100%);
+					font-size: 11px;
+					color: var(--text-color);
+					opacity: 0.7;
+				}
+
+				&:not(:first-child) {
+					width: 120px;
+					min-width: 120px;
+
+					div {
+						font-size: 11px;
+						color: var(--text-color);
+						opacity: 0.6;
+						margin-bottom: 6px;
+						font-weight: 500;
+					}
+
+					select {
+						width: 100%;
+						font-size: 12px;
+						padding: 6px 8px;
+						border: 1px solid var(--grey-color);
+						border-radius: 4px;
+						background: white;
+						cursor: pointer;
+						transition: all 0.2s ease;
+
+						&:focus {
+							border-color: var(--blue-color);
+							box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+						}
+
+						&:hover {
+							border-color: var(--blue-color);
+						}
+					}
+				}
+
+				&:last-child {
+					border-right: none;
+				}
+			}
+		}
+
+		tbody {
+			tr {
+				transition: all 0.2s ease;
+				border-bottom: 1px solid #f3f4f6;
+
+				&:hover {
+					background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(255, 255, 255, 0.8) 100%);
+				}
+
+				&:last-child {
+					border-bottom: none;
+				}
+
+				td {
+					padding: 8px;
+					font-size: 12px;
+					color: var(--text-color);
+					vertical-align: middle;
+					border-right: 1px solid #f3f4f6;
+					transition: all 0.2s ease;
+
+					&:first-child {
+						text-align: center;
+						font-family: "Courier New", monospace;
+						font-weight: 600;
+						background: var(--light-grey-color);
+						color: var(--text-color);
+						opacity: 0.8;
+						border-right: 2px solid var(--grey-color);
+					}
+
+					&:not(:first-child) {
+						text-align: left;
+						word-break: break-word;
+						max-width: 120px;
+						overflow: hidden;
+						text-overflow: ellipsis;
+						white-space: nowrap;
+					}
+
+					&:last-child {
+						border-right: none;
+					}
+				}
+			}
+		}
+	}
+
+	// Стили для строки с выбранной начальной строкой
+	tbody tr[style*="rgba(59, 130, 246, 0.1)"] {
+		background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(255, 255, 255, 0.9) 100%) !important;
+		border: 2px solid var(--blue-color);
+		box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+
+		td:first-child {
+			background: var(--blue-color);
+			color: white;
+			font-weight: 700;
+		}
+	}
+
+	// Стили для ячеек с сопоставленными полями
+	td[style*="rgba(16, 185, 129, 0.1)"] {
+		background: rgba(16, 185, 129, 0.1) !important;
+		border: 1px solid rgba(16, 185, 129, 0.3);
+	}
+
+	td[style*="rgba(16, 185, 129, 0.2)"] {
+		background: rgba(16, 185, 129, 0.2) !important;
+		border: 2px solid var(--green-color);
+		font-weight: 600;
+	}
+	// Футер с информацией о строках и пагинацией
+	.pricelistPreviewFooter {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-top: 20px;
+		padding: 16px 20px;
+		background: linear-gradient(135deg, var(--light-grey-color) 0%, rgba(255, 255, 255, 0.8) 100%);
+		border-radius: 8px;
+		border: 1px solid var(--grey-color);
+		gap: 20px;
+
+		.pricelistPreviewTotalRows {
+			margin: 0;
+			font-size: 14px;
+			font-weight: 600;
+			color: var(--text-color);
+			opacity: 0.8;
+		}
+
+		.pagination {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+
+			button {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				text-align: center;
+				min-width: 36px;
+				width: fit-content;
+				max-width: unset;
+				height: 36px;
+				background: white;
+				border: 1px solid var(--blue-color);
+				color: var(--blue-color);
+				border-radius: 6px;
+				font-size: 12px;
+				font-weight: 500;
+				transition: all 0.2s ease;
+
+				&.active {
+					background: var(--blue-color);
+					color: white;
+					box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+				}
+
+				&:hover:not(.active) {
+					background: var(--blue-color);
+					color: white;
+					transform: translateY(-1px);
+					box-shadow: 0 4px 8px rgba(59, 130, 246, 0.2);
+				}
+
+				&:disabled {
+					opacity: 0.5;
+					cursor: not-allowed;
+				}
+			}
+
+			span {
+				font-size: 12px;
+				color: var(--text-color);
+				opacity: 0.6;
+				font-weight: 500;
+			}
+		}
+	}
+}
+
+// Блок настроек импорта
+.pricelistSettingsBlock {
+	margin-top: 20px;
+
+	.borderBlockHeader {
+		margin-bottom: 20px;
+		font-size: 18px;
+		font-weight: 600;
+		color: var(--text-color);
+		padding-bottom: 12px;
+		border-bottom: 2px solid var(--light-grey-color);
+	}
+
+	.detailsList {
+		margin-bottom: 24px;
+
+		.detailItem {
+			&.noBorder {
+				border: none;
+				padding: 8px 0;
+
+				.label {
+					display: flex;
+					align-items: center;
+					gap: 8px;
+					font-size: 14px;
+					font-weight: 500;
+					color: var(--text-color);
+					cursor: pointer;
+
+					input[type="checkbox"] {
+						width: 16px;
+						height: 16px;
+						accent-color: var(--blue-color);
+						cursor: pointer;
+					}
+				}
+			}
+		}
+	}
+
+	.acceptButton {
+		width: 100%;
+		justify-content: center;
+		font-size: 16px;
+		font-weight: 600;
+		padding: 16px 24px;
+		margin-top: 8px;
+	}
 }
 
 @media (max-width: 1680px) {

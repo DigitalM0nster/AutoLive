@@ -231,14 +231,6 @@ model ServiceKitItem {
     @@map("service_kit_item")
 }
 
-model drizzle_migrations {
-    id         BigInt  @id @default(autoincrement())
-    hash       String  @db.Text
-    created_at BigInt?
-
-    @@map("__drizzle_migrations")
-}
-
 model bulk_action_log {
     id         Int      @id @default(autoincrement())
     created_at DateTime @default(now()) @db.Timestamp(0)
@@ -322,6 +314,9 @@ model product_log {
     product_id      Int? // TODO: удалить после миграции
     snapshot_before String? // TODO: удалить после миграции
     snapshot_after  String? // TODO: удалить после миграции
+
+    // 🔗 Ссылка на лог импорта (если изменение произошло при импорте)
+    import_log_id Int? @map("import_log_id")
 }
 
 model sms_code {

@@ -243,6 +243,62 @@ export type ProductResponse = {
 	error?: string;
 };
 
+// Типы для логов продуктов
+export type ProductLogAction = "create" | "update" | "delete" | "bulk" | "import";
+
+export type ProductLog = {
+	id: number;
+	createdAt: string;
+	action: ProductLogAction;
+	message?: string | null;
+	admin?: {
+		id: number;
+		first_name: string | null;
+		last_name: string | null;
+		middle_name?: string | null;
+		phone?: string;
+		role: string;
+		department?: { id: number; name: string } | null;
+	};
+	targetProduct?: {
+		id: number;
+		title: string;
+		sku: string;
+		brand: string;
+		price: number;
+		category?: { id: number; title: string };
+		description?: string;
+		department?: { id: number; name: string };
+	};
+	department?: {
+		id: number;
+		name: string;
+	} | null;
+	snapshotBefore?: any;
+	snapshotAfter?: any;
+	userSnapshot?: any;
+	departmentSnapshot?: any;
+	importLogId?: number | null; // Ссылка на лог импорта
+};
+
+export type ProductLogResponse = {
+	data: ProductLog[];
+	total: number;
+	page: number;
+	totalPages: number;
+	currentPage: number;
+	targetProduct?: {
+		id: number;
+		title: string;
+		sku: string;
+		brand: string;
+		price: number;
+		category?: { id: number; title: string };
+		department?: { id: number; name: string };
+	};
+	error?: string;
+};
+
 export type ServiceKit = {
 	id: number;
 	title: string;

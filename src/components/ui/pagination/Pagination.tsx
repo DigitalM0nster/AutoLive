@@ -58,10 +58,14 @@ export default function Pagination({ currentPage, totalPages, onPageChange, clas
 
 	return (
 		<div className={`pagination ${styles.pagination} ${className}`}>
+			<button onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1} className={styles.navButton} title="Предыдущая страница">
+				‹
+			</button>
+
 			{renderPageNumbers().map((page, index) =>
 				page === "..." ? (
 					<span key={`dots-${index}`} className={styles.dots}>
-						...
+						…
 					</span>
 				) : (
 					<button
@@ -73,6 +77,14 @@ export default function Pagination({ currentPage, totalPages, onPageChange, clas
 					</button>
 				)
 			)}
+
+			<button onClick={() => onPageChange(currentPage + 1)} disabled={currentPage === totalPages} className={styles.navButton} title="Следующая страница">
+				›
+			</button>
+
+			<span className={styles.pageInfo}>
+				Страница {currentPage} из {totalPages}
+			</span>
 		</div>
 	);
 }

@@ -419,6 +419,40 @@ export async function logChange(options: UniversalLogOptions) {
 			},
 		});
 
+		// Дополнительно записываем в специализированные таблицы для совместимости
+		if (options.entityType === "product" && options.entityId) {
+			await prisma.product_log.create({
+				data: {
+					action: options.message?.includes("создан") ? "create" : options.message?.includes("удален") ? "delete" : "update",
+					message: options.message,
+					user_snapshot: {
+						id: adminData.id,
+						first_name: adminData.first_name,
+						last_name: adminData.last_name,
+						middle_name: adminData.middle_name,
+						phone: adminData.phone,
+						role: adminData.role,
+						department: adminData.department
+							? {
+									id: adminData.department.id,
+									name: adminData.department.name,
+							  }
+							: null,
+					},
+					department_snapshot: {
+						id: departmentId,
+						name: adminData.department?.name,
+					},
+					// Временные поля для совместимости
+					user_id: adminData.id,
+					department_id: departmentId,
+					product_id: options.entityId,
+					snapshot_before: snapshotBefore ? JSON.stringify(snapshotBefore) : null,
+					snapshot_after: snapshotAfter ? JSON.stringify(snapshotAfter) : null,
+				},
+			});
+		}
+
 		console.log("✅ Лог успешно создан:", logResult);
 	} catch (error) {
 		console.error("❌ Ошибка при логировании изменений:", error);

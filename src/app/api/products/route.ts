@@ -9,7 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { withPermission } from "@/middleware/permissionMiddleware";
-import { logProductChange } from "@/lib/logProductChange";
+import { logProductChange } from "@/lib/universalLogging";
 import { ProductListItem, ProductWithRelationsFromDB, User } from "@/lib/types";
 
 interface ExtendedRequestContext {
@@ -21,7 +21,7 @@ export const GET = withPermission(
 	async (req: NextRequest, { user }: ExtendedRequestContext) => {
 		const { searchParams } = new URL(req.url);
 
-		const sortBy = searchParams.get("sortBy") || "createdAt";
+		const sortBy = searchParams.get("sortBy") || "id";
 		const sortOrder = searchParams.get("sortOrder") === "asc" ? "asc" : "desc";
 		const onlyStale = searchParams.get("onlyStale") === "true";
 
@@ -40,7 +40,13 @@ export const GET = withPermission(
 
 		// Создаем фильтр поиска с учетом регистра
 		const searchFilter: Prisma.ProductWhereInput[] = search
-			? [{ title: { contains: search, mode: "insensitive" } }, { sku: { contains: search, mode: "insensitive" } }, { brand: { contains: search, mode: "insensitive" } }]
+			? [
+					{ title: { contains: search, mode: "insensitive" } },
+					{ sku: { contains: search, mode: "insensitive" } },
+					{ brand: { contains: search, mode: "insensitive" } },
+					// Добавляем поиск по ID, если поисковый запрос является числом
+					...(isNaN(Number(search)) ? [] : [{ id: Number(search) }]),
+			  ]
 			: [];
 
 		const where: Prisma.ProductWhereInput = {
@@ -214,10 +220,10 @@ export const POST = withPermission(
 			});
 
 			await logProductChange({
-				productId: newProduct.id,
-				userId: user.id,
-				action: "create",
+				entityId: newProduct.id,
+				adminId: user.id,
 				message: "Ручное создание товара пользователем из админки.",
+				afterData: newProduct,
 			});
 
 			return NextResponse.json({ product: newProduct });
