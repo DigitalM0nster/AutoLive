@@ -3,23 +3,53 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
 	try {
-		// Получаем все категории с количеством связанных фильтров
-		const categories = await prisma.category.findMany({
-			select: {
-				id: true,
-				title: true,
-				image: true,
-				order: true,
-				_count: {
-					select: {
-						Filter: true, // Подсчитываем количество фильтров
+		const { searchParams } = new URL(request.url);
+		const departmentId = searchParams.get("departmentId");
+
+		// Получаем категории с количеством связанных фильтров
+		let categories;
+		if (departmentId) {
+			// Если указан отдел, получаем только категории, доступные для этого отдела
+			categories = await prisma.category.findMany({
+				where: {
+					allowedDepartments: {
+						some: {
+							departmentId: parseInt(departmentId),
+						},
 					},
 				},
-			},
-			orderBy: { order: "asc" },
-		});
+				select: {
+					id: true,
+					title: true,
+					image: true,
+					order: true,
+					_count: {
+						select: {
+							Filter: true, // Подсчитываем количество фильтров
+						},
+					},
+				},
+				orderBy: { order: "asc" },
+			});
+		} else {
+			// Если отдел не указан, получаем все категории
+			categories = await prisma.category.findMany({
+				select: {
+					id: true,
+					title: true,
+					image: true,
+					order: true,
+					_count: {
+						select: {
+							Filter: true, // Подсчитываем количество фильтров
+						},
+					},
+				},
+				orderBy: { order: "asc" },
+			});
+		}
 
 		// Преобразуем данные в нужный формат, включая поле order
 		const formattedCategories = categories.map((category) => ({

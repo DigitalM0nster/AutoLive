@@ -22,7 +22,6 @@ export const GET = withPermission(
 		const categoryId = searchParams.get("categoryId") || undefined;
 		const search = searchParams.get("search")?.toLowerCase();
 		const onlyStale = searchParams.get("onlyStale") === "true";
-		const withoutDepartment = searchParams.get("withoutDepartment") === "true";
 		const departmentIdParam = searchParams.get("departmentId");
 
 		const priceMin = parseFloat(searchParams.get("priceMin") || "0");
@@ -41,9 +40,7 @@ export const GET = withPermission(
 		};
 
 		if (user.role === "superadmin") {
-			if (withoutDepartment) {
-				where.departmentId = { equals: null as unknown as number }; // 👈 фикс
-			} else if (departmentIdParam) {
+			if (departmentIdParam) {
 				where.departmentId = parseInt(departmentIdParam, 10);
 			}
 		} else {

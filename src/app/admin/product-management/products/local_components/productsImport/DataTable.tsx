@@ -1,6 +1,7 @@
 "use client";
 
 import { memo } from "react";
+import { OBJECTS_PER_PAGE } from "@/lib/objectsPerPage";
 
 type FieldKey = "sku" | "title" | "price" | "brand" | "category" | "description" | "image";
 
@@ -10,6 +11,7 @@ type DataTableProps = {
 	setColumns: (columns: Record<FieldKey, number>) => void;
 	startRow: number;
 	setStartRow: (row: number) => void;
+	currentPage: number;
 };
 
 const REQUIRED_FIELDS: { label: string; key: FieldKey; description: string }[] = [
@@ -52,7 +54,7 @@ function getMostCommonColumnCount(preview: any[][]): number {
 	return sorted.length ? Number(sorted[0][0]) : 0;
 }
 
-const DataTable = memo(function DataTable({ preview, columns, setColumns, startRow, setStartRow }: DataTableProps) {
+const DataTable = memo(function DataTable({ preview, columns, setColumns, startRow, setStartRow, currentPage }: DataTableProps) {
 	if (!preview) return null;
 
 	const getFieldByIndex = (idx: number): FieldKey | null => {
@@ -110,7 +112,8 @@ const DataTable = memo(function DataTable({ preview, columns, setColumns, startR
 			</thead>
 			<tbody>
 				{preview.slice(0, 10).map((row, rowIndex) => {
-					const absoluteRow = rowIndex + 1;
+					// Вычисляем абсолютный номер строки с учетом текущей страницы
+					const absoluteRow = (currentPage - 1) * OBJECTS_PER_PAGE + rowIndex + 1;
 					const isStart = startRow === absoluteRow;
 					return (
 						<tr key={rowIndex} onClick={() => setStartRow(absoluteRow)}>
@@ -118,10 +121,11 @@ const DataTable = memo(function DataTable({ preview, columns, setColumns, startR
 							{[...Array(mostCommonColumnCount)].map((_, cellIndex) => {
 								const cell = row[cellIndex];
 								const isMatched = Object.values(columns).includes(cellIndex);
-								const isActiveCell = isMatched && isStart;
+								// Активная ячейка - это ячейка с назначенной колонкой И находящаяся на строке startRow или после неё
+								const isActiveCell = isMatched && absoluteRow >= startRow;
 								let backgroundColor = "";
 								if (isActiveCell) backgroundColor = "rgba(16, 185, 129, 0.2)";
-								else if (isMatched) backgroundColor = "rgba(16, 185, 129, 0.1)";
+								else if (isMatched && absoluteRow < startRow) backgroundColor = "rgba(16, 185, 129, 0.05)"; // Слабое выделение для ячеек до startRow
 								else if (isStart) backgroundColor = "rgba(59, 130, 246, 0.1)";
 
 								return (

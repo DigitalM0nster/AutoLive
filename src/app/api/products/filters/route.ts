@@ -12,12 +12,10 @@ export const GET = withPermission(
 			const search = searchParams.get("search")?.toLowerCase();
 			const onlyStale = searchParams.get("onlyStale") === "true";
 			const departmentIdParam = searchParams.get("departmentId");
-			const withoutDepartment = searchParams.get("withoutDepartment") === "true";
-
 			const priceMin = parseFloat(searchParams.get("priceMin") || "0");
 			const priceMax = parseFloat(searchParams.get("priceMax") || "1000000");
 
-			let departmentId = user.role === "superadmin" ? (withoutDepartment ? null : departmentIdParam ? parseInt(departmentIdParam) : undefined) : user.departmentId;
+			let departmentId = user.role === "superadmin" ? (departmentIdParam ? parseInt(departmentIdParam) : undefined) : user.departmentId;
 
 			const searchFilter: Prisma.ProductWhereInput[] = search ? [{ title: { contains: search } }, { sku: { contains: search } }, { brand: { contains: search } }] : [];
 
@@ -36,9 +34,7 @@ export const GET = withPermission(
 				},
 			};
 
-			if (departmentId === null) {
-				baseWhere.departmentId = { equals: null as unknown as number };
-			} else if (typeof departmentId === "number") {
+			if (typeof departmentId === "number") {
 				baseWhere.departmentId = departmentId;
 			}
 
@@ -67,7 +63,7 @@ export const GET = withPermission(
 					gte: priceMin,
 					lte: priceMax,
 				},
-				...(typeof departmentId === "number" ? { departmentId } : departmentId === null ? { departmentId: { equals: null as unknown as number } } : {}),
+				...(typeof departmentId === "number" ? { departmentId } : {}),
 			};
 
 			const categoryCounts = await prisma.product.groupBy({

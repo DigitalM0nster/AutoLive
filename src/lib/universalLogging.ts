@@ -88,8 +88,8 @@ async function getFullUserData(userId: number) {
 			middle_name: user.middle_name,
 			role: user.role,
 			status: user.status,
-			created_at: user.createdAt,
-			department_id: user.departmentId,
+			createdAt: user.createdAt,
+			departmentId: user.departmentId,
 			department: user.department,
 
 			// Заявки пользователя
@@ -171,7 +171,7 @@ export async function getFullDepartmentData(departmentId: number) {
 			// Основная информация
 			id: department.id,
 			name: department.name,
-			created_at: department.createdAt,
+			createdAt: department.createdAt,
 
 			// Связанные данные
 			users: department.users, // Теперь users содержит полную информацию включая отделы
@@ -240,10 +240,10 @@ async function getFullProductData(productId: number) {
 			supplier_price: product.supplierPrice,
 			description: product.description,
 			image: product.image,
-			created_at: product.createdAt,
-			updated_at: product.updatedAt,
-			category_id: product.categoryId,
-			department_id: product.departmentId,
+			createdAt: product.createdAt,
+			updatedAt: product.updatedAt,
+			categoryId: product.categoryId,
+			departmentId: product.departmentId,
 
 			// Связанные данные
 			category: product.category,
@@ -314,10 +314,10 @@ async function getFullOrderData(orderId: number) {
 			title: order.title,
 			description: order.description,
 			status: order.status,
-			created_at: order.createdAt,
-			client_id: order.clientId,
-			manager_id: order.managerId,
-			department_id: order.departmentId,
+			createdAt: order.createdAt,
+			clientId: order.clientId,
+			managerId: order.managerId,
+			departmentId: order.departmentId,
 
 			// Связанные данные
 			client: order.client,
@@ -360,7 +360,7 @@ export async function logChange(options: UniversalLogOptions) {
 		}
 
 		// Определяем departmentId из данных администратора
-		const departmentId = adminData.department_id ?? null;
+		const departmentId = adminData.departmentId ?? null;
 
 		// Собираем данные в зависимости от типа сущности
 		let snapshotBefore = options.beforeData;
@@ -425,7 +425,7 @@ export async function logChange(options: UniversalLogOptions) {
 				data: {
 					action: options.message?.includes("создан") ? "create" : options.message?.includes("удален") ? "delete" : "update",
 					message: options.message,
-					user_snapshot: {
+					userSnapshot: {
 						id: adminData.id,
 						first_name: adminData.first_name,
 						last_name: adminData.last_name,
@@ -439,16 +439,16 @@ export async function logChange(options: UniversalLogOptions) {
 							  }
 							: null,
 					},
-					department_snapshot: {
+					departmentSnapshot: {
 						id: departmentId,
 						name: adminData.department?.name,
 					},
 					// Временные поля для совместимости
-					user_id: adminData.id,
-					department_id: departmentId,
-					product_id: options.entityId,
-					snapshot_before: snapshotBefore ? JSON.stringify(snapshotBefore) : null,
-					snapshot_after: snapshotAfter ? JSON.stringify(snapshotAfter) : null,
+					userId: adminData.id,
+					departmentId: departmentId,
+					productId: options.entityId,
+					snapshotBefore: snapshotBefore ? JSON.stringify(snapshotBefore) : null,
+					snapshotAfter: snapshotAfter ? JSON.stringify(snapshotAfter) : null,
 				},
 			});
 		}

@@ -71,18 +71,18 @@ export const POST = withPermission(
 						brand: product.brand,
 					},
 					// Временные поля для совместимости
-					user_id: user.id,
-					department_id: product.departmentId,
-					product_id: product.id,
-					snapshot_before: JSON.stringify(product),
+					userId: user.id,
+					departmentId: product.departmentId,
+					productId: product.id,
+					snapshotBefore: JSON.stringify(product),
 				})),
 			});
 
 			// обнуляем ссылки на удаляемые продукты
 			await chunkedDeleteMany(numericIds, (chunk) =>
 				prisma.product_log.updateMany({
-					where: { product_id: { in: chunk } },
-					data: { product_id: null },
+					where: { productId: { in: chunk } },
+					data: { productId: null },
 				})
 			);
 

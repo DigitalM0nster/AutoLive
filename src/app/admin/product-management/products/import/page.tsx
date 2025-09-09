@@ -22,7 +22,7 @@ export default function ProductsUploadPage() {
 							Импорт товаров
 						</Link>
 						<Link href="/admin/product-management/products/logs" className={`tabButton`}>
-							История действий
+							История изменений
 						</Link>
 					</div>
 					<div>Пользователь не авторизован</div>

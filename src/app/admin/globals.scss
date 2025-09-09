@@ -1108,6 +1108,10 @@ table,
 				width: 200px;
 			}
 
+			&.actionCell {
+				width: 170px;
+			}
+
 			&:last-child {
 				// justify-items: right;
 			}
@@ -1494,6 +1498,7 @@ table,
 			gap: 5px;
 
 			.tableListItem {
+				min-width: 300px;
 				display: flex;
 				flex-direction: column;
 			}
@@ -2094,6 +2099,252 @@ span {
 	}
 }
 
+.importDetailsModal {
+	position: fixed;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	z-index: 1000;
+
+	.importDetailsCloseButton {
+		position: absolute;
+		right: 40px;
+		top: 40px;
+		width: 30px;
+		height: 30px;
+		cursor: pointer;
+		z-index: 2;
+
+		.line {
+			position: absolute;
+			width: 100%;
+			height: 3px;
+			background: white;
+		}
+
+		.line:nth-child(1) {
+			transform: rotate(45deg);
+		}
+
+		.line:nth-child(2) {
+			transform: rotate(-45deg);
+		}
+	}
+
+	.importDetailsBackground {
+		position: fixed;
+		left: 0;
+		top: 0;
+		width: 100%;
+		height: 100%;
+		background: rgba(0, 0, 0, 0.3);
+		backdrop-filter: blur(3px);
+		z-index: 1;
+		cursor: pointer;
+	}
+
+	.importDetailsContent {
+		display: flex;
+		flex-direction: column;
+		position: relative;
+		width: 80vw;
+		height: 90dvh;
+		border-radius: 20px;
+		padding: 20px;
+		background: white;
+		border: 1px solid var(--grey-color);
+		box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1);
+		z-index: 2;
+	}
+
+	.importDetailsHeader {
+		margin-bottom: 20px;
+
+		h3 {
+			margin: 0;
+			font-size: 24px;
+			font-weight: 600;
+		}
+	}
+
+	.importDetailsFilters {
+		display: flex;
+		gap: 20px;
+		margin-bottom: 20px;
+		flex-wrap: wrap;
+
+		.filterGroup {
+			display: flex;
+			flex-direction: column;
+			gap: 5px;
+
+			label {
+				font-size: 14px;
+				font-weight: 500;
+			}
+
+			.searchInput {
+				min-width: 400px;
+			}
+		}
+	}
+
+	.importDetailsTable {
+		flex: 1;
+		overflow: auto;
+		min-height: 0;
+		display: block;
+
+		table {
+			width: 100%;
+			border-collapse: collapse;
+			display: table;
+			th,
+			td {
+				padding: 10px;
+				text-align: left;
+				border-bottom: 1px solid var(--grey-color);
+			}
+
+			th {
+				background-color: var(--light-grey-color);
+				font-weight: 600;
+			}
+		}
+	}
+
+	.importDetailsPagination {
+		margin-top: 20px;
+		display: flex;
+		justify-content: center;
+	}
+
+	.importDetailsInfo {
+		margin-top: 10px;
+		font-size: 14px;
+		color: var(--text-color);
+		opacity: 0.7;
+	}
+
+	.skippedProductsSection,
+	.duplicateProductsSection {
+		margin-top: 30px;
+
+		h4 {
+			margin-bottom: 15px;
+			font-size: 18px;
+			font-weight: 600;
+		}
+
+		.skippedProductsList,
+		.duplicateProductsList {
+			display: flex;
+			flex-direction: column;
+			gap: 10px;
+		}
+
+		.skippedProductItem,
+		.duplicateProductItem {
+			padding: 15px;
+			border: 1px solid var(--grey-color);
+			border-radius: 8px;
+			background-color: var(--light-grey-color);
+
+			.productInfo {
+				display: flex;
+				flex-direction: column;
+				gap: 5px;
+				margin-bottom: 10px;
+
+				.productName {
+					font-weight: 600;
+				}
+
+				.productSku,
+				.productBrand {
+					font-size: 14px;
+					opacity: 0.8;
+				}
+			}
+
+			.skipReason,
+			.duplicateReason {
+				font-size: 14px;
+
+				strong {
+					font-weight: 600;
+				}
+			}
+
+			.existingProductLink {
+				margin-top: 10px;
+
+				.itemLink {
+					color: var(--blue-color);
+					text-decoration: none;
+
+					&:hover {
+						text-decoration: underline;
+					}
+				}
+			}
+		}
+	}
+
+	.noDataMessage {
+		text-align: center;
+		padding: 40px;
+		color: var(--text-color);
+		opacity: 0.6;
+		font-size: 16px;
+	}
+
+	.errorMessage {
+		text-align: center;
+		padding: 40px;
+		color: var(--red-color);
+		font-size: 16px;
+	}
+
+	.actionBadge {
+		display: inline-block;
+		padding: 4px 8px;
+		border-radius: 4px;
+		font-size: 12px;
+		font-weight: 500;
+		text-transform: uppercase;
+
+		&.create {
+			background-color: var(--green-color);
+			color: white;
+		}
+
+		&.update {
+			background-color: var(--blue-color);
+			color: white;
+		}
+
+		&.delete {
+			background-color: var(--red-color);
+			color: white;
+		}
+
+		&.skipped {
+			background-color: var(--orange-color);
+			color: white;
+		}
+
+		&.duplicate {
+			background-color: var(--grey2-color);
+			color: var(--text-color);
+		}
+	}
+}
+
 @media (max-width: 1680px) {
 	:root {
 		--maxContentWidth: 1440px;
@@ -2119,6 +2370,39 @@ span {
 		--maxContentWidth: 90vw;
 	}
 }
+
+// Стили для ячейки импорта в таблице логов
+.importProductCell {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	align-items: flex-start;
+
+	.importLabel {
+		font-weight: 500;
+		color: var(--text-color);
+	}
+
+	.viewDetailsButton {
+		background-color: var(--primary-color);
+		color: white;
+		border: none;
+		padding: 6px 12px;
+		border-radius: 4px;
+		font-size: 12px;
+		cursor: pointer;
+		transition: background-color 0.2s ease;
+
+		&:hover {
+			background-color: var(--primary-hover-color);
+		}
+
+		&:active {
+			background-color: var(--primary-active-color);
+		}
+	}
+}
+
 @media (max-width: 640px) {
 	:root {
 	}

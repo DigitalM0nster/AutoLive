@@ -6,7 +6,7 @@ interface ExtendedRequestContext {
 	user: {
 		id: number;
 		role: string;
-		department_id: number | null;
+		departmentId: number | null;
 	};
 	scope: string;
 }
@@ -33,7 +33,7 @@ export const GET = withPermission(async (req: NextRequest, { user }: ExtendedReq
 		const productLogsStats = await prisma.product_log.groupBy({
 			by: ["action"],
 			where: {
-				import_log_id: importLogId,
+				importLogId: importLogId,
 			},
 			_count: {
 				action: true,
@@ -45,26 +45,26 @@ export const GET = withPermission(async (req: NextRequest, { user }: ExtendedReq
 		const errorCount = productLogsStats.find((stat) => stat.action === "error")?._count.action || 0;
 
 		// Парсим снимки данных
-		const userSnapshot = importLog.user_snapshot as any;
-		const departmentSnapshot = importLog.department_snapshot as any;
+		const userSnapshot = importLog.userSnapshot as any;
+		const departmentSnapshot = importLog.departmentSnapshot as any;
 
 		// Формируем ответ
 		const response = {
 			id: importLog.id,
-			fileName: importLog.file_name,
+			fileName: importLog.fileName,
 			totalRows: importLog.count,
 			processedRows: importLog.created + importLog.updated + importLog.skipped,
 			successRows: importLog.created + importLog.updated,
 			errorRows: errorCount,
 			status: "completed", // В текущей схеме нет поля status, считаем что если запись есть - то завершено
-			createdAt: importLog.created_at,
-			completedAt: importLog.created_at, // Используем created_at как completed_at
+			createdAt: importLog.createdAt,
+			completedAt: importLog.createdAt, // Используем createdAt как completedAt
 			errorMessage: importLog.message,
 			user: userSnapshot,
 			department: departmentSnapshot,
 			settings: {
-				imagePolicy: importLog.image_policy,
-				markupSummary: importLog.markup_summary,
+				imagePolicy: importLog.imagePolicy,
+				markupSummary: importLog.markupSummary,
 			},
 			stats: {
 				created: importLog.created,

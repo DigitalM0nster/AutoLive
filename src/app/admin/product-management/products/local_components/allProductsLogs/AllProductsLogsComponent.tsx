@@ -87,9 +87,28 @@ export default function AllProductsLogsComponent() {
 	const [showAdminSearch, setShowAdminSearch] = useState(false);
 	const [showTargetProductSearch, setShowTargetProductSearch] = useState(false);
 
+	// Состояние для фильтра по отделу
+	const [departmentFilter, setDepartmentFilter] = useState<string | null>(null);
+	const [departments, setDepartments] = useState<Array<{ id: number; name: string }>>([]);
+
 	const [clearingLogs, setClearingLogs] = useState(false);
 
 	const { user } = useAuthStore();
+
+	// Функция для загрузки отделов
+	const loadDepartments = useCallback(async () => {
+		try {
+			const response = await fetch("/api/departments", {
+				credentials: "include",
+			});
+			if (response.ok) {
+				const departmentsData = await response.json();
+				setDepartments(departmentsData);
+			}
+		} catch (error) {
+			console.error("Ошибка при загрузке отделов:", error);
+		}
+	}, []);
 
 	// Мемоизируем параметры запроса для предотвращения лишних запросов
 	const queryParams = useMemo(() => {
@@ -121,8 +140,13 @@ export default function AllProductsLogsComponent() {
 			params.append("targetProductSearch", targetProductSearch.trim());
 		}
 
+		// Добавляем фильтр по отделу
+		if (departmentFilter && departmentFilter !== "all") {
+			params.append("departmentId", departmentFilter);
+		}
+
 		return params;
-	}, [page, actionFilter, startDate, endDate, adminSearch, targetProductSearch]);
+	}, [page, actionFilter, startDate, endDate, adminSearch, targetProductSearch, departmentFilter]);
 
 	// Функция для очистки логов продуктов
 	const handleClearLogs = useCallback(async () => {
@@ -176,8 +200,6 @@ export default function AllProductsLogsComponent() {
 				return "Редактирование продукта";
 			case "delete":
 				return "Удаление продукта";
-			case "bulk":
-				return "Массовое действие";
 			case "import":
 				return "Импорт";
 			default:
@@ -222,8 +244,17 @@ export default function AllProductsLogsComponent() {
 			});
 		}
 
+		if (departmentFilter && departmentFilter !== "all") {
+			const department = departments.find((dept) => dept.id.toString() === departmentFilter);
+			filters.push({
+				key: "departmentFilter",
+				label: "Отдел",
+				value: department?.name || "Неизвестный отдел",
+			});
+		}
+
 		return filters;
-	}, [actionFilter, startDate, endDate, adminSearch, targetProductSearch, getActionDescription, formatDateFromString]);
+	}, [actionFilter, startDate, endDate, adminSearch, targetProductSearch, departmentFilter, departments, getActionDescription, formatDateFromString]);
 
 	// Обработчик изменения диапазона дат
 	const handleDateRangeChange = useCallback((startDate: string, endDate: string) => {
@@ -243,6 +274,7 @@ export default function AllProductsLogsComponent() {
 		setIsDateFiltered(false);
 		setAdminSearch("");
 		setTargetProductSearch("");
+		setDepartmentFilter(null);
 		setPage(1);
 	}, []);
 
@@ -270,6 +302,12 @@ export default function AllProductsLogsComponent() {
 		setPage(1);
 	}, []);
 
+	// Обработчик изменения фильтра по отделу
+	const handleDepartmentChange = useCallback((value: string) => {
+		setDepartmentFilter(value === "all" ? null : value);
+		setPage(1);
+	}, []);
+
 	// Мемоизируем опции для селекта действий
 	const actionOptions = useMemo(
 		() => [
@@ -277,10 +315,21 @@ export default function AllProductsLogsComponent() {
 			{ value: "create", label: "Создание" },
 			{ value: "update", label: "Редактирование" },
 			{ value: "delete", label: "Удаление" },
-			{ value: "bulk", label: "Массовое действие" },
 			{ value: "import", label: "Импорт" },
 		],
 		[]
+	);
+
+	// Мемоизируем опции для селекта отделов
+	const departmentOptions = useMemo(
+		() => [
+			{ value: "all", label: "Все отделы" },
+			...(departments || []).map((dept) => ({
+				value: dept.id.toString(),
+				label: dept.name,
+			})),
+		],
+		[departments]
 	);
 
 	// Мемоизируем обработчик изменения действия
@@ -316,11 +365,16 @@ export default function AllProductsLogsComponent() {
 		setTotalPages(totalPages);
 	}, []);
 
+	// Загружаем отделы при монтировании компонента
+	useEffect(() => {
+		loadDepartments();
+	}, [loadDepartments]);
+
 	// Мемоизируем заголовки таблицы для предотвращения ререндеров
 	const tableHeaders = useMemo(
 		() => (
 			<tr>
-				<th>
+				<th className="dateCell">
 					<DateFilterField
 						startDate={startDate}
 						endDate={endDate}
@@ -333,6 +387,15 @@ export default function AllProductsLogsComponent() {
 				</th>
 				<th>
 					<AdminSearchField adminSearch={adminSearch} onSearchChange={handleAdminSearchChange} onClearSearch={handleClearAdminSearch} />
+				</th>
+				<th>
+					<CustomSelect
+						options={departmentOptions}
+						value={departmentFilter || "all"}
+						onChange={handleDepartmentChange}
+						placeholder="Выберите отдел"
+						className={styles.actionSelect}
+					/>
 				</th>
 				<th>
 					<TargetProductSearchField
@@ -361,6 +424,9 @@ export default function AllProductsLogsComponent() {
 			adminSearch,
 			handleAdminSearchChange,
 			handleClearAdminSearch,
+			departmentOptions,
+			departmentFilter,
+			handleDepartmentChange,
 			targetProductSearch,
 			handleTargetProductSearchChange,
 			handleClearTargetProductSearch,

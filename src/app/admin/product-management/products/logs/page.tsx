@@ -42,7 +42,7 @@ export default function ProductsLogsPage() {
 						Импорт товаров
 					</Link>
 					<Link href="/admin/product-management/products/logs" className={`tabButton active`}>
-						История действий
+						История изменений
 					</Link>
 				</div>
 				<AllProductsLogsComponent />

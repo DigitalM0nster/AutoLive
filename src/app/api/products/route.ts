@@ -64,12 +64,8 @@ export const GET = withPermission(
 			},
 		};
 
-		const withoutDepartment = searchParams.get("withoutDepartment");
-
 		if (user?.role === "superadmin") {
-			if (withoutDepartment === "true") {
-				(where as any).departmentId = null;
-			} else if (departmentId !== null && departmentId !== "") {
+			if (departmentId !== null && departmentId !== "") {
 				where.departmentId = parseInt(departmentId);
 			}
 		} else {

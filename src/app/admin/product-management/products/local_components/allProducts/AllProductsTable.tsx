@@ -47,8 +47,11 @@ export default function AllProductsTable() {
 		price: "",
 		brand: "",
 		description: "",
+		departmentId: "",
+		categoryId: "",
 	});
 	const [showDescription, setShowDescription] = useState<number | null>(null);
+	const [availableCategories, setAvailableCategories] = useState<{ id: number; title: string }[]>([]);
 
 	const limit = 10;
 	const categoryDropdownRef = useRef<HTMLDivElement>(null);
@@ -87,9 +90,7 @@ export default function AllProductsTable() {
 
 				// Фильтры
 				if (categoryFilter !== "all") params.append("categoryId", categoryFilter.toString());
-				if (departmentFilter === "none") {
-					params.append("withoutDepartment", "true");
-				} else if (departmentFilter !== "all") {
+				if (departmentFilter !== "all") {
 					params.append("departmentId", departmentFilter.toString());
 				}
 				if (brandFilter !== "all") params.append("brand", brandFilter);
@@ -178,7 +179,7 @@ export default function AllProductsTable() {
 	};
 
 	// Функции редактирования
-	const startEditing = (product: ProductListItem) => {
+	const startEditing = async (product: ProductListItem) => {
 		setEditingProduct(product.id);
 		setEditForm({
 			title: product.title || "",
@@ -186,7 +187,26 @@ export default function AllProductsTable() {
 			price: product.price.toString(),
 			brand: product.brand || "",
 			description: product.description || "",
+			departmentId: product.department?.id?.toString() || "",
+			categoryId: product.category?.id?.toString() || "",
 		});
+
+		// Загружаем доступные категории для отдела товара
+		if (product.department?.id) {
+			try {
+				const response = await fetch(`/api/categories?departmentId=${product.department.id}`);
+				if (response.ok) {
+					const departmentCategories = await response.json();
+					setAvailableCategories(departmentCategories);
+				}
+			} catch (error) {
+				console.error("Ошибка при загрузке категорий отдела:", error);
+				setAvailableCategories([]);
+			}
+		} else {
+			setAvailableCategories([]);
+		}
+
 		// Скрываем описание при начале редактирования
 		setShowDescription(null);
 	};
@@ -199,13 +219,49 @@ export default function AllProductsTable() {
 			price: "",
 			brand: "",
 			description: "",
+			departmentId: "",
+			categoryId: "",
 		});
+		setAvailableCategories([]);
 		// Скрываем описание при отмене редактирования
 		setShowDescription(null);
 	};
 
 	const saveProduct = async (productId: number) => {
 		try {
+			// Находим исходный товар для сравнения
+			const originalProduct = products.find((p) => p.id === productId);
+			if (!originalProduct) {
+				console.error("Товар не найден");
+				return;
+			}
+
+			// Проверяем, есть ли изменения
+			const hasChanges =
+				editForm.title !== (originalProduct.title || "") ||
+				editForm.sku !== (originalProduct.sku || "") ||
+				parseFloat(editForm.price) !== originalProduct.price ||
+				editForm.brand !== (originalProduct.brand || "") ||
+				editForm.description !== (originalProduct.description || "") ||
+				parseInt(editForm.departmentId) !== (originalProduct.departmentId || 0) ||
+				(editForm.categoryId ? parseInt(editForm.categoryId) : null) !== (originalProduct.categoryId || null);
+
+			// Если изменений нет, просто закрываем редактирование
+			if (!hasChanges) {
+				setEditingProduct(null);
+				setEditForm({
+					title: "",
+					sku: "",
+					price: "",
+					brand: "",
+					description: "",
+					departmentId: "",
+					categoryId: "",
+				});
+				setAvailableCategories([]);
+				return;
+			}
+
 			const response = await fetch(`/api/products/${productId}`, {
 				method: "PATCH",
 				headers: {
@@ -217,12 +273,39 @@ export default function AllProductsTable() {
 					price: parseFloat(editForm.price),
 					brand: editForm.brand,
 					description: editForm.description,
+					departmentId: parseInt(editForm.departmentId),
+					categoryId: editForm.categoryId ? parseInt(editForm.categoryId) : null,
 				}),
 			});
 
 			if (response.ok) {
 				// Обновляем список товаров
-				const updatedProducts = products.map((p) => (p.id === productId ? { ...p, ...editForm, price: parseFloat(editForm.price) } : p));
+				const updatedProducts = products.map((p) => {
+					if (p.id === productId) {
+						const updatedProduct = {
+							...p,
+							title: editForm.title,
+							sku: editForm.sku,
+							price: parseFloat(editForm.price),
+							brand: editForm.brand,
+							description: editForm.description,
+							departmentId: parseInt(editForm.departmentId),
+							categoryId: editForm.categoryId ? parseInt(editForm.categoryId) : null,
+						};
+						// Обновляем отдел в товаре
+						const selectedDepartment = departments.find((d) => d.id.toString() === editForm.departmentId);
+						updatedProduct.department = selectedDepartment ? { id: selectedDepartment.id, name: selectedDepartment.name } : undefined;
+						// Обновляем категорию в товаре
+						if (editForm.categoryId) {
+							const selectedCategory = availableCategories.find((c) => c.id.toString() === editForm.categoryId);
+							updatedProduct.category = selectedCategory ? { id: selectedCategory.id, title: selectedCategory.title } : undefined;
+						} else {
+							updatedProduct.category = undefined;
+						}
+						return updatedProduct;
+					}
+					return p;
+				});
 				setProducts(updatedProducts);
 				setEditingProduct(null);
 				setEditForm({
@@ -231,7 +314,10 @@ export default function AllProductsTable() {
 					price: "",
 					brand: "",
 					description: "",
+					departmentId: "",
+					categoryId: "",
 				});
+				setAvailableCategories([]);
 			} else {
 				console.error("Ошибка при сохранении товара");
 			}
@@ -261,7 +347,7 @@ export default function AllProductsTable() {
 			filters.push({
 				key: "department",
 				label: "Отдел",
-				value: departmentFilter === "none" ? "Без отдела" : departments.find((d) => d.id === departmentFilter)?.name || "",
+				value: departments.find((d) => d.id === departmentFilter)?.name || "",
 			});
 		}
 
@@ -289,11 +375,7 @@ export default function AllProductsTable() {
 	// Опции для фильтров
 	const categoryOptions = [{ value: "all", label: "Все категории" }, ...categories.map((cat) => ({ value: cat.id.toString(), label: cat.title }))];
 
-	const departmentOptions = [
-		{ value: "all", label: "Все отделы" },
-		{ value: "none", label: "Без отдела" },
-		...departments.map((dept) => ({ value: dept.id.toString(), label: dept.name })),
-	];
+	const departmentOptions = [{ value: "all", label: "Все отделы" }, ...departments.map((dept) => ({ value: dept.id.toString(), label: dept.name }))];
 
 	const brandOptions = [{ value: "all", label: "Все бренды" }, ...brands.map((brand) => ({ value: brand, label: brand }))];
 
@@ -499,8 +581,70 @@ export default function AllProductsTable() {
 												</div>
 											)}
 										</td>
-										<td>{product.category ? <Link href={`/admin/categories/${product.category.id}`}>{product.category.title}</Link> : "—"}</td>
-										<td>{product.department ? <Link href={`/admin/departments/${product.department.id}`}>{product.department.name}</Link> : "—"}</td>
+										<td>
+											{isEditing ? (
+												<select
+													value={editForm.categoryId}
+													onChange={(e) => setEditForm({ ...editForm, categoryId: e.target.value })}
+													className={styles.categorySelect}
+												>
+													<option value="">Без категории</option>
+													{availableCategories.length > 0 ? (
+														availableCategories.map((category) => (
+															<option key={category.id} value={category.id.toString()}>
+																{category.title}
+															</option>
+														))
+													) : (
+														<option value="" disabled>
+															Нет доступных категорий для этого отдела
+														</option>
+													)}
+												</select>
+											) : product.category ? (
+												<Link href={`/admin/categories/${product.category.id}`}>{product.category.title}</Link>
+											) : (
+												"—"
+											)}
+										</td>
+										<td>
+											{isEditing ? (
+												<select
+													value={editForm.departmentId}
+													onChange={async (e) => {
+														const newDepartmentId = e.target.value;
+														setEditForm({ ...editForm, departmentId: newDepartmentId, categoryId: "" });
+
+														// Загружаем категории для нового отдела
+														if (newDepartmentId) {
+															try {
+																const response = await fetch(`/api/categories?departmentId=${newDepartmentId}`);
+																if (response.ok) {
+																	const departmentCategories = await response.json();
+																	setAvailableCategories(departmentCategories);
+																}
+															} catch (error) {
+																console.error("Ошибка при загрузке категорий отдела:", error);
+																setAvailableCategories([]);
+															}
+														} else {
+															setAvailableCategories([]);
+														}
+													}}
+													className={styles.departmentSelect}
+												>
+													{departments.map((dept) => (
+														<option key={dept.id} value={dept.id.toString()}>
+															{dept.name}
+														</option>
+													))}
+												</select>
+											) : product.department ? (
+												<Link href={`/admin/departments/${product.department.id}`}>{product.department.name}</Link>
+											) : (
+												"—"
+											)}
+										</td>
 										<td>
 											{isEditing ? (
 												<input type="text" value={editForm.brand} onChange={(e) => setEditForm({ ...editForm, brand: e.target.value })} />
@@ -520,7 +664,7 @@ export default function AllProductsTable() {
 												</div>
 											) : (
 												<div className={`actionButtons`}>
-													{user?.role === "superadmin" && (
+													{["admin", "superadmin"].includes(user?.role || "") && (
 														<button onClick={() => startEditing(product)} title="Редактировать">
 															✏️
 														</button>

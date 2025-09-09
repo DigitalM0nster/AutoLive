@@ -46,7 +46,7 @@ export const GET = withPermission(
 
 			// Строим условия фильтрации для логов конкретного продукта
 			const where: any = {
-				product_id: productId, // Фильтруем по конкретному продукту
+				productId: productId, // Фильтруем по конкретному продукту
 			};
 
 			// Фильтр по действию
@@ -59,12 +59,12 @@ export const GET = withPermission(
 			const startDate = searchParams.get("startDate");
 			const endDate = searchParams.get("endDate");
 			if (startDate || endDate) {
-				where.created_at = {};
+				where.createdAt = {};
 				if (startDate) {
-					where.created_at.gte = new Date(startDate);
+					where.createdAt.gte = new Date(startDate);
 				}
 				if (endDate) {
-					where.created_at.lte = new Date(endDate + "T23:59:59.999Z");
+					where.createdAt.lte = new Date(endDate + "T23:59:59.999Z");
 				}
 			}
 
@@ -72,21 +72,21 @@ export const GET = withPermission(
 			const logs = await prisma.product_log.findMany({
 				where,
 				orderBy: {
-					created_at: "desc",
+					createdAt: "desc",
 				},
 			});
 
 			// Преобразуем логи в нужный формат
 			const formattedLogs = logs.map((log) => {
 				// Парсим JSON данные из снимков
-				const userSnapshot = log.user_snapshot as any;
-				const departmentSnapshot = log.department_snapshot as any;
-				const snapshotBefore = log.snapshot_before ? JSON.parse(log.snapshot_before) : null;
-				const snapshotAfter = log.snapshot_after ? JSON.parse(log.snapshot_after) : null;
+				const userSnapshot = log.userSnapshot as any;
+				const departmentSnapshot = log.departmentSnapshot as any;
+				const snapshotBefore = log.snapshotBefore ? JSON.parse(log.snapshotBefore) : null;
+				const snapshotAfter = log.snapshotAfter ? JSON.parse(log.snapshotAfter) : null;
 
 				return {
 					id: log.id,
-					createdAt: log.created_at,
+					createdAt: log.createdAt,
 					action: log.action,
 					message: log.message,
 					admin: userSnapshot
@@ -122,7 +122,7 @@ export const GET = withPermission(
 					snapshotAfter,
 					userSnapshot,
 					departmentSnapshot,
-					importLogId: log.import_log_id, // Добавляем ссылку на лог импорта
+					importLogId: log.importLogId, // Добавляем ссылку на лог импорта
 				};
 			});
 

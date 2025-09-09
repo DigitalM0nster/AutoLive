@@ -165,6 +165,7 @@ export const POST = withPermission(
 					});
 
 					beforeMap.set(existingProduct.id, {
+						id: existingProduct.id,
 						sku,
 						title: existingProduct.title,
 						brand,
@@ -176,6 +177,7 @@ export const POST = withPermission(
 					});
 
 					afterMap.set(existingProduct.id, {
+						id: existingProduct.id,
 						sku,
 						title,
 						brand,
@@ -211,32 +213,28 @@ export const POST = withPermission(
 				}
 			}
 
-			let createdProducts: { id: number; sku: string; brand: string }[] = [];
-
+			// Создаем товары по одному, чтобы получить их ID
 			if (toCreate.length > 0) {
-				await prisma.product.createMany({
-					data: toCreate,
-					skipDuplicates: true,
-				});
+				for (let i = 0; i < toCreate.length; i++) {
+					const productData = toCreate[i];
+					try {
+						const createdProduct = await prisma.product.create({
+							data: productData,
+						});
 
-				const skus = toCreate.map((p) => p.sku.toLowerCase());
-				const brands = toCreate.map((p) => p.brand.toLowerCase());
-
-				createdProducts = await prisma.product.findMany({
-					where: {
-						sku: { in: skus },
-						brand: { in: brands },
-						departmentId,
-					},
-					select: { id: true, sku: true, brand: true },
-				});
-
-				for (const log of logsToCreate) {
-					if (!log.productId && log.action === "create") {
-						const match = createdProducts.find(
-							(p) => log.snapshotAfter.sku?.toLowerCase() === p.sku.toLowerCase() && log.snapshotAfter.brand?.toLowerCase() === p.brand.toLowerCase()
+						// Находим соответствующий лог и устанавливаем productId
+						const correspondingLog = logsToCreate.find(
+							(log) => log.action === "create" && log.snapshotAfter.sku === productData.sku && log.snapshotAfter.brand === productData.brand
 						);
-						if (match) log.productId = match.id;
+
+						if (correspondingLog) {
+							correspondingLog.productId = createdProduct.id;
+							// Обновляем snapshotAfter с ID товара
+							correspondingLog.snapshotAfter.id = createdProduct.id;
+						}
+					} catch (error) {
+						// Если товар уже существует (дубликат), пропускаем
+						console.log(`Товар ${productData.sku} / ${productData.brand} уже существует, пропускаем`);
 					}
 				}
 			}
@@ -270,7 +268,7 @@ export const POST = withPermission(
 			}
 
 			const userDepartment = await prisma.department.findUnique({
-				where: { id: departmentId || undefined },
+				where: { id: departmentId },
 				select: { name: true },
 			});
 			const isFinalChunk = chunkIndex + 1 >= totalChunks;
@@ -279,18 +277,20 @@ export const POST = withPermission(
 			let importLogId: number | null = null;
 			if (isFinalChunk) {
 				const snapshots = [
-					...toCreate.map((p) => ({
-						id: null,
-						sku: p.sku,
-						brand: p.brand,
-						title: p.title,
-						price: p.price,
-						supplierPrice: p.supplierPrice,
-						image: p.image,
-						department: { name: userDepartment?.name ?? "—" },
-						category: p.categoryId ? { title: allCategories.find((c) => c.id === p.categoryId)?.title ?? "—" } : { title: "—" },
-						status: "created",
-					})),
+					...logsToCreate
+						.filter((log) => log.action === "create" && log.productId)
+						.map((log) => ({
+							id: log.productId,
+							sku: log.snapshotAfter.sku,
+							brand: log.snapshotAfter.brand,
+							title: log.snapshotAfter.title,
+							price: log.snapshotAfter.price,
+							supplierPrice: log.snapshotAfter.supplierPrice,
+							image: log.snapshotAfter.image,
+							department: { name: userDepartment?.name ?? "—" },
+							category: log.snapshotAfter.categoryId ? { title: allCategories.find((c) => c.id === log.snapshotAfter.categoryId)?.title ?? "—" } : { title: "—" },
+							status: "created",
+						})),
 					...toUpdate.map((u) => {
 						const after = afterMap.get(u.id);
 						return {
@@ -317,12 +317,27 @@ export const POST = withPermission(
 						status: "skipped",
 						reason: s.reason,
 					})),
+					// Добавляем записи для локальных дубликатов
+					...Array.from(localDuplicates).map((key) => {
+						const [sku, brand] = key.split("||");
+						return {
+							id: null,
+							sku: sku,
+							brand: brand,
+							title: "—",
+							price: 0,
+							department: { name: userDepartment?.name ?? "—" },
+							category: { title: "—" },
+							status: "duplicate",
+							reason: "Дубликат в импортируемом файле",
+						};
+					}),
 				];
 
 				console.log("🟡 Сохраняем importLog со snapshots:", JSON.stringify(snapshots, null, 2));
 				const importLog = await prisma.import_log.create({
 					data: {
-						file_name: `Импорт chunk ${chunkIndex + 1}/${totalChunks}`,
+						fileName: `Импорт chunk ${chunkIndex + 1}/${totalChunks}`,
 						created: toCreate.length,
 						updated: toUpdate.length,
 						skipped,
@@ -340,18 +355,18 @@ export const POST = withPermission(
 						]
 							.filter(Boolean)
 							.join("\n"),
-						user_snapshot: {
+						userSnapshot: {
 							id: user.id,
 							// Дополнительные данные пользователя можно получить отдельным запросом если нужно
 						},
-						department_snapshot: {
+						departmentSnapshot: {
 							id: departmentId,
 							name: userDepartment?.name,
 						},
-						products_snapshot: snapshots,
+						productsSnapshot: snapshots,
 						// Временные поля для совместимости
-						user_id: user.id,
-						department_id: departmentId,
+						userId: user.id,
+						departmentId: departmentId,
 						snapshots: JSON.stringify(snapshots),
 					},
 				});
@@ -366,15 +381,15 @@ export const POST = withPermission(
 							data: {
 								action: log.action,
 								message: log.message,
-								user_snapshot: {
+								userSnapshot: {
 									id: log.userId,
 									// Дополнительные данные пользователя можно получить отдельным запросом если нужно
 								},
-								department_snapshot: {
+								departmentSnapshot: {
 									id: log.departmentId,
 									name: null,
 								},
-								product_snapshot: {
+								productSnapshot: {
 									id: log.productId,
 									title: log.snapshotAfter?.title || log.snapshotBefore?.title || null,
 									price: log.snapshotAfter?.price || log.snapshotBefore?.price || null,
@@ -382,13 +397,13 @@ export const POST = withPermission(
 									brand: log.snapshotAfter?.brand || log.snapshotBefore?.brand || null,
 								},
 								// Временные поля для совместимости
-								user_id: log.userId,
-								department_id: log.departmentId,
-								product_id: log.productId,
-								snapshot_before: log.snapshotBefore ? JSON.stringify(log.snapshotBefore) : null,
-								snapshot_after: log.snapshotAfter ? JSON.stringify(log.snapshotAfter) : null,
+								userId: log.userId,
+								departmentId: log.departmentId,
+								productId: log.productId,
+								snapshotBefore: log.snapshotBefore ? JSON.stringify(log.snapshotBefore) : null,
+								snapshotAfter: log.snapshotAfter ? JSON.stringify(log.snapshotAfter) : null,
 								// Добавляем ссылку на лог импорта
-								import_log_id: importLogId,
+								importLogId: importLogId,
 							},
 						})
 					)

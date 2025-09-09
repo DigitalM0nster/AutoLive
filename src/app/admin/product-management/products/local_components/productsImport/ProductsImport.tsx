@@ -3,20 +3,22 @@
 "use client";
 
 import { useRef, useState, useMemo, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { showSuccessToast, showErrorToast, showWarningToast } from "@/components/ui/toast/ToastProvider";
 import ExcelJS from "exceljs";
 import UploadBox from "./UploadBox";
-import PreviewTable from "./PreviewTable";
 import MarkupRulesEditor, { MarkupRule, DefaultMarkup } from "./MarkupRulesEditor";
 import { OBJECTS_PER_PAGE } from "@/lib/objectsPerPage";
 import TableSkeleton from "../TableSkeleton";
 import type { User } from "@/lib/types";
+import PreviewComponent from "./PreviewComponent";
 
 type Props = {
 	user: User;
 };
 
 export default function ProductsImport({ user }: Props) {
+	const router = useRouter();
 	const [file, setFile] = useState<File | null>(null);
 	const [preview, setPreview] = useState<any[][] | null>(null);
 	const [errors, setErrors] = useState<Record<string, string>>({});
@@ -244,6 +246,11 @@ export default function ProductsImport({ user }: Props) {
 			} else {
 				showSuccessToast(`Импорт завершён: создано — ${created}, обновлено — ${updated}, пропущено — ${skipped}`);
 			}
+
+			// Перенаправляем на страницу всех товаров через 2 секунды
+			setTimeout(() => {
+				router.push("/admin/product-management/products");
+			}, 2000);
 		} catch (err) {
 			console.error(err);
 			showErrorToast("Ошибка при импорте товаров");
@@ -268,7 +275,7 @@ export default function ProductsImport({ user }: Props) {
 				/>
 			</div>
 
-			<PreviewTable
+			<PreviewComponent
 				preview={preview}
 				totalRows={totalRows}
 				columns={columns}

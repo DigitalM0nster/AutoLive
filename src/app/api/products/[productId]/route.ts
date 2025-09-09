@@ -240,6 +240,16 @@ export const PATCH = withPermission(
 				return NextResponse.json({ error: "Недостаточно прав для редактирования этого товара" }, { status: 403 });
 			}
 
+			// Проверяем права на изменение отдела - только суперадмин может изменять отдел товара
+			if (body.departmentId !== undefined && user.role !== "superadmin") {
+				return NextResponse.json({ error: "Только суперадмин может изменять отдел товара" }, { status: 403 });
+			}
+
+			// Проверяем права на изменение категории - только админ и суперадмин могут изменять категорию
+			if (body.categoryId !== undefined && !["admin", "superadmin"].includes(user.role)) {
+				return NextResponse.json({ error: "Только админ и суперадмин могут изменять категорию товара" }, { status: 403 });
+			}
+
 			// Обновляем только переданные поля
 			const updateData: any = {};
 			if (body.title !== undefined) updateData.title = String(body.title).trim();
@@ -247,6 +257,8 @@ export const PATCH = withPermission(
 			if (body.price !== undefined) updateData.price = parseFloat(body.price);
 			if (body.brand !== undefined) updateData.brand = String(body.brand).trim();
 			if (body.description !== undefined) updateData.description = body.description ? String(body.description).trim() : null;
+			if (body.departmentId !== undefined) updateData.departmentId = body.departmentId;
+			if (body.categoryId !== undefined) updateData.categoryId = body.categoryId;
 
 			const updated = await prisma.product.update({
 				where: { id: productId },
@@ -256,15 +268,28 @@ export const PATCH = withPermission(
 				},
 			});
 
-			// Используем универсальную функцию логирования
-			const { logProductChange } = await import("@/lib/universalLogging");
-			await logProductChange({
-				entityId: updated.id,
-				adminId: user.id,
-				message: "Быстрое редактирование товара",
-				beforeData: existing,
-				afterData: updated,
-			});
+			// Проверяем, есть ли реальные изменения
+			const hasRealChanges =
+				(updateData.title !== undefined && updateData.title !== existing.title) ||
+				(updateData.sku !== undefined && updateData.sku !== existing.sku) ||
+				(updateData.price !== undefined && updateData.price !== existing.price) ||
+				(updateData.brand !== undefined && updateData.brand !== existing.brand) ||
+				(updateData.description !== undefined && updateData.description !== existing.description) ||
+				(updateData.departmentId !== undefined && updateData.departmentId !== existing.departmentId) ||
+				(updateData.categoryId !== undefined && updateData.categoryId !== existing.categoryId);
+
+			// Логируем только если есть реальные изменения
+			if (hasRealChanges) {
+				// Используем универсальную функцию логирования
+				const { logProductChange } = await import("@/lib/universalLogging");
+				await logProductChange({
+					entityId: updated.id,
+					adminId: user.id,
+					message: "Быстрое редактирование товара",
+					beforeData: existing,
+					afterData: updated,
+				});
+			}
 
 			return NextResponse.json({ product: updated });
 		} catch (error) {

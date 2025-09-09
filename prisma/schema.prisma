@@ -266,28 +266,28 @@ model department_log {
 }
 
 model import_log {
-    id             Int      @id @default(autoincrement())
-    file_name      String   @db.VarChar(255)
-    created        Int
-    updated        Int
-    skipped        Int      @default(0)
-    image_policy   String?  @db.VarChar(255)
-    markup_summary String?  @db.VarChar(255)
-    created_at     DateTime @default(now()) @db.Timestamp(0)
-    message        String?  @db.Text
-    count          Int
+    id            Int      @id @default(autoincrement())
+    fileName      String   @map("file_name") @db.VarChar(255)
+    created       Int
+    updated       Int
+    skipped       Int      @default(0)
+    imagePolicy   String?  @map("image_policy") @db.VarChar(255)
+    markupSummary String?  @map("markup_summary") @db.VarChar(255)
+    createdAt     DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+    message       String?  @db.Text
+    count         Int
 
     // 📸 Снимки данных (без дублирования ID)
-    user_snapshot       Json? // Содержит {id, first_name, last_name, role, department}
-    department_snapshot Json? // Содержит {id, name, created_at}
-    products_snapshot   Json? // Массив товаров для импорта
+    userSnapshot       Json? @map("user_snapshot") // Содержит {id, first_name, last_name, role, department}
+    departmentSnapshot Json? @map("department_snapshot") // Содержит {id, name, created_at}
+    productsSnapshot   Json? @map("products_snapshot") // Массив товаров для импорта
 
     // 📦 Старые поля (временно для совместимости)
-    user_id         Int? // TODO: удалить после миграции
-    department_id   Int? // TODO: удалить после миграции
-    snapshots       String? // TODO: удалить после миграции
-    snapshot_before String? // TODO: удалить после миграции
-    snapshot_after  String? // TODO: удалить после миграции
+    userId         Int?    @map("user_id") // TODO: удалить после миграции
+    departmentId   Int?    @map("department_id") // TODO: удалить после миграции
+    snapshots      String? // TODO: удалить после миграции
+    snapshotBefore String? @map("snapshot_before") // TODO: удалить после миграции
+    snapshotAfter  String? @map("snapshot_after") // TODO: удалить после миграции
 }
 
 model price_format {
@@ -298,25 +298,25 @@ model price_format {
 }
 
 model product_log {
-    id         Int      @id @default(autoincrement())
-    created_at DateTime @default(now()) @db.Timestamp(0)
-    action     String   @db.VarChar(255)
-    message    String?  @db.Text
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+    action    String   @db.VarChar(255)
+    message   String?  @db.Text
 
     // 📸 Снимки данных (без дублирования ID)
-    user_snapshot       Json? // Содержит {id, first_name, last_name, role, department}
-    department_snapshot Json? // Содержит {id, name}
-    product_snapshot    Json? // Содержит {id, title, price, sku, brand}
+    userSnapshot       Json? @map("user_snapshot") // Содержит {id, first_name, last_name, role, department}
+    departmentSnapshot Json? @map("department_snapshot") // Содержит {id, name}
+    productSnapshot    Json? @map("product_snapshot") // Содержит {id, title, price, sku, brand}
 
     // 📦 Старые поля (временно для совместимости)
-    user_id         Int? // TODO: удалить после миграции
-    department_id   Int? // TODO: удалить после миграции
-    product_id      Int? // TODO: удалить после миграции
-    snapshot_before String? // TODO: удалить после миграции
-    snapshot_after  String? // TODO: удалить после миграции
+    userId         Int?    @map("user_id") // TODO: удалить после миграции
+    departmentId   Int?    @map("department_id") // TODO: удалить после миграции
+    productId      Int?    @map("product_id") // TODO: удалить после миграции
+    snapshotBefore String? @map("snapshot_before") // TODO: удалить после миграции
+    snapshotAfter  String? @map("snapshot_after") // TODO: удалить после миграции
 
     // 🔗 Ссылка на лог импорта (если изменение произошло при импорте)
-    import_log_id Int? @map("import_log_id")
+    importLogId Int? @map("import_log_id")
 }
 
 model sms_code {

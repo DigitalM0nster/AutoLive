@@ -42,7 +42,7 @@ export const adminRoutesMeta: Record<string, AdminRouteMeta> = {
 		bg: "blue",
 	},
 	profile: { label: "Редактирование профиля" },
-	products: { label: "Товары" },
+	products: { label: "Список товаров" },
 	kits: { label: "Комплекты ТО" },
 	clients: { label: "Клиенты" },
 	managers: { label: "Менеджеры" },
@@ -53,4 +53,5 @@ export const adminRoutesMeta: Record<string, AdminRouteMeta> = {
 	create: { label: "Создание" },
 	admin: { label: "Админ-панель" },
 	logs: { label: "История изменений" },
+	import: { label: "Импорт товаров" },
 };

@@ -1062,6 +1062,10 @@ table thead th.dateCell,
 .table thead th.dateCell {
   width: 200px;
 }
+table thead th.actionCell,
+.table thead th.actionCell {
+  width: 170px;
+}
 table tbody tr,
 .table tbody tr {
   transition: all 0.2s ease;
@@ -1463,6 +1467,7 @@ table .tableListBlock .tableListItems,
 }
 table .tableListBlock .tableListItems .tableListItem,
 .table .tableListBlock .tableListItems .tableListItem {
+  min-width: 300px;
   display: flex;
   flex-direction: column;
 }
@@ -1981,6 +1986,255 @@ span.oldName:after {
   margin-top: 8px;
 }
 
+.importDetailsModal {
+  position: fixed;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+}
+.importDetailsModal .importDetailsCloseButton {
+  position: absolute;
+  right: 40px;
+  top: 40px;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  z-index: 2;
+}
+.importDetailsModal .importDetailsCloseButton .line {
+  position: absolute;
+  width: 100%;
+  height: 3px;
+  background: white;
+}
+.importDetailsModal .importDetailsCloseButton .line:nth-child(1) {
+  transform: rotate(45deg);
+}
+.importDetailsModal .importDetailsCloseButton .line:nth-child(2) {
+  transform: rotate(-45deg);
+}
+.importDetailsModal .importDetailsBackground {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  -webkit-backdrop-filter: blur(3px);
+          backdrop-filter: blur(3px);
+  z-index: 1;
+  cursor: pointer;
+}
+.importDetailsModal .importDetailsContent {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  width: 80vw;
+  height: 90dvh;
+  border-radius: 20px;
+  padding: 20px;
+  background: white;
+  border: 1px solid var(--grey-color);
+  box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1);
+  z-index: 2;
+}
+.importDetailsModal .importDetailsHeader {
+  margin-bottom: 20px;
+}
+.importDetailsModal .importDetailsHeader h3 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+}
+.importDetailsModal .importDetailsFilters {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.importDetailsModal .importDetailsFilters .filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.importDetailsModal .importDetailsFilters .filterGroup label {
+  font-size: 14px;
+  font-weight: 500;
+}
+.importDetailsModal .importDetailsFilters .filterGroup .searchInput {
+  min-width: 400px;
+}
+.importDetailsModal .importDetailsTable {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+  display: block;
+}
+.importDetailsModal .importDetailsTable table {
+  width: 100%;
+  border-collapse: collapse;
+  display: table;
+}
+.importDetailsModal .importDetailsTable table th,
+.importDetailsModal .importDetailsTable table td {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--grey-color);
+}
+.importDetailsModal .importDetailsTable table th {
+  background-color: var(--light-grey-color);
+  font-weight: 600;
+}
+.importDetailsModal .importDetailsPagination {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}
+.importDetailsModal .importDetailsInfo {
+  margin-top: 10px;
+  font-size: 14px;
+  color: var(--text-color);
+  opacity: 0.7;
+}
+.importDetailsModal .skippedProductsSection,
+.importDetailsModal .duplicateProductsSection {
+  margin-top: 30px;
+}
+.importDetailsModal .skippedProductsSection h4,
+.importDetailsModal .duplicateProductsSection h4 {
+  margin-bottom: 15px;
+  font-size: 18px;
+  font-weight: 600;
+}
+.importDetailsModal .skippedProductsSection .skippedProductsList,
+.importDetailsModal .skippedProductsSection .duplicateProductsList,
+.importDetailsModal .duplicateProductsSection .skippedProductsList,
+.importDetailsModal .duplicateProductsSection .duplicateProductsList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.importDetailsModal .skippedProductsSection .skippedProductItem,
+.importDetailsModal .skippedProductsSection .duplicateProductItem,
+.importDetailsModal .duplicateProductsSection .skippedProductItem,
+.importDetailsModal .duplicateProductsSection .duplicateProductItem {
+  padding: 15px;
+  border: 1px solid var(--grey-color);
+  border-radius: 8px;
+  background-color: var(--light-grey-color);
+}
+.importDetailsModal .skippedProductsSection .skippedProductItem .productInfo,
+.importDetailsModal .skippedProductsSection .duplicateProductItem .productInfo,
+.importDetailsModal .duplicateProductsSection .skippedProductItem .productInfo,
+.importDetailsModal .duplicateProductsSection .duplicateProductItem .productInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+.importDetailsModal .skippedProductsSection .skippedProductItem .productInfo .productName,
+.importDetailsModal .skippedProductsSection .duplicateProductItem .productInfo .productName,
+.importDetailsModal .duplicateProductsSection .skippedProductItem .productInfo .productName,
+.importDetailsModal .duplicateProductsSection .duplicateProductItem .productInfo .productName {
+  font-weight: 600;
+}
+.importDetailsModal .skippedProductsSection .skippedProductItem .productInfo .productSku,
+.importDetailsModal .skippedProductsSection .skippedProductItem .productInfo .productBrand,
+.importDetailsModal .skippedProductsSection .duplicateProductItem .productInfo .productSku,
+.importDetailsModal .skippedProductsSection .duplicateProductItem .productInfo .productBrand,
+.importDetailsModal .duplicateProductsSection .skippedProductItem .productInfo .productSku,
+.importDetailsModal .duplicateProductsSection .skippedProductItem .productInfo .productBrand,
+.importDetailsModal .duplicateProductsSection .duplicateProductItem .productInfo .productSku,
+.importDetailsModal .duplicateProductsSection .duplicateProductItem .productInfo .productBrand {
+  font-size: 14px;
+  opacity: 0.8;
+}
+.importDetailsModal .skippedProductsSection .skippedProductItem .skipReason,
+.importDetailsModal .skippedProductsSection .skippedProductItem .duplicateReason,
+.importDetailsModal .skippedProductsSection .duplicateProductItem .skipReason,
+.importDetailsModal .skippedProductsSection .duplicateProductItem .duplicateReason,
+.importDetailsModal .duplicateProductsSection .skippedProductItem .skipReason,
+.importDetailsModal .duplicateProductsSection .skippedProductItem .duplicateReason,
+.importDetailsModal .duplicateProductsSection .duplicateProductItem .skipReason,
+.importDetailsModal .duplicateProductsSection .duplicateProductItem .duplicateReason {
+  font-size: 14px;
+}
+.importDetailsModal .skippedProductsSection .skippedProductItem .skipReason strong,
+.importDetailsModal .skippedProductsSection .skippedProductItem .duplicateReason strong,
+.importDetailsModal .skippedProductsSection .duplicateProductItem .skipReason strong,
+.importDetailsModal .skippedProductsSection .duplicateProductItem .duplicateReason strong,
+.importDetailsModal .duplicateProductsSection .skippedProductItem .skipReason strong,
+.importDetailsModal .duplicateProductsSection .skippedProductItem .duplicateReason strong,
+.importDetailsModal .duplicateProductsSection .duplicateProductItem .skipReason strong,
+.importDetailsModal .duplicateProductsSection .duplicateProductItem .duplicateReason strong {
+  font-weight: 600;
+}
+.importDetailsModal .skippedProductsSection .skippedProductItem .existingProductLink,
+.importDetailsModal .skippedProductsSection .duplicateProductItem .existingProductLink,
+.importDetailsModal .duplicateProductsSection .skippedProductItem .existingProductLink,
+.importDetailsModal .duplicateProductsSection .duplicateProductItem .existingProductLink {
+  margin-top: 10px;
+}
+.importDetailsModal .skippedProductsSection .skippedProductItem .existingProductLink .itemLink,
+.importDetailsModal .skippedProductsSection .duplicateProductItem .existingProductLink .itemLink,
+.importDetailsModal .duplicateProductsSection .skippedProductItem .existingProductLink .itemLink,
+.importDetailsModal .duplicateProductsSection .duplicateProductItem .existingProductLink .itemLink {
+  color: var(--blue-color);
+  text-decoration: none;
+}
+.importDetailsModal .skippedProductsSection .skippedProductItem .existingProductLink .itemLink:hover,
+.importDetailsModal .skippedProductsSection .duplicateProductItem .existingProductLink .itemLink:hover,
+.importDetailsModal .duplicateProductsSection .skippedProductItem .existingProductLink .itemLink:hover,
+.importDetailsModal .duplicateProductsSection .duplicateProductItem .existingProductLink .itemLink:hover {
+  text-decoration: underline;
+}
+.importDetailsModal .noDataMessage {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-color);
+  opacity: 0.6;
+  font-size: 16px;
+}
+.importDetailsModal .errorMessage {
+  text-align: center;
+  padding: 40px;
+  color: var(--red-color);
+  font-size: 16px;
+}
+.importDetailsModal .actionBadge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+.importDetailsModal .actionBadge.create {
+  background-color: var(--green-color);
+  color: white;
+}
+.importDetailsModal .actionBadge.update {
+  background-color: var(--blue-color);
+  color: white;
+}
+.importDetailsModal .actionBadge.delete {
+  background-color: var(--red-color);
+  color: white;
+}
+.importDetailsModal .actionBadge.skipped {
+  background-color: var(--orange-color);
+  color: white;
+}
+.importDetailsModal .actionBadge.duplicate {
+  background-color: var(--grey2-color);
+  color: var(--text-color);
+}
+
 @media (max-width: 1680px) {
   :root {
     --maxContentWidth: 1440px;
@@ -2005,4 +2259,30 @@ span.oldName:after {
   :root {
     --maxContentWidth: 90vw;
   }
+}
+.importProductCell {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+.importProductCell .importLabel {
+  font-weight: 500;
+  color: var(--text-color);
+}
+.importProductCell .viewDetailsButton {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.importProductCell .viewDetailsButton:hover {
+  background-color: var(--primary-hover-color);
+}
+.importProductCell .viewDetailsButton:active {
+  background-color: var(--primary-active-color);
 }/*# sourceMappingURL=globals.css.map */

@@ -9,7 +9,7 @@ import MarkupRulesEditor, { DefaultMarkup } from "./MarkupRulesEditor";
 
 type FieldKey = "sku" | "title" | "price" | "brand" | "category" | "description" | "image";
 
-type PreviewTableProps = {
+type PreviewComponentProps = {
 	preview: any[][] | null;
 	totalRows: number | null;
 	columns: Record<FieldKey, number>;
@@ -37,7 +37,7 @@ type PreviewTableProps = {
 	loading: boolean;
 };
 
-export default function PreviewTable({
+export default function PreviewComponent({
 	preview,
 	totalRows,
 	columns,
@@ -61,7 +61,7 @@ export default function PreviewTable({
 	setHasMarkupErrors,
 	handleImport,
 	loading,
-}: PreviewTableProps) {
+}: PreviewComponentProps) {
 	if (!preview) return null;
 
 	return (
@@ -80,7 +80,7 @@ export default function PreviewTable({
 					availableDepartments={availableDepartments}
 				/>
 
-				<DataTable preview={preview} columns={columns} setColumns={setColumns} startRow={startRow} setStartRow={setStartRow} />
+				<DataTable preview={preview} columns={columns} setColumns={setColumns} startRow={startRow} setStartRow={setStartRow} currentPage={currentPage} />
 
 				<PaginationFooter totalRows={totalRows} currentPage={currentPage} totalPages={totalPages} onPageChange={onPageChange} />
 			</div>

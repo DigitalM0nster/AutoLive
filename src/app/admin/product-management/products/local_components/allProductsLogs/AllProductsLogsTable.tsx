@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ProductLog, ProductLogResponse, User } from "@/lib/types";
 import Loading from "@/components/ui/loading/Loading";
+import ImportDetailsComponent from "./ImportDetailsComponent";
 
 export default function AllProductsLogsTable({
 	logs,
@@ -27,6 +28,25 @@ export default function AllProductsLogsTable({
 	const [departmentsData, setDepartmentsData] = useState<Map<number, { id: number; name: string }>>(new Map());
 	// Храним Map с ID товара как ключом и полными данными как значением
 	const [existingProducts, setExistingProducts] = useState<Map<number, any>>(new Map());
+	// Состояние для отображения деталей импорта
+	const [showImportDetails, setShowImportDetails] = useState<number | null>(null);
+	// Состояние для детальных данных импорта
+	const [importDetailsData, setImportDetailsData] = useState<Map<number, any>>(new Map());
+
+	// Функция для загрузки детальных данных импорта
+	const loadImportDetails = useCallback(async (importLogId: number) => {
+		try {
+			const response = await fetch(`/api/products/import-logs/${importLogId}/products?page=1&limit=100`);
+			if (response.ok) {
+				const data = await response.json();
+				setImportDetailsData((prev) => new Map(prev.set(importLogId, data)));
+			} else {
+				console.error("Ошибка API при загрузке деталей импорта:", response.status, response.statusText);
+			}
+		} catch (error) {
+			console.error("Ошибка при загрузке деталей импорта:", error);
+		}
+	}, []);
 
 	// Функция для проверки существования пользователей
 	const checkUsersExistence = useCallback(async (userIds: number[]) => {
@@ -59,7 +79,6 @@ export default function AllProductsLogsTable({
 
 	// Функция для проверки существования отделов
 	const checkDepartmentsExistence = useCallback(async (departmentIds: number[]) => {
-		console.log("checkDepartmentsExistence вызвана с ID:", departmentIds);
 		if (departmentIds.length === 0) return;
 
 		try {
@@ -67,8 +86,6 @@ export default function AllProductsLogsTable({
 			const params = new URLSearchParams();
 			params.set("departmentIds", departmentIds.join(","));
 			const url = `/api/departments/check-existence?${params.toString()}`;
-
-			console.log("Запрос к API отделов:", url);
 
 			const response = await fetch(url, {
 				method: "GET",
@@ -78,8 +95,6 @@ export default function AllProductsLogsTable({
 			if (response.ok) {
 				const data = await response.json();
 				const existingIds = data.existingDepartmentIds || [];
-				console.log("Проверка отделов - запрошены ID:", departmentIds);
-				console.log("Проверка отделов - существующие ID:", existingIds);
 				setExistingDepartments(new Set(existingIds));
 			} else {
 				console.error("Ошибка API при проверке существования отделов:", response.status, response.statusText);
@@ -127,9 +142,7 @@ export default function AllProductsLogsTable({
 
 			if (response.ok) {
 				const departments = await response.json();
-				console.log("Загружены отделы:", departments);
 				const departmentsMap = new Map<number, { id: number; name: string }>(departments.map((dept: { id: number; name: string }) => [dept.id, dept]));
-				console.log("Карта отделов:", departmentsMap);
 				setDepartmentsData(departmentsMap);
 			} else {
 				console.error("Ошибка при загрузке данных отделов:", response.status, response.statusText);
@@ -160,7 +173,7 @@ export default function AllProductsLogsTable({
 			const formattedLogs: ProductLog[] = (data.data || []).map((log: any) => ({
 				id: log.id,
 				createdAt: log.createdAt,
-				action: log.actions?.[0] || "update", // Берем первое действие из массива
+				action: log.action || "update",
 				message: log.message,
 				admin: log.admin
 					? {
@@ -195,13 +208,15 @@ export default function AllProductsLogsTable({
 					: null,
 				snapshotBefore: log.snapshotBefore,
 				snapshotAfter: log.snapshotAfter,
-				userSnapshot: log.adminSnapshot,
-				departmentSnapshot: log.adminSnapshot?.department,
+				userSnapshot: log.userSnapshot,
+				departmentSnapshot: log.departmentSnapshot,
 				productSnapshot: log.targetProduct,
+				// Добавляем данные лога импорта
+				importLogData: log.importLogData,
+				importLogId: log.importLogId,
 			}));
 
 			setLocalLogs(formattedLogs);
-			console.log(formattedLogs);
 			setTotalPages(data.totalPages || 1);
 			setTotalCount(data.total || 0);
 
@@ -215,34 +230,21 @@ export default function AllProductsLogsTable({
 
 			await checkUsersExistence(userIdsToCheck);
 
-			// Проверяем существование отделов из логов (админов и товаров)
-			console.log("Первый лог для отладки:", formattedLogs[0]);
-			console.log("snapshotBefore первого лога:", formattedLogs[0]?.snapshotBefore);
-			console.log("snapshotAfter первого лога:", formattedLogs[0]?.snapshotAfter);
-
 			const adminDepartmentIds = formattedLogs
 				.map((log: ProductLog) => {
-					console.log("Админ в логе:", log.admin);
 					return log.admin?.department?.id;
 				})
 				.filter((id: number | undefined) => id !== undefined && id !== 0) as number[];
 
 			const productDepartmentIds = formattedLogs
 				.map((log: ProductLog) => {
-					console.log("Товар в логе:", log.targetProduct);
-					console.log("snapshotBefore в логе:", log.snapshotBefore);
 					// Используем отдел из snapshotBefore, если в targetProduct его нет
 					const departmentId = log.targetProduct?.department?.id || log.snapshotBefore?.department?.id;
-					console.log("ID отдела товара:", departmentId);
 					return departmentId;
 				})
 				.filter((id: number | undefined) => id !== undefined && id !== 0) as number[];
 
 			const departmentIdsToCheck = [...new Set([...adminDepartmentIds, ...productDepartmentIds])];
-
-			console.log("Отделы админов:", adminDepartmentIds);
-			console.log("Отделы товаров:", productDepartmentIds);
-			console.log("Всего отделов для проверки:", departmentIdsToCheck);
 
 			await checkDepartmentsExistence(departmentIdsToCheck);
 
@@ -288,7 +290,6 @@ export default function AllProductsLogsTable({
 			}
 
 			const departmentExists = existingDepartments.has(department.id);
-			console.log(`Отдел ID ${department.id}: exists=${departmentExists}, name="${department.name}"`);
 
 			// Получаем актуальное название отдела
 			const actualDepartment = departmentsData.get(department.id);
@@ -351,6 +352,47 @@ export default function AllProductsLogsTable({
 			[logId]: !prev[logId],
 		}));
 	}, []);
+
+	// Функция для отображения ссылки на отдел с разворачивающимся блоком
+	const renderDepartmentLink = useCallback(
+		(log: ProductLog, department: { id: number; name: string }, logId: number) => {
+			// Проверяем, существует ли отдел в базе данных
+			const departmentExists = existingDepartments.has(department.id);
+			// Получаем актуальные данные отдела из departmentsData
+			const actualDepartment = departmentsData.get(department.id);
+			const departmentLogKey = `department_${logId}_${department.id}`;
+
+			return (
+				<div key={departmentLogKey} className={`fullInfoBlock`}>
+					<div className={`clickInfoBlock ${activeBlocks[departmentLogKey] ? "active" : ""}`} onClick={() => toggleActiveBlock(departmentLogKey)}>
+						{department.name}
+					</div>
+					<div className={`openingBlock ${activeBlocks[departmentLogKey] ? "active" : ""}`}>
+						<div className="infoField">
+							<span className="title">ID:</span>
+							<span className="value">{department.id || "—"}</span>
+						</div>
+						{departmentExists ? (
+							<div className="infoField">
+								<span className="title">Ссылка:</span>
+								<span className="value">
+									<a href={`/admin/departments/${department.id}`} className="itemLink">
+										{actualDepartment?.name || department.name}
+									</a>
+								</span>
+							</div>
+						) : (
+							<div className="infoField">
+								<span className="title">Статус:</span>
+								<span className="value deletedItemStatus">Отдел удален</span>
+							</div>
+						)}
+					</div>
+				</div>
+			);
+		},
+		[activeBlocks, toggleActiveBlock, existingDepartments, departmentsData]
+	);
 
 	// Функция для отображения ссылки на товар с разворачивающимся блоком
 	const renderProductLink = useCallback(
@@ -481,6 +523,7 @@ export default function AllProductsLogsTable({
 	// Функция для получения блока с результатами
 	const getResultBlock = useCallback(
 		(log: ProductLog): React.ReactNode => {
+			console.log(log);
 			const action = log.action;
 			const userExists = log.admin ? existingUsers.has(log.admin.id) : false;
 			// Получаем актуальные данные пользователя из existingUsers
@@ -639,27 +682,53 @@ export default function AllProductsLogsTable({
 						</div>
 					</div>
 				);
-			} else if (action === "bulk" || action === "import") {
-				const bulkLogKey = `${action}_${log.id}`;
+			} else if (action === "import") {
+				const importLogKey = `import_${log.id}`;
 				return (
 					<div className="tableListBlock">
 						<div className="tableListItems">
-							<div className={`tableListItem fullInfoBlock ${action === "bulk" ? "remove" : "create"}`}>
-								<div className={`clickInfoBlock ${activeBlocks[bulkLogKey] ? "active" : ""}`} onClick={() => toggleActiveBlock(bulkLogKey)}>
-									{action === "bulk" ? "Массовое действие" : "Импорт продуктов"}
+							<div className={`tableListItem fullInfoBlock create`}>
+								<div className={`clickInfoBlock ${activeBlocks[importLogKey] ? "active" : ""}`} onClick={() => toggleActiveBlock(importLogKey)}>
+									Импорт продуктов
 								</div>
-								<div className={`openingBlock ${activeBlocks[bulkLogKey] ? "active" : ""}`}>
+								<div className={`openingBlock ${activeBlocks[importLogKey] ? "active" : ""}`}>
 									<div className="infoField">
 										<span className="title">Сообщение:</span>
 										<span className="value">{log.message || "—"}</span>
 									</div>
-									{log.targetProduct && (
-										<div className="infoField">
-											<span className="title">Продукт:</span>
-											<span className="value">
-												{log.targetProduct.title} (SKU: {log.targetProduct.sku})
-											</span>
-										</div>
+									{log.importLogData && (
+										<>
+											<div className="infoField">
+												<span className="title">Файл:</span>
+												<span className="value">{log.importLogData.file_name || "—"}</span>
+											</div>
+											<div className="infoField">
+												<span className="title">Статистика:</span>
+												<span className="value">
+													Создано: {log.importLogData.created || 0}, Обновлено: {log.importLogData.updated || 0}, Пропущено:{" "}
+													{log.importLogData.skipped || 0}
+												</span>
+											</div>
+										</>
+									)}
+
+									{log.importLogId && (
+										<button
+											className="viewDetailsButton"
+											onClick={(e) => {
+												e.preventDefault();
+												e.stopPropagation();
+												if (log.importLogId) {
+													setShowImportDetails(log.importLogId);
+													// Загружаем детали если их еще нет
+													if (!importDetailsData.has(log.importLogId)) {
+														loadImportDetails(log.importLogId);
+													}
+												}
+											}}
+										>
+											Показать детали всех изменений
+										</button>
 									)}
 								</div>
 							</div>
@@ -669,7 +738,7 @@ export default function AllProductsLogsTable({
 			}
 			return null;
 		},
-		[activeBlocks, toggleActiveBlock, existingUsers]
+		[activeBlocks, toggleActiveBlock, existingUsers, showImportDetails, importDetailsData, loadImportDetails]
 	);
 
 	useEffect(() => {
@@ -688,7 +757,7 @@ export default function AllProductsLogsTable({
 				<tbody>
 					{loading ? (
 						<tr>
-							<td colSpan={4}>
+							<td colSpan={5}>
 								<Loading />
 							</td>
 						</tr>
@@ -700,18 +769,50 @@ export default function AllProductsLogsTable({
 										<div className="date">{formatDate(log.createdAt)}</div>
 									</td>
 									<td>{log.admin ? renderUserLink(log, log.admin, log.id, "admin") : "—"}</td>
-									<td>{log.targetProduct ? renderProductLink(log, log.snapshotBefore, log.id) : "—"}</td>
+									<td>{log.department ? renderDepartmentLink(log, log.department, log.id) : "—"}</td>
+									<td>
+										{log.action === "import" ? (
+											<div className="importProductCell">
+												<span className="importLabel">Импорт товаров</span>
+												{log.importLogId && (
+													<button
+														className="viewDetailsButton"
+														onClick={(e) => {
+															e.preventDefault();
+															e.stopPropagation();
+															if (log.importLogId) {
+																setShowImportDetails(log.importLogId);
+																// Загружаем детали если их еще нет
+																if (!importDetailsData.has(log.importLogId)) {
+																	loadImportDetails(log.importLogId);
+																}
+															}
+														}}
+													>
+														Показать детали изменений
+													</button>
+												)}
+											</div>
+										) : log.targetProduct ? (
+											renderProductLink(log, log.snapshotBefore, log.id)
+										) : (
+											"—"
+										)}
+									</td>
 									<td>{getResultBlock(log)}</td>
 								</tr>
 							);
 						})
 					) : (
 						<tr>
-							<td colSpan={4}>Логи не найдены</td>
+							<td colSpan={5}>Логи не найдены</td>
 						</tr>
 					)}
 				</tbody>
 			</table>
+
+			{/* Модальное окно с деталями импорта */}
+			{showImportDetails && <ImportDetailsComponent importLogId={showImportDetails} onClose={() => setShowImportDetails(null)} />}
 		</div>
 	);
 }
