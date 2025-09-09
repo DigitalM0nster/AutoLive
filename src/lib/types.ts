@@ -244,7 +244,7 @@ export type ProductResponse = {
 };
 
 // Типы для логов продуктов
-export type ProductLogAction = "create" | "update" | "delete" | "import" | "skipped" | "duplicate";
+export type ProductLogAction = "create" | "update" | "delete" | "import" | "skipped" | "duplicate" | "bulk";
 
 export type ProductLog = {
 	id: number;
