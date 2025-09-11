@@ -5,10 +5,12 @@ import styles from "../styles.module.scss";
 import CustomSelect from "@/components/ui/customSelect/CustomSelect";
 import Pagination from "@/components/ui/pagination/Pagination";
 import FiltersBlock from "@/components/ui/filtersBlock/FiltersBlock";
+import PriceRangeFilter from "./PriceRangeFilter";
 import type { ProductListItem, ActiveFilter } from "@/lib/types";
 import Link from "next/link";
 import Loading from "@/components/ui/loading/Loading";
 import { useAuthStore } from "@/store/authStore";
+import ImageUpload from "@/components/ui/imageUpload/ImageUpload";
 
 export default function AllProductsTable() {
 	const { user } = useAuthStore();
@@ -21,6 +23,24 @@ export default function AllProductsTable() {
 	const [categoryFilter, setCategoryFilter] = useState<number | "all">("all");
 	const [departmentFilter, setDepartmentFilter] = useState<number | "all" | "none">("all");
 	const [brandFilter, setBrandFilter] = useState<string>("all");
+
+	// Фильтры по ценам (для отображения в UI)
+	const [supplierPriceFilter, setSupplierPriceFilter] = useState<{ min: number; max: number }>({ min: 0, max: 10000000 });
+	const [sitePriceFilter, setSitePriceFilter] = useState<{ min: number; max: number }>({ min: 0, max: 10000000 });
+
+	// Активные фильтры по ценам (используются в запросах к БД)
+	const [activeSupplierPriceFilter, setActiveSupplierPriceFilter] = useState<{ min: number; max: number }>({ min: 0, max: 100000 });
+	0;
+	const [activeSitePriceFilter, setActiveSitePriceFilter] = useState<{ min: number; max: number }>({ min: 0, max: 10000000 });
+
+	// Реальные границы цен (загружаются с сервера)
+	const [priceBounds, setPriceBounds] = useState<{
+		supplierPrice: { min: number; max: number };
+		sitePrice: { min: number; max: number };
+	}>({
+		supplierPrice: { min: 0, max: 10000000 },
+		sitePrice: { min: 0, max: 10000000 },
+	});
 
 	// Состояние для дропдаунов
 	const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
@@ -36,7 +56,7 @@ export default function AllProductsTable() {
 	const [search, setSearch] = useState("");
 
 	// Сортировка
-	const [sortBy, setSortBy] = useState<"id" | "title" | "sku" | "price" | "createdAt" | null>(null);
+	const [sortBy, setSortBy] = useState<"id" | "title" | "sku" | "price" | "supplierPrice" | "createdAt" | null>(null);
 	const [sortOrder, setSortOrder] = useState<"asc" | "desc" | null>(null);
 
 	// Редактирование
@@ -45,11 +65,16 @@ export default function AllProductsTable() {
 		title: "",
 		sku: "",
 		price: "",
+		supplierPrice: "",
 		brand: "",
 		description: "",
 		departmentId: "",
 		categoryId: "",
 	});
+
+	// Редактирование изображения
+	const [imageFile, setImageFile] = useState<File | null>(null);
+	const [imageToDelete, setImageToDelete] = useState<boolean>(false);
 	const [showDescription, setShowDescription] = useState<number | null>(null);
 	const [availableCategories, setAvailableCategories] = useState<{ id: number; title: string }[]>([]);
 
@@ -95,6 +120,12 @@ export default function AllProductsTable() {
 				}
 				if (brandFilter !== "all") params.append("brand", brandFilter);
 
+				// Фильтры по ценам
+				params.append("supplierPriceMin", activeSupplierPriceFilter.min.toString());
+				params.append("supplierPriceMax", activeSupplierPriceFilter.max.toString());
+				params.append("priceMin", activeSitePriceFilter.min.toString());
+				params.append("priceMax", activeSitePriceFilter.max.toString());
+
 				// Сортировка
 				if (sortBy && sortOrder) {
 					params.append("sortBy", sortBy);
@@ -114,7 +145,34 @@ export default function AllProductsTable() {
 		};
 
 		fetchProducts();
-	}, [page, categoryFilter, departmentFilter, brandFilter, sortBy, sortOrder, search]);
+	}, [page, categoryFilter, departmentFilter, brandFilter, sortBy, sortOrder, search, activeSupplierPriceFilter, activeSitePriceFilter]);
+
+	// Загрузка границ цен
+	useEffect(() => {
+		const fetchPriceBounds = async () => {
+			try {
+				const res = await fetch("/api/products/price-bounds");
+				const data = await res.json();
+
+				if (data.success) {
+					setPriceBounds({
+						supplierPrice: { min: data.supplierPrice.min, max: data.supplierPrice.max },
+						sitePrice: { min: data.sitePrice.min, max: data.sitePrice.max },
+					});
+
+					// Устанавливаем начальные значения фильтров на основе реальных границ
+					setSupplierPriceFilter({ min: data.supplierPrice.min, max: data.supplierPrice.max });
+					setSitePriceFilter({ min: data.sitePrice.min, max: data.sitePrice.max });
+					setActiveSupplierPriceFilter({ min: data.supplierPrice.min, max: data.supplierPrice.max });
+					setActiveSitePriceFilter({ min: data.sitePrice.min, max: data.sitePrice.max });
+				}
+			} catch (e) {
+				console.error("Ошибка загрузки границ цен");
+			}
+		};
+
+		fetchPriceBounds();
+	}, []);
 
 	// Загрузка данных для фильтров
 	useEffect(() => {
@@ -167,11 +225,38 @@ export default function AllProductsTable() {
 		setPage(1);
 	};
 
+	// Обработчики для фильтров по ценам с debounce
+	const handleSupplierPriceChange = (value: { min: number; max: number }) => {
+		// Обновляем только UI состояние (ползунок)
+		setSupplierPriceFilter(value);
+	};
+
+	const handleSupplierPriceChangeComplete = (value: { min: number; max: number }) => {
+		// Обновляем активное состояние (для запросов к БД)
+		setSupplierPriceFilter(value);
+		setActiveSupplierPriceFilter(value);
+		setPage(1);
+	};
+
+	const handleSitePriceChange = (value: { min: number; max: number }) => {
+		// Обновляем только UI состояние (ползунок)
+		setSitePriceFilter(value);
+	};
+
+	const handleSitePriceChangeComplete = (value: { min: number; max: number }) => {
+		// Обновляем активное состояние (для запросов к БД)
+		setSitePriceFilter(value);
+		setActiveSitePriceFilter(value);
+		setPage(1);
+	};
+
 	// Сброс всех фильтров
 	const resetFilters = () => {
 		setCategoryFilter("all");
 		setDepartmentFilter("all");
 		setBrandFilter("all");
+		setSupplierPriceFilter({ min: priceBounds.supplierPrice.min, max: priceBounds.supplierPrice.max });
+		setSitePriceFilter({ min: priceBounds.sitePrice.min, max: priceBounds.sitePrice.max });
 		setSortBy(null);
 		setSortOrder(null);
 		setSearch("");
@@ -185,6 +270,7 @@ export default function AllProductsTable() {
 			title: product.title || "",
 			sku: product.sku || "",
 			price: product.price.toString(),
+			supplierPrice: product.supplierPrice?.toString() || "",
 			brand: product.brand || "",
 			description: product.description || "",
 			departmentId: product.department?.id?.toString() || "",
@@ -217,12 +303,16 @@ export default function AllProductsTable() {
 			title: "",
 			sku: "",
 			price: "",
+			supplierPrice: "",
 			brand: "",
 			description: "",
 			departmentId: "",
 			categoryId: "",
 		});
 		setAvailableCategories([]);
+		// Сбрасываем состояние изображения
+		setImageFile(null);
+		setImageToDelete(false);
 		// Скрываем описание при отмене редактирования
 		setShowDescription(null);
 	};
@@ -236,15 +326,31 @@ export default function AllProductsTable() {
 				return;
 			}
 
+			// Валидация цены поставщика
+			const supplierPrice = editForm.supplierPrice ? parseFloat(editForm.supplierPrice) : null;
+			const sitePrice = parseFloat(editForm.price);
+
+			if (supplierPrice !== null && supplierPrice > sitePrice) {
+				alert("Цена поставщика не может быть больше цены на сайте!");
+				return;
+			}
+
 			// Проверяем, есть ли изменения
 			const hasChanges =
 				editForm.title !== (originalProduct.title || "") ||
 				editForm.sku !== (originalProduct.sku || "") ||
 				parseFloat(editForm.price) !== originalProduct.price ||
+				(editForm.supplierPrice ? parseFloat(editForm.supplierPrice) : null) !== (originalProduct.supplierPrice || null) ||
 				editForm.brand !== (originalProduct.brand || "") ||
 				editForm.description !== (originalProduct.description || "") ||
 				parseInt(editForm.departmentId) !== (originalProduct.departmentId || 0) ||
-				(editForm.categoryId ? parseInt(editForm.categoryId) : null) !== (originalProduct.categoryId || null);
+				(editForm.categoryId ? parseInt(editForm.categoryId) : null) !== (originalProduct.categoryId || null) ||
+				imageFile !== null || // Есть новое изображение
+				imageToDelete === true; // Или изображение нужно удалить
+
+			console.log("🔍 Frontend Debug - hasChanges:", hasChanges);
+			console.log("🔍 Frontend Debug - imageFile:", imageFile);
+			console.log("🔍 Frontend Debug - imageToDelete:", imageToDelete);
 
 			// Если изменений нет, просто закрываем редактирование
 			if (!hasChanges) {
@@ -253,6 +359,7 @@ export default function AllProductsTable() {
 					title: "",
 					sku: "",
 					price: "",
+					supplierPrice: "",
 					brand: "",
 					description: "",
 					departmentId: "",
@@ -262,23 +369,51 @@ export default function AllProductsTable() {
 				return;
 			}
 
+			// Создаем FormData для отправки данных
+			const formData = new FormData();
+			formData.append("title", editForm.title);
+			formData.append("sku", editForm.sku);
+			formData.append("price", editForm.price);
+			if (editForm.supplierPrice) {
+				formData.append("supplierPrice", editForm.supplierPrice);
+			}
+			formData.append("brand", editForm.brand);
+			formData.append("description", editForm.description);
+			formData.append("departmentId", editForm.departmentId);
+			if (editForm.categoryId) {
+				formData.append("categoryId", editForm.categoryId);
+			}
+
+			// Добавляем изображение если есть
+			if (imageFile) {
+				formData.append("imageFile", imageFile);
+				console.log("🔍 Frontend Debug - Добавляем imageFile:", imageFile.name, imageFile.size);
+			}
+
+			// Добавляем флаг удаления изображения
+			if (imageToDelete) {
+				formData.append("deleteImage", "true");
+				console.log("🔍 Frontend Debug - Добавляем deleteImage: true");
+			}
+
+			console.log("🔍 Frontend Debug - imageFile state:", imageFile);
+			console.log("🔍 Frontend Debug - imageToDelete state:", imageToDelete);
+
+			console.log("🔍 Frontend Debug - Отправляем запрос на:", `/api/products/${productId}`);
+
 			const response = await fetch(`/api/products/${productId}`, {
 				method: "PATCH",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({
-					title: editForm.title,
-					sku: editForm.sku,
-					price: parseFloat(editForm.price),
-					brand: editForm.brand,
-					description: editForm.description,
-					departmentId: parseInt(editForm.departmentId),
-					categoryId: editForm.categoryId ? parseInt(editForm.categoryId) : null,
-				}),
+				credentials: "include",
+				body: formData,
 			});
 
+			console.log("🔍 Frontend Debug - Ответ сервера:", response.status, response.statusText);
+
 			if (response.ok) {
+				const data = await response.json();
+				console.log("🔍 Frontend Debug - Ответ от сервера:", data);
+				console.log("🔍 Frontend Debug - Новое изображение:", data.product?.image);
+
 				// Обновляем список товаров
 				const updatedProducts = products.map((p) => {
 					if (p.id === productId) {
@@ -287,10 +422,13 @@ export default function AllProductsTable() {
 							title: editForm.title,
 							sku: editForm.sku,
 							price: parseFloat(editForm.price),
+							supplierPrice: editForm.supplierPrice ? parseFloat(editForm.supplierPrice) : null,
 							brand: editForm.brand,
 							description: editForm.description,
 							departmentId: parseInt(editForm.departmentId),
 							categoryId: editForm.categoryId ? parseInt(editForm.categoryId) : null,
+							// Обновляем изображение если оно изменилось
+							image: data.product?.image !== undefined ? data.product.image : p.image,
 						};
 						// Обновляем отдел в товаре
 						const selectedDepartment = departments.find((d) => d.id.toString() === editForm.departmentId);
@@ -312,14 +450,19 @@ export default function AllProductsTable() {
 					title: "",
 					sku: "",
 					price: "",
+					supplierPrice: "",
 					brand: "",
 					description: "",
 					departmentId: "",
 					categoryId: "",
 				});
 				setAvailableCategories([]);
+				// Сбрасываем состояние изображения после успешного сохранения
+				setImageFile(null);
+				setImageToDelete(false);
 			} else {
-				console.error("Ошибка при сохранении товара");
+				const errorData = await response.text();
+				console.error("❌ Frontend Debug - Ошибка при сохранении товара:", response.status, response.statusText, errorData);
 			}
 		} catch (error) {
 			console.error("Ошибка при сохранении товара:", error);
@@ -359,13 +502,40 @@ export default function AllProductsTable() {
 			});
 		}
 
+		// Фильтры по ценам
+		if (activeSupplierPriceFilter.min > priceBounds.supplierPrice.min || activeSupplierPriceFilter.max < priceBounds.supplierPrice.max) {
+			filters.push({
+				key: "supplierPrice",
+				label: "Цена поставщика",
+				value: `${activeSupplierPriceFilter.min} - ${activeSupplierPriceFilter.max} ₽`,
+			});
+		}
+
+		if (activeSitePriceFilter.min > priceBounds.sitePrice.min || activeSitePriceFilter.max < priceBounds.sitePrice.max) {
+			filters.push({
+				key: "sitePrice",
+				label: "Цена на сайте",
+				value: `${activeSitePriceFilter.min} - ${activeSitePriceFilter.max} ₽`,
+			});
+		}
+
 		if (sortBy) {
 			filters.push({
 				key: "sort",
 				label: "Сортировка",
-				value: `${sortBy === "id" ? "ID" : sortBy === "title" ? "Название" : sortBy === "sku" ? "SKU" : sortBy === "price" ? "Цена" : "Дата создания"} ${
-					sortOrder === "asc" ? "↑" : "↓"
-				}`,
+				value: `${
+					sortBy === "id"
+						? "ID"
+						: sortBy === "title"
+						? "Название"
+						: sortBy === "sku"
+						? "SKU"
+						: sortBy === "price"
+						? "Цена"
+						: sortBy === "supplierPrice"
+						? "Цена поставщика"
+						: "Дата создания"
+				} ${sortOrder === "asc" ? "↑" : "↓"}`,
 			});
 		}
 
@@ -389,7 +559,27 @@ export default function AllProductsTable() {
 				onSearchChange={setSearch}
 				searchPlaceholder="Поиск по названию, SKU, бренду или ID..."
 				showSearch={true}
-			/>
+			>
+				{/* Фильтры по ценам */}
+				<PriceRangeFilter
+					label="Цена на сайте (₽)"
+					minValue={priceBounds.sitePrice.min}
+					maxValue={priceBounds.sitePrice.max}
+					value={sitePriceFilter}
+					onChange={handleSitePriceChange}
+					onChangeComplete={handleSitePriceChangeComplete}
+					step={100}
+				/>
+				<PriceRangeFilter
+					label="Цена поставщика (₽)"
+					minValue={priceBounds.supplierPrice.min}
+					maxValue={priceBounds.supplierPrice.max}
+					value={supplierPriceFilter}
+					onChange={handleSupplierPriceChange}
+					onChangeComplete={handleSupplierPriceChangeComplete}
+					step={100}
+				/>
+			</FiltersBlock>
 
 			<div className={styles.tableContainer}>
 				<table>
@@ -469,7 +659,26 @@ export default function AllProductsTable() {
 									}
 								}}
 							>
-								Цена
+								Цена на сайте
+							</th>
+							<th
+								className={`${styles.tableHeaderCell} sortableHeader ${sortBy === "supplierPrice" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
+								onClick={() => {
+									if (sortBy !== "supplierPrice") {
+										setSortBy("supplierPrice");
+										setSortOrder("asc");
+										setPage(1);
+									} else if (sortOrder === "asc") {
+										setSortOrder("desc");
+										setPage(1);
+									} else {
+										setSortBy(null);
+										setSortOrder(null);
+										setPage(1);
+									}
+								}}
+							>
+								Цена поставщика
 							</th>
 							<th className={styles.tableHeaderCell}>Изображение</th>
 							<th className={styles.tableHeaderCell}>Описание</th>
@@ -512,13 +721,13 @@ export default function AllProductsTable() {
 					<tbody className={styles.tableBody}>
 						{loading ? (
 							<tr>
-								<td colSpan={10} className={styles.loadingCell}>
+								<td colSpan={11} className={styles.loadingCell}>
 									<Loading />
 								</td>
 							</tr>
 						) : products.length === 0 ? (
 							<tr>
-								<td colSpan={10} className={styles.emptyCell}>
+								<td colSpan={11} className={styles.emptyCell}>
 									Нет товаров
 								</td>
 							</tr>
@@ -552,7 +761,49 @@ export default function AllProductsTable() {
 												`${product.price} ₽`
 											)}
 										</td>
-										<td>{product.image ? <img src={product.image} alt={product.title} className={`image`} /> : <div className={`noImage`}>Нет фото</div>}</td>
+										<td>
+											{isEditing ? (
+												<input
+													type="number"
+													value={editForm.supplierPrice}
+													onChange={(e) => setEditForm({ ...editForm, supplierPrice: e.target.value })}
+													step="0.01"
+												/>
+											) : product.supplierPrice ? (
+												`${product.supplierPrice} ₽`
+											) : (
+												"—"
+											)}
+										</td>
+										<td>
+											{isEditing ? (
+												<div className={styles.imageEditCell}>
+													<ImageUpload
+														imageUrl={product.image || ""}
+														onImageChange={(file) => {
+															// Сохраняем файл в состояние для последующего сохранения
+															setImageFile(file);
+															// Сбрасываем флаг удаления при выборе нового файла
+															setImageToDelete(false);
+														}}
+														onImageRemove={() => {
+															setImageFile(null);
+															// Устанавливаем флаг удаления
+															setImageToDelete(true);
+														}}
+														disabled={false}
+													/>
+												</div>
+											) : product.image ? (
+												<div className="imageBlock">
+													<img src={product.image} alt={product.title} className={`image`} />
+												</div>
+											) : (
+												<div className={`imageBlock`}>
+													<div className="noImage">Нет изображения</div>
+												</div>
+											)}
+										</td>
 										<td>
 											{isEditing ? (
 												<textarea

@@ -1,7 +1,25 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ProductLog, ProductLogResponse, User } from "@/lib/types";
+import { ProductLog, ProductLogResponse, User, Category, CategoryFilter, FilterValue } from "@/lib/types";
+
+// Тип для значения фильтра товара в логах
+type ProductFilterValue = {
+	filterValue: {
+		id: number;
+		value: string;
+		filter: CategoryFilter;
+	};
+};
+
+// Тип для категории в логах (может быть объектом или только ID)
+type CategoryInLog =
+	| {
+			id?: number;
+			title?: string;
+	  }
+	| null
+	| undefined;
 import Loading from "@/components/ui/loading/Loading";
 import ImportDetailsComponent from "./ImportDetailsComponent";
 
@@ -28,6 +46,15 @@ export default function AllProductsLogsTable({
 	const [departmentsData, setDepartmentsData] = useState<Map<number, { id: number; name: string }>>(new Map());
 	// Храним Map с ID товара как ключом и полными данными как значением
 	const [existingProducts, setExistingProducts] = useState<Map<number, any>>(new Map());
+	// Храним данные категорий
+	const [existingCategories, setExistingCategories] = useState<Set<number>>(new Set());
+	const [categoriesData, setCategoriesData] = useState<Map<number, { id: number; title: string }>>(new Map());
+	// Храним данные фильтров
+	const [existingFilters, setExistingFilters] = useState<Set<number>>(new Set());
+	const [filtersData, setFiltersData] = useState<Map<number, { id: number; title: string }>>(new Map());
+	// Храним данные значений фильтров
+	const [existingFilterValues, setExistingFilterValues] = useState<Set<number>>(new Set());
+	const [filterValuesData, setFilterValuesData] = useState<Map<number, { id: number; value: string; filterId: number }>>(new Map());
 	// Состояние для отображения деталей импорта
 	const [showImportDetails, setShowImportDetails] = useState<number | null>(null);
 	// Состояние для детальных данных импорта
@@ -152,6 +179,111 @@ export default function AllProductsLogsTable({
 		}
 	}, []);
 
+	// Функция для загрузки актуальных данных категорий
+	const loadCategoriesData = useCallback(async () => {
+		try {
+			const response = await fetch(`/api/categories`, {
+				credentials: "include",
+			});
+
+			if (response.ok) {
+				const categories = await response.json();
+				const categoriesMap = new Map<number, { id: number; title: string }>(categories.map((cat: { id: number; title: string }) => [cat.id, cat]));
+				const categoriesSet = new Set<number>(categories.map((cat: { id: number; title: string }) => cat.id));
+				setCategoriesData(categoriesMap);
+				setExistingCategories(categoriesSet);
+			} else {
+				console.error("Ошибка при загрузке данных категорий:", response.status, response.statusText);
+			}
+		} catch (error) {
+			console.error("Ошибка при загрузке данных категорий:", error);
+		}
+	}, []);
+
+	// Функция для загрузки актуальных данных фильтров и их значений
+	const loadFiltersData = useCallback(async () => {
+		try {
+			// Загружаем все категории, чтобы получить их фильтры
+			const categoriesResponse = await fetch(`/api/categories`, {
+				credentials: "include",
+			});
+
+			if (categoriesResponse.ok) {
+				const categories = await categoriesResponse.json();
+				const filtersMap = new Map<number, { id: number; title: string }>();
+				const filterValuesMap = new Map<number, { id: number; value: string; filterId: number }>();
+
+				// Для каждой категории загружаем её фильтры
+				for (const category of categories) {
+					try {
+						const filtersResponse = await fetch(`/api/categories/${category.id}/filters`, {
+							credentials: "include",
+						});
+
+						if (filtersResponse.ok) {
+							const filters = await filtersResponse.json();
+
+							// Добавляем фильтры в общую карту
+							for (const filter of filters) {
+								filtersMap.set(filter.id, { id: filter.id, title: filter.title });
+
+								// Добавляем значения фильтров
+								if (filter.values) {
+									for (const value of filter.values) {
+										filterValuesMap.set(value.id, {
+											id: value.id,
+											value: value.value,
+											filterId: filter.id,
+										});
+									}
+								}
+							}
+						}
+					} catch (error) {
+						console.error(`Ошибка при загрузке фильтров категории ${category.id}:`, error);
+					}
+				}
+
+				const filtersSet = new Set<number>(Array.from(filtersMap.keys()));
+				const filterValuesSet = new Set<number>(Array.from(filterValuesMap.keys()));
+
+				setFiltersData(filtersMap);
+				setFilterValuesData(filterValuesMap);
+				setExistingFilters(filtersSet);
+				setExistingFilterValues(filterValuesSet);
+			} else {
+				console.error("Ошибка при загрузке категорий для фильтров:", categoriesResponse.status, categoriesResponse.statusText);
+			}
+		} catch (error) {
+			console.error("Ошибка при загрузке данных фильтров:", error);
+		}
+	}, []);
+
+	// Функция для определения отдела товара в логе
+	const getProductDepartment = useCallback((log: ProductLog) => {
+		// Для разных типов действий используем разные источники данных
+		switch (log.action) {
+			case "create":
+				// Для создания товара берем отдел из snapshotAfter
+				return log.snapshotAfter?.department || (log.snapshotAfter?.departmentId ? { id: log.snapshotAfter.departmentId } : null);
+
+			case "update":
+				// Для обновления товара берем отдел ДО изменений (snapshotBefore)
+				return log.snapshotBefore?.department || (log.snapshotBefore?.departmentId ? { id: log.snapshotBefore.departmentId } : null);
+
+			case "delete":
+				// Для удаления товара берем отдел из snapshotBefore
+				return log.snapshotBefore?.department || (log.snapshotBefore?.departmentId ? { id: log.snapshotBefore.departmentId } : null);
+
+			case "import":
+				// Для импорта отдел не применим
+				return null;
+
+			default:
+				return null;
+		}
+	}, []);
+
 	const fetchLogs = useCallback(async () => {
 		setLoading(true);
 		setError(null);
@@ -238,9 +370,9 @@ export default function AllProductsLogsTable({
 
 			const productDepartmentIds = formattedLogs
 				.map((log: ProductLog) => {
-					// Используем отдел из snapshotBefore, если в targetProduct его нет
-					const departmentId = log.targetProduct?.department?.id || log.snapshotBefore?.department?.id;
-					return departmentId;
+					// Используем новую функцию для определения отдела товара
+					const productDepartment = getProductDepartment(log);
+					return productDepartment?.id;
 				})
 				.filter((id: number | undefined) => id !== undefined && id !== 0) as number[];
 
@@ -258,7 +390,7 @@ export default function AllProductsLogsTable({
 		} finally {
 			setLoading(false);
 		}
-	}, [queryParams, onLogsUpdate, checkUsersExistence, checkDepartmentsExistence, checkProductsExistence]);
+	}, [queryParams, onLogsUpdate, checkUsersExistence, checkDepartmentsExistence, checkProductsExistence, getProductDepartment]);
 
 	// Функция для отображения имени пользователя
 	const getUserName = useCallback((user: { first_name: string | null; last_name: string | null; middle_name?: string | null }) => {
@@ -328,6 +460,181 @@ export default function AllProductsLogsTable({
 		[existingDepartments, departmentsData]
 	);
 
+	// Функция для отображения категории с ссылкой, если категория существует
+	const renderCategory = useCallback(
+		(category: CategoryInLog) => {
+			// Определяем ID категории
+			const catId = category?.id;
+
+			if (!catId) {
+				return "Без категории";
+			}
+
+			const categoryExists = existingCategories.has(catId);
+
+			// Получаем актуальное название категории
+			const actualCategory = categoriesData.get(catId);
+			const snapshotName = category?.title || `ID: ${catId}`;
+			const actualName = actualCategory ? actualCategory.title : snapshotName;
+
+			if (categoryExists) {
+				// Если категория существует
+				if (snapshotName === actualName) {
+					// Если названия совпадают, показываем только актуальное название ссылкой
+					return (
+						<a href={`/admin/categories/${catId}`} className={`itemLink`}>
+							{actualName}
+						</a>
+					);
+				} else {
+					// Если названия разные, показываем название из снапшота и актуальное название в скобочках со ссылкой
+					return (
+						<span>
+							{snapshotName}{" "}
+							<a href={`/admin/categories/${catId}`} className={`itemLink`}>
+								({actualName})
+							</a>
+						</span>
+					);
+				}
+			} else {
+				// Если категории не существует, показываем пометку с названием из снапшота
+				return (
+					<span>
+						{snapshotName} <span className={`deletedItemStatus`}>(категория удалена)</span>
+					</span>
+				);
+			}
+		},
+		[existingCategories, categoriesData]
+	);
+
+	// Функция для отображения фильтра и его значения
+	const renderFilter = useCallback(
+		(filterValue: ProductFilterValue) => {
+			if (!filterValue || !filterValue.filterValue) {
+				return "—";
+			}
+
+			const filter = filterValue.filterValue.filter;
+			const value = filterValue.filterValue;
+
+			if (!filter || !value) {
+				return "—";
+			}
+
+			const filterExists = existingFilters.has(filter.id);
+			const valueExists = existingFilterValues.has(value.id);
+
+			// Получаем актуальные данные фильтра
+			const actualFilter = filtersData.get(filter.id);
+			const actualValue = filterValuesData.get(value.id);
+
+			const snapshotFilterName = filter.title;
+			const actualFilterName = actualFilter ? actualFilter.title : snapshotFilterName;
+			const snapshotValueName = value.value;
+			const actualValueName = actualValue ? actualValue.value : snapshotValueName;
+
+			let filterDisplay = "";
+			let valueDisplay = "";
+
+			// Отображаем фильтр
+			if (filterExists) {
+				if (snapshotFilterName === actualFilterName) {
+					filterDisplay = actualFilterName;
+				} else {
+					filterDisplay = `${snapshotFilterName} (${actualFilterName})`;
+				}
+			} else {
+				filterDisplay = `${snapshotFilterName} (фильтр удален)`;
+			}
+
+			// Отображаем значение
+			if (valueExists) {
+				if (snapshotValueName === actualValueName) {
+					valueDisplay = actualValueName;
+				} else {
+					valueDisplay = `${snapshotValueName} (${actualValueName})`;
+				}
+			} else {
+				valueDisplay = `${snapshotValueName} (значение удалено)`;
+			}
+
+			return `${filterDisplay}: ${valueDisplay}`;
+		},
+		[existingFilters, existingFilterValues, filtersData, filterValuesData]
+	);
+
+	// Функция для группировки и отображения фильтров
+	const renderGroupedFilters = useCallback(
+		(filterValues: ProductFilterValue[]): string[] => {
+			if (!filterValues || filterValues.length === 0) {
+				return [];
+			}
+
+			// Группируем фильтры по ID фильтра
+			const groupedFilters = new Map<number, { filter: any; values: string[] }>();
+
+			filterValues.forEach((filterValue) => {
+				if (!filterValue || !filterValue.filterValue) return;
+
+				const filter = filterValue.filterValue.filter;
+				const value = filterValue.filterValue;
+
+				if (!filter || !value) return;
+
+				const filterExists = existingFilters.has(filter.id);
+				const valueExists = existingFilterValues.has(value.id);
+
+				// Получаем актуальные данные фильтра
+				const actualFilter = filtersData.get(filter.id);
+				const actualValue = filterValuesData.get(value.id);
+
+				const snapshotFilterName = filter.title;
+				const actualFilterName = actualFilter ? actualFilter.title : snapshotFilterName;
+				const snapshotValueName = value.value;
+				const actualValueName = actualValue ? actualValue.value : snapshotValueName;
+
+				let filterDisplay = "";
+				let valueDisplay = "";
+
+				// Отображаем фильтр
+				if (filterExists) {
+					if (snapshotFilterName === actualFilterName) {
+						filterDisplay = actualFilterName;
+					} else {
+						filterDisplay = `${snapshotFilterName} (${actualFilterName})`;
+					}
+				} else {
+					filterDisplay = `${snapshotFilterName} (фильтр удален)`;
+				}
+
+				// Отображаем значение
+				if (valueExists) {
+					if (snapshotValueName === actualValueName) {
+						valueDisplay = actualValueName;
+					} else {
+						valueDisplay = `${snapshotValueName} (${actualValueName})`;
+					}
+				} else {
+					valueDisplay = `${snapshotValueName} (значение удалено)`;
+				}
+
+				// Добавляем в группу
+				if (!groupedFilters.has(filter.id)) {
+					groupedFilters.set(filter.id, { filter: filterDisplay, values: [] });
+				}
+				groupedFilters.get(filter.id)!.values.push(valueDisplay);
+			});
+
+			// Формируем результат
+			const result = Array.from(groupedFilters.values()).map((group) => `${group.filter}: ${group.values.join(", ")}`);
+
+			return result;
+		},
+		[existingFilters, existingFilterValues, filtersData, filterValuesData]
+	);
+
 	// Функция для форматирования даты
 	const formatDate = useCallback((dateString: string) => {
 		if (!dateString) return "—";
@@ -394,11 +701,65 @@ export default function AllProductsLogsTable({
 		[activeBlocks, toggleActiveBlock, existingDepartments, departmentsData]
 	);
 
+	// Функция для отображения ссылки на категорию с разворачивающимся блоком
+	const renderCategoryLink = useCallback(
+		(log: ProductLog, category: { id: number; title: string }, logId: number) => {
+			// Проверяем, существует ли категория в базе данных
+			const categoryExists = existingCategories.has(category.id);
+			// Получаем актуальные данные категории из categoriesData
+			const actualCategory = categoriesData.get(category.id);
+			const categoryLogKey = `category_${logId}_${category.id}`;
+
+			return (
+				<div key={categoryLogKey} className={`fullInfoBlock`}>
+					<div className={`clickInfoBlock ${activeBlocks[categoryLogKey] ? "active" : ""}`} onClick={() => toggleActiveBlock(categoryLogKey)}>
+						{category.title}
+					</div>
+					<div className={`openingBlock ${activeBlocks[categoryLogKey] ? "active" : ""}`}>
+						<div className="infoField">
+							<span className="title">ID:</span>
+							<span className="value">{category.id || "—"}</span>
+						</div>
+						{categoryExists ? (
+							<div className="infoField">
+								<span className="title">Ссылка:</span>
+								<span className="value">
+									<a href={`/admin/categories/${category.id}`} className="itemLink">
+										{actualCategory?.title || category.title}
+									</a>
+								</span>
+							</div>
+						) : (
+							<div className="infoField">
+								<span className="title">Статус:</span>
+								<span className="value deletedItemStatus">Категория удалена</span>
+							</div>
+						)}
+					</div>
+				</div>
+			);
+		},
+		[activeBlocks, toggleActiveBlock, existingCategories, categoriesData]
+	);
+
 	// Функция для отображения ссылки на товар с разворачивающимся блоком
 	const renderProductLink = useCallback(
 		(
 			log: ProductLog,
-			product: { id: number; title?: string; sku?: string; brand?: string; price?: number; description?: string; category?: any; department?: any },
+			product: {
+				id: number;
+				title?: string;
+				sku?: string;
+				brand?: string;
+				price?: number;
+				supplierPrice?: number;
+				description?: string;
+				category?: CategoryInLog;
+				categoryId?: number;
+				department?: any;
+				productFilterValues?: ProductFilterValue[];
+				image?: string;
+			},
 			logId: number
 		) => {
 			// Проверяем, существует ли товар в базе данных
@@ -425,20 +786,53 @@ export default function AllProductsLogsTable({
 							<span className="value">{product.brand || "—"}</span>
 						</div>
 						<div className="infoField">
-							<span className="title">Цена:</span>
-							<span className="value">{product.price || "—"}</span>
+							<span className="title">Цена на сайте:</span>
+							<span className="value">{product.price ? `${product.price} ₽` : "—"}</span>
 						</div>
 						<div className="infoField">
-							<span className="title">Категория:</span>
-							<span className="value">{product.category?.title || "—"}</span>
-						</div>
-						<div className="infoField">
-							<span className="title">Отдел:</span>
-							<span className="value">{renderDepartment(product.department)}</span>
+							<span className="title">Цена поставщика:</span>
+							<span className="value">{product.supplierPrice ? `${product.supplierPrice} ₽` : "—"}</span>
 						</div>
 						<div className="infoField">
 							<span className="title">Описание:</span>
 							<span className="value">{product.description || "—"}</span>
+						</div>
+						<div className="infoField">
+							<span className="title">Отдел:</span>
+							<span className="value">{log.action === "update" ? renderDepartment(log.snapshotBefore?.department) : renderDepartment(product.department)}</span>
+						</div>
+						<div className="infoField">
+							<span className="title">Категория:</span>
+							<span className="value">
+								{log.action === "update"
+									? renderCategory(log.snapshotBefore?.category || (log.snapshotBefore?.categoryId ? { id: log.snapshotBefore.categoryId } : null))
+									: renderCategory(product.category || (product.categoryId ? { id: product.categoryId } : null))}
+							</span>
+						</div>
+						{(log.action === "update" ? log.snapshotBefore?.productFilterValues : product.productFilterValues) &&
+							(log.action === "update" ? log.snapshotBefore?.productFilterValues : product.productFilterValues).length > 0 && (
+								<div className="infoField">
+									<span className="title">Фильтры:</span>
+									<span className="value">
+										{renderGroupedFilters(log.action === "update" ? log.snapshotBefore?.productFilterValues : product.productFilterValues).length > 0
+											? renderGroupedFilters(log.action === "update" ? log.snapshotBefore?.productFilterValues : product.productFilterValues).map(
+													(filterText: string, index: number) => <div key={index}>{filterText}</div>
+											  )
+											: "—"}
+									</span>
+								</div>
+							)}
+						<div className="infoField">
+							<span className="title">Изображение:</span>
+							<span className="value">
+								{(log.action === "update" ? log.snapshotBefore?.image : product.image) ? (
+									<a href={log.action === "update" ? log.snapshotBefore?.image : product.image} target="_blank" rel="noopener noreferrer" className="itemLink">
+										Открыть изображение
+									</a>
+								) : (
+									"Не указано"
+								)}
+							</span>
 						</div>
 						{productExists ? (
 							<div className="infoField">
@@ -459,7 +853,7 @@ export default function AllProductsLogsTable({
 				</div>
 			);
 		},
-		[activeBlocks, toggleActiveBlock, existingProducts]
+		[activeBlocks, toggleActiveBlock, existingProducts, renderCategory, renderGroupedFilters]
 	);
 
 	// Функция для отображения ссылки на пользователя
@@ -542,8 +936,8 @@ export default function AllProductsLogsTable({
 									{log.snapshotAfter && (
 										<>
 											<div className="infoField">
-												<span className="title">Название:</span>
-												<span className="value">{log.snapshotAfter.title || "—"}</span>
+												<span className="title">ID:</span>
+												<span className="value">{log.snapshotAfter.id || "—"}</span>
 											</div>
 											<div className="infoField">
 												<span className="title">SKU:</span>
@@ -555,11 +949,51 @@ export default function AllProductsLogsTable({
 											</div>
 											<div className="infoField">
 												<span className="title">Цена:</span>
-												<span className="value">{log.snapshotAfter.price || "—"}</span>
+												<span className="value">{log.snapshotAfter.price ? `${log.snapshotAfter.price} ₽` : "—"}</span>
+											</div>
+											<div className="infoField">
+												<span className="title">Цена поставщика:</span>
+												<span className="value">{log.snapshotAfter.supplierPrice ? `${log.snapshotAfter.supplierPrice} ₽` : "—"}</span>
 											</div>
 											<div className="infoField">
 												<span className="title">Описание:</span>
 												<span className="value">{log.snapshotAfter.description || "—"}</span>
+											</div>
+											<div className="infoField">
+												<span className="title">Отдел:</span>
+												<span className="value">
+													{log.snapshotAfter.department?.name || (log.snapshotAfter.departmentId ? `ID: ${log.snapshotAfter.departmentId}` : "—")}
+												</span>
+											</div>
+											<div className="infoField">
+												<span className="title">Категория:</span>
+												<span className="value">
+													{renderCategory(log.snapshotAfter.category || (log.snapshotAfter.categoryId ? { id: log.snapshotAfter.categoryId } : null))}
+												</span>
+											</div>
+											{log.snapshotAfter.productFilterValues && log.snapshotAfter.productFilterValues.length > 0 && (
+												<div className="infoField">
+													<span className="title">Фильтры:</span>
+													<span className="value">
+														{renderGroupedFilters(log.snapshotAfter.productFilterValues).length > 0
+															? renderGroupedFilters(log.snapshotAfter.productFilterValues).map((filterText: string, index: number) => (
+																	<div key={index}>{filterText}</div>
+															  ))
+															: "—"}
+													</span>
+												</div>
+											)}
+											<div className="infoField">
+												<span className="title">Изображение:</span>
+												<span className="value">
+													{log.snapshotAfter.image ? (
+														<a href={log.snapshotAfter.image} target="_blank" rel="noopener noreferrer" className="itemLink">
+															Открыть изображение
+														</a>
+													) : (
+														"Не указано"
+													)}
+												</span>
 											</div>
 										</>
 									)}
@@ -581,8 +1015,8 @@ export default function AllProductsLogsTable({
 									{log.snapshotBefore && (
 										<>
 											<div className="infoField">
-												<span className="title">Название:</span>
-												<span className="value">{log.snapshotBefore.title || "—"}</span>
+												<span className="title">ID:</span>
+												<span className="value">{log.snapshotBefore.id || "—"}</span>
 											</div>
 											<div className="infoField">
 												<span className="title">SKU:</span>
@@ -594,11 +1028,51 @@ export default function AllProductsLogsTable({
 											</div>
 											<div className="infoField">
 												<span className="title">Цена:</span>
-												<span className="value">{log.snapshotBefore.price || "—"}</span>
+												<span className="value">{log.snapshotBefore.price ? `${log.snapshotBefore.price} ₽` : "—"}</span>
+											</div>
+											<div className="infoField">
+												<span className="title">Цена поставщика:</span>
+												<span className="value">{log.snapshotBefore.supplierPrice ? `${log.snapshotBefore.supplierPrice} ₽` : "—"}</span>
 											</div>
 											<div className="infoField">
 												<span className="title">Описание:</span>
 												<span className="value">{log.snapshotBefore.description || "—"}</span>
+											</div>
+											<div className="infoField">
+												<span className="title">Отдел:</span>
+												<span className="value">
+													{log.snapshotBefore.department?.name || (log.snapshotBefore.departmentId ? `ID: ${log.snapshotBefore.departmentId}` : "—")}
+												</span>
+											</div>
+											<div className="infoField">
+												<span className="title">Категория:</span>
+												<span className="value">
+													{renderCategory(log.snapshotBefore.category || (log.snapshotBefore.categoryId ? { id: log.snapshotBefore.categoryId } : null))}
+												</span>
+											</div>
+											{log.snapshotBefore.productFilterValues && log.snapshotBefore.productFilterValues.length > 0 && (
+												<div className="infoField">
+													<span className="title">Фильтры:</span>
+													<span className="value">
+														{renderGroupedFilters(log.snapshotBefore.productFilterValues).length > 0
+															? renderGroupedFilters(log.snapshotBefore.productFilterValues).map((filterText: string, index: number) => (
+																	<div key={index}>{filterText}</div>
+															  ))
+															: "—"}
+													</span>
+												</div>
+											)}
+											<div className="infoField">
+												<span className="title">Изображение:</span>
+												<span className="value">
+													{log.snapshotBefore.image ? (
+														<a href={log.snapshotBefore.image} target="_blank" rel="noopener noreferrer" className="itemLink">
+															Открыть изображение
+														</a>
+													) : (
+														"Не указано"
+													)}
+												</span>
 											</div>
 										</>
 									)}
@@ -616,7 +1090,17 @@ export default function AllProductsLogsTable({
 				const skuChanged = log.snapshotBefore?.sku !== log.snapshotAfter?.sku;
 				const brandChanged = log.snapshotBefore?.brand !== log.snapshotAfter?.brand;
 				const priceChanged = log.snapshotBefore?.price !== log.snapshotAfter?.price;
+				const supplierPriceChanged = log.snapshotBefore?.supplierPrice !== log.snapshotAfter?.supplierPrice;
 				const descriptionChanged = log.snapshotBefore?.description !== log.snapshotAfter?.description;
+				const categoryChanged = log.snapshotBefore?.categoryId !== log.snapshotAfter?.categoryId;
+				const departmentChanged = log.snapshotBefore?.departmentId !== log.snapshotAfter?.departmentId;
+				const imageChanged = log.snapshotBefore?.image !== log.snapshotAfter?.image;
+
+				// Проверяем изменения фильтров
+				const beforeFilters = log.snapshotBefore?.productFilterValues || [];
+				const afterFilters = log.snapshotAfter?.productFilterValues || [];
+				const filtersChanged =
+					JSON.stringify(beforeFilters.map((f: any) => f.filterValue?.id).sort()) !== JSON.stringify(afterFilters.map((f: any) => f.filterValue?.id).sort());
 
 				return (
 					<div className="tableListBlock">
@@ -627,7 +1111,16 @@ export default function AllProductsLogsTable({
 								</div>
 								<div className={`openingBlock ${activeBlocks[updateLogKey] ? "active" : ""}`}>
 									{/* Показываем изменения в виде таблицы */}
-									{(titleChanged || skuChanged || brandChanged || priceChanged || descriptionChanged) && (
+									{(titleChanged ||
+										skuChanged ||
+										brandChanged ||
+										priceChanged ||
+										supplierPriceChanged ||
+										descriptionChanged ||
+										categoryChanged ||
+										departmentChanged ||
+										imageChanged ||
+										filtersChanged) && (
 										<div className="changesTable">
 											<table>
 												<thead>
@@ -662,8 +1155,17 @@ export default function AllProductsLogsTable({
 													{priceChanged && (
 														<tr>
 															<td>Цена</td>
-															<td className="oldValue">{log.snapshotBefore?.price || "Не указано"}</td>
-															<td className="newValue">{log.snapshotAfter?.price || "Не указано"}</td>
+															<td className="oldValue">{log.snapshotBefore?.price ? `${log.snapshotBefore.price} ₽` : "Не указано"}</td>
+															<td className="newValue">{log.snapshotAfter?.price ? `${log.snapshotAfter.price} ₽` : "Не указано"}</td>
+														</tr>
+													)}
+													{supplierPriceChanged && (
+														<tr>
+															<td>Цена поставщика</td>
+															<td className="oldValue">
+																{log.snapshotBefore?.supplierPrice ? `${log.snapshotBefore.supplierPrice} ₽` : "Не указано"}
+															</td>
+															<td className="newValue">{log.snapshotAfter?.supplierPrice ? `${log.snapshotAfter.supplierPrice} ₽` : "Не указано"}</td>
 														</tr>
 													)}
 													{descriptionChanged && (
@@ -671,6 +1173,80 @@ export default function AllProductsLogsTable({
 															<td>Описание</td>
 															<td className="oldValue">{log.snapshotBefore?.description || "Не указано"}</td>
 															<td className="newValue">{log.snapshotAfter?.description || "Не указано"}</td>
+														</tr>
+													)}
+													{categoryChanged && (
+														<tr>
+															<td>Категория</td>
+															<td className="oldValue">
+																{renderCategory(
+																	log.snapshotBefore?.category || (log.snapshotBefore?.categoryId ? { id: log.snapshotBefore.categoryId } : null)
+																)}
+															</td>
+															<td className="newValue">
+																{renderCategory(
+																	log.snapshotAfter?.category || (log.snapshotAfter?.categoryId ? { id: log.snapshotAfter.categoryId } : null)
+																)}
+															</td>
+														</tr>
+													)}
+													{departmentChanged && (
+														<tr>
+															<td>Отдел</td>
+															<td className="oldValue">
+																{log.snapshotBefore?.department?.name ||
+																	(log.snapshotBefore?.departmentId ? `ID: ${log.snapshotBefore.departmentId}` : "Не указано")}
+															</td>
+															<td className="newValue">
+																{log.snapshotAfter?.department?.name ||
+																	(log.snapshotAfter?.departmentId ? `ID: ${log.snapshotAfter.departmentId}` : "Не указано")}
+															</td>
+														</tr>
+													)}
+													{imageChanged && (
+														<tr>
+															<td>Изображение</td>
+															<td className="oldValue">
+																{log.snapshotBefore?.image ? (
+																	<a href={log.snapshotBefore.image} target="_blank" rel="noopener noreferrer" className="itemLink">
+																		Открыть старое изображение
+																	</a>
+																) : (
+																	"Не указано"
+																)}
+															</td>
+															<td className="newValue">
+																{log.snapshotAfter?.image ? (
+																	<a href={log.snapshotAfter.image} target="_blank" rel="noopener noreferrer" className="itemLink">
+																		Открыть новое изображение
+																	</a>
+																) : (
+																	"Удалено"
+																)}
+															</td>
+														</tr>
+													)}
+													{filtersChanged && (
+														<tr>
+															<td>Фильтры</td>
+															<td className="oldValue">
+																{beforeFilters.length > 0
+																	? renderGroupedFilters(beforeFilters).length > 0
+																		? renderGroupedFilters(beforeFilters).map((filterText: string, index: number) => (
+																				<div key={index}>{filterText}</div>
+																		  ))
+																		: "Не указано"
+																	: "Не указано"}
+															</td>
+															<td className="newValue">
+																{afterFilters.length > 0
+																	? renderGroupedFilters(afterFilters).length > 0
+																		? renderGroupedFilters(afterFilters).map((filterText: string, index: number) => (
+																				<div key={index}>{filterText}</div>
+																		  ))
+																		: "Не указано"
+																	: "Не указано"}
+															</td>
 														</tr>
 													)}
 												</tbody>
@@ -738,7 +1314,7 @@ export default function AllProductsLogsTable({
 			}
 			return null;
 		},
-		[activeBlocks, toggleActiveBlock, existingUsers, showImportDetails, importDetailsData, loadImportDetails]
+		[activeBlocks, toggleActiveBlock, existingUsers, showImportDetails, importDetailsData, loadImportDetails, renderCategory, renderGroupedFilters]
 	);
 
 	useEffect(() => {
@@ -749,6 +1325,16 @@ export default function AllProductsLogsTable({
 	useEffect(() => {
 		loadDepartmentsData();
 	}, [loadDepartmentsData]);
+
+	// Загружаем данные категорий при монтировании компонента
+	useEffect(() => {
+		loadCategoriesData();
+	}, [loadCategoriesData]);
+
+	// Загружаем данные фильтров при монтировании компонента
+	useEffect(() => {
+		loadFiltersData();
+	}, [loadFiltersData]);
 
 	return (
 		<div className={`tableContent`}>
@@ -769,7 +1355,7 @@ export default function AllProductsLogsTable({
 										<div className="date">{formatDate(log.createdAt)}</div>
 									</td>
 									<td>{log.admin ? renderUserLink(log, log.admin, log.id, "admin") : "—"}</td>
-									<td>{log.department ? renderDepartmentLink(log, log.department, log.id) : "—"}</td>
+									<td>{getProductDepartment(log) ? renderDepartmentLink(log, getProductDepartment(log), log.id) : "—"}</td>
 									<td>
 										{log.action === "import" ? (
 											<div className="importProductCell">

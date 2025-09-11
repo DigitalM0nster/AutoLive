@@ -253,8 +253,6 @@ export const DELETE = withPermission(
 				},
 			});
 
-			console.log(`🗑️ Удалено ${deleteResult.count} логов пользователей администратором ${user.id}`);
-
 			return NextResponse.json({
 				success: true,
 				message: `Успешно удалено ${deleteResult.count} логов пользователей`,

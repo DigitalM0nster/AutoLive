@@ -206,7 +206,7 @@ export async function getFullDepartmentData(departmentId: number) {
  */
 async function getFullProductData(productId: number) {
 	try {
-		// Получаем полную информацию о товаре с категорией и отделом
+		// Получаем полную информацию о товаре с категорией, отделом и фильтрами
 		const product = await prisma.product.findUnique({
 			where: { id: productId },
 			include: {
@@ -220,6 +220,15 @@ async function getFullProductData(productId: number) {
 					select: {
 						id: true,
 						name: true,
+					},
+				},
+				productFilterValues: {
+					include: {
+						filterValue: {
+							include: {
+								filter: { select: { id: true, title: true } },
+							},
+						},
 					},
 				},
 			},
@@ -248,6 +257,7 @@ async function getFullProductData(productId: number) {
 			// Связанные данные
 			category: product.category,
 			department: product.department,
+			productFilterValues: product.productFilterValues,
 
 			// Статистика
 			statistics: {
@@ -423,7 +433,7 @@ export async function logChange(options: UniversalLogOptions) {
 		if (options.entityType === "product" && options.entityId) {
 			await prisma.product_log.create({
 				data: {
-					action: options.message?.includes("создан") ? "create" : options.message?.includes("удален") ? "delete" : "update",
+					action: options.message?.includes("создан") ? "create" : options.message?.includes("удален") || options.message?.includes("Удаление") ? "delete" : "update",
 					message: options.message,
 					userSnapshot: {
 						id: adminData.id,

@@ -132,9 +132,6 @@ export const GET = withPermission(
 					determinedActions = actions;
 				}
 
-				// Логируем определенные действия для отладки
-				console.log(`🔍 Лог ${log.id}: определены действия:`, determinedActions);
-
 				return {
 					id: log.id,
 					createdAt: log.createdAt,
@@ -183,36 +180,22 @@ export const GET = withPermission(
 				};
 			});
 
-			// Сначала фильтруем по конкретному департаменту (departmentId из URL)
-			console.log(`🔍 Фильтрация по департаменту: ${departmentId}`);
-			console.log(`📊 Логов до фильтрации по департаменту: ${formattedLogs.length}`);
-
 			formattedLogs = formattedLogs.filter((log) => {
 				// Проверяем targetDepartment (snapshotAfter для созданных/обновленных отделов)
 				if (log.targetDepartment && log.targetDepartment.id === departmentId) {
-					console.log(`✅ Лог ${log.id}: найден в targetDepartment (ID: ${log.targetDepartment.id})`);
 					return true;
 				}
 
 				// Проверяем snapshotBefore для удаленных отделов
 				if (log.snapshotBefore && log.snapshotBefore.id === departmentId) {
-					console.log(`✅ Лог ${log.id}: найден в snapshotBefore (ID: ${log.snapshotBefore.id})`);
 					return true;
 				}
 
-				console.log(`❌ Лог ${log.id}: не найден в департаменте ${departmentId}`);
-				console.log(`   targetDepartment:`, log.targetDepartment);
-				console.log(`   snapshotBefore:`, log.snapshotBefore);
 				return false;
 			});
 
-			console.log(`📊 Логов после фильтрации по департаменту: ${formattedLogs.length}`);
-
 			// Затем фильтруем по действию если указан
 			if (action && action !== "all") {
-				console.log(`🔍 Фильтрация по действию: ${action}`);
-				console.log(`📊 Логов до фильтрации по действию: ${formattedLogs.length}`);
-
 				formattedLogs = formattedLogs.filter((log) => {
 					// Маппинг действий между фронтендом и бэкендом
 					let hasAction = false;
@@ -226,15 +209,8 @@ export const GET = withPermission(
 						hasAction = log.actions.some((actionType) => ["add_employees", "remove_employees", "change_name", "change_categories"].includes(actionType));
 					}
 
-					if (!hasAction) {
-						console.log(`❌ Лог ${log.id} не содержит действие "${action}". Доступные действия:`, log.actions);
-						console.log(`   snapshotBefore:`, !!log.snapshotBefore);
-						console.log(`   snapshotAfter:`, !!log.snapshotAfter);
-					}
 					return hasAction;
 				});
-
-				console.log(`📊 Логов после фильтрации по действию: ${formattedLogs.length}`);
 			}
 
 			// Фильтрация по поиску администратора

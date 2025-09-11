@@ -145,14 +145,6 @@ export const PATCH = withPermission(
 
 			const { name, categoryIds, addUsers, removeUsers } = body;
 
-			// Отладочная информация
-			console.log(`[DEBUG] Request body for department ${departmentId}:`, {
-				name,
-				categoryIds,
-				addUsers: addUsers?.length || 0,
-				removeUsers: removeUsers?.length || 0,
-			});
-
 			// Получаем старые разрешённые категории
 			const prevDepartment = await prisma.department.findUnique({
 				where: { id: departmentId },
@@ -208,11 +200,9 @@ export const PATCH = withPermission(
 			// Логируем изменения отдела
 			if (departmentBefore?.name !== updated.name) {
 				actions.push("change_name");
-				console.log(`[DEBUG] Added action: change_name for department ${departmentId}`);
 			}
 			if (JSON.stringify(departmentBefore?.allowedCategories.map((c) => c.categoryId).sort()) !== JSON.stringify(updated.allowedCategories.map((c) => c.categoryId).sort())) {
 				actions.push("change_categories");
-				console.log(`[DEBUG] Added action: change_categories for department ${departmentId}`);
 			}
 
 			// Обрабатываем изменения сотрудников
@@ -257,7 +247,6 @@ export const PATCH = withPermission(
 				}
 
 				actions.push("add_employees");
-				console.log(`[DEBUG] Added action: add_employees for department ${departmentId}`);
 			}
 
 			if (removeUsers && removeUsers.length > 0) {
@@ -302,15 +291,10 @@ export const PATCH = withPermission(
 				}
 
 				actions.push("remove_employees");
-				console.log(`[DEBUG] Added action: remove_employees for department ${departmentId}`);
 			}
 
 			// Всегда создаем один лог отдела со всеми действиями
 			if (actions.length > 0) {
-				// Отладочная информация
-				console.log(`[DEBUG] Actions for department ${departmentId}:`, actions);
-				console.log(`[DEBUG] Actions array length:`, actions.length);
-				console.log(`[DEBUG] Actions array contents:`, JSON.stringify(actions));
 				// Получаем актуальные данные отдела ПОСЛЕ изменений
 				const departmentAfter = await prisma.department.findUnique({
 					where: { id: departmentId },
@@ -354,7 +338,6 @@ export const PATCH = withPermission(
 					}
 				}
 
-				console.log(`[DEBUG] Calling logDepartmentChangeWithUsers with actions:`, actions);
 				await logDepartmentChangeWithUsers({
 					entityId: departmentId,
 					adminId: user.id,
@@ -592,9 +575,6 @@ export const DELETE = withPermission(
 				// Получаем ID всех товаров отдела
 				const productIds = department.products.map((p) => p.id);
 
-				console.log(`Начинаем удаление связанных записей для ${department.products.length} товаров отдела ${department.name}`);
-				console.log(`ID товаров:`, productIds);
-
 				try {
 					// Удаляем записи ServiceKitItem, которые ссылаются на товары отдела
 					const deletedServiceKitItems = await prisma.serviceKitItem.deleteMany({
@@ -602,7 +582,6 @@ export const DELETE = withPermission(
 							OR: [{ product_id: { in: productIds } }, { analog_product_id: { in: productIds } }],
 						},
 					});
-					console.log(`Удалено ServiceKitItem:`, deletedServiceKitItems.count);
 
 					// Удаляем записи ProductAnalog, которые ссылаются на товары отдела
 					const deletedProductAnalogs = await prisma.productAnalog.deleteMany({
@@ -610,7 +589,6 @@ export const DELETE = withPermission(
 							OR: [{ productId: { in: productIds } }, { analogId: { in: productIds } }],
 						},
 					});
-					console.log(`Удалено ProductAnalog:`, deletedProductAnalogs.count);
 
 					// Удаляем записи ProductFilterValue для товаров отдела
 					const deletedProductFilterValues = await prisma.productFilterValue.deleteMany({
@@ -618,9 +596,6 @@ export const DELETE = withPermission(
 							productId: { in: productIds },
 						},
 					});
-					console.log(`Удалено ProductFilterValue:`, deletedProductFilterValues.count);
-
-					console.log(`Всего удалено связанных записей для ${department.products.length} товаров отдела`);
 				} catch (error) {
 					console.error("Ошибка при удалении связанных записей товаров:", error);
 					const errorMessage = error instanceof Error ? error.message : String(error);

@@ -10,7 +10,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { withPermission } from "@/middleware/permissionMiddleware";
 import { logProductChange } from "@/lib/universalLogging";
-import { ProductListItem, ProductWithRelationsFromDB, User } from "@/lib/types";
+import { ProductListItem, ProductWithRelationsFromDB, User, ProductCreateRequest, FilterRequest } from "@/lib/types";
 
 interface ExtendedRequestContext {
 	user: Pick<User, "id" | "role"> & { departmentId: number | null };
@@ -37,6 +37,8 @@ export const GET = withPermission(
 
 		const priceMin = parseFloat(searchParams.get("priceMin") || "0");
 		const priceMax = parseFloat(searchParams.get("priceMax") || "10000000");
+		const supplierPriceMin = parseFloat(searchParams.get("supplierPriceMin") || "0");
+		const supplierPriceMax = parseFloat(searchParams.get("supplierPriceMax") || "10000000");
 
 		// Создаем фильтр поиска с учетом регистра
 		const searchFilter: Prisma.ProductWhereInput[] = search
@@ -61,6 +63,10 @@ export const GET = withPermission(
 			price: {
 				gte: priceMin,
 				lte: priceMax,
+			},
+			supplierPrice: {
+				gte: supplierPriceMin,
+				lte: supplierPriceMax,
 			},
 		};
 
@@ -118,6 +124,7 @@ export const GET = withPermission(
 				departmentId: p.departmentId,
 				categoryId: p.categoryId,
 				categoryTitle: p.category?.title || "—",
+				category: p.category ? { id: p.category.id, title: p.category.title } : undefined,
 				department: p.department ? { id: p.department.id, name: p.department.name } : undefined,
 				...(user.role !== "superadmin" && user.role !== "admin" && user.role !== "manager" ? {} : { supplierPrice: p.supplierPrice ?? null }),
 			}));
@@ -170,6 +177,11 @@ export const POST = withPermission(
 			let supplierPrice = data.supplierPrice !== "" ? parseFloat(data.supplierPrice) : null;
 			let finalPrice = data.price !== "" ? parseFloat(data.price) : null;
 
+			// Валидация цены поставщика
+			if (supplierPrice !== null && finalPrice !== null && supplierPrice > finalPrice) {
+				return new NextResponse("Цена поставщика не может быть больше цены на сайте", { status: 400 });
+			}
+
 			if (!finalPrice && supplierPrice) {
 				const markupRule = await prisma.markupRule.findFirst({
 					where: {
@@ -187,20 +199,30 @@ export const POST = withPermission(
 				}
 			}
 
+			// Проверяем разрешенные категории для отдела
+			const allowedCategories = await prisma.departmentCategory.findMany({
+				where: {
+					departmentId,
+				},
+				select: {
+					categoryId: true,
+				},
+			});
+
+			const allowedCategoryIds = allowedCategories.map((ac) => ac.categoryId);
+
 			let categoryIdToUse = data.categoryId;
 			if (categoryIdToUse) {
-				const allowed = await prisma.departmentCategory.findFirst({
-					where: {
-						departmentId,
-						categoryId: categoryIdToUse,
-					},
-				});
-				if (!allowed) {
-					console.warn(`Категория ${categoryIdToUse} запрещена для отдела ${departmentId}, убираем`);
-					categoryIdToUse = null;
+				if (allowedCategoryIds.length === 0) {
+					// Если для отдела нет разрешенных категорий, не позволяем устанавливать категорию
+					return new NextResponse("Для данного отдела не настроены разрешенные категории. Создание товара с категорией невозможно.", { status: 400 });
+				} else if (!allowedCategoryIds.includes(categoryIdToUse)) {
+					// Если категория не разрешена для отдела
+					return new NextResponse(`Категория не разрешена для выбранного отдела. Разрешенные категории: ${allowedCategoryIds.join(", ")}`, { status: 400 });
 				}
 			}
 
+			// Создаем товар
 			const newProduct = await prisma.product.create({
 				data: {
 					title: String(data.title).trim(),
@@ -215,11 +237,45 @@ export const POST = withPermission(
 				},
 			});
 
+			// Добавляем фильтры если они есть
+			if (data.filterValues && Array.isArray(data.filterValues)) {
+				const filterValueRecords = data.filterValues.flatMap((filter: FilterRequest) =>
+					filter.valueIds.map((valueId: number) => ({
+						productId: newProduct.id,
+						filterValueId: valueId,
+					}))
+				);
+
+				if (filterValueRecords.length > 0) {
+					await prisma.productFilterValue.createMany({
+						data: filterValueRecords,
+					});
+				}
+			}
+
+			// Получаем полные данные товара с фильтрами и категориями для логирования
+			const fullProductData = await prisma.product.findUnique({
+				where: { id: newProduct.id },
+				include: {
+					department: { select: { id: true, name: true } },
+					category: { select: { id: true, title: true } },
+					productFilterValues: {
+						include: {
+							filterValue: {
+								include: {
+									filter: { select: { id: true, title: true } },
+								},
+							},
+						},
+					},
+				},
+			});
+
 			await logProductChange({
 				entityId: newProduct.id,
 				adminId: user.id,
 				message: "Ручное создание товара пользователем из админки.",
-				afterData: newProduct,
+				afterData: fullProductData,
 			});
 
 			return NextResponse.json({ product: newProduct });

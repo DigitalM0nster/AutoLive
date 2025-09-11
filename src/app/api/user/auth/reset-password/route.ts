@@ -30,8 +30,6 @@ export async function POST(req: NextRequest) {
 			data: { password: hashedPassword },
 		});
 
-		console.log(`🔑 Новый пароль для ${phone}: ${newPassword}`); // в будущем: отправка SMS
-
 		return NextResponse.json({
 			success: true,
 			message: "Пароль успешно сброшен",

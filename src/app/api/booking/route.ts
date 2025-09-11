@@ -12,8 +12,6 @@ export async function POST(req: NextRequest) {
 
 		// 🔥 Здесь можно добавить сохранение в БД или отправку уведомления
 
-		console.log("📥 Новая заявка на ТО:", body);
-
 		return NextResponse.json({ success: true });
 	} catch (error) {
 		console.error("❌ Ошибка сервера:", error);

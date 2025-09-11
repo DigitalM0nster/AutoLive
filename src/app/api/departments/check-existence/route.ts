@@ -13,8 +13,6 @@ export const GET = withPermission(
 			const { searchParams } = new URL(req.url);
 			const departmentIdsParam = searchParams.get("departmentIds");
 
-			console.log("API check-existence получил параметр:", departmentIdsParam);
-
 			if (!departmentIdsParam) {
 				return NextResponse.json({ error: "departmentIds обязателен" }, { status: 400 });
 			}
@@ -23,8 +21,6 @@ export const GET = withPermission(
 				.split(",")
 				.map((id) => parseInt(id))
 				.filter((id) => !isNaN(id));
-
-			console.log("API check-existence парсит ID:", departmentIds);
 
 			if (departmentIds.length === 0) {
 				return NextResponse.json({ existingDepartmentIds: [] });
@@ -42,11 +38,7 @@ export const GET = withPermission(
 				},
 			});
 
-			console.log("API check-existence нашел отделы:", existingDepartments);
-
 			const existingDepartmentIds = existingDepartments.map((dept) => dept.id);
-
-			console.log("API check-existence возвращает ID:", existingDepartmentIds);
 
 			return NextResponse.json({
 				existingDepartmentIds,

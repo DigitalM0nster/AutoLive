@@ -20,6 +20,14 @@
 	flex-wrap: wrap;
 }
 
+// Дополнительные фильтры (children)
+.additionalFilters {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 50px;
+	align-items: flex-start;
+}
+
 // Блок с активными фильтрами
 .activeFilters {
 	display: flex;

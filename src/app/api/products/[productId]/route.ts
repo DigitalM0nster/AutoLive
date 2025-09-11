@@ -3,9 +3,11 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { withPermission } from "@/middleware/permissionMiddleware";
+import jwt from "jsonwebtoken";
+import { FilterValueForLog, FilterValueFromRequest, FilterRequest } from "@/lib/types";
 
-// ✅ GET — оставляем без изменений
-export async function GET(_req: NextRequest, context: { params: Promise<{ productId: string }> }) {
+// ✅ GET — получение товара с проверкой прав доступа
+export async function GET(req: NextRequest, context: { params: Promise<{ productId: string }> }) {
 	const { productId } = await context.params;
 
 	try {
@@ -14,205 +16,111 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ produc
 			return NextResponse.json({ error: "Некорректный ID" }, { status: 400 });
 		}
 
+		// Получаем токен из cookies
+		const token = req.cookies.get("authToken")?.value;
+		if (!token) {
+			return NextResponse.json({ error: "Нет токена авторизации" }, { status: 401 });
+		}
+
+		// Декодируем токен для получения информации о пользователе
+		let user: any;
+		try {
+			user = jwt.verify(token, process.env.JWT_SECRET!);
+		} catch (e) {
+			return NextResponse.json({ error: "Невалидный токен" }, { status: 401 });
+		}
+
+		// Получаем товар с полной информацией
 		const product = await prisma.product.findUnique({
 			where: { id },
 			include: {
+				department: { select: { id: true, name: true } },
 				category: { select: { id: true, title: true } },
 				productFilterValues: {
 					include: {
-						filterValue: { include: { filter: true } },
+						filterValue: {
+							include: {
+								filter: { select: { id: true, title: true } },
+							},
+						},
 					},
 				},
 			},
 		});
 
 		if (!product) {
-			return NextResponse.json({ error: "Продукт не найден" }, { status: 404 });
+			return NextResponse.json({ error: "Товар не найден" }, { status: 404 });
 		}
 
-		const filtersMap: Record<number, { id: number; title: string; selected_values: { id: number; value: string }[] }> = {};
+		// Проверяем права доступа
+		if (user.role === "manager" && product.departmentId !== user.departmentId) {
+			return NextResponse.json({ error: "Недостаточно прав для просмотра этого товара" }, { status: 403 });
+		}
 
-		for (const pfv of product.productFilterValues) {
-			const filter = pfv.filterValue.filter;
-			if (!filtersMap[filter.id]) {
-				filtersMap[filter.id] = { id: filter.id, title: filter.title, selected_values: [] };
-			}
-			filtersMap[filter.id].selected_values.push({
-				id: pfv.filterValue.id,
-				value: pfv.filterValue.value,
+		// Получаем разрешенные категории для отдела товара
+		let allowedCategories: { id: number; title: string }[] = [];
+		if (product.departmentId) {
+			const departmentCategories = await prisma.departmentCategory.findMany({
+				where: { departmentId: product.departmentId },
+				include: {
+					category: { select: { id: true, title: true } },
+				},
 			});
+			allowedCategories = departmentCategories.map((dc) => dc.category);
 		}
 
-		const structuredProduct = {
-			id: product.id,
-			sku: product.sku,
-			title: product.title,
-			description: product.description,
-			supplierPrice: product.supplierPrice ?? null,
-			price: product.price,
-			image: product.image,
-			brand: product.brand,
-			category: product.category,
-			filters: Object.values(filtersMap),
+		// Определяем, может ли пользователь изменять категорию
+		const canChangeCategory = allowedCategories.length > 0;
+
+		// Получаем фильтры для категории товара с выбранными значениями
+		let categoryFilters: any[] = [];
+		if (product.categoryId) {
+			const filters = await prisma.filter.findMany({
+				where: { categoryId: product.categoryId },
+				include: {
+					values: { select: { id: true, value: true } },
+				},
+			});
+
+			// Получаем выбранные значения для каждого фильтра
+			categoryFilters = await Promise.all(
+				filters.map(async (filter) => {
+					const selectedValues = await prisma.productFilterValue.findMany({
+						where: {
+							productId: product.id,
+							filterValue: {
+								filterId: filter.id,
+							},
+						},
+						include: {
+							filterValue: { select: { id: true, value: true } },
+						},
+					});
+
+					return {
+						...filter,
+						selected_values: selectedValues.map((pfv) => pfv.filterValue),
+					};
+				})
+			);
+		}
+
+		// Формируем ответ с дополнительной информацией
+		const response = {
+			...product,
+			allowedCategories,
+			canChangeCategory,
+			filters: categoryFilters,
 		};
 
-		return NextResponse.json({ product: structuredProduct });
+		return NextResponse.json({ product: response });
 	} catch (error) {
 		console.error("❌ Ошибка получения продукта:", error);
 		return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
 	}
 }
 
-// ✅ PUT — редактирование товара с подробным логом
-
-// ✅ PUT — редактирование товара с подробным логом
-
-export const PUT = withPermission(
-	async (req, { user, scope }) => {
-		const url = new URL(req.url);
-		const productId = parseInt(url.pathname.split("/").pop()!);
-
-		if (isNaN(productId)) {
-			return NextResponse.json({ error: "Некорректный ID" }, { status: 400 });
-		}
-
-		const body = await req.json();
-
-		try {
-			const existing = await prisma.product.findUnique({
-				where: { id: productId },
-				include: {
-					department: { select: { id: true, name: true } },
-					category: { select: { id: true, title: true } },
-				},
-			});
-
-			if (!existing) {
-				return NextResponse.json({ error: "Товар не найден" }, { status: 404 });
-			}
-
-			if (scope === "department" && existing.departmentId !== user.departmentId) {
-				return NextResponse.json({ error: "Недостаточно прав для редактирования этого товара" }, { status: 403 });
-			}
-
-			const rawSku = String(body.sku).trim();
-			const rawBrand = String(body.brand).trim();
-			const normalizedSku = rawSku.toLowerCase();
-			const normalizedBrand = rawBrand.toLowerCase();
-
-			const parseNullableFloat = (val: any) => {
-				const num = parseFloat(val);
-				return isNaN(num) ? null : num;
-			};
-
-			const parseNullableInt = (val: any) => {
-				const num = parseInt(val);
-				return isNaN(num) ? null : num;
-			};
-
-			const dataToUpdate: any = {
-				sku: rawSku,
-				title: String(body.title).trim(),
-				description: body.description?.trim() || null,
-				supplierPrice: parseNullableFloat(body.supplierPrice),
-				price: parseFloat(body.price),
-				brand: rawBrand,
-				categoryId: parseNullableInt(body.categoryId),
-				image: body.image?.trim() || null,
-			};
-
-			if (user.role === "superadmin") {
-				const rawDepId = String(body.departmentId || "").trim();
-				dataToUpdate.departmentId = parseNullableInt(rawDepId);
-
-				if (dataToUpdate.departmentId === null) {
-					return NextResponse.json({ error: "Поле 'Отдел' обязательно" }, { status: 400 });
-				}
-			}
-			const departmentIdToCheck = dataToUpdate.departmentId ?? existing.departmentId;
-
-			if (dataToUpdate.categoryId !== null) {
-				const isAllowed = await prisma.departmentCategory.findFirst({
-					where: {
-						departmentId: departmentIdToCheck,
-						categoryId: dataToUpdate.categoryId,
-					},
-				});
-
-				if (!isAllowed) {
-					return NextResponse.json({ error: "Категория не разрешена для выбранного отдела" }, { status: 400 });
-				}
-			}
-
-			const duplicate = await prisma.product.findFirst({
-				where: {
-					id: { not: productId },
-					departmentId: departmentIdToCheck,
-					sku: normalizedSku,
-					brand: normalizedBrand,
-				},
-			});
-
-			if (duplicate) {
-				return NextResponse.json({ error: "Товар с таким артикулом и брендом уже существует" }, { status: 409 });
-			}
-
-			console.log("▶️ BEFORE:", existing);
-			console.log("▶️ AFTER:", dataToUpdate);
-
-			// 🧠 Проверка реальных изменений
-			const fieldsToCompare: [keyof typeof dataToUpdate, any, any][] = [
-				["title", existing.title, dataToUpdate.title],
-				["sku", existing.sku, dataToUpdate.sku],
-				["brand", existing.brand, dataToUpdate.brand],
-				["price", existing.price, dataToUpdate.price],
-				["supplierPrice", existing.supplierPrice, dataToUpdate.supplierPrice],
-				["description", existing.description, dataToUpdate.description],
-				["image", existing.image, dataToUpdate.image],
-				["categoryId", existing.categoryId, dataToUpdate.categoryId],
-				["departmentId", existing.departmentId, dataToUpdate.departmentId ?? existing.departmentId],
-			];
-
-			const hasChanges = fieldsToCompare.some(([_, before, after]) => String(before) !== String(after));
-
-			if (!hasChanges) {
-				return NextResponse.json({ product: existing });
-			}
-
-			const updated = await prisma.product.update({
-				where: { id: productId },
-				data: dataToUpdate,
-			});
-
-			const updatedFull = await prisma.product.findUnique({
-				where: { id: productId },
-				include: {
-					department: { select: { id: true, name: true } },
-					category: { select: { id: true, title: true } },
-				},
-			});
-
-			// Используем универсальную функцию логирования
-			const { logProductChange } = await import("@/lib/universalLogging");
-			await logProductChange({
-				entityId: updated.id,
-				adminId: user.id,
-				message: "Товар обновлён",
-				beforeData: existing,
-				afterData: updatedFull,
-			});
-
-			return NextResponse.json({ product: updatedFull });
-		} catch (error) {
-			console.error("Ошибка обновления продукта:", error);
-			return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
-		}
-	},
-	"edit_products",
-	["admin", "superadmin"]
-);
-
-// ✅ PATCH — быстрое редактирование основных полей
+// ✅ PATCH — редактирование товара (универсальный метод)
 export const PATCH = withPermission(
 	async (req, { user, scope }) => {
 		const url = new URL(req.url);
@@ -222,13 +130,24 @@ export const PATCH = withPermission(
 			return NextResponse.json({ error: "Некорректный ID" }, { status: 400 });
 		}
 
-		const body = await req.json();
+		const formData = await req.formData();
+		console.log("🔍 API Debug - Получен PATCH запрос для товара:", productId);
 
 		try {
 			const existing = await prisma.product.findUnique({
 				where: { id: productId },
 				include: {
 					department: { select: { id: true, name: true } },
+					category: { select: { id: true, title: true } },
+					productFilterValues: {
+						include: {
+							filterValue: {
+								include: {
+									filter: { select: { id: true, title: true } },
+								},
+							},
+						},
+					},
 				},
 			});
 
@@ -241,59 +160,182 @@ export const PATCH = withPermission(
 			}
 
 			// Проверяем права на изменение отдела - только суперадмин может изменять отдел товара
-			if (body.departmentId !== undefined && user.role !== "superadmin") {
-				return NextResponse.json({ error: "Только суперадмин может изменять отдел товара" }, { status: 403 });
+			if (formData.get("departmentId") !== null) {
+				if (user.role !== "superadmin") {
+					return NextResponse.json({ error: "Только суперадмин может изменять отдел товара" }, { status: 403 });
+				}
 			}
 
 			// Проверяем права на изменение категории - только админ и суперадмин могут изменять категорию
-			if (body.categoryId !== undefined && !["admin", "superadmin"].includes(user.role)) {
+			if (formData.get("categoryId") !== null && !["admin", "superadmin"].includes(user.role)) {
 				return NextResponse.json({ error: "Только админ и суперадмин могут изменять категорию товара" }, { status: 403 });
+			}
+
+			// Валидация цены поставщика
+			const supplierPriceValue = formData.get("supplierPrice");
+			const priceValue = formData.get("price");
+			if (supplierPriceValue !== null && priceValue !== null) {
+				const supplierPrice = supplierPriceValue ? parseFloat(supplierPriceValue as string) : null;
+				const sitePrice = parseFloat(priceValue as string);
+
+				if (supplierPrice !== null && supplierPrice > sitePrice) {
+					return NextResponse.json({ error: "Цена поставщика не может быть больше цены на сайте" }, { status: 400 });
+				}
 			}
 
 			// Обновляем только переданные поля
 			const updateData: any = {};
-			if (body.title !== undefined) updateData.title = String(body.title).trim();
-			if (body.sku !== undefined) updateData.sku = String(body.sku).trim();
-			if (body.price !== undefined) updateData.price = parseFloat(body.price);
-			if (body.brand !== undefined) updateData.brand = String(body.brand).trim();
-			if (body.description !== undefined) updateData.description = body.description ? String(body.description).trim() : null;
-			if (body.departmentId !== undefined) updateData.departmentId = body.departmentId;
-			if (body.categoryId !== undefined) updateData.categoryId = body.categoryId;
+			const titleValue = formData.get("title");
+			if (titleValue !== null) updateData.title = String(titleValue).trim();
+
+			const skuValue = formData.get("sku");
+			if (skuValue !== null) updateData.sku = String(skuValue).trim();
+
+			if (priceValue !== null) updateData.price = parseFloat(priceValue as string);
+
+			if (supplierPriceValue !== null) updateData.supplierPrice = supplierPriceValue ? parseFloat(supplierPriceValue as string) : null;
+
+			const brandValue = formData.get("brand");
+			if (brandValue !== null) updateData.brand = String(brandValue).trim();
+
+			const descriptionValue = formData.get("description");
+			if (descriptionValue !== null) updateData.description = descriptionValue ? String(descriptionValue).trim() : null;
+
+			const departmentIdValue = formData.get("departmentId");
+			if (departmentIdValue !== null) {
+				const depId = parseInt(departmentIdValue as string);
+				if (!isNaN(depId)) updateData.departmentId = depId;
+			}
+
+			const categoryIdValue = formData.get("categoryId");
+			if (categoryIdValue !== null) {
+				const catId = parseInt(categoryIdValue as string);
+				if (!isNaN(catId)) updateData.categoryId = catId;
+			}
+
+			// Обрабатываем удаление изображения
+			const deleteImage = formData.get("deleteImage");
+			console.log("🔍 API Debug - deleteImage:", deleteImage);
+			if (deleteImage === "true") {
+				updateData.image = null;
+				console.log("✅ API Debug - Устанавливаем image = null");
+			}
+
+			// Обрабатываем загрузку изображения (только если не удаляем)
+			const imageFile = formData.get("imageFile") as File;
+			console.log("🔍 API Debug - imageFile:", imageFile ? `File: ${imageFile.name}, size: ${imageFile.size}` : "null");
+			if (imageFile && imageFile.size > 0 && deleteImage !== "true") {
+				try {
+					const fs = await import("fs/promises");
+					const path = await import("path");
+
+					// Создаем уникальное имя файла
+					const fileExtension = imageFile.name.split(".").pop();
+					const fileName = `product_${productId}_${Date.now()}.${fileExtension}`;
+					const filePath = path.join(process.cwd(), "public", "uploads", fileName);
+
+					// Создаем директорию если не существует
+					await fs.mkdir(path.dirname(filePath), { recursive: true });
+
+					// Сохраняем файл
+					const buffer = await imageFile.arrayBuffer();
+					await fs.writeFile(filePath, Buffer.from(buffer));
+
+					// Обновляем путь к изображению
+					updateData.image = `/uploads/${fileName}`;
+				} catch (error) {
+					console.error("Ошибка при загрузке изображения:", error);
+					return NextResponse.json({ error: "Ошибка при загрузке изображения" }, { status: 500 });
+				}
+			}
 
 			const updated = await prisma.product.update({
 				where: { id: productId },
 				data: updateData,
 				include: {
 					department: { select: { id: true, name: true } },
+					category: { select: { id: true, title: true } },
+					productFilterValues: {
+						include: {
+							filterValue: {
+								include: {
+									filter: { select: { id: true, title: true } },
+								},
+							},
+						},
+					},
 				},
 			});
+
+			// Обрабатываем фильтры товара
+			const filterValuesString = formData.get("filterValues");
+			if (filterValuesString) {
+				try {
+					const filterValues = JSON.parse(filterValuesString as string);
+
+					// Удаляем все существующие фильтры товара
+					await prisma.productFilterValue.deleteMany({
+						where: { productId: productId },
+					});
+
+					// Добавляем новые фильтры
+					const filterValueRecords = filterValues.flatMap((filter: any) =>
+						filter.valueIds.map((valueId: number) => ({
+							productId,
+							filterValueId: valueId,
+						}))
+					);
+
+					if (filterValueRecords.length > 0) {
+						await prisma.productFilterValue.createMany({
+							data: filterValueRecords,
+						});
+					}
+				} catch (error) {
+					console.error("Ошибка при обработке фильтров:", error);
+					return NextResponse.json({ error: "Ошибка при обработке фильтров" }, { status: 400 });
+				}
+			}
 
 			// Проверяем, есть ли реальные изменения
 			const hasRealChanges =
 				(updateData.title !== undefined && updateData.title !== existing.title) ||
 				(updateData.sku !== undefined && updateData.sku !== existing.sku) ||
 				(updateData.price !== undefined && updateData.price !== existing.price) ||
+				(updateData.supplierPrice !== undefined && updateData.supplierPrice !== existing.supplierPrice) ||
 				(updateData.brand !== undefined && updateData.brand !== existing.brand) ||
 				(updateData.description !== undefined && updateData.description !== existing.description) ||
 				(updateData.departmentId !== undefined && updateData.departmentId !== existing.departmentId) ||
-				(updateData.categoryId !== undefined && updateData.categoryId !== existing.categoryId);
+				(updateData.categoryId !== undefined && updateData.categoryId !== existing.categoryId) ||
+				(updateData.image !== undefined && updateData.image !== existing.image);
+
+			console.log("🔍 API Debug - Проверка изменений:");
+			console.log("🔍 API Debug - updateData.image:", updateData.image);
+			console.log("🔍 API Debug - existing.image:", existing.image);
+			console.log("🔍 API Debug - Изменение изображения:", updateData.image !== undefined && updateData.image !== existing.image);
+			console.log("🔍 API Debug - hasRealChanges:", hasRealChanges);
 
 			// Логируем только если есть реальные изменения
 			if (hasRealChanges) {
+				console.log("✅ API Debug - Логируем изменения товара");
 				// Используем универсальную функцию логирования
 				const { logProductChange } = await import("@/lib/universalLogging");
 				await logProductChange({
 					entityId: updated.id,
 					adminId: user.id,
-					message: "Быстрое редактирование товара",
+					message: "Редактирование товара",
 					beforeData: existing,
 					afterData: updated,
 				});
+				console.log("✅ API Debug - Логирование завершено");
+			} else {
+				console.log("ℹ️ API Debug - Нет изменений для логирования");
 			}
 
+			console.log("✅ API Debug - Товар успешно обновлен:", updated.id, "image:", updated.image);
 			return NextResponse.json({ product: updated });
 		} catch (error) {
-			console.error("Ошибка быстрого обновления продукта:", error);
+			console.error("❌ API Debug - Ошибка обновления продукта:", error);
 			return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
 		}
 	},
@@ -301,7 +343,7 @@ export const PATCH = withPermission(
 	["admin", "superadmin"]
 );
 
-// ✅ DELETE — удаление с подробным логом
+// ✅ DELETE — удаление товара
 export const DELETE = withPermission(
 	async (req, { user, scope }) => {
 		const url = new URL(req.url);
@@ -312,7 +354,22 @@ export const DELETE = withPermission(
 		}
 
 		try {
-			const existing = await prisma.product.findUnique({ where: { id: productId } });
+			const existing = await prisma.product.findUnique({
+				where: { id: productId },
+				include: {
+					department: { select: { id: true, name: true } },
+					category: { select: { id: true, title: true } },
+					productFilterValues: {
+						include: {
+							filterValue: {
+								include: {
+									filter: { select: { id: true, title: true } },
+								},
+							},
+						},
+					},
+				},
+			});
 
 			if (!existing) {
 				return NextResponse.json({ error: "Товар не найден" }, { status: 404 });
@@ -322,24 +379,29 @@ export const DELETE = withPermission(
 				return NextResponse.json({ error: "Недостаточно прав для удаления этого товара" }, { status: 403 });
 			}
 
-			await prisma.productFilterValue.deleteMany({ where: { productId } });
-			await prisma.productAnalog.deleteMany({ where: { OR: [{ productId }, { analogId: productId }] } });
-			await prisma.serviceKitItem.deleteMany({ where: { OR: [{ product_id: productId }, { analog_product_id: productId }] } });
+			// Удаляем связанные записи фильтров товара
+			await prisma.productFilterValue.deleteMany({
+				where: { productId: productId },
+			});
 
-			await prisma.product.delete({ where: { id: productId } });
+			// Удаляем товар
+			await prisma.product.delete({
+				where: { id: productId },
+			});
 
-			// ✅ Используем универсальную функцию логирования
+			// Логируем удаление
 			const { logProductChange } = await import("@/lib/universalLogging");
 			await logProductChange({
-				entityId: existing.id,
+				entityId: productId,
 				adminId: user.id,
-				message: "Товар удалён вручную",
+				message: "Удаление товара",
 				beforeData: existing,
+				afterData: null,
 			});
 
 			return NextResponse.json({ success: true });
 		} catch (error) {
-			console.error("Ошибка при удалении товара:", error);
+			console.error("Ошибка удаления продукта:", error);
 			return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
 		}
 	},

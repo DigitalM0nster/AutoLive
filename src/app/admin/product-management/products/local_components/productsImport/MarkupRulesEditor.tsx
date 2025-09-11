@@ -67,6 +67,18 @@ export default function MarkupRulesEditor({ rules, setRules, defaultMarkup, setD
 	return (
 		<>
 			<h3 style={{ fontWeight: "600", marginBottom: "4px", marginTop: "24px" }}>Установление наценки:</h3>
+			<div
+				style={{
+					backgroundColor: "var(--light-blue-color)",
+					padding: "12px",
+					borderRadius: "8px",
+					marginBottom: "16px",
+					fontSize: "14px",
+					color: "var(--text-color)",
+				}}
+			>
+				<strong>💡 Важно:</strong> Цены из файла Excel = цены поставщика. Наценка применяется к ценам поставщика для получения итоговой цены на сайте.
+			</div>
 			<div className="borderBlock">
 				<div
 					style={{

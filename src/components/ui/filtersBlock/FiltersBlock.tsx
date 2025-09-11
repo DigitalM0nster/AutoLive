@@ -14,6 +14,7 @@ export default function FiltersBlock({
 	showSearch = false,
 	disabled = false,
 	className = "",
+	children,
 }: FiltersBlockProps) {
 	// Проверяем, есть ли активные фильтры или поиск
 	const hasActiveFilters = activeFilters.length > 0 || (showSearch && searchValue.trim() !== "");
@@ -61,6 +62,9 @@ export default function FiltersBlock({
 					Сбросить фильтры
 				</button>
 			</div>
+
+			{/* Дополнительные фильтры (children) */}
+			{children && <div className={styles.additionalFilters}>{children}</div>}
 
 			{/* Поле поиска */}
 			{showSearch && (

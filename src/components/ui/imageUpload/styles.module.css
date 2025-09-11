@@ -1,0 +1,138 @@
+@charset "UTF-8";
+.imageUploadBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: flex-start;
+}
+.imageUploadBlock .imagePreview {
+  width: 200px;
+  height: -moz-fit-content;
+  height: fit-content;
+  padding: 20px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px dashed #d1d5db;
+  cursor: pointer;
+  position: relative;
+  gap: 12px;
+}
+.imageUploadBlock .imagePreview:hover {
+  border-color: #3b82f6;
+  background: #f8fafc;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.15);
+}
+.imageUploadBlock .imagePreview:hover .imageActions {
+  opacity: 1;
+  transform: translateY(0);
+}
+.imageUploadBlock .imagePreview:active {
+  transform: translateY(0);
+}
+.imageUploadBlock .imagePreview img {
+  width: 80px;
+  height: 80px;
+  -o-object-fit: cover;
+     object-fit: cover;
+  transition: all 0.3s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  pointer-events: none;
+}
+.imageUploadBlock .noImage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: #6b7280;
+  font-size: 10px;
+  text-align: center;
+  line-height: 1.3;
+  gap: 4px;
+}
+.imageUploadBlock .noImage::before {
+  content: "📷";
+  font-size: 20px;
+  margin-bottom: 2px;
+}
+.imageUploadBlock .imageActions {
+  display: flex;
+  position: absolute;
+  bottom: 10px;
+  gap: 8px;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.3s ease;
+}
+.imageUploadBlock .imageActionButton {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+}
+.imageUploadBlock .imageUpload {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.imageUploadBlock .uploadButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--blue-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+}
+.imageUploadBlock .uploadButton:hover {
+  background: var(--dark-blue-color);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+}
+.imageUploadBlock .uploadButton:active {
+  transform: translateY(0);
+}
+
+td .imageUploadBlock .imagePreview {
+  width: 120px;
+  height: 80px;
+  padding: 0px;
+}
+td .imageUploadBlock .imagePreview img {
+  width: 60px;
+  height: 60px;
+  border-radius: 4px;
+}
+td .imageUploadBlock .imageActions {
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.errorMessage {
+  color: var(--red-color);
+  font-size: 12px;
+  font-weight: 500;
+  margin-top: 4px;
+}/*# sourceMappingURL=styles.module.css.map */

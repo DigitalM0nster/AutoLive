@@ -9,6 +9,7 @@ import { Check, X, Trash2, Upload, Plus } from "lucide-react";
 import styles from "./styles.module.scss";
 import Link from "next/link";
 import ConfirmPopup from "@/components/ui/confirmPopup/ConfirmPopup";
+import ImageUpload from "@/components/ui/imageUpload/ImageUpload";
 import FilterCard from "./FilterCard";
 
 interface CategoryPageClientProps {
@@ -470,22 +471,13 @@ export default function CategoryPageClient({ initialData, isCreateMode = false }
 		}
 	};
 
-	// Обработчик изменения изображения
-	const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-		const file = event.target.files?.[0];
-		if (file) {
-			setFormImage(file);
-			const reader = new FileReader();
-			reader.onload = (e) => {
-				setImagePreview(e.target?.result as string);
-			};
-			reader.readAsDataURL(file);
-			setIsFormChanged(true);
-		}
+	// Обработчики для работы с изображением
+	const handleImageChange = (file: File | null) => {
+		setFormImage(file);
+		setIsFormChanged(true);
 	};
 
-	// Обработчик удаления изображения
-	const handleRemoveImage = () => {
+	const handleImageRemove = () => {
 		setFormImage(null);
 		setImagePreview("");
 		setIsFormChanged(true);
@@ -703,35 +695,7 @@ export default function CategoryPageClient({ initialData, isCreateMode = false }
 							{/* Секция изображения */}
 							<div className={`block sectionBlock ${styles.sectionBlock}`}>
 								<h2 className={`sectionTitle`}>Изображение категории</h2>
-								<div className={styles.imageUploadBlock}>
-									<label htmlFor="imageInput" className={styles.imagePreview}>
-										{imagePreview ? <img src={imagePreview} alt="Предварительный просмотр" /> : <div className={styles.noImage}>Нет изображения</div>}
-
-										{canEditCategory() && (
-											<div className={styles.imageActions}>
-												<div className={`button ${styles.imageActionButton} ${styles.changeButton}`}>
-													<Upload size={12} />
-													Изменить
-												</div>
-												{imagePreview && (
-													<button
-														type="button"
-														onClick={(e) => {
-															e.preventDefault();
-															e.stopPropagation();
-															handleRemoveImage();
-														}}
-														className={`button cancelButton ${styles.imageActionButton}`}
-													>
-														<Trash2 size={12} />
-														Удалить
-													</button>
-												)}
-											</div>
-										)}
-									</label>
-									{canEditCategory() && <input id="imageInput" type="file" accept="image/*" onChange={handleImageChange} style={{ display: "none" }} />}
-								</div>
+								<ImageUpload imageUrl={imagePreview} onImageChange={handleImageChange} onImageRemove={handleImageRemove} disabled={!canEditCategory()} />
 							</div>
 
 							{/* Секция фильтров */}

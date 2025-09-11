@@ -49,7 +49,6 @@ export async function POST(req: NextRequest) {
 			},
 		});
 
-		console.log(`✅ Отправлен код ${code} для телефона ${phone}`);
 		// тут ты позже вставишь отправку SMS
 
 		return NextResponse.json({ success: true, expiresIn: 300 });

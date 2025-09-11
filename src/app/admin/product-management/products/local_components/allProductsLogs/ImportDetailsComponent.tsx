@@ -317,6 +317,18 @@ export default function ImportDetailsComponent({ importLogId, onClose }: ImportD
 												<span className="title">Описание:</span>
 												<span className="value">{log.snapshotAfter.description || "—"}</span>
 											</div>
+											<div className="infoField">
+												<span className="title">Категория:</span>
+												<span className="value">
+													{log.snapshotAfter.category?.title || (log.snapshotAfter.categoryId ? `ID: ${log.snapshotAfter.categoryId}` : "—")}
+												</span>
+											</div>
+											<div className="infoField">
+												<span className="title">Отдел:</span>
+												<span className="value">
+													{log.snapshotAfter.department?.name || (log.snapshotAfter.departmentId ? `ID: ${log.snapshotAfter.departmentId}` : "—")}
+												</span>
+											</div>
 										</>
 									)}
 								</div>
@@ -330,6 +342,8 @@ export default function ImportDetailsComponent({ importLogId, onClose }: ImportD
 				const skuChanged = log.snapshotBefore?.sku !== log.snapshotAfter?.sku;
 				const brandChanged = log.snapshotBefore?.brand !== log.snapshotAfter?.brand;
 				const priceChanged = log.snapshotBefore?.price !== log.snapshotAfter?.price;
+				const categoryChanged = log.snapshotBefore?.categoryId !== log.snapshotAfter?.categoryId;
+				const departmentChanged = log.snapshotBefore?.departmentId !== log.snapshotAfter?.departmentId;
 
 				const updateLogKey = `update_${log.id}`;
 				return (
@@ -341,7 +355,7 @@ export default function ImportDetailsComponent({ importLogId, onClose }: ImportD
 								</div>
 								<div className={`openingBlock ${activeBlocks[updateLogKey] ? "active" : ""}`}>
 									{/* Показываем изменения в виде таблицы */}
-									{(titleChanged || skuChanged || brandChanged || priceChanged) && (
+									{(titleChanged || skuChanged || brandChanged || priceChanged || categoryChanged || departmentChanged) && (
 										<div className="changesTable">
 											<table>
 												<thead>
@@ -378,6 +392,32 @@ export default function ImportDetailsComponent({ importLogId, onClose }: ImportD
 															<td>Цена</td>
 															<td className="oldValue">{log.snapshotBefore?.price || "Не указано"}</td>
 															<td className="newValue">{log.snapshotAfter?.price || "Не указано"}</td>
+														</tr>
+													)}
+													{categoryChanged && (
+														<tr>
+															<td>Категория</td>
+															<td className="oldValue">
+																{log.snapshotBefore?.category?.title ||
+																	(log.snapshotBefore?.categoryId ? `ID: ${log.snapshotBefore.categoryId}` : "Не указано")}
+															</td>
+															<td className="newValue">
+																{log.snapshotAfter?.category?.title ||
+																	(log.snapshotAfter?.categoryId ? `ID: ${log.snapshotAfter.categoryId}` : "Не указано")}
+															</td>
+														</tr>
+													)}
+													{departmentChanged && (
+														<tr>
+															<td>Отдел</td>
+															<td className="oldValue">
+																{log.snapshotBefore?.department?.name ||
+																	(log.snapshotBefore?.departmentId ? `ID: ${log.snapshotBefore.departmentId}` : "Не указано")}
+															</td>
+															<td className="newValue">
+																{log.snapshotAfter?.department?.name ||
+																	(log.snapshotAfter?.departmentId ? `ID: ${log.snapshotAfter.departmentId}` : "Не указано")}
+															</td>
 														</tr>
 													)}
 												</tbody>

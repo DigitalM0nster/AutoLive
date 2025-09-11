@@ -278,6 +278,18 @@ export default function ProductLogsTable({
 
 			const resultLogKey = `result_${log.id}`;
 
+			// Проверяем, что именно изменилось
+			const titleChanged = log.snapshotBefore?.title !== log.snapshotAfter?.title;
+			const skuChanged = log.snapshotBefore?.sku !== log.snapshotAfter?.sku;
+			const brandChanged = log.snapshotBefore?.brand !== log.snapshotAfter?.brand;
+			const priceChanged = log.snapshotBefore?.price !== log.snapshotAfter?.price;
+			const categoryChanged = log.snapshotBefore?.categoryId !== log.snapshotAfter?.categoryId;
+			const departmentChanged = log.snapshotBefore?.departmentId !== log.snapshotAfter?.departmentId;
+			const descriptionChanged = log.snapshotBefore?.description !== log.snapshotAfter?.description;
+			const imageChanged = log.snapshotBefore?.image !== log.snapshotAfter?.image;
+
+			const hasChanges = titleChanged || skuChanged || brandChanged || priceChanged || categoryChanged || departmentChanged || descriptionChanged || imageChanged;
+
 			return (
 				<div key={resultLogKey} className={`fullInfoBlock`}>
 					<div className={`clickInfoBlock ${activeBlocks[resultLogKey] ? "active" : ""}`} onClick={() => toggleActiveBlock(resultLogKey)}>
@@ -295,19 +307,129 @@ export default function ProductLogsTable({
 								</span>
 							</div>
 						)}
-						{log.snapshotBefore && (
-							<div className="infoField">
-								<span className="title">До изменения:</span>
-								<span className="value">
-									<pre>{JSON.stringify(log.snapshotBefore, null, 2)}</pre>
-								</span>
+
+						{/* Показываем изменения в виде таблицы, если есть изменения */}
+						{hasChanges && (
+							<div className="changesTable">
+								<table>
+									<thead>
+										<tr>
+											<th>Параметр</th>
+											<th>ДО изменений</th>
+											<th>ПОСЛЕ изменений</th>
+										</tr>
+									</thead>
+									<tbody>
+										{titleChanged && (
+											<tr>
+												<td>Название</td>
+												<td className="oldValue">{log.snapshotBefore?.title || "Не указано"}</td>
+												<td className="newValue">{log.snapshotAfter?.title || "Не указано"}</td>
+											</tr>
+										)}
+										{skuChanged && (
+											<tr>
+												<td>SKU</td>
+												<td className="oldValue">{log.snapshotBefore?.sku || "Не указано"}</td>
+												<td className="newValue">{log.snapshotAfter?.sku || "Не указано"}</td>
+											</tr>
+										)}
+										{brandChanged && (
+											<tr>
+												<td>Бренд</td>
+												<td className="oldValue">{log.snapshotBefore?.brand || "Не указано"}</td>
+												<td className="newValue">{log.snapshotAfter?.brand || "Не указано"}</td>
+											</tr>
+										)}
+										{priceChanged && (
+											<tr>
+												<td>Цена</td>
+												<td className="oldValue">{log.snapshotBefore?.price || "Не указано"}</td>
+												<td className="newValue">{log.snapshotAfter?.price || "Не указано"}</td>
+											</tr>
+										)}
+										{categoryChanged && (
+											<tr>
+												<td>Категория</td>
+												<td className="oldValue">
+													{log.snapshotBefore?.category?.title ||
+														(log.snapshotBefore?.categoryId ? `ID: ${log.snapshotBefore.categoryId}` : "Не указано")}
+												</td>
+												<td className="newValue">
+													{log.snapshotAfter?.category?.title || (log.snapshotAfter?.categoryId ? `ID: ${log.snapshotAfter.categoryId}` : "Не указано")}
+												</td>
+											</tr>
+										)}
+										{departmentChanged && (
+											<tr>
+												<td>Отдел</td>
+												<td className="oldValue">
+													{log.snapshotBefore?.department?.name ||
+														(log.snapshotBefore?.departmentId ? `ID: ${log.snapshotBefore.departmentId}` : "Не указано")}
+												</td>
+												<td className="newValue">
+													{log.snapshotAfter?.department?.name ||
+														(log.snapshotAfter?.departmentId ? `ID: ${log.snapshotAfter.departmentId}` : "Не указано")}
+												</td>
+											</tr>
+										)}
+										{descriptionChanged && (
+											<tr>
+												<td>Описание</td>
+												<td className="oldValue">{log.snapshotBefore?.description || "Не указано"}</td>
+												<td className="newValue">{log.snapshotAfter?.description || "Не указано"}</td>
+											</tr>
+										)}
+										{imageChanged && (
+											<tr>
+												<td>Изображение</td>
+												<td className="oldValue">
+													{log.snapshotBefore?.image ? (
+														<a href={log.snapshotBefore.image} target="_blank" rel="noopener noreferrer" className="itemLink">
+															Открыть старое изображение
+														</a>
+													) : (
+														"Не указано"
+													)}
+												</td>
+												<td className="newValue">
+													{log.snapshotAfter?.image ? (
+														<a href={log.snapshotAfter.image} target="_blank" rel="noopener noreferrer" className="itemLink">
+															Открыть новое изображение
+														</a>
+													) : (
+														"Удалено"
+													)}
+												</td>
+											</tr>
+										)}
+									</tbody>
+								</table>
 							</div>
 						)}
-						{log.snapshotAfter && (
+
+						{/* Если нет изменений, показываем полные данные */}
+						{!hasChanges && log.snapshotAfter && (
 							<div className="infoField">
-								<span className="title">После изменения:</span>
+								<span className="title">Данные товара:</span>
 								<span className="value">
-									<pre>{JSON.stringify(log.snapshotAfter, null, 2)}</pre>
+									<div>Название: {log.snapshotAfter.title || "—"}</div>
+									<div>SKU: {log.snapshotAfter.sku || "—"}</div>
+									<div>Бренд: {log.snapshotAfter.brand || "—"}</div>
+									<div>Цена: {log.snapshotAfter.price || "—"}</div>
+									<div>Категория: {log.snapshotAfter.category?.title || (log.snapshotAfter.categoryId ? `ID: ${log.snapshotAfter.categoryId}` : "—")}</div>
+									<div>Отдел: {log.snapshotAfter.department?.name || (log.snapshotAfter.departmentId ? `ID: ${log.snapshotAfter.departmentId}` : "—")}</div>
+									<div>Описание: {log.snapshotAfter.description || "—"}</div>
+									<div>
+										Изображение:{" "}
+										{log.snapshotAfter.image ? (
+											<a href={log.snapshotAfter.image} target="_blank" rel="noopener noreferrer" className="itemLink">
+												Открыть изображение
+											</a>
+										) : (
+											"Не указано"
+										)}
+									</div>
 								</span>
 							</div>
 						)}

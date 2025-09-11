@@ -534,6 +534,10 @@ select.error::placeholder {
   opacity: 0.5;
 }
 
+textarea {
+  font-family: "Manrope";
+  font-size: var(--inputFontSize);
+}
 textarea.error {
   border-color: var(--red-color);
 }
@@ -1082,7 +1086,7 @@ table tbody tr:hover,
 table tbody tr td,
 .table tbody tr td {
   padding: 16px 12px;
-  font-size: 14px;
+  font-size: var(--inputFontSize);
   color: #374151;
   border-bottom: 1px solid #f3f4f6;
   vertical-align: top;
@@ -1160,34 +1164,47 @@ table tbody tr td .date,
 .table tbody tr td .date {
   padding: 10px 0px;
 }
+table tbody tr td .imageBlock,
+.table tbody tr td .imageBlock {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  border: 2px solid var(--grey-color);
+  overflow: hidden;
+  width: 120px;
+  height: 80px;
+  background: white;
+}
 table tbody tr td .image,
 .table tbody tr td .image {
-  width: 50px;
-  height: 50px;
+  width: 60px;
+  height: 60px;
   -o-object-fit: cover;
      object-fit: cover;
   border-radius: 4px;
   border: 1px solid #e0e0e0;
   cursor: pointer;
-  transition: transform 0.2s;
-}
-table tbody tr td .image:hover,
-.table tbody tr td .image:hover {
-  transform: scale(1.1);
 }
 table tbody tr td .noImage,
 .table tbody tr td .noImage {
-  width: 50px;
-  height: 50px;
-  background: var(--light-grey-color);
-  border: 1px dashed var(--grey2-color);
-  border-radius: 4px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: #6b7280;
   font-size: 10px;
-  color: var(--grey2-color);
   text-align: center;
+  line-height: 1.3;
+  gap: 4px;
+}
+table tbody tr td .noImage::before,
+.table tbody tr td .noImage::before {
+  content: "📷";
+  font-size: 20px;
+  margin-bottom: 2px;
 }
 table tbody tr td input,
 .table tbody tr td input {
@@ -2235,31 +2252,6 @@ span.oldName:after {
   color: var(--text-color);
 }
 
-@media (max-width: 1680px) {
-  :root {
-    --maxContentWidth: 1440px;
-  }
-}
-@media (max-width: 1440px) {
-  :root {
-    --maxContentWidth: 1200px;
-  }
-}
-@media (max-width: 1280px) {
-  :root {
-    --maxContentWidth: 90vw;
-  }
-}
-@media (max-width: 980px) {
-  :root {
-    --maxContentWidth: 90vw;
-  }
-}
-@media (max-width: 768px) {
-  :root {
-    --maxContentWidth: 90vw;
-  }
-}
 .importProductCell {
   display: flex;
   flex-direction: column;
@@ -2285,4 +2277,699 @@ span.oldName:after {
 }
 .importProductCell .viewDetailsButton:active {
   background-color: var(--primary-active-color);
+}
+
+.productComponent .formContainer {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  border: 1px solid var(--light-grey2-color);
+}
+.productComponent .formHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 32px;
+  background: linear-gradient(135deg, var(--light-grey-color) 0%, white 100%);
+  border-bottom: 1px solid var(--light-grey2-color);
+}
+.productComponent .formHeader h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0;
+}
+.productComponent .formHeader .formActions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.productComponent .formFields {
+  padding: 32px;
+}
+.productComponent .formFields .formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+.productComponent .formFields .formRow:last-child {
+  margin-bottom: 0;
+}
+.productComponent .formFields .formField {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.productComponent .formFields .formField label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-color);
+  margin-bottom: 4px;
+}
+.productComponent .formFields .formField input,
+.productComponent .formFields .formField textarea,
+.productComponent .formFields .formField select {
+  width: calc(100% - 32px);
+  padding: 12px 16px;
+  border: 2px solid var(--light-grey2-color);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: var(--mainFont);
+  transition: all 0.3s ease;
+  background: white;
+}
+.productComponent .formFields .formField input:focus,
+.productComponent .formFields .formField textarea:focus,
+.productComponent .formFields .formField select:focus {
+  outline: none;
+  border-color: var(--blue-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+.productComponent .formFields .formField input:disabled,
+.productComponent .formFields .formField textarea:disabled,
+.productComponent .formFields .formField select:disabled {
+  background: var(--light-grey-color);
+  color: #6b7280;
+  cursor: not-allowed;
+}
+.productComponent .formFields .formField input::-moz-placeholder, .productComponent .formFields .formField textarea::-moz-placeholder, .productComponent .formFields .formField select::-moz-placeholder {
+  color: #9ca3af;
+}
+.productComponent .formFields .formField input::placeholder,
+.productComponent .formFields .formField textarea::placeholder,
+.productComponent .formFields .formField select::placeholder {
+  color: #9ca3af;
+}
+.productComponent .formFields .formField select {
+  width: 100%;
+}
+.productComponent .formFields .formField textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+.productComponent .formFields .fieldNote {
+  font-size: 12px;
+  color: var(--orange-color);
+  font-style: italic;
+  margin-top: 4px;
+}
+.productComponent .viewModeContainer {
+  padding: 32px;
+}
+.productComponent .viewModeContainer .productInfoCard {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 32px;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--light-grey2-color);
+}
+@media (max-width: 768px) {
+  .productComponent .viewModeContainer .productInfoCard {
+    grid-template-columns: 1fr;
+  }
+}
+.productComponent .viewModeContainer .productImageSection {
+  background: var(--light-grey-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.productComponent .viewModeContainer .productImageSection .productImage {
+  max-width: 100%;
+  max-height: 250px;
+  -o-object-fit: contain;
+     object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+.productComponent .viewModeContainer .productImageSection .noImagePlaceholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 200px;
+  height: 200px;
+  background: var(--light-grey2-color);
+  border-radius: 8px;
+  border: 2px dashed #d1d5db;
+}
+.productComponent .viewModeContainer .productImageSection .noImagePlaceholder span {
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+}
+.productComponent .viewModeContainer .productDetailsSection {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.productComponent .viewModeContainer .productDetailsSection .productInfoRow {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 16px;
+  align-items: start;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--light-grey-color);
+}
+.productComponent .viewModeContainer .productDetailsSection .productInfoRow.fullWidth {
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+.productComponent .viewModeContainer .productDetailsSection .productInfoRow:last-child {
+  border-bottom: none;
+}
+.productComponent .viewModeContainer .productDetailsSection .productInfoRow .infoLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.productComponent .viewModeContainer .productDetailsSection .productInfoRow .infoValue {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-color);
+  word-break: break-word;
+}
+.productComponent .viewModeContainer .productDetailsSection .productInfoRow .infoValue.priceValue {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--green-color);
+}
+.productComponent .viewModeContainer .productDetailsSection .productInfoRow .infoValue.descriptionValue {
+  line-height: 1.6;
+  background: var(--light-grey-color);
+  padding: 16px;
+  border-radius: 8px;
+  border-left: 4px solid var(--blue-color);
+}
+.productComponent .noEditMessage {
+  padding: 40px;
+  text-align: center;
+  background: var(--light-grey-color);
+  border-radius: 12px;
+  border: 2px dashed var(--grey2-color);
+}
+.productComponent .noEditMessage p {
+  font-size: 16px;
+  color: #6b7280;
+  margin: 0;
+  font-weight: 500;
+}
+.productComponent .primaryButton {
+  background: var(--blue-color);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.productComponent .primaryButton:hover:not(:disabled) {
+  background: var(--dark-blue-color);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+.productComponent .primaryButton:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+.productComponent .primaryButton.hasChanges {
+  background: var(--green-color);
+}
+.productComponent .primaryButton.hasChanges:hover:not(:disabled) {
+  background: var(--dark-green-color);
+}
+.productComponent .dangerButton {
+  background: var(--red-color);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.productComponent .dangerButton:hover:not(:disabled) {
+  background: var(--dark-red-color);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+.productComponent .dangerButton:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+.productComponent .filtersSection {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 2px solid var(--light-grey-color);
+}
+.productComponent .filtersSection .filtersTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-color);
+  margin-bottom: 20px;
+}
+.productComponent .filtersSection .filtersContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.productComponent .filtersSection .filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.productComponent .filtersSection .filterGroup .filterLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+.productComponent .filtersSection .filterGroup .filterValues {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+.productComponent .filtersSection .filterGroup .filterValueItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--light-grey-color);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+}
+.productComponent .filtersSection .filterGroup .filterValueItem:hover {
+  background: var(--light-grey2-color);
+}
+.productComponent .filtersSection .filterGroup .filterValueItem .filterValueText {
+  font-size: 14px;
+  color: var(--text-color);
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
+}
+.productComponent .filtersSection .filterGroup .filterValueItem.active {
+  background: var(--blue-color);
+  border-color: var(--blue-color);
+}
+.productComponent .filtersSection .filterGroup .filterValueItem.active .filterValueText {
+  color: white;
+  font-weight: 500;
+}
+.productComponent .filtersSection .filterGroup .filterValueItem.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.productComponent .fixedButtons {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  gap: 12px;
+  background: white;
+  padding: 16px 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--light-grey-color);
+  z-index: 1000;
+  animation: slideUp 0.3s ease-out;
+}
+.productComponent .fixedButtons button {
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 120px;
+}
+.productComponent .fixedButtons button.primaryButton {
+  background: var(--blue-color);
+  color: white;
+}
+.productComponent .fixedButtons button.primaryButton:hover:not(:disabled) {
+  background: var(--blue-dark-color);
+  transform: translateY(-1px);
+}
+.productComponent .fixedButtons button.primaryButton:disabled {
+  background: var(--light-grey-color);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.productComponent .fixedButtons button.secondaryButton {
+  background: var(--light-grey-color);
+  color: var(--text-color);
+  border: 1px solid var(--grey-color);
+}
+.productComponent .fixedButtons button.secondaryButton:hover:not(:disabled) {
+  background: var(--light-grey2-color);
+  transform: translateY(-1px);
+}
+.productComponent .fixedButtons button.secondaryButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.productComponent .filtersValue {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.productComponent .filtersValue .filterDisplayGroup {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--light-grey-color);
+  border-radius: 6px;
+}
+.productComponent .filtersValue .filterDisplayGroup .filterDisplayLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-color);
+  min-width: 80px;
+}
+.productComponent .filtersValue .filterDisplayGroup .filterDisplayValues {
+  font-size: 14px;
+  color: var(--text-color);
+  flex: 1;
+}
+.productComponent .skeletonTitle {
+  height: 24px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+  border-radius: 4px;
+  width: 300px;
+}
+.productComponent .skeletonActions {
+  display: flex;
+  gap: 12px;
+}
+.productComponent .skeletonButton {
+  height: 40px;
+  width: 120px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+  border-radius: 8px;
+}
+.productComponent .skeletonLabel {
+  height: 16px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+  border-radius: 4px;
+  width: 80px;
+  margin-bottom: 8px;
+}
+.productComponent .skeletonInput {
+  height: 40px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+  border-radius: 8px;
+}
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+@media (max-width: 768px) {
+  .productComponent .formHeader {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+    text-align: center;
+  }
+  .productComponent .formHeader .formActions {
+    justify-content: center;
+  }
+  .productComponent .formFields {
+    padding: 24px;
+  }
+  .productComponent .formFields .formRow {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .productComponent .viewModeContainer {
+    padding: 24px;
+  }
+  .productComponent .viewModeContainer .productDetailsSection .productInfoRow {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    text-align: left;
+  }
+}
+@media (max-width: 480px) {
+  .productComponent .formHeader {
+    padding: 20px;
+  }
+  .productComponent .formHeader h2 {
+    font-size: 20px;
+  }
+  .productComponent .formFields {
+    padding: 20px;
+  }
+  .productComponent .viewModeContainer {
+    padding: 20px;
+  }
+}
+
+.priceRangeFilter {
+  margin-bottom: 16px;
+}
+.priceRangeFilter .priceRangeLabel {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-color);
+  margin-bottom: 8px;
+}
+.priceRangeFilter .priceRangeContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.priceRangeFilter .priceRangeInputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.priceRangeFilter .priceRangeInput {
+  width: 80px;
+  padding: 6px 8px;
+  border: 1px solid var(--grey-color);
+  border-radius: 4px;
+  font-size: 14px;
+  text-align: center;
+}
+.priceRangeFilter .priceRangeInput:focus {
+  outline: none;
+  border-color: var(--blue-color);
+}
+.priceRangeFilter .priceRangeInput:disabled {
+  background-color: var(--light-grey-color);
+  color: var(--grey-color);
+  cursor: not-allowed;
+}
+.priceRangeFilter .priceRangeSeparator {
+  font-size: 14px;
+  color: var(--grey-color);
+  font-weight: 500;
+}
+.priceRangeFilter .priceRangeSlider {
+  position: relative;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+.priceRangeFilter .priceRangeTrack {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background-color: var(--light-grey-color);
+  border-radius: 2px;
+  transform: translateY(-50%);
+}
+.priceRangeFilter .priceRangeRange {
+  position: absolute;
+  top: 50%;
+  height: 4px;
+  background-color: var(--blue-color);
+  border-radius: 2px;
+  transform: translateY(-50%);
+}
+.priceRangeFilter .priceRangeThumb {
+  position: absolute;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  background-color: var(--blue-color);
+  border: 2px solid white;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  cursor: grab;
+  transition: all 0.2s ease, left 0s ease;
+}
+.priceRangeFilter .priceRangeThumb:hover {
+  transform: translate(-50%, -50%) scale(1.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+.priceRangeFilter .priceRangeThumb.active {
+  cursor: grabbing;
+  transform: translate(-50%, -50%) scale(1.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+.priceRangeFilter .priceRangeFilter {
+  margin-bottom: 16px;
+}
+.priceRangeFilter .priceRangeLabel {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-color);
+  margin-bottom: 8px;
+}
+.priceRangeFilter .priceRangeContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.priceRangeFilter .priceRangeInputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.priceRangeFilter .priceRangeInput {
+  width: 80px;
+  padding: 6px 8px;
+  border: 1px solid var(--grey-color);
+  border-radius: 4px;
+  font-size: 14px;
+  text-align: center;
+}
+.priceRangeFilter .priceRangeInput:focus {
+  outline: none;
+  border-color: var(--blue-color);
+}
+.priceRangeFilter .priceRangeInput:disabled {
+  background-color: var(--light-grey-color);
+  color: var(--grey-color);
+  cursor: not-allowed;
+}
+.priceRangeFilter .priceRangeSeparator {
+  font-size: 14px;
+  color: var(--grey-color);
+  font-weight: 500;
+}
+.priceRangeFilter .priceRangeSlider {
+  position: relative;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+.priceRangeFilter .priceRangeTrack {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background-color: var(--light-grey-color);
+  border-radius: 2px;
+  transform: translateY(-50%);
+}
+.priceRangeFilter .priceRangeRange {
+  position: absolute;
+  top: 50%;
+  height: 4px;
+  background-color: var(--blue-color);
+  border-radius: 2px;
+  transform: translateY(-50%);
+}
+.priceRangeFilter .priceRangeThumb {
+  position: absolute;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  background-color: var(--blue-color);
+  border: 2px solid white;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  cursor: grab;
+  transition: all 0.2s ease, left 0s ease;
+}
+.priceRangeFilter .priceRangeThumb:hover {
+  transform: translate(-50%, -50%) scale(1.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+.priceRangeFilter .priceRangeThumb.active {
+  cursor: grabbing;
+  transform: translate(-50%, -50%) scale(1.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+@media (max-width: 1680px) {
+  :root {
+    --maxContentWidth: 1440px;
+  }
+}
+@media (max-width: 1440px) {
+  :root {
+    --maxContentWidth: 1200px;
+  }
+}
+@media (max-width: 1280px) {
+  :root {
+    --maxContentWidth: 90vw;
+  }
+}
+@media (max-width: 980px) {
+  :root {
+    --maxContentWidth: 90vw;
+  }
+}
+@media (max-width: 768px) {
+  :root {
+    --maxContentWidth: 90vw;
+  }
 }/*# sourceMappingURL=globals.css.map */

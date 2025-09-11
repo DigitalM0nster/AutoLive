@@ -153,6 +153,8 @@ export type Product = {
 		valueId: number;
 		value: string;
 	}[];
+	allowedCategories?: Category[];
+	canChangeCategory?: boolean;
 };
 
 export type ProductWithRelationsFromDB = Prisma.ProductGetPayload<{
@@ -233,6 +235,20 @@ export type ProductFilter = {
 		id: number;
 		value: string;
 	}[];
+};
+
+// Тип для фильтра категории (для выбора)
+export type CategoryFilterForSelection = {
+	id: number;
+	title: string;
+	type: FilterType;
+	values: FilterValue[];
+};
+
+// Тип для выбранных значений фильтра
+export type SelectedFilterValue = {
+	filterId: number;
+	valueIds: number[];
 };
 
 export type ProductResponse = {
@@ -357,4 +373,50 @@ export interface FiltersBlockProps {
 	showSearch?: boolean;
 	disabled?: boolean;
 	className?: string;
+	children?: React.ReactNode;
 }
+
+// Типы для логирования фильтров
+export type FilterValueForLog = {
+	filterId: number;
+	filterTitle: string;
+	valueId: number;
+	value: string;
+};
+
+export type FilterValueFromRequest = {
+	filterId: number;
+	valueId: number;
+};
+
+// Типы для запросов с фильтрами
+export type FilterRequest = {
+	filterId: number;
+	valueIds: number[];
+};
+
+export type ProductCreateRequest = {
+	title: string;
+	sku: string;
+	brand: string;
+	price?: number;
+	supplierPrice?: number;
+	description?: string;
+	image?: string;
+	categoryId?: number;
+	departmentId?: number;
+	filterValues?: FilterRequest[];
+};
+
+export type ProductUpdateRequest = {
+	title?: string;
+	sku?: string;
+	brand?: string;
+	price?: number;
+	supplierPrice?: number;
+	description?: string;
+	image?: string;
+	categoryId?: number;
+	departmentId?: number;
+	filterValues?: FilterRequest[];
+};

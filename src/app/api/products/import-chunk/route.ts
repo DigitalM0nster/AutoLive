@@ -234,7 +234,6 @@ export const POST = withPermission(
 						}
 					} catch (error) {
 						// Если товар уже существует (дубликат), пропускаем
-						console.log(`Товар ${productData.sku} / ${productData.brand} уже существует, пропускаем`);
 					}
 				}
 			}
@@ -334,7 +333,6 @@ export const POST = withPermission(
 					}),
 				];
 
-				console.log("🟡 Сохраняем importLog со snapshots:", JSON.stringify(snapshots, null, 2));
 				const importLog = await prisma.import_log.create({
 					data: {
 						fileName: `Импорт chunk ${chunkIndex + 1}/${totalChunks}`,

@@ -18,16 +18,12 @@ export async function GET() {
 	const cookieStore = await cookies();
 	const token = cookieStore.get("authToken")?.value;
 
-	console.log("🔑 Получен токен:", token); // 💬 Проверка: токен вообще есть?
-
 	if (!token) {
-		console.log("⛔️ Нет токена");
 		return NextResponse.json({ error: "Нет токена" }, { status: 401 });
 	}
 
 	try {
 		const user = jwt.verify(token, process.env.JWT_SECRET!) as Decoded;
-		console.log("✅ JWT расшифрован:", user);
 
 		// ✅ допускаем все роли
 		if (!["client", "superadmin", "admin", "manager"].includes(user.role)) {
@@ -41,8 +37,6 @@ export async function GET() {
 				last_name: true,
 			},
 		});
-
-		console.log("🧑 Пользователь в базе:", dbUser);
 
 		const permissions: RolePermission[] = ROLE_PERMISSIONS[user.role] || [];
 

@@ -272,16 +272,6 @@ export const GET = withPermission(
 								// Проверяем, не является ли товар пустым
 								const isEmpty = isEmptyProduct(product);
 
-								// Отладочная информация (можно убрать после тестирования)
-								// console.log("Product check:", {
-								// 	title: product.title,
-								// 	sku: product.sku,
-								// 	brand: product.brand,
-								// 	price: product.price,
-								// 	isEmpty: isEmpty,
-								// 	reason: product.reason
-								// });
-
 								if (!isEmpty) {
 									// Добавляем только непустые товары как обычные пропущенные товары
 									skippedProducts.push({

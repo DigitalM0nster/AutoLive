@@ -47,6 +47,15 @@ export const POST = withPermission(
 				include: {
 					department: true,
 					category: true,
+					productFilterValues: {
+						include: {
+							filterValue: {
+								include: {
+									filter: { select: { id: true, title: true } },
+								},
+							},
+						},
+					},
 				},
 			});
 

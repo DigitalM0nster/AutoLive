@@ -44,7 +44,5 @@ export async function POST(req: NextRequest) {
 		maxAge: 60 * 60 * 24 * 7,
 	});
 
-	console.log("Создаём authToken с ролью:", user.role);
-
 	return res;
 }

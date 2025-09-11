@@ -3,9 +3,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ categoryId: string }> }) {
 	try {
-		const { id } = await params; // Ожидаем params перед использованием
+		const { categoryId: id } = await params; // Ожидаем params перед использованием
 		const categoryId = Number(id);
 		const formData = await request.formData();
 		const title = formData.get("title") as string;
@@ -112,9 +112,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 	}
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ categoryId: string }> }) {
 	try {
-		const { id } = await params; // Ожидаем params перед использованием
+		const { categoryId: id } = await params; // Ожидаем params перед использованием
 		const categoryId = Number(id);
 
 		// Получаем информацию о том, что будет удалено

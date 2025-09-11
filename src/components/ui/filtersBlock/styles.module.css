@@ -18,6 +18,13 @@
   flex-wrap: wrap;
 }
 
+.additionalFilters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 50px;
+  align-items: flex-start;
+}
+
 .activeFilters {
   display: flex;
   flex-wrap: wrap;
