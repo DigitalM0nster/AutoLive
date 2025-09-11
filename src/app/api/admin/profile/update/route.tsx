@@ -5,8 +5,7 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import { writeFile } from "fs/promises";
-import path from "path";
+import { uploadFile, validateFile, deleteFile } from "@/lib/simpleFileUpload";
 
 type Decoded = {
 	id: number;
@@ -44,12 +43,19 @@ export async function POST(req: NextRequest) {
 	const removeAvatar = formData.get("removeAvatar");
 
 	if (avatarFile) {
-		const bytes = await avatarFile.arrayBuffer();
-		const buffer = Buffer.from(bytes);
-		const fileName = `avatar_${user.id}_${Date.now()}.${avatarFile.name.split(".").pop()}`;
-		const filePath = path.join(process.cwd(), "public", "uploads", fileName);
-		await writeFile(filePath, buffer);
-		dataToUpdate.avatar = `/uploads/${fileName}`;
+		// Валидируем файл
+		const validation = validateFile(avatarFile, 2 * 1024 * 1024); // 2MB для аватара
+		if (!validation.isValid) {
+			return NextResponse.json({ error: validation.error }, { status: 400 });
+		}
+
+		// Загружаем аватар используя простую систему
+		const uploadResult = await uploadFile(avatarFile, {
+			prefix: "avatar",
+			entityId: user.id,
+		});
+
+		dataToUpdate.avatar = uploadResult.url;
 	} else if (removeAvatar === "true") {
 		dataToUpdate.avatar = null;
 	}

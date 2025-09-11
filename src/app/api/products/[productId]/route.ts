@@ -226,25 +226,27 @@ export const PATCH = withPermission(
 			console.log("🔍 API Debug - imageFile:", imageFile ? `File: ${imageFile.name}, size: ${imageFile.size}` : "null");
 			if (imageFile && imageFile.size > 0 && deleteImage !== "true") {
 				try {
-					const fs = await import("fs/promises");
-					const path = await import("path");
+					// Используем простую систему загрузки файлов
+					const { uploadFile, validateFile } = await import("@/lib/simpleFileUpload");
 
-					// Создаем уникальное имя файла
-					const fileExtension = imageFile.name.split(".").pop();
-					const fileName = `product_${productId}_${Date.now()}.${fileExtension}`;
-					const filePath = path.join(process.cwd(), "public", "uploads", fileName);
+					// Валидируем файл
+					const validation = validateFile(imageFile);
+					if (!validation.isValid) {
+						return NextResponse.json({ error: validation.error }, { status: 400 });
+					}
 
-					// Создаем директорию если не существует
-					await fs.mkdir(path.dirname(filePath), { recursive: true });
+					// Загружаем файл
+					const uploadResult = await uploadFile(imageFile, {
+						prefix: "product",
+						entityId: productId,
+					});
 
-					// Сохраняем файл
-					const buffer = await imageFile.arrayBuffer();
-					await fs.writeFile(filePath, Buffer.from(buffer));
+					console.log("✅ API Debug - Изображение успешно загружено:", uploadResult.url);
 
-					// Обновляем путь к изображению
-					updateData.image = `/uploads/${fileName}`;
+					// Сохраняем URL изображения в БД
+					updateData.image = uploadResult.url;
 				} catch (error) {
-					console.error("Ошибка при загрузке изображения:", error);
+					console.error("❌ API Debug - Ошибка при загрузке изображения:", error);
 					return NextResponse.json({ error: "Ошибка при загрузке изображения" }, { status: 500 });
 				}
 			}

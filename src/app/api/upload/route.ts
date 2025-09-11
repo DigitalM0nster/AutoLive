@@ -1,9 +1,7 @@
 // src\app\api\upload\route.ts
 
 import { NextResponse } from "next/server";
-import path from "path";
-import fs from "fs/promises";
-import { randomUUID } from "crypto";
+import { uploadFile, validateFile } from "@/lib/simpleFileUpload";
 
 export async function POST(req: Request) {
 	const formData = await req.formData();
@@ -13,13 +11,28 @@ export async function POST(req: Request) {
 		return new NextResponse("Файл не найден", { status: 400 });
 	}
 
-	const bytes = await file.arrayBuffer();
-	const buffer = Buffer.from(bytes);
-	const ext = path.extname(file.name) || ".jpg";
-	const fileName = `${Date.now()}-${randomUUID()}${ext}`;
-	const uploadPath = path.join(process.cwd(), "public", "uploads", fileName);
+	try {
+		// Валидируем файл
+		const validation = validateFile(file);
+		if (!validation.isValid) {
+			return NextResponse.json({ error: validation.error }, { status: 400 });
+		}
 
-	await fs.writeFile(uploadPath, buffer);
+		// Загружаем файл используя простую систему
+		const uploadResult = await uploadFile(file, {
+			prefix: "upload",
+		});
 
-	return NextResponse.json({ url: `/uploads/${fileName}` });
+		console.log("✅ API Debug - Файл успешно загружен:", uploadResult.url);
+
+		return NextResponse.json({
+			url: uploadResult.url,
+			originalName: uploadResult.originalName,
+			size: uploadResult.size,
+			type: uploadResult.type,
+		});
+	} catch (error) {
+		console.error("❌ API Debug - Ошибка загрузки файла:", error);
+		return NextResponse.json({ error: "Ошибка загрузки файла" }, { status: 500 });
+	}
 }

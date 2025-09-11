@@ -2,6 +2,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { uploadFile, validateFile } from "@/lib/simpleFileUpload";
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ categoryId: string }> }) {
 	try {
@@ -16,15 +17,34 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 			return NextResponse.json({ error: "Название категории обязательно" }, { status: 400 });
 		}
 
+		// Подготавливаем данные для обновления категории
+		const updateData: any = {
+			title: title.trim(),
+		};
+
+		// Обрабатываем загрузку изображения
+		if (imageFile && imageFile.size > 0) {
+			// Валидируем файл
+			const validation = validateFile(imageFile);
+			if (!validation.isValid) {
+				return NextResponse.json({ error: validation.error }, { status: 400 });
+			}
+
+			// Загружаем изображение
+			const uploadResult = await uploadFile(imageFile, {
+				prefix: "category",
+				entityId: categoryId,
+			});
+
+			updateData.image = uploadResult.url;
+		}
+
 		// Начинаем транзакцию для обновления категории и фильтров
 		const result = await prisma.$transaction(async (tx) => {
 			// Обновляем категорию
 			const category = await tx.category.update({
 				where: { id: categoryId },
-				data: {
-					title: title.trim(),
-					// Пока не добавляем изображение, нужно реализовать загрузку файлов
-				},
+				data: updateData,
 			});
 
 			// Обрабатываем фильтры если они есть
