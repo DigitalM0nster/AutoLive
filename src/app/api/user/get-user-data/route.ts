@@ -35,6 +35,7 @@ export async function GET() {
 			select: {
 				first_name: true,
 				last_name: true,
+				middle_name: true,
 			},
 		});
 
@@ -47,6 +48,7 @@ export async function GET() {
 			status: user.status,
 			first_name: dbUser?.first_name ?? "",
 			last_name: dbUser?.last_name ?? "",
+			middle_name: dbUser?.middle_name ?? "",
 			permissions,
 		});
 	} catch (e) {

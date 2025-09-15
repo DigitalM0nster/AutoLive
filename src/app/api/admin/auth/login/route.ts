@@ -22,10 +22,17 @@ export async function POST(req: NextRequest) {
 		return NextResponse.json({ error: "Неверный пароль" }, { status: 401 });
 	}
 
+	// Формируем ФИО в правильном порядке: Фамилия, Имя, Отчество
+	const nameParts = [];
+	if (user.last_name) nameParts.push(user.last_name);
+	if (user.first_name) nameParts.push(user.first_name);
+	if (user.middle_name) nameParts.push(user.middle_name);
+	const fullName = nameParts.join(" ");
+
 	const token = jwt.sign(
 		{
 			id: user.id,
-			name: `${user.first_name} ${user.last_name}`,
+			name: fullName,
 			phone: user.phone,
 			role: user.role,
 			departmentId: user.departmentId ?? null,

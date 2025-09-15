@@ -38,7 +38,11 @@ export default function AdminResetPasswordPage() {
 				setError(data.error || "Ошибка сервера, попробуйте позже");
 			} else {
 				console.log(data);
-				setResetMessage(`Новый пароль отправлен на номер: ${phone}`);
+				// Показываем новый пароль в alert для тестирования
+				if (data.newPassword) {
+					alert(`Новый пароль: ${data.newPassword}`);
+				}
+				setResetMessage(`Пароль успешно сброшен для номера: ${phone}`);
 			}
 		} catch (error) {
 			setError("Ошибка сети, попробуйте позже");

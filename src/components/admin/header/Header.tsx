@@ -46,7 +46,7 @@ export default function Header() {
 				) : user ? (
 					<Link href={`/admin/users/${user.id}`} className="userProfile">
 						<div className="userIcon">
-							<img src={user.avatar || "/images/user_placeholder.png"} alt="avatar" className="userAvatar" />
+							<img src="/images/user_placeholder.png" alt="avatar" className="userAvatar" />
 						</div>
 						<div className="userDetails">
 							<span className="userRole">

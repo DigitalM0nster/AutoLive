@@ -26,7 +26,8 @@ export default function PasswordResetForm({ onReset, switchToLogin }: PasswordRe
 		try {
 			const response = await onReset(phone);
 			if (response.newPassword) {
-				// Здесь можно вместо вывода в консоль отправлять пароль по SMS
+				// Временно показываем пароль через alert
+				alert(`Ваш новый пароль: ${response.newPassword}`);
 				setResetSuccessMessage(`Новый пароль отправлен на номер: ${formattedPhone}.`);
 			}
 		} catch (error: any) {

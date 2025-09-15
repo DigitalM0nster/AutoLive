@@ -16,7 +16,6 @@ export type User = {
 	first_name: string;
 	last_name: string;
 	middle_name: string;
-	avatar: string;
 	phone: string;
 	role: Role;
 	department?: Department;

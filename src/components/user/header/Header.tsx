@@ -20,16 +20,24 @@ export default function Header() {
 	const getDisplayName = () => {
 		if (!user) return "Загрузка...";
 
-		if (user.first_name && user.last_name) {
-			// Если есть отчество, добавляем его
-			if (user.middle_name) return `${user.last_name} ${user.first_name} ${user.middle_name}`;
-			// Если нет отчества, показываем только имя и фамилию
-			return `${user.last_name} ${user.first_name}`;
-		}
-		if (user.first_name) return user.first_name;
-		if (user.last_name) return user.last_name;
+		// Собираем ФИО в правильном порядке: Фамилия, Имя, Отчество
+		const nameParts = [];
 
-		// форматируем номер
+		if (user.last_name) nameParts.push(user.last_name);
+		if (user.first_name) nameParts.push(user.first_name);
+		if (user.middle_name) nameParts.push(user.middle_name);
+
+		// Если есть хотя бы фамилия и имя, показываем ФИО
+		if (nameParts.length >= 2) {
+			return nameParts.join(" ");
+		}
+
+		// Если есть только одно поле, показываем его
+		if (nameParts.length === 1) {
+			return nameParts[0];
+		}
+
+		// Если нет имени, форматируем номер телефона
 		const formattedPhone = user.phone.replace(/(\d{3})(\d{3})(\d{2})(\d{2})$/, "($1) $2-$3-$4");
 		return `+7 ${formattedPhone}`;
 	};

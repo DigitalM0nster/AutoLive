@@ -297,19 +297,19 @@ export default function AllUsersTable() {
 									className={styles.statusSelect}
 								/>
 							</th>
-							{user?.role === "superadmin" && <th className={styles.tableHeaderCell}>Действия</th>}
+							<th className={styles.tableHeaderCell}>Действия</th>
 						</tr>
 					</thead>
 					<tbody className={styles.tableBody}>
 						{loading ? (
 							<tr>
-								<td colSpan={6} className={styles.loadingCell}>
+								<td colSpan={7} className={styles.loadingCell}>
 									<Loading />
 								</td>
 							</tr>
 						) : users.length === 0 ? (
 							<tr>
-								<td colSpan={6} className={styles.emptyCell}>
+								<td colSpan={7} className={styles.emptyCell}>
 									Нет пользователей
 								</td>
 							</tr>
@@ -335,6 +335,16 @@ export default function AllUsersTable() {
 											)}
 										</td>
 										<td className={styles.tableCell}>{statusTitle(u.status)}</td>
+										<td className={styles.tableCell}>
+											<div className={styles.actionsButtons}>
+												<Link href={`/admin/users/${u.id}`} className={`button ${styles.viewUserButton}`} title="Посмотреть пользователя">
+													👁️ Просмотр
+												</Link>
+												<Link href={`/admin/users/${u.id}/logs`} className={`button ${styles.viewLogsButton}`} title="Посмотреть логи пользователя">
+													📋 Логи
+												</Link>
+											</div>
+										</td>
 									</tr>
 								);
 							})

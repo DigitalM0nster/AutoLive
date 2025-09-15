@@ -198,8 +198,15 @@ export default function UserComponent({ userId, isCreating = false }: UserPagePr
 	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
 		const { name, value } = e.target;
 
+		// Специальная обработка для поля телефона - оставляем только цифры
+		if (name === "phone") {
+			const phoneDigits = value.replace(/\D/g, ""); // Удаляем все нецифровые символы
+			// Ограничиваем до 10 цифр
+			const limitedPhone = phoneDigits.slice(0, 10);
+			setFormData((prev) => ({ ...prev, [name]: limitedPhone }));
+		}
 		// Если меняется роль на "client" или "superadmin", автоматически сбрасываем отдел
-		if (name === "role" && (value === "client" || value === "superadmin")) {
+		else if (name === "role" && (value === "client" || value === "superadmin")) {
 			setFormData((prev) => ({ ...prev, [name]: value, departmentId: "" }));
 		} else {
 			setFormData((prev) => ({ ...prev, [name]: value }));
@@ -340,8 +347,8 @@ export default function UserComponent({ userId, isCreating = false }: UserPagePr
 
 		// Валидация номера телефона при создании
 		if (isCreating) {
-			if (!formData.phone || !formData.phone.match(/^\+?[0-9]{10,15}$/)) {
-				showErrorToast("Пожалуйста, введите корректный номер телефона");
+			if (!formData.phone || !formData.phone.match(/^[0-9]{10}$/)) {
+				showErrorToast("Номер телефона должен содержать ровно 10 цифр (например: 9991234567)");
 				setIsSaving(false);
 				return;
 			}
@@ -545,8 +552,10 @@ export default function UserComponent({ userId, isCreating = false }: UserPagePr
 										onChange={handleInputChange}
 										className="value"
 										required
-										placeholder="+79001234567"
+										placeholder="9991234567"
+										maxLength={10}
 									/>
+									<div className={styles.infoText}>* Введите номер телефона в формате: 9991234567 (10 цифр)</div>
 								</div>
 							) : (
 								<div className="detailItem noBorder">

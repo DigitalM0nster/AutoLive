@@ -34,7 +34,10 @@ export default function AllUsersLogsTable({
 		try {
 			// Используем GET запрос с параметрами в URL вместо POST
 			const params = new URLSearchParams();
-			userIds.forEach((id) => params.append("userIds", id.toString()));
+			params.append("userIds", userIds.join(","));
+
+			console.log("Проверяем существование пользователей с ID:", userIds);
+			console.log("URL запроса:", `/api/users/check-existence?${params.toString()}`);
 
 			const response = await fetch(`/api/users/check-existence?${params.toString()}`, {
 				method: "GET",
@@ -44,10 +47,12 @@ export default function AllUsersLogsTable({
 
 			if (response.ok) {
 				const data = await response.json();
+				console.log("Ответ API для проверки пользователей:", data);
 				// Теперь API возвращает объект с полными данными пользователей
 				const usersData = data.existingUsers || {};
 				// Создаем Map из полученных данных
 				const usersMap = new Map(Object.entries(usersData).map(([id, userData]) => [parseInt(id), userData as User]));
+				console.log("Созданная Map пользователей:", usersMap);
 				setExistingUsers(usersMap);
 			} else {
 				console.error("Ошибка API при проверке существования пользователей:", response.status, response.statusText);
@@ -64,7 +69,7 @@ export default function AllUsersLogsTable({
 		try {
 			// Используем GET запрос с параметрами в URL вместо POST
 			const params = new URLSearchParams();
-			departmentIds.forEach((id) => params.append("departmentIds", id.toString()));
+			params.append("departmentIds", departmentIds.join(","));
 
 			const response = await fetch(`/api/departments/check-existence?${params.toString()}`, {
 				method: "GET",
@@ -222,6 +227,13 @@ export default function AllUsersLogsTable({
 			// Получаем актуальные данные пользователя из existingUsers
 			const actualUser = existingUsers.get(user.id);
 			const userLogKey = `${userType}_${logId}_${user.id}_${userType === "admin" ? "admin" : "target"}`;
+
+			console.log(`Проверка пользователя ${userType} с ID ${user.id}:`, {
+				userExists,
+				actualUser,
+				existingUsersSize: existingUsers.size,
+				existingUsersKeys: Array.from(existingUsers.keys()),
+			});
 
 			return (
 				<div key={userLogKey} className={`fullInfoBlock`}>
