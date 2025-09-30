@@ -292,7 +292,7 @@ export type ProductLog = {
 	snapshotBefore?: any;
 	snapshotAfter?: any;
 	userSnapshot?: any;
-	departmentSnapshot?: DepartmentForLog[];
+	departmentSnapshot?: DepartmentForLog[] | null;
 	productSnapshot?: any; // Для массовых операций (как в логе импорта)
 	importLogId?: number | null; // Ссылка на лог импорта
 	importLogData?: any; // Данные лога импорта для отображения
