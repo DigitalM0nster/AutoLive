@@ -29,8 +29,7 @@ export default function AllProductsTable() {
 	const [sitePriceFilter, setSitePriceFilter] = useState<{ min: number; max: number }>({ min: 0, max: 10000000 });
 
 	// Активные фильтры по ценам (используются в запросах к БД)
-	const [activeSupplierPriceFilter, setActiveSupplierPriceFilter] = useState<{ min: number; max: number }>({ min: 0, max: 100000 });
-	0;
+	const [activeSupplierPriceFilter, setActiveSupplierPriceFilter] = useState<{ min: number; max: number }>({ min: 0, max: 10000000 });
 	const [activeSitePriceFilter, setActiveSitePriceFilter] = useState<{ min: number; max: number }>({ min: 0, max: 10000000 });
 
 	// Реальные границы цен (загружаются с сервера)
@@ -77,6 +76,11 @@ export default function AllProductsTable() {
 	const [imageToDelete, setImageToDelete] = useState<boolean>(false);
 	const [showDescription, setShowDescription] = useState<number | null>(null);
 	const [availableCategories, setAvailableCategories] = useState<{ id: number; title: string }[]>([]);
+
+	// Массовое выделение товаров
+	const [selectedProducts, setSelectedProducts] = useState<number[]>([]);
+	const [isSelectAll, setIsSelectAll] = useState(false);
+	const [isLoadingBulkOperation, setIsLoadingBulkOperation] = useState(false);
 
 	const limit = 10;
 	const categoryDropdownRef = useRef<HTMLDivElement>(null);
@@ -201,6 +205,18 @@ export default function AllProductsTable() {
 		fetchFilterData();
 	}, []);
 
+	// Обновляем состояние "выделить все" при изменении товаров на странице
+	useEffect(() => {
+		if (products.length === 0) {
+			setIsSelectAll(false);
+			return;
+		}
+
+		const currentPageIds = products.map((p) => p.id);
+		const allCurrentPageSelected = currentPageIds.every((id) => selectedProducts.includes(id));
+		setIsSelectAll(allCurrentPageSelected);
+	}, [products, selectedProducts]);
+
 	const totalPages = Math.ceil(total / limit);
 
 	// Обработчики изменения фильтров
@@ -257,6 +273,9 @@ export default function AllProductsTable() {
 		setBrandFilter("all");
 		setSupplierPriceFilter({ min: priceBounds.supplierPrice.min, max: priceBounds.supplierPrice.max });
 		setSitePriceFilter({ min: priceBounds.sitePrice.min, max: priceBounds.sitePrice.max });
+		// Сбрасываем также активные состояния фильтров цен
+		setActiveSupplierPriceFilter({ min: priceBounds.supplierPrice.min, max: priceBounds.supplierPrice.max });
+		setActiveSitePriceFilter({ min: priceBounds.sitePrice.min, max: priceBounds.sitePrice.max });
 		setSortBy(null);
 		setSortOrder(null);
 		setSearch("");
@@ -473,7 +492,163 @@ export default function AllProductsTable() {
 		setShowDescription(showDescription === productId ? null : productId);
 	};
 
-	// Создание массива активных фильтров
+	// Функции для массового выделения товаров
+	const toggleProductSelection = (productId: number) => {
+		setSelectedProducts((prev) => {
+			if (prev.includes(productId)) {
+				return prev.filter((id) => id !== productId);
+			} else {
+				return [...prev, productId];
+			}
+		});
+	};
+
+	const toggleSelectAll = () => {
+		if (isSelectAll) {
+			// Снимаем выделение со всех товаров на текущей странице
+			const currentPageIds = products.map((p) => p.id);
+			setSelectedProducts((prev) => prev.filter((id) => !currentPageIds.includes(id)));
+			setIsSelectAll(false);
+		} else {
+			// Выделяем все товары на текущей странице
+			const currentPageIds = products.map((p) => p.id);
+			setSelectedProducts((prev) => {
+				const newSelection = [...prev];
+				currentPageIds.forEach((id) => {
+					if (!newSelection.includes(id)) {
+						newSelection.push(id);
+					}
+				});
+				return newSelection;
+			});
+			setIsSelectAll(true);
+		}
+	};
+
+	const selectAllByFilters = async () => {
+		setIsLoadingBulkOperation(true);
+		try {
+			// Создаем параметры запроса аналогично основному запросу товаров
+			const params = new URLSearchParams({
+				limit: "10000", // Большое число для получения всех товаров
+			});
+
+			// Добавляем параметр поиска
+			if (search) params.append("search", search);
+
+			// Фильтры
+			if (categoryFilter !== "all") params.append("categoryId", categoryFilter.toString());
+			if (departmentFilter !== "all") {
+				params.append("departmentId", departmentFilter.toString());
+			}
+			if (brandFilter !== "all") params.append("brand", brandFilter);
+
+			// Фильтры по ценам
+			params.append("supplierPriceMin", activeSupplierPriceFilter.min.toString());
+			params.append("supplierPriceMax", activeSupplierPriceFilter.max.toString());
+			params.append("priceMin", activeSitePriceFilter.min.toString());
+			params.append("priceMax", activeSitePriceFilter.max.toString());
+
+			// Сортировка
+			if (sortBy && sortOrder) {
+				params.append("sortBy", sortBy);
+				params.append("sortOrder", sortOrder);
+			}
+
+			const res = await fetch(`/api/products?${params.toString()}`);
+			const data = await res.json();
+
+			if (data.products && Array.isArray(data.products)) {
+				const allIds = data.products.map((p: ProductListItem) => p.id);
+				setSelectedProducts(allIds);
+				alert(`Выделено ${allIds.length} товаров по активным фильтрам`);
+			}
+		} catch (error) {
+			console.error("Ошибка при выделении всех товаров по фильтрам:", error);
+			alert("Ошибка при выделении товаров");
+		} finally {
+			setIsLoadingBulkOperation(false);
+		}
+	};
+
+	const clearSelection = () => {
+		setSelectedProducts([]);
+		setIsSelectAll(false);
+	};
+
+	const deleteSelectedProducts = async () => {
+		if (selectedProducts.length === 0) return;
+
+		const confirmed = confirm(`Вы уверены, что хотите удалить ${selectedProducts.length} товаров? Это действие нельзя отменить.`);
+		if (!confirmed) return;
+
+		setIsLoadingBulkOperation(true);
+		try {
+			const response = await fetch("/api/products/bulk-delete", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				credentials: "include",
+				body: JSON.stringify({ ids: selectedProducts }),
+			});
+
+			if (response.ok) {
+				alert(`Успешно удалено ${selectedProducts.length} товаров`);
+				clearSelection();
+				// Перезагружаем данные
+				window.location.reload();
+			} else {
+				const errorData = await response.json();
+				alert(`Ошибка при удалении: ${errorData.error || "Неизвестная ошибка"}`);
+			}
+		} catch (error) {
+			console.error("Ошибка при массовом удалении:", error);
+			alert("Ошибка при удалении товаров");
+		} finally {
+			setIsLoadingBulkOperation(false);
+		}
+	};
+
+	const exportSelectedProducts = async () => {
+		if (selectedProducts.length === 0) return;
+
+		setIsLoadingBulkOperation(true);
+		try {
+			const response = await fetch("/api/products/export", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				credentials: "include",
+				body: JSON.stringify({ ids: selectedProducts }),
+			});
+
+			if (response.ok) {
+				// Создаем blob и скачиваем файл
+				const blob = await response.blob();
+				const url = window.URL.createObjectURL(blob);
+				const a = document.createElement("a");
+				a.href = url;
+				a.download = `products_export_${new Date().toISOString().split("T")[0]}.xlsx`;
+				document.body.appendChild(a);
+				a.click();
+				window.URL.revokeObjectURL(url);
+				document.body.removeChild(a);
+				alert(`Экспортировано ${selectedProducts.length} товаров`);
+			} else {
+				const errorData = await response.json();
+				alert(`Ошибка при экспорте: ${errorData.message || "Неизвестная ошибка"}`);
+			}
+		} catch (error) {
+			console.error("Ошибка при экспорте:", error);
+			alert("Ошибка при экспорте товаров");
+		} finally {
+			setIsLoadingBulkOperation(false);
+		}
+	};
+
+	// Создание массива активных фильтров для отображения
 	const getActiveFilters = (): ActiveFilter[] => {
 		const filters: ActiveFilter[] = [];
 
@@ -502,22 +677,18 @@ export default function AllProductsTable() {
 			});
 		}
 
-		// Фильтры по ценам
-		if (activeSupplierPriceFilter.min > priceBounds.supplierPrice.min || activeSupplierPriceFilter.max < priceBounds.supplierPrice.max) {
-			filters.push({
-				key: "supplierPrice",
-				label: "Цена поставщика",
-				value: `${activeSupplierPriceFilter.min} - ${activeSupplierPriceFilter.max} ₽`,
-			});
-		}
+		// Фильтры по ценам - всегда отображаем, независимо от того, изменились ли значения с дефолтных
+		filters.push({
+			key: "sitePrice",
+			label: "Цена на сайте",
+			value: `${activeSitePriceFilter.min} - ${activeSitePriceFilter.max} ₽`,
+		});
 
-		if (activeSitePriceFilter.min > priceBounds.sitePrice.min || activeSitePriceFilter.max < priceBounds.sitePrice.max) {
-			filters.push({
-				key: "sitePrice",
-				label: "Цена на сайте",
-				value: `${activeSitePriceFilter.min} - ${activeSitePriceFilter.max} ₽`,
-			});
-		}
+		filters.push({
+			key: "supplierPrice",
+			label: "Цена поставщика",
+			value: `${activeSupplierPriceFilter.min} - ${activeSupplierPriceFilter.max} ₽`,
+		});
 
 		if (sortBy) {
 			filters.push({
@@ -542,6 +713,20 @@ export default function AllProductsTable() {
 		return filters;
 	};
 
+	// Проверка, есть ли реальные активные фильтры (не только стандартные цены)
+	const hasRealActiveFilters = (): boolean => {
+		// Проверяем другие фильтры
+		if (categoryFilter !== "all" || departmentFilter !== "all" || brandFilter !== "all" || sortBy) {
+			return true;
+		}
+
+		// Проверяем, изменились ли цены с дефолтных
+		const sitePriceChanged = activeSitePriceFilter.min > priceBounds.sitePrice.min || activeSitePriceFilter.max < priceBounds.sitePrice.max;
+		const supplierPriceChanged = activeSupplierPriceFilter.min > priceBounds.supplierPrice.min || activeSupplierPriceFilter.max < priceBounds.supplierPrice.max;
+
+		return sitePriceChanged || supplierPriceChanged;
+	};
+
 	// Опции для фильтров
 	const categoryOptions = [{ value: "all", label: "Все категории" }, ...categories.map((cat) => ({ value: cat.id.toString(), label: cat.title }))];
 
@@ -552,6 +737,7 @@ export default function AllProductsTable() {
 	return (
 		<div className={`tableContent ${styles.tableContent}`}>
 			{/* Блок фильтров */}
+
 			<FiltersBlock
 				activeFilters={getActiveFilters()}
 				onResetFilters={resetFilters}
@@ -559,32 +745,44 @@ export default function AllProductsTable() {
 				onSearchChange={setSearch}
 				searchPlaceholder="Поиск по названию, SKU, бренду или ID..."
 				showSearch={true}
+				hasRealActiveFilters={hasRealActiveFilters()}
+				onSelectAllByFilters={selectAllByFilters}
+				isLoadingBulkOperation={isLoadingBulkOperation}
+				selectedProductsCount={selectedProducts.length}
+				onBulkDelete={deleteSelectedProducts}
+				onBulkExport={exportSelectedProducts}
+				onClearSelection={clearSelection}
 			>
-				{/* Фильтры по ценам */}
-				<PriceRangeFilter
-					label="Цена на сайте (₽)"
-					minValue={priceBounds.sitePrice.min}
-					maxValue={priceBounds.sitePrice.max}
-					value={sitePriceFilter}
-					onChange={handleSitePriceChange}
-					onChangeComplete={handleSitePriceChangeComplete}
-					step={100}
-				/>
-				<PriceRangeFilter
-					label="Цена поставщика (₽)"
-					minValue={priceBounds.supplierPrice.min}
-					maxValue={priceBounds.supplierPrice.max}
-					value={supplierPriceFilter}
-					onChange={handleSupplierPriceChange}
-					onChangeComplete={handleSupplierPriceChangeComplete}
-					step={100}
-				/>
+				<div className={styles.priceRangeFiltersBlock}>
+					{/* Фильтры по ценам */}
+					<PriceRangeFilter
+						label="Цена на сайте (₽)"
+						minValue={priceBounds.sitePrice.min}
+						maxValue={priceBounds.sitePrice.max}
+						value={sitePriceFilter}
+						onChange={handleSitePriceChange}
+						onChangeComplete={handleSitePriceChangeComplete}
+						step={100}
+					/>
+					<PriceRangeFilter
+						label="Цена поставщика (₽)"
+						minValue={priceBounds.supplierPrice.min}
+						maxValue={priceBounds.supplierPrice.max}
+						value={supplierPriceFilter}
+						onChange={handleSupplierPriceChange}
+						onChangeComplete={handleSupplierPriceChangeComplete}
+						step={100}
+					/>
+				</div>
 			</FiltersBlock>
 
 			<div className={styles.tableContainer}>
 				<table>
 					<thead className={`centerTableHeader`}>
 						<tr>
+							<th className={`${styles.tableHeaderCell} selectCell`}>
+								<input type="checkbox" checked={isSelectAll} onChange={toggleSelectAll} title="Выделить все товары на странице" />
+							</th>
 							<th
 								className={`${styles.tableHeaderCell} idCell sortableHeader ${sortBy === "id" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
 								onClick={() => {
@@ -721,13 +919,13 @@ export default function AllProductsTable() {
 					<tbody className={styles.tableBody}>
 						{loading ? (
 							<tr>
-								<td colSpan={11} className={styles.loadingCell}>
+								<td colSpan={12} className={styles.loadingCell}>
 									<Loading />
 								</td>
 							</tr>
 						) : products.length === 0 ? (
 							<tr>
-								<td colSpan={11} className={styles.emptyCell}>
+								<td colSpan={12} className={styles.emptyCell}>
 									Нет товаров
 								</td>
 							</tr>
@@ -737,6 +935,14 @@ export default function AllProductsTable() {
 
 								return (
 									<tr key={product.id}>
+										<td className={`selectCell`}>
+											<input
+												type="checkbox"
+												checked={selectedProducts.includes(product.id)}
+												onChange={() => toggleProductSelection(product.id)}
+												title="Выделить товар"
+											/>
+										</td>
 										<td className={`idCell`}>{product.id}</td>
 										<td>
 											{isEditing ? (
@@ -916,12 +1122,12 @@ export default function AllProductsTable() {
 											) : (
 												<div className={`actionButtons`}>
 													{["admin", "superadmin"].includes(user?.role || "") && (
-														<button onClick={() => startEditing(product)} title="Редактировать">
-															✏️
-														</button>
+														<div className={`button edit`} onClick={() => startEditing(product)}>
+															✏️ Редактировать
+														</div>
 													)}
-													<Link href={`/admin/product-management/products/${product.id}/logs`} title="Логи">
-														📋
+													<Link href={`/admin/product-management/products/${product.id}/logs`} title="Логи" className={`button logs`}>
+														📋 Посмотреть логи
 													</Link>
 												</div>
 											)}

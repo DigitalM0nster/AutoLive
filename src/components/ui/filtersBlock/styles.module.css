@@ -1,7 +1,7 @@
 .filtersContainer {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 30px;
   margin-bottom: 20px;
   padding: 16px;
   background: var(--light-grey-color);
@@ -14,14 +14,14 @@
   flex-direction: column;
   justify-content: flex-start;
   align-items: flex-start;
-  gap: 16px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
 .additionalFilters {
   display: flex;
-  flex-wrap: wrap;
-  gap: 50px;
+  flex-direction: column;
+  gap: 5px;
   align-items: flex-start;
 }
 
@@ -74,6 +74,10 @@
   cursor: pointer;
   transition: all 0.2s ease;
 }
+.resetFiltersButton:hover:not(:disabled) {
+  background: #45a049;
+  transform: translateY(-1px);
+}
 .resetFiltersButton:active:not(:disabled) {
   transform: translateY(0);
 }
@@ -85,6 +89,148 @@
 .disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.selectAllByFiltersContainer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.selectAllByFiltersButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 15px;
+  color: white;
+  border: 1px solid var(--blue-color);
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: var(--blue-color);
+}
+.selectAllByFiltersButton:hover:not(.disabled) {
+  text-decoration: underline;
+  transform: translateY(-1px);
+}
+.selectAllByFiltersButton:active:not(.disabled) {
+  transform: translateY(0);
+}
+.selectAllByFiltersButton.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.clearSelectionButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0px;
+  color: var(--blue-color);
+  border: none;
+  text-decoration: underline;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.clearSelectionButton:hover:not(.disabled) {
+  transform: translateY(-1px);
+}
+.clearSelectionButton:active:not(.disabled) {
+  transform: translateY(0);
+}
+.clearSelectionButton.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.bulkActionsPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 12px 16px;
+  background-color: #e3f2fd;
+  border: 1px solid #2196f3;
+  border-radius: 8px;
+}
+
+.bulkActionsInfo {
+  font-size: 14px;
+  color: #1976d2;
+}
+
+.bulkActionsButtons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bulkActionButton {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: -moz-fit-content;
+  width: fit-content;
+  height: -moz-fit-content;
+  height: fit-content;
+  padding: 10px 25px;
+  background: linear-gradient(135deg, var(--blue-color), var(--dark-blue-color));
+  border-radius: 8px;
+  text-decoration: none;
+  border: 1px solid var(--grey-color);
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.bulkActionButton:hover {
+  transform: translateY(-1px);
+}
+.bulkActionButton:active {
+  transform: translateY(0);
+}
+.bulkActionButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.clearButton {
+  background: none;
+  border: none;
+  color: var(--blue-color);
+  padding: 0;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: underline;
+  box-shadow: none;
+}
+.clearButton:hover {
+  box-shadow: none;
+}
+
+.exportButton {
+  background: linear-gradient(135deg, var(--green-color), var(--dark-green-color));
+}
+.exportButton:hover {
+  background: linear-gradient(135deg, var(--dark-green-color), var(--green-color));
+}
+
+.deleteButton {
+  background: linear-gradient(135deg, var(--red-color), var(--dark-red-color));
+}
+.deleteButton:hover {
+  background: linear-gradient(135deg, var(--dark-red-color), var(--red-color));
 }
 
 @media (max-width: 768px) {

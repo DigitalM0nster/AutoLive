@@ -33,30 +33,36 @@ export default function AdminLoginForm() {
 
 		if (loading) return;
 		setLoading(true);
-		const res = await fetch("/api/admin/auth/login", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ phone, password }),
-			credentials: "include",
-		});
 
-		const data = await res.json();
-		setLoading(false);
+		try {
+			const res = await fetch("/api/admin/auth/login", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ phone, password }),
+				credentials: "include",
+			});
 
-		if (!res.ok) {
-			// При ошибке можно анализировать message и, например,
-			// если ошибка содержит "телефон" или "пароль", подсвечивать соответствующее поле
-			if (data.error.toLowerCase().includes("телефон")) {
-				setPhoneError(data.error);
-			} else if (data.error.toLowerCase().includes("пароль")) {
-				setPasswordError(data.error);
+			const data = await res.json();
+			setLoading(false);
+
+			if (!res.ok) {
+				// При ошибке можно анализировать message и, например,
+				// если ошибка содержит "телефон" или "пароль", подсвечивать соответствующее поле
+				if (data.error.toLowerCase().includes("телефон")) {
+					setPhoneError(data.error);
+				} else if (data.error.toLowerCase().includes("пароль")) {
+					setPasswordError(data.error);
+				}
+				showErrorToast(data.error || "Ошибка авторизации");
+			} else {
+				// Очистка ошибок при успешном логине
+				setPhoneError("");
+				setPasswordError("");
+				window.location.href = "/admin/dashboard";
 			}
-			showErrorToast(data.error || "Ошибка авторизации");
-		} else {
-			// Очистка ошибок при успешном логине
-			setPhoneError("");
-			setPasswordError("");
-			window.location.href = "/admin/dashboard";
+		} catch (error) {
+			setLoading(false);
+			showErrorToast("Ошибка сети, попробуйте позже");
 		}
 	};
 

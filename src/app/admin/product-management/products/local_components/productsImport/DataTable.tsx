@@ -65,7 +65,7 @@ const DataTable = memo(function DataTable({ preview, columns, setColumns, startR
 	const mostCommonColumnCount = getMostCommonColumnCount(preview);
 
 	return (
-		<table className="table">
+		<table className="table importTable">
 			<thead>
 				<tr>
 					<th>№</th>
@@ -129,7 +129,7 @@ const DataTable = memo(function DataTable({ preview, columns, setColumns, startR
 								else if (isStart) backgroundColor = "rgba(59, 130, 246, 0.1)";
 
 								return (
-									<td key={cellIndex} style={{ padding: "4px 8px", backgroundColor }}>
+									<td key={cellIndex} style={{ backgroundColor }}>
 										{cell ?? ""}
 									</td>
 								);

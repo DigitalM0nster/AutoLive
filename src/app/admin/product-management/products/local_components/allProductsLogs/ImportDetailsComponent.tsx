@@ -145,7 +145,7 @@ export default function ImportDetailsComponent({ importLogId, onClose }: ImportD
 		setError(null);
 
 		try {
-			const response = await fetch(`/api/products/import-logs/${importLogId}/products?${queryParams.toString()}`);
+			const response = await fetch(`/api/products/logs/${importLogId}/products?${queryParams.toString()}`);
 
 			if (!response.ok) {
 				throw new Error("Не удалось загрузить логи товаров импорта");

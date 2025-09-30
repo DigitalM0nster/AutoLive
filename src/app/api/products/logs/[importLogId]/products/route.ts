@@ -11,7 +11,7 @@ export const GET = withPermission(
 	async (req: NextRequest, { user }: ExtendedRequestContext) => {
 		try {
 			// Получаем importLogId из URL
-			const importLogId = Number(req.nextUrl.pathname.split("/")[4]); // /api/products/import-logs/[importLogId]/products
+			const importLogId = Number(req.nextUrl.pathname.split("/")[4]); // /api/products/logs/[importLogId]/products
 
 			if (isNaN(importLogId)) {
 				return NextResponse.json({ error: "Некорректный ID лога импорта" }, { status: 400 });

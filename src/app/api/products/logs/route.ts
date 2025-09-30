@@ -51,20 +51,38 @@ export const GET = withPermission(
 					importWhere.createdAt = dateFilter;
 				}
 
-				// Применяем фильтр по отделу к логам импорта
-				if (Object.keys(departmentFilter).length > 0) {
-					importWhere.departmentId = departmentFilter.departmentId;
-				}
+				// Для импорта не применяем фильтр по отделу здесь
+				// Фильтрация будет происходить после загрузки данных
 
 				const importLogs = await prisma.import_log.findMany({
 					where: importWhere,
 					orderBy: {
 						createdAt: "desc",
 					},
+					select: {
+						id: true,
+						fileName: true,
+						created: true,
+						updated: true,
+						skipped: true,
+						imagePolicy: true,
+						markupSummary: true,
+						markupData: true,
+						createdAt: true,
+						message: true,
+						count: true,
+						userSnapshot: true,
+						departmentSnapshot: true,
+						productsSnapshot: true,
+						// Временные поля для совместимости
+						userId: true,
+						departmentId: true,
+						snapshots: true,
+					},
 				});
 
 				// Преобразуем логи импорта в нужный формат
-				allLogs = importLogs.map((log) => {
+				const importLogsFormatted = importLogs.map((log) => {
 					const departmentSnapshot = log.departmentSnapshot as any;
 
 					return {
@@ -83,10 +101,132 @@ export const GET = withPermission(
 						importLogData: log, // Сохраняем данные лога импорта
 					};
 				});
+
+				// Фильтруем логи импорта по отделу
+				let filteredImportLogs = importLogsFormatted;
+				if (Object.keys(departmentFilter).length > 0) {
+					filteredImportLogs = importLogsFormatted.filter((log) => {
+						// Проверяем отдел из departmentSnapshot
+						return log.department && log.department.id === departmentFilter.departmentId;
+					});
+				}
+
+				allLogs = filteredImportLogs;
+			}
+
+			// Если показываем все действия или только массовые операции - добавляем логи массовых операций
+			const isBulkFilter = action === "bulk" || action === "bulk_delete" || action === "delete";
+			if (isBulkFilter || showAllActions) {
+				// Получаем логи массовых операций
+				const bulkWhere: any = {};
+
+				if (Object.keys(dateFilter).length > 0) {
+					bulkWhere.created_at = dateFilter;
+				}
+
+				// Для массовых операций не применяем фильтр по отделу здесь
+				// Фильтрация будет происходить после загрузки данных
+
+				const bulkLogs = await prisma.bulk_action_log.findMany({
+					where: bulkWhere,
+					orderBy: {
+						created_at: "desc",
+					},
+				});
+
+				// Преобразуем логи массовых операций в нужный формат
+				const bulkActionLogs = bulkLogs.map((log) => {
+					const userSnapshot = log.user_snapshot as any;
+					const departmentSnapshot = log.departments_snapshot as any;
+					const productsSnapshot = log.products_snapshot as any;
+
+					return {
+						id: `bulk_${log.id}`, // Уникальный ID для логов массовых операций
+						createdAt: log.created_at,
+						action: log.action === "delete" ? "bulk_delete" : log.action,
+						message: log.message || `Массовое ${log.action === "delete" ? "удаление" : log.action}: ${log.count} товаров`,
+						admin: userSnapshot
+							? {
+									id: userSnapshot.id,
+									first_name: userSnapshot.first_name,
+									last_name: userSnapshot.last_name,
+									middle_name: userSnapshot.middle_name,
+									phone: userSnapshot.phone,
+									role: userSnapshot.role,
+									department: userSnapshot.department,
+							  }
+							: null,
+						targetProduct: null, // Для массовых операций нет конкретного товара
+						department: (() => {
+							// Собираем все уникальные отделы из удаленных товаров
+							const departments = new Map<number, string>();
+							productsSnapshot.forEach((product: any) => {
+								if (product.department && product.department.id && product.department.name) {
+									departments.set(product.department.id, product.department.name);
+								}
+							});
+
+							// Если отделы есть, возвращаем информацию о них
+							if (departments.size > 0) {
+								const deptEntries = Array.from(departments.entries());
+								if (deptEntries.length === 1) {
+									// Если один отдел, возвращаем его
+									return {
+										id: deptEntries[0][0],
+										name: deptEntries[0][1],
+									};
+								} else {
+									// Если несколько отделов, возвращаем информацию о множественности
+									return {
+										id: deptEntries[0][0], // ID первого отдела для совместимости
+										name: `Несколько отделов (${deptEntries.map(([id, name]) => name).join(", ")})`,
+										multipleDepartments: true,
+										allDepartments: deptEntries.map(([id, name]) => ({ id, name })),
+									};
+								}
+							}
+
+							// Если отделов нет, возвращаем null
+							return null;
+						})(),
+						snapshotBefore: null,
+						snapshotAfter: null,
+						userSnapshot,
+						departmentSnapshot,
+						productSnapshot: null, // Для массовых операций как в логе импорта
+						importLogId: null,
+						bulkLogId: log.id, // ID лога массовой операции
+						bulkLogData: {
+							id: log.id,
+							action: log.action,
+							message: log.message,
+							count: log.count,
+							created_at: log.created_at,
+							userSnapshot: userSnapshot,
+							departmentsSnapshot: log.departments_snapshot, // Массив всех отделов из удаленных товаров
+							productsSnapshot, // Снапшот удаленных товаров внутри bulkLogData (как в importLogData)
+						},
+					};
+				});
+
+				// Фильтруем логи массовых операций по отделу товаров
+				let filteredBulkLogs = bulkActionLogs;
+				if (Object.keys(departmentFilter).length > 0) {
+					filteredBulkLogs = bulkActionLogs.filter((log) => {
+						// Проверяем, есть ли среди удаленных товаров товары из выбранного отдела
+						if (log.bulkLogData && log.bulkLogData.productsSnapshot) {
+							return log.bulkLogData.productsSnapshot.some((product: any) => product.department && product.department.id === departmentFilter.departmentId);
+						}
+						return false;
+					});
+				}
+
+				// Добавляем отфильтрованные логи массовых операций к общему списку
+				allLogs = [...allLogs, ...filteredBulkLogs];
 			}
 
 			// Если показываем все действия или только обычные логи товаров - добавляем обычные логи товаров
-			if (showAllActions || (!isImportFilter && action && action !== "import")) {
+			if (showAllActions || (!isImportFilter && !isBulkFilter && action && action !== "import" && action !== "bulk" && action !== "bulk_delete" && action !== "delete")) {
 				// Получаем обычные логи товаров (НЕ связанные с импортом)
 				const where: any = {
 					importLogId: null, // Исключаем логи при импорте
@@ -226,8 +366,8 @@ export const GET = withPermission(
 			// Сортируем все логи по дате (новые сверху)
 			allLogs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-			// Фильтруем по действию если указан (кроме импорта, который уже обработан)
-			if (action && action !== "all" && action !== "import") {
+			// Фильтруем по действию если указан (кроме импорта и массовых операций, которые уже обработаны)
+			if (action && action !== "all" && action !== "import" && action !== "bulk" && action !== "bulk_delete" && action !== "delete") {
 				allLogs = allLogs.filter((log) => log.action === action);
 			}
 
@@ -307,6 +447,29 @@ export const GET = withPermission(
 								}
 							} catch (e) {
 								// Игнорируем ошибки парсинга
+							}
+						}
+
+						return false;
+					});
+				} else if (isBulkFilter) {
+					// Для логов массовых операций ищем по товарам, которые были удалены
+					allLogs = allLogs.filter((log) => {
+						// Проверяем сообщение лога массовой операции
+						if (log.message && log.message.toLowerCase().includes(searchTerm)) {
+							return true;
+						}
+
+						// Проверяем данные удаленных товаров (productsSnapshot)
+						if (log.productsSnapshot && Array.isArray(log.productsSnapshot)) {
+							for (const product of log.productsSnapshot) {
+								if (
+									product.title?.toLowerCase().includes(searchTerm) ||
+									product.sku?.toLowerCase().includes(searchTerm) ||
+									product.brand?.toLowerCase().includes(searchTerm)
+								) {
+									return true;
+								}
 							}
 						}
 
@@ -459,24 +622,24 @@ export const DELETE = withPermission(
 			}
 
 			// Получаем количество логов продуктов перед удалением
-			const logsCount = await prisma.changeLog.count({
-				where: {
-					entityType: "product",
-				},
-			});
+			const [productLogsCount, bulkLogsCount] = await Promise.all([prisma.product_log.count(), prisma.bulk_action_log.count()]);
+
+			const totalLogsCount = productLogsCount + bulkLogsCount;
 
 			// Удаляем все логи продуктов
-			const deleteResult = await prisma.changeLog.deleteMany({
-				where: {
-					entityType: "product",
-				},
-			});
+			const [productLogsResult, bulkLogsResult] = await Promise.all([prisma.product_log.deleteMany({}), prisma.bulk_action_log.deleteMany({})]);
+
+			const totalDeleted = productLogsResult.count + bulkLogsResult.count;
 
 			return NextResponse.json({
 				success: true,
-				message: `Успешно удалено ${deleteResult.count} логов продуктов`,
-				deletedCount: deleteResult.count,
-				totalBeforeDeletion: logsCount,
+				message: `Успешно удалено ${totalDeleted} логов продуктов`,
+				deletedCount: totalDeleted,
+				totalBeforeDeletion: totalLogsCount,
+				details: {
+					productLogs: productLogsResult.count,
+					bulkLogs: bulkLogsResult.count,
+				},
 			});
 		} catch (error) {
 			console.error("❌ Ошибка при удалении логов продуктов:", error);

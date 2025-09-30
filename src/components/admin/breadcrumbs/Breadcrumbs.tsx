@@ -51,9 +51,19 @@ export default function Breadcrumbs() {
 
 	if (!segments.includes("admin")) return null;
 
+	// Специальная логика для страниц управления товарами
+	const isProductManagementPage = segments.includes("product-management") && segments.includes("products");
+	const isImportOrLogsPage = segments.includes("import") || segments.includes("logs");
+
 	const breadcrumbs = segments
 		.map((segment, idx) => {
 			const href = "/" + segments.slice(0, idx + 1).join("/");
+
+			// Для страниц импорта и логов товаров пропускаем уровень "products"
+			if (isProductManagementPage && isImportOrLogsPage && segment === "products") {
+				return null;
+			}
+
 			const label = staticMap[segment] || dynamicLabels[segment] || null;
 			return label ? { href, label } : null;
 		})

@@ -14,7 +14,7 @@ interface ExtendedRequestContext {
 export const GET = withPermission(async (req: NextRequest, { user }: ExtendedRequestContext) => {
 	try {
 		// Получаем importLogId из URL
-		const importLogId = Number(req.nextUrl.pathname.split("/")[4]); // /api/products/import-logs/[importLogId]
+		const importLogId = Number(req.nextUrl.pathname.split("/")[4]); // /api/products/logs/[importLogId]
 
 		if (isNaN(importLogId)) {
 			return NextResponse.json({ error: "Некорректный ID лога импорта" }, { status: 400 });

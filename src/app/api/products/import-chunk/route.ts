@@ -333,6 +333,28 @@ export const POST = withPermission(
 					}),
 				];
 
+				// Формируем структурированные данные о наценках
+				const markupData = {
+					defaultMarkup: {
+						type: defaultMarkup.type,
+						value: defaultMarkup.value,
+						description: `${defaultMarkup.type === "%" ? `${defaultMarkup.value}%` : `+${defaultMarkup.value} руб.`}`,
+					},
+					rules: markupRules.map((rule: any) => ({
+						from: rule.from || 0,
+						to: rule.to || null,
+						type: rule.type,
+						value: rule.value,
+						description: `${rule.from || 0} - ${rule.to || "∞"} руб.: ${rule.type === "%" ? `${rule.value}%` : `+${rule.value} руб.`}`,
+					})),
+				};
+
+				// Формируем текстовое описание для обратной совместимости
+				const markupDescription = [
+					`Базовая наценка: ${markupData.defaultMarkup.description}`,
+					...(markupData.rules.length > 0 ? [`Правила наценки:`, ...markupData.rules.map((rule: any) => `  • ${rule.description}`)] : []),
+				].join("\n");
+
 				const importLog = await prisma.import_log.create({
 					data: {
 						fileName: `Импорт chunk ${chunkIndex + 1}/${totalChunks}`,
@@ -340,6 +362,9 @@ export const POST = withPermission(
 						updated: toUpdate.length,
 						skipped,
 						count: toCreate.length + toUpdate.length + skipped,
+						imagePolicy: preserveImages ? "save" : "skip",
+						markupSummary: markupDescription,
+						markupData: markupData,
 						message: [
 							`Импорт завершён.`,
 							`Создано: ${toCreate.length}`,

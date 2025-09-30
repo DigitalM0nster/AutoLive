@@ -1036,6 +1036,14 @@ table,
 	box-shadow: none;
 	table-layout: fixed;
 
+	&.importTable {
+		tbody {
+			td {
+				cursor: pointer;
+			}
+		}
+	}
+
 	thead {
 		background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
 		border-bottom: 2px solid #e2e8f0;
@@ -1097,6 +1105,10 @@ table,
 				width: 25px;
 			}
 
+			&.selectCell {
+				width: 25px;
+			}
+
 			&.dragCell {
 				width: 30px;
 			}
@@ -1141,6 +1153,16 @@ table,
 				color: #374151;
 				border-bottom: 1px solid #f3f4f6;
 				vertical-align: top;
+
+				&.selectCell {
+					width: 25px;
+
+					input {
+						font-size: var(--inputFontSize);
+						width: var(--inputFontSize);
+						height: var(--inputFontSize);
+					}
+				}
 
 				&:last-child {
 					border-bottom: none;
@@ -1299,6 +1321,7 @@ table,
 		padding: 10px;
 		background: white;
 		overflow: hidden;
+		margin: 0px 0px 5px 0px;
 		&:before {
 			content: "";
 			position: absolute;
@@ -1357,6 +1380,10 @@ table,
 			.clickInfoBlock {
 				color: var(--dark-red-color);
 			}
+		}
+
+		&:last-child {
+			margin: 0px 0px 0px 0px;
 		}
 
 		.clickInfoBlock {
@@ -1457,6 +1484,38 @@ table,
 						gap: 5px;
 					}
 				}
+			}
+		}
+	}
+
+	.actionButtons {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+
+		.button {
+			display: flex;
+			gap: 5px;
+			cursor: pointer;
+			color: var(--text-color);
+			padding: 0px;
+			background: transparent;
+			text-decoration: underline;
+			box-shadow: none;
+			border: none;
+			&.edit {
+				color: var(--blue-color);
+			}
+			&.logs {
+				color: var(--text-color);
+				opacity: 0.65;
+			}
+			&:hover {
+				transform: translateY(-1px);
+				box-shadow: none;
+			}
+			&:visited {
+				color: var(--text-color);
 			}
 		}
 	}
@@ -2361,13 +2420,15 @@ span {
 }
 
 // Стили для ячейки импорта в таблице логов
-.importProductCell {
+.importProductCell,
+.bulkDeleteProductCell {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
 	align-items: flex-start;
 
-	.importLabel {
+	.importLabel,
+	.bulkDeleteLabel {
 		font-weight: 500;
 		color: var(--text-color);
 	}
@@ -2966,8 +3027,6 @@ span {
 
 // Стили для фильтра по цене
 .priceRangeFilter {
-	margin-bottom: 16px;
-
 	.priceRangeLabel {
 		display: block;
 		font-size: 14px;
@@ -3064,11 +3123,6 @@ span {
 			transform: translate(-50%, -50%) scale(1.2);
 			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 		}
-	}
-
-	// Стили для фильтра по цене
-	.priceRangeFilter {
-		margin-bottom: 16px;
 	}
 
 	.priceRangeLabel {

@@ -239,9 +239,9 @@ model bulk_action_log {
     count      Int
 
     // 📸 Снимки данных (без дублирования ID)
-    user_snapshot       Json? // Содержит {id, first_name, last_name, role, department}
-    department_snapshot Json? // Содержит {id, name}
-    products_snapshot   Json? // Массив удаленных товаров
+    user_snapshot        Json? // Содержит {id, first_name, last_name, role, department}
+    departments_snapshot Json? // Массив всех уникальных отделов из удаленных товаров [{id, name}, ...]
+    products_snapshot    Json? // Массив удаленных товаров
 
     // 📦 Старые поля (временно для совместимости)
     user_id       Int? // TODO: удалить после миграции
@@ -273,6 +273,7 @@ model import_log {
     skipped       Int      @default(0)
     imagePolicy   String?  @map("image_policy") @db.VarChar(255)
     markupSummary String?  @map("markup_summary") @db.VarChar(255)
+    markupData    Json?    @map("markup_data") // Структурированные данные о наценках
     createdAt     DateTime @default(now()) @map("created_at") @db.Timestamp(0)
     message       String?  @db.Text
     count         Int

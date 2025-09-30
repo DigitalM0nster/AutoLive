@@ -30,7 +30,7 @@ const SettingsBlock = memo(function SettingsBlock({
 			<div className="settingsList">
 				<div className="settingItem">
 					<label className="label">Начинать импорт с строки №:</label>
-					<input type="number" min={1} value={startRow} onChange={(e) => setStartRow(Number(e.target.value))} />
+					<input type="number" min={1} value={startRow} onChange={(e) => setStartRow(Number(e.target.value))}></input>
 				</div>
 
 				{isSuperadmin && (

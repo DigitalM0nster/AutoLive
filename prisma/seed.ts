@@ -189,11 +189,15 @@ async function main() {
 			const isAllowed = allowedMap[department.id]?.has(category.id);
 
 			for (let j = 1; j <= 3; j++) {
+				const sitePrice = 1000 + j * 100;
+				const supplierPrice = Math.floor(sitePrice * 0.7); // Цена поставщика = 70% от цены на сайте
+
 				await prisma.product.create({
 					data: {
 						title: `${category.title} Товар ${j}`,
 						sku: `${skuPrefix}-00${j}`,
-						price: 1000 + j * 100,
+						price: sitePrice,
+						supplierPrice: supplierPrice,
 						categoryId: isAllowed ? category.id : null,
 						departmentId: department.id,
 						productFilterValues: isAllowed

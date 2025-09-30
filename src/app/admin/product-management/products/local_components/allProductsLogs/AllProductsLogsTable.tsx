@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ProductLog, ProductLogResponse, User, Category, CategoryFilter, FilterValue } from "@/lib/types";
+import { ProductLog, ProductLogResponse, User, Category, CategoryFilter, FilterValue, DepartmentForLog, Department } from "@/lib/types";
+import styles from "../styles.module.scss";
 
 // Тип для значения фильтра товара в логах
 type ProductFilterValue = {
@@ -22,6 +23,7 @@ type CategoryInLog =
 	| undefined;
 import Loading from "@/components/ui/loading/Loading";
 import ImportDetailsComponent from "./ImportDetailsComponent";
+import BulkDeleteDetailsComponent from "./BulkDeleteDetailsComponent";
 
 export default function AllProductsLogsTable({
 	logs,
@@ -59,11 +61,15 @@ export default function AllProductsLogsTable({
 	const [showImportDetails, setShowImportDetails] = useState<number | null>(null);
 	// Состояние для детальных данных импорта
 	const [importDetailsData, setImportDetailsData] = useState<Map<number, any>>(new Map());
+	// Состояние для отображения деталей массового удаления
+	const [showBulkDeleteDetails, setShowBulkDeleteDetails] = useState<number | null>(null);
+	// Состояние для детальных данных массового удаления
+	const [bulkDeleteDetailsData, setBulkDeleteDetailsData] = useState<Map<number, any>>(new Map());
 
 	// Функция для загрузки детальных данных импорта
 	const loadImportDetails = useCallback(async (importLogId: number) => {
 		try {
-			const response = await fetch(`/api/products/import-logs/${importLogId}/products?page=1&limit=100`);
+			const response = await fetch(`/api/products/logs/${importLogId}/products?page=1&limit=100`);
 			if (response.ok) {
 				const data = await response.json();
 				setImportDetailsData((prev) => new Map(prev.set(importLogId, data)));
@@ -74,6 +80,22 @@ export default function AllProductsLogsTable({
 			console.error("Ошибка при загрузке деталей импорта:", error);
 		}
 	}, []);
+
+	// Функция для загрузки детальных данных массового удаления
+	const loadBulkDeleteDetails = useCallback(
+		async (bulkLogId: number) => {
+			try {
+				// Получаем данные из bulkLogData, которые уже есть в логе
+				const bulkLog = localLogs.find((log: any) => log.bulkLogId === bulkLogId);
+				if (bulkLog && bulkLog.bulkLogData && bulkLog.bulkLogData.productsSnapshot) {
+					setBulkDeleteDetailsData((prev) => new Map(prev.set(bulkLogId, bulkLog.bulkLogData.productsSnapshot)));
+				}
+			} catch (error) {
+				console.error("Ошибка при загрузке деталей массового удаления:", error);
+			}
+		},
+		[localLogs]
+	);
 
 	// Функция для проверки существования пользователей
 	const checkUsersExistence = useCallback(async (userIds: number[]) => {
@@ -275,9 +297,13 @@ export default function AllProductsLogsTable({
 				// Для удаления товара берем отдел из snapshotBefore
 				return log.snapshotBefore?.department || (log.snapshotBefore?.departmentId ? { id: log.snapshotBefore.departmentId } : null);
 
+			case "bulk_delete":
+				// Для массового удаления отдел уже правильно определен в API
+				return log.bulkLogData?.productsSnapshot[0].department;
+
 			case "import":
 				// Для импорта отдел не применим
-				return null;
+				return log.departmentSnapshot;
 
 			default:
 				return null;
@@ -346,6 +372,9 @@ export default function AllProductsLogsTable({
 				// Добавляем данные лога импорта
 				importLogData: log.importLogData,
 				importLogId: log.importLogId,
+				// Добавляем данные массового удаления
+				bulkLogId: log.bulkLogId,
+				bulkLogData: log.bulkLogData,
 			}));
 
 			setLocalLogs(formattedLogs);
@@ -415,10 +444,29 @@ export default function AllProductsLogsTable({
 	}, []);
 
 	// Функция для отображения отдела с ссылкой, если отдел существует
-	const renderDepartment = useCallback(
+	const renderDepartmentLink = useCallback(
 		(department: any) => {
 			if (!department || !department.id) {
 				return "Без отдела";
+			}
+
+			// Если это множественные отделы (для массовых операций)
+			if (department.multipleDepartments && department.allDepartments) {
+				return (
+					<span>
+						{department.name}
+						<div style={{ fontSize: "0.8em", color: "#666", marginTop: "2px" }}>
+							{department.allDepartments.map((dept: any, index: number) => (
+								<span key={dept.id}>
+									{index > 0 && ", "}
+									<a href={`/admin/departments/${dept.id}`} className={`itemLink`}>
+										{dept.name}
+									</a>
+								</span>
+							))}
+						</div>
+					</span>
+				);
 			}
 
 			const departmentExists = existingDepartments.has(department.id);
@@ -461,7 +509,7 @@ export default function AllProductsLogsTable({
 	);
 
 	// Функция для отображения категории с ссылкой, если категория существует
-	const renderCategory = useCallback(
+	const renderCategoryLink = useCallback(
 		(category: CategoryInLog) => {
 			// Определяем ID категории
 			const catId = category?.id;
@@ -660,9 +708,9 @@ export default function AllProductsLogsTable({
 		}));
 	}, []);
 
-	// Функция для отображения ссылки на отдел с разворачивающимся блоком
-	const renderDepartmentLink = useCallback(
-		(log: ProductLog, department: { id: number; name: string }, logId: number) => {
+	// Функция для отображения блока отдела с разворачивающимся блоком
+	const renderDepartmentBlock = useCallback(
+		(log: ProductLog, department: DepartmentForLog, logId: number) => {
 			// Проверяем, существует ли отдел в базе данных
 			const departmentExists = existingDepartments.has(department.id);
 			// Получаем актуальные данные отдела из departmentsData
@@ -702,7 +750,7 @@ export default function AllProductsLogsTable({
 	);
 
 	// Функция для отображения ссылки на категорию с разворачивающимся блоком
-	const renderCategoryLink = useCallback(
+	const renderCategoryBlock = useCallback(
 		(log: ProductLog, category: { id: number; title: string }, logId: number) => {
 			// Проверяем, существует ли категория в базе данных
 			const categoryExists = existingCategories.has(category.id);
@@ -799,14 +847,16 @@ export default function AllProductsLogsTable({
 						</div>
 						<div className="infoField">
 							<span className="title">Отдел:</span>
-							<span className="value">{log.action === "update" ? renderDepartment(log.snapshotBefore?.department) : renderDepartment(product.department)}</span>
+							<span className="value">
+								{log.action === "update" ? renderDepartmentLink(log.snapshotBefore?.department) : renderDepartmentLink(product.department)}
+							</span>
 						</div>
 						<div className="infoField">
 							<span className="title">Категория:</span>
 							<span className="value">
 								{log.action === "update"
-									? renderCategory(log.snapshotBefore?.category || (log.snapshotBefore?.categoryId ? { id: log.snapshotBefore.categoryId } : null))
-									: renderCategory(product.category || (product.categoryId ? { id: product.categoryId } : null))}
+									? renderCategoryLink(log.snapshotBefore?.category || (log.snapshotBefore?.categoryId ? { id: log.snapshotBefore.categoryId } : null))
+									: renderCategoryLink(product.category || (product.categoryId ? { id: product.categoryId } : null))}
 							</span>
 						</div>
 						{(log.action === "update" ? log.snapshotBefore?.productFilterValues : product.productFilterValues) &&
@@ -853,7 +903,7 @@ export default function AllProductsLogsTable({
 				</div>
 			);
 		},
-		[activeBlocks, toggleActiveBlock, existingProducts, renderCategory, renderGroupedFilters]
+		[activeBlocks, toggleActiveBlock, existingProducts, renderCategoryLink, renderGroupedFilters]
 	);
 
 	// Функция для отображения ссылки на пользователя
@@ -890,7 +940,7 @@ export default function AllProductsLogsTable({
 						</div>
 						<div className="infoField">
 							<span className="title">Отдел:</span>
-							<span className="value">{renderDepartment(user.department)}</span>
+							<span className="value">{renderDepartmentLink(user.department)}</span>
 						</div>
 						{userExists ? (
 							<div className="infoField">
@@ -911,13 +961,12 @@ export default function AllProductsLogsTable({
 				</div>
 			);
 		},
-		[activeBlocks, toggleActiveBlock, getUserName, getRoleName, existingUsers, renderDepartment]
+		[activeBlocks, toggleActiveBlock, getUserName, getRoleName, existingUsers, renderDepartmentLink]
 	);
 
 	// Функция для получения блока с результатами
 	const getResultBlock = useCallback(
 		(log: ProductLog): React.ReactNode => {
-			console.log(log);
 			const action = log.action;
 			const userExists = log.admin ? existingUsers.has(log.admin.id) : false;
 			// Получаем актуальные данные пользователя из existingUsers
@@ -961,14 +1010,12 @@ export default function AllProductsLogsTable({
 											</div>
 											<div className="infoField">
 												<span className="title">Отдел:</span>
-												<span className="value">
-													{log.snapshotAfter.department?.name || (log.snapshotAfter.departmentId ? `ID: ${log.snapshotAfter.departmentId}` : "—")}
-												</span>
+												<span className="value">{renderDepartmentLink(log.snapshotBefore?.department)}</span>
 											</div>
 											<div className="infoField">
 												<span className="title">Категория:</span>
 												<span className="value">
-													{renderCategory(log.snapshotAfter.category || (log.snapshotAfter.categoryId ? { id: log.snapshotAfter.categoryId } : null))}
+													{renderCategoryLink(log.snapshotAfter.category || (log.snapshotAfter.categoryId ? { id: log.snapshotAfter.categoryId } : null))}
 												</span>
 											</div>
 											{log.snapshotAfter.productFilterValues && log.snapshotAfter.productFilterValues.length > 0 && (
@@ -1040,14 +1087,14 @@ export default function AllProductsLogsTable({
 											</div>
 											<div className="infoField">
 												<span className="title">Отдел:</span>
-												<span className="value">
-													{log.snapshotBefore.department?.name || (log.snapshotBefore.departmentId ? `ID: ${log.snapshotBefore.departmentId}` : "—")}
-												</span>
+												<span className="value">{renderDepartmentLink(log.snapshotBefore?.department)}</span>
 											</div>
 											<div className="infoField">
 												<span className="title">Категория:</span>
 												<span className="value">
-													{renderCategory(log.snapshotBefore.category || (log.snapshotBefore.categoryId ? { id: log.snapshotBefore.categoryId } : null))}
+													{renderCategoryLink(
+														log.snapshotBefore.category || (log.snapshotBefore.categoryId ? { id: log.snapshotBefore.categoryId } : null)
+													)}
 												</span>
 											</div>
 											{log.snapshotBefore.productFilterValues && log.snapshotBefore.productFilterValues.length > 0 && (
@@ -1179,12 +1226,12 @@ export default function AllProductsLogsTable({
 														<tr>
 															<td>Категория</td>
 															<td className="oldValue">
-																{renderCategory(
+																{renderCategoryLink(
 																	log.snapshotBefore?.category || (log.snapshotBefore?.categoryId ? { id: log.snapshotBefore.categoryId } : null)
 																)}
 															</td>
 															<td className="newValue">
-																{renderCategory(
+																{renderCategoryLink(
 																	log.snapshotAfter?.category || (log.snapshotAfter?.categoryId ? { id: log.snapshotAfter.categoryId } : null)
 																)}
 															</td>
@@ -1268,23 +1315,41 @@ export default function AllProductsLogsTable({
 									Импорт продуктов
 								</div>
 								<div className={`openingBlock ${activeBlocks[importLogKey] ? "active" : ""}`}>
-									<div className="infoField">
-										<span className="title">Сообщение:</span>
-										<span className="value">{log.message || "—"}</span>
-									</div>
 									{log.importLogData && (
 										<>
 											<div className="infoField">
-												<span className="title">Файл:</span>
-												<span className="value">{log.importLogData.file_name || "—"}</span>
+												<span className="title">Создано:</span>
+												<span className="value">{log.importLogData.created || 0} шт.</span>
 											</div>
 											<div className="infoField">
-												<span className="title">Статистика:</span>
+												<span className="title">Обновлено:</span>
+												<span className="value">{log.importLogData.updated || 0} шт.</span>
+											</div>
+											<div className="infoField">
+												<span className="title">Пропущено:</span>
+												<span className="value">{log.importLogData.skipped || 0} шт.</span>
+											</div>
+											<div className="infoField">
+												<span className="title">Изображения:</span>
 												<span className="value">
-													Создано: {log.importLogData.created || 0}, Обновлено: {log.importLogData.updated || 0}, Пропущено:{" "}
-													{log.importLogData.skipped || 0}
+													{log.importLogData.imagePolicy === "save" ? "сохранялись" : log.importLogData.imagePolicy === "skip" ? "не сохранялись" : "—"}
 												</span>
 											</div>
+											{log.importLogData?.markupData?.defaultMarkup && (
+												<div className="infoField">
+													<span className="title">Базовая наценка:</span>
+													<span className="value">{log.importLogData.markupData.defaultMarkup.description}</span>
+												</div>
+											)}
+
+											{log.importLogData?.markupData?.rules &&
+												log.importLogData.markupData.rules.length > 0 &&
+												log.importLogData.markupData.rules.map((rule: any, index: number) => (
+													<div key={`rule_${index}`} className="infoField">
+														<span className="title">{`${rule.from} - ${rule.to} руб.:`}</span>
+														<span className="value">{`${rule.value}${rule.type}`}</span>
+													</div>
+												))}
 										</>
 									)}
 
@@ -1303,7 +1368,7 @@ export default function AllProductsLogsTable({
 												}
 											}}
 										>
-											Показать детали всех изменений
+											Открыть детали импорта
 										</button>
 									)}
 								</div>
@@ -1311,10 +1376,27 @@ export default function AllProductsLogsTable({
 						</div>
 					</div>
 				);
+			} else if (action === "bulk_delete") {
+				const bulkDeleteLogKey = `bulk_delete_${log.id}`;
+				return (
+					<div className="tableListBlock">
+						<div className="tableListItems">
+							<div className={`tableListItem fullInfoBlock remove`}>
+								<div className={`clickInfoBlock ${activeBlocks[bulkDeleteLogKey] ? "active" : ""}`} onClick={() => toggleActiveBlock(bulkDeleteLogKey)}>
+									Массовое удаление
+								</div>
+								<div className={`openingBlock ${activeBlocks[bulkDeleteLogKey] ? "active" : ""}`}>
+									<div className="infoField">
+										<span className="value">{log.bulkLogData.message || "—"}</span>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				);
 			}
-			return null;
 		},
-		[activeBlocks, toggleActiveBlock, existingUsers, showImportDetails, importDetailsData, loadImportDetails, renderCategory, renderGroupedFilters]
+		[activeBlocks, toggleActiveBlock, existingUsers, showImportDetails, importDetailsData, loadImportDetails, renderCategoryLink, renderGroupedFilters]
 	);
 
 	useEffect(() => {
@@ -1349,13 +1431,22 @@ export default function AllProductsLogsTable({
 						</tr>
 					) : localLogs.length > 0 ? (
 						localLogs.map((log: ProductLog) => {
+							// console.log(log);
 							return (
 								<tr key={log.id}>
 									<td>
 										<div className="date">{formatDate(log.createdAt)}</div>
 									</td>
 									<td>{log.admin ? renderUserLink(log, log.admin, log.id, "admin") : "—"}</td>
-									<td>{getProductDepartment(log) ? renderDepartmentLink(log, getProductDepartment(log), log.id) : "—"}</td>
+									<td>
+										{getProductDepartment(log)
+											? log.action === "bulk_delete"
+												? log.departmentSnapshot && log.departmentSnapshot.length > 0
+													? log.departmentSnapshot.map((department: DepartmentForLog, index: number) => renderDepartmentBlock(log, department, log.id))
+													: "sd"
+												: renderDepartmentBlock(log, getProductDepartment(log), log.id)
+											: "—"}
+									</td>
 									<td>
 										{log.action === "import" ? (
 											<div className="importProductCell">
@@ -1375,7 +1466,29 @@ export default function AllProductsLogsTable({
 															}
 														}}
 													>
-														Показать детали изменений
+														Открыть детали импорта
+													</button>
+												)}
+											</div>
+										) : log.action === "bulk_delete" ? (
+											<div className="bulkDeleteProductCell">
+												<span className="bulkDeleteLabel">Массовое удаление товаров</span>
+												{log.bulkLogId && (
+													<button
+														className="viewDetailsButton"
+														onClick={(e) => {
+															e.preventDefault();
+															e.stopPropagation();
+															if (log.bulkLogId) {
+																setShowBulkDeleteDetails(log.bulkLogId);
+																// Загружаем детали если их еще нет
+																if (!bulkDeleteDetailsData.has(log.bulkLogId)) {
+																	loadBulkDeleteDetails(log.bulkLogId);
+																}
+															}
+														}}
+													>
+														Показать детали удаления
 													</button>
 												)}
 											</div>
@@ -1399,6 +1512,15 @@ export default function AllProductsLogsTable({
 
 			{/* Модальное окно с деталями импорта */}
 			{showImportDetails && <ImportDetailsComponent importLogId={showImportDetails} onClose={() => setShowImportDetails(null)} />}
+
+			{/* Модальное окно с деталями массового удаления */}
+			{showBulkDeleteDetails && bulkDeleteDetailsData.has(showBulkDeleteDetails) && (
+				<BulkDeleteDetailsComponent
+					bulkLogId={showBulkDeleteDetails}
+					productsSnapshot={bulkDeleteDetailsData.get(showBulkDeleteDetails) || []}
+					onClose={() => setShowBulkDeleteDetails(null)}
+				/>
+			)}
 		</div>
 	);
 }

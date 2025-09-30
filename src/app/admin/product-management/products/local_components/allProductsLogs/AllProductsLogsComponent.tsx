@@ -162,16 +162,28 @@ export default function AllProductsLogsComponent() {
 			});
 
 			if (!response.ok) {
-				throw new Error("Не удалось очистить логи продуктов");
+				const errorData = await response.json();
+				throw new Error(errorData.error || "Не удалось очистить логи продуктов");
 			}
+
+			const result = await response.json();
 
 			// Обновляем список логов после очистки
 			setTotalCount(0);
 			setPage(1);
-			alert("Логи продуктов успешно очищены");
+
+			// Показываем детальную информацию об удалении
+			if (result.details) {
+				alert(
+					`Логи продуктов успешно очищены!\n\nУдалено:\n- Обычных логов: ${result.details.productLogs}\n- Массовых операций: ${result.details.bulkLogs}\n- Всего: ${result.deletedCount}`
+				);
+			} else {
+				alert(`Логи продуктов успешно очищены!\n\nУдалено: ${result.deletedCount} логов`);
+			}
 		} catch (error) {
 			console.error("Ошибка при очистке логов:", error);
-			alert("Не удалось очистить логи продуктов");
+			const errorMessage = error instanceof Error ? error.message : "Неизвестная ошибка";
+			alert(`Не удалось очистить логи продуктов: ${errorMessage}`);
 		} finally {
 			setClearingLogs(false);
 		}
@@ -199,7 +211,8 @@ export default function AllProductsLogsComponent() {
 			case "update":
 				return "Редактирование продукта";
 			case "delete":
-				return "Удаление продукта";
+			case "bulk_delete":
+				return "Удаление";
 			case "import":
 				return "Импорт";
 			default:

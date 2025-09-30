@@ -51,23 +51,46 @@ export const GET = withPermission(
 			  ]
 			: [];
 
-		const where: Prisma.ProductWhereInput = {
-			...(brand && { brand }),
-			...(categoryId && { categoryId: parseInt(categoryId) }),
-			...(search && { OR: searchFilter }),
-			...(onlyStale && {
+		// Собираем все условия в массив AND
+		const andConditions: Prisma.ProductWhereInput[] = [];
+
+		// Добавляем базовые условия
+		if (brand) andConditions.push({ brand });
+		if (categoryId) andConditions.push({ categoryId: parseInt(categoryId) });
+		if (search) andConditions.push({ OR: searchFilter });
+		if (onlyStale) {
+			andConditions.push({
 				updatedAt: {
 					lt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30),
 				},
-			}),
+			});
+		}
+
+		// Добавляем фильтр по цене
+		andConditions.push({
 			price: {
 				gte: priceMin,
 				lte: priceMax,
 			},
-			supplierPrice: {
-				gte: supplierPriceMin,
-				lte: supplierPriceMax,
-			},
+		});
+
+		// Добавляем фильтр по цене поставщика: учитываем null значения
+		andConditions.push({
+			OR: [
+				{
+					supplierPrice: {
+						gte: supplierPriceMin,
+						lte: supplierPriceMax,
+					},
+				},
+				{
+					supplierPrice: null,
+				},
+			],
+		});
+
+		const where: Prisma.ProductWhereInput = {
+			AND: andConditions,
 		};
 
 		if (user?.role === "superadmin") {

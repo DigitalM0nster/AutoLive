@@ -15,9 +15,19 @@ export default function FiltersBlock({
 	disabled = false,
 	className = "",
 	children,
+	hasRealActiveFilters = true, // По умолчанию true для обратной совместимости
+	onSelectAllByFilters,
+	isLoadingBulkOperation = false,
+	selectedProductsCount = 0,
+	onBulkDelete,
+	onBulkExport,
+	onClearSelection,
 }: FiltersBlockProps) {
 	// Проверяем, есть ли активные фильтры или поиск
 	const hasActiveFilters = activeFilters.length > 0 || (showSearch && searchValue.trim() !== "");
+
+	// Определяем, должна ли кнопка сброса быть активной
+	const shouldEnableResetButton = hasRealActiveFilters && hasActiveFilters;
 
 	// Обработчик изменения поиска
 	const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,7 +46,33 @@ export default function FiltersBlock({
 
 	return (
 		<div className={`${styles.filtersContainer} ${className}`}>
+			{/* Поле поиска */}
+			{showSearch && (
+				<div className={`${styles.searchInput} searchInput`}>
+					<input
+						type="text"
+						placeholder={searchPlaceholder}
+						value={searchValue}
+						onChange={handleSearchChange}
+						onKeyDown={handleSearchKeyDown}
+						className={styles.searchInput}
+					/>
+				</div>
+			)}
+
+			{/* Дополнительные фильтры (children) */}
+			{children && <div className={styles.additionalFilters}>{children}</div>}
+
 			<div className={styles.filtersInfo}>
+				{/* Кнопка сброса фильтров */}
+				<button
+					onClick={onResetFilters}
+					className={`resetFiltersButton ${styles.resetFiltersButton} ${!shouldEnableResetButton ? styles.disabled : ""}`}
+					disabled={!shouldEnableResetButton || disabled}
+				>
+					<X size={16} />
+					Сбросить активные фильтры
+				</button>
 				{/* Блок с активными фильтрами */}
 				{hasActiveFilters && (
 					<div className={styles.activeFilters}>
@@ -52,33 +88,77 @@ export default function FiltersBlock({
 					</div>
 				)}
 
-				{/* Кнопка сброса фильтров */}
-				<button
-					onClick={onResetFilters}
-					className={`resetFiltersButton ${styles.resetFiltersButton} ${!hasActiveFilters ? styles.disabled : ""}`}
-					disabled={!hasActiveFilters || disabled}
-				>
-					<X size={16} />
-					Сбросить фильтры
-				</button>
+				{/* Блок выбора всех товаров по фильтрам */}
+				{onSelectAllByFilters && (
+					<div className={styles.selectAllByFiltersContainer}>
+						<div
+							onClick={onSelectAllByFilters}
+							className={`${styles.selectAllByFiltersButton} ${isLoadingBulkOperation ? styles.disabled : ""}`}
+							title={isLoadingBulkOperation ? "Выполняется операция..." : "Выбрать все товары, соответствующие активным фильтрам"}
+						>
+							{isLoadingBulkOperation ? "⏳ Загрузка..." : "Выбрать все товары по активным фильтрам"}
+						</div>
+						{onClearSelection && (
+							<div
+								onClick={onClearSelection}
+								className={`${styles.clearSelectionButton} ${isLoadingBulkOperation || selectedProductsCount === 0 ? styles.disabled : ""}`}
+								title={
+									isLoadingBulkOperation
+										? "Выполняется операция..."
+										: selectedProductsCount === 0
+										? "Не выбрано ни одного товара"
+										: "Снять выбор с выбранных товаров"
+								}
+							>
+								Снять выбор
+							</div>
+						)}
+					</div>
+				)}
+
+				{/* Блок массовых операций */}
+				{onSelectAllByFilters && (
+					<div className={styles.bulkActionsPanel}>
+						<div className={styles.bulkActionsInfo}>
+							Выбрано товаров: <strong>{selectedProductsCount}</strong>
+						</div>
+						<div className={styles.bulkActionsButtons}>
+							{onBulkExport && (
+								<button
+									onClick={onBulkExport}
+									className={`${styles.bulkActionButton} ${styles.exportButton}`}
+									disabled={isLoadingBulkOperation || selectedProductsCount === 0}
+									title={
+										isLoadingBulkOperation
+											? "Выполняется операция..."
+											: selectedProductsCount === 0
+											? "Не выбрано ни одного товара"
+											: "Экспортировать выбранные товары в Excel"
+									}
+								>
+									📊 Экспортировать выбранные
+								</button>
+							)}
+							{onBulkDelete && (
+								<button
+									onClick={onBulkDelete}
+									className={`${styles.bulkActionButton} ${styles.deleteButton}`}
+									disabled={isLoadingBulkOperation || selectedProductsCount === 0}
+									title={
+										isLoadingBulkOperation
+											? "Выполняется операция..."
+											: selectedProductsCount === 0
+											? "Не выбрано ни одного товара"
+											: "Удалить выбранные товары"
+									}
+								>
+									🗑️ Удалить выбранные
+								</button>
+							)}
+						</div>
+					</div>
+				)}
 			</div>
-
-			{/* Дополнительные фильтры (children) */}
-			{children && <div className={styles.additionalFilters}>{children}</div>}
-
-			{/* Поле поиска */}
-			{showSearch && (
-				<div className={`${styles.searchInput} searchInput`}>
-					<input
-						type="text"
-						placeholder={searchPlaceholder}
-						value={searchValue}
-						onChange={handleSearchChange}
-						onKeyDown={handleSearchKeyDown}
-						className={styles.searchInput}
-					/>
-				</div>
-			)}
 		</div>
 	);
 }

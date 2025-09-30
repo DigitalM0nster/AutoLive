@@ -42,7 +42,7 @@ export default function ImportLogPage() {
 		const fetchImportLog = async () => {
 			try {
 				setLoading(true);
-				const response = await fetch(`/api/products/import-logs/${importLogId}`);
+				const response = await fetch(`/api/products/logs/${importLogId}`);
 
 				if (!response.ok) {
 					throw new Error("Не удалось загрузить лог импорта");

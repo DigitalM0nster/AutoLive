@@ -995,6 +995,10 @@ table,
   box-shadow: none;
   table-layout: fixed;
 }
+table.importTable tbody td,
+.table.importTable tbody td {
+  cursor: pointer;
+}
 table thead,
 .table thead {
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
@@ -1053,6 +1057,10 @@ table thead th.idCell,
 .table thead th.idCell {
   width: 25px;
 }
+table thead th.selectCell,
+.table thead th.selectCell {
+  width: 25px;
+}
 table thead th.dragCell,
 .table thead th.dragCell {
   width: 30px;
@@ -1090,6 +1098,16 @@ table tbody tr td,
   color: #374151;
   border-bottom: 1px solid #f3f4f6;
   vertical-align: top;
+}
+table tbody tr td.selectCell,
+.table tbody tr td.selectCell {
+  width: 25px;
+}
+table tbody tr td.selectCell input,
+.table tbody tr td.selectCell input {
+  font-size: var(--inputFontSize);
+  width: var(--inputFontSize);
+  height: var(--inputFontSize);
 }
 table tbody tr td:last-child,
 .table tbody tr td:last-child {
@@ -1243,6 +1261,7 @@ table .fullInfoBlock,
   padding: 10px;
   background: white;
   overflow: hidden;
+  margin: 0px 0px 5px 0px;
 }
 table .fullInfoBlock:before,
 .table .fullInfoBlock:before {
@@ -1324,6 +1343,10 @@ table .fullInfoBlock.remove_users .clickInfoBlock, table .fullInfoBlock.remove .
 .table .fullInfoBlock.remove_users .clickInfoBlock,
 .table .fullInfoBlock.remove .clickInfoBlock {
   color: var(--dark-red-color);
+}
+table .fullInfoBlock:last-child,
+.table .fullInfoBlock:last-child {
+  margin: 0px 0px 0px 0px;
 }
 table .fullInfoBlock .clickInfoBlock,
 .table .fullInfoBlock .clickInfoBlock {
@@ -1427,6 +1450,42 @@ table .fullInfoBlock .openingBlock .infoField .value .categoriesList,
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
+}
+table .actionButtons,
+.table .actionButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+table .actionButtons .button,
+.table .actionButtons .button {
+  display: flex;
+  gap: 5px;
+  cursor: pointer;
+  color: var(--text-color);
+  padding: 0px;
+  background: transparent;
+  text-decoration: underline;
+  box-shadow: none;
+  border: none;
+}
+table .actionButtons .button.edit,
+.table .actionButtons .button.edit {
+  color: var(--blue-color);
+}
+table .actionButtons .button.logs,
+.table .actionButtons .button.logs {
+  color: var(--text-color);
+  opacity: 0.65;
+}
+table .actionButtons .button:hover,
+.table .actionButtons .button:hover {
+  transform: translateY(-1px);
+  box-shadow: none;
+}
+table .actionButtons .button:visited,
+.table .actionButtons .button:visited {
+  color: var(--text-color);
 }
 table .actionBlock,
 .table .actionBlock {
@@ -2252,17 +2311,22 @@ span.oldName:after {
   color: var(--text-color);
 }
 
-.importProductCell {
+.importProductCell,
+.bulkDeleteProductCell {
   display: flex;
   flex-direction: column;
   gap: 8px;
   align-items: flex-start;
 }
-.importProductCell .importLabel {
+.importProductCell .importLabel,
+.importProductCell .bulkDeleteLabel,
+.bulkDeleteProductCell .importLabel,
+.bulkDeleteProductCell .bulkDeleteLabel {
   font-weight: 500;
   color: var(--text-color);
 }
-.importProductCell .viewDetailsButton {
+.importProductCell .viewDetailsButton,
+.bulkDeleteProductCell .viewDetailsButton {
   background-color: var(--primary-color);
   color: white;
   border: none;
@@ -2272,10 +2336,12 @@ span.oldName:after {
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
-.importProductCell .viewDetailsButton:hover {
+.importProductCell .viewDetailsButton:hover,
+.bulkDeleteProductCell .viewDetailsButton:hover {
   background-color: var(--primary-hover-color);
 }
-.importProductCell .viewDetailsButton:active {
+.importProductCell .viewDetailsButton:active,
+.bulkDeleteProductCell .viewDetailsButton:active {
   background-color: var(--primary-active-color);
 }
 
@@ -2771,9 +2837,6 @@ span.oldName:after {
   }
 }
 
-.priceRangeFilter {
-  margin-bottom: 16px;
-}
 .priceRangeFilter .priceRangeLabel {
   display: block;
   font-size: 14px;
@@ -2858,9 +2921,6 @@ span.oldName:after {
   cursor: grabbing;
   transform: translate(-50%, -50%) scale(1.2);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-.priceRangeFilter .priceRangeFilter {
-  margin-bottom: 16px;
 }
 .priceRangeFilter .priceRangeLabel {
   display: block;

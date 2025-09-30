@@ -11,6 +11,16 @@ export type Department = {
 	products: { id: number; title: string; sku: string; brand: string; price: number }[];
 };
 
+export type DepartmentForLog = {
+	id: number;
+	name: string;
+};
+
+export type DepartmentForProduct = {
+	id: number;
+	name: string;
+};
+
 export type User = {
 	id: number;
 	first_name: string;
@@ -44,7 +54,7 @@ export type UserLog = {
 		first_name: string | null;
 		last_name: string | null;
 		role: string;
-		department?: { id: number; name: string } | null;
+		department?: DepartmentForLog | null;
 	};
 	targetUserId?: number | null;
 	targetUser: {
@@ -53,13 +63,10 @@ export type UserLog = {
 		last_name: string | null;
 		phone: string;
 		role: string;
-		department?: { id: number; name: string } | null;
+		department?: DepartmentForLog | null;
 	};
 	departmentId?: number | null;
-	department?: {
-		id: number;
-		name: string;
-	} | null;
+	department?: DepartmentForLog | null;
 	snapshotBefore?: any;
 	snapshotAfter?: any;
 	adminSnapshot?: any;
@@ -87,7 +94,7 @@ export type DepartmentLog = {
 		first_name: string | null;
 		last_name: string | null;
 		role: string;
-		department?: { id: number; name: string } | null;
+		department?: DepartmentForLog | null;
 	};
 	targetDepartmentId?: number | null;
 	targetDepartment: Department;
@@ -143,10 +150,7 @@ export type Product = {
 	updatedAt: string;
 	categoryId: number | null;
 	categoryTitle: string;
-	department?: {
-		id: number;
-		name: string;
-	};
+	department?: DepartmentForProduct;
 	filters: {
 		filterId: number;
 		valueId: number;
@@ -169,10 +173,7 @@ export type ProductListItem = {
 		id: number;
 		title: string;
 	};
-	department?: {
-		id: number;
-		name: string;
-	};
+	department?: DepartmentForProduct;
 	id: number;
 	sku: string;
 	title: string;
@@ -219,10 +220,7 @@ export type EditableProduct = {
 	categoryId: number | null;
 	categoryTitle: string;
 	departmentId?: number | null;
-	department?: {
-		id: number;
-		name: string;
-	};
+	department?: DepartmentForProduct;
 	isEditing?: boolean;
 	filters: any[];
 };
@@ -259,7 +257,7 @@ export type ProductResponse = {
 };
 
 // Типы для логов продуктов
-export type ProductLogAction = "create" | "update" | "delete" | "import" | "skipped" | "duplicate" | "bulk";
+export type ProductLogAction = "create" | "update" | "delete" | "import" | "skipped" | "duplicate" | "bulk" | "bulk_delete";
 
 export type ProductLog = {
 	id: number;
@@ -273,7 +271,7 @@ export type ProductLog = {
 		middle_name?: string | null;
 		phone?: string;
 		role: string;
-		department?: { id: number; name: string } | null;
+		department?: DepartmentForLog | null;
 	};
 	targetProduct?: {
 		id: number;
@@ -283,18 +281,24 @@ export type ProductLog = {
 		price: number;
 		category?: { id: number; title: string };
 		description?: string;
-		department?: { id: number; name: string };
+		department?: DepartmentForLog;
 	};
 	department?: {
 		id: number;
 		name: string;
+		multipleDepartments?: boolean; // Флаг для множественных отделов
+		allDepartments?: DepartmentForLog[]; // Все отделы для массовых операций
 	} | null;
 	snapshotBefore?: any;
 	snapshotAfter?: any;
 	userSnapshot?: any;
-	departmentSnapshot?: any;
+	departmentSnapshot?: DepartmentForLog[];
+	productSnapshot?: any; // Для массовых операций (как в логе импорта)
 	importLogId?: number | null; // Ссылка на лог импорта
 	importLogData?: any; // Данные лога импорта для отображения
+	// Данные для массовых операций
+	bulkLogId?: number; // ID лога массовой операции
+	bulkLogData?: any; // Данные лога массовой операции (содержит productsSnapshot внутри)
 	// Данные для пропущенных и повторных товаров
 	skippedProduct?: any;
 	duplicateProduct?: any;
@@ -313,7 +317,7 @@ export type ProductLogResponse = {
 		brand: string;
 		price: number;
 		category?: { id: number; title: string };
-		department?: { id: number; name: string };
+		department?: DepartmentForLog;
 	};
 	error?: string;
 };
@@ -373,6 +377,13 @@ export interface FiltersBlockProps {
 	disabled?: boolean;
 	className?: string;
 	children?: React.ReactNode;
+	hasRealActiveFilters?: boolean; // Новое свойство для определения реальных активных фильтров
+	onSelectAllByFilters?: () => void; // Функция для выделения всех товаров по фильтрам
+	isLoadingBulkOperation?: boolean; // Состояние загрузки массовых операций
+	selectedProductsCount?: number; // Количество выделенных товаров
+	onBulkDelete?: () => void; // Функция для массового удаления
+	onBulkExport?: () => void; // Функция для массового экспорта
+	onClearSelection?: () => void; // Функция для снятия выделения
 }
 
 // Типы для логирования фильтров
