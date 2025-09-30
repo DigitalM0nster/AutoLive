@@ -1,0 +1,535 @@
+.ordersPageContainer {
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.ordersPageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+.ordersPageHeader h1 {
+  font-size: 28px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.headerActions {
+  display: flex;
+  gap: 12px;
+}
+
+.createOrderButton {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.createOrderButton:hover {
+  background: #0056b3;
+}
+
+.logsButton {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.logsButton:hover {
+  background: #545b62;
+}
+
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+}
+.loadingContainer p {
+  margin-top: 16px;
+  color: #666;
+  font-size: 16px;
+}
+
+.loadingSpinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+.errorMessage {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.errorMessage button {
+  background: none;
+  border: none;
+  color: #721c24;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 10px;
+}
+
+.ordersFiltersContainer {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.ordersFiltersRow {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.filterSelect,
+.filterInput {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  min-width: 150px;
+}
+.filterSelect:focus,
+.filterInput:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.ordersFiltersActions {
+  display: flex;
+  gap: 12px;
+}
+
+.applyFiltersButton,
+.resetFiltersButton {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.applyFiltersButton {
+  background: #28a745;
+  color: white;
+}
+.applyFiltersButton:hover {
+  background: #218838;
+}
+
+.resetFiltersButton {
+  background: #6c757d;
+  color: white;
+}
+.resetFiltersButton:hover {
+  background: #545b62;
+}
+
+.ordersTableContainer {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.ordersTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+.ordersTable th,
+.ordersTable td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+.ordersTable th {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #495057;
+  font-size: 14px;
+}
+.ordersTable td {
+  font-size: 14px;
+  color: #333;
+}
+.ordersTable tr:hover {
+  background: #f8f9fa;
+}
+
+.orderTitleLink {
+  background: none;
+  border: none;
+  color: #007bff;
+  text-decoration: none;
+  cursor: pointer;
+  font-weight: 500;
+}
+.orderTitleLink:hover {
+  text-decoration: underline;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.statusCreated {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.statusConfirmed {
+  background: #fff3e0;
+  color: #f57c00;
+}
+
+.statusCompleted {
+  background: #e8f5e8;
+  color: #2e7d32;
+}
+
+.statusCancelled {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.statusDefault {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.managerInfo,
+.departmentInfo,
+.clientInfo {
+  color: #333;
+  font-weight: 500;
+}
+
+.noManager,
+.noDepartment,
+.noClient {
+  color: #999;
+  font-style: italic;
+}
+
+.orderActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.assignButton,
+.unassignButton {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.assignButton {
+  background: #28a745;
+  color: white;
+}
+.assignButton:hover {
+  background: #218838;
+}
+
+.unassignButton {
+  background: #dc3545;
+  color: white;
+}
+.unassignButton:hover {
+  background: #c82333;
+}
+
+.paginationContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.paginationButton {
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  background: white;
+  color: #333;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.paginationButton:hover:not(:disabled) {
+  background: #f8f9fa;
+  border-color: #007bff;
+}
+.paginationButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.paginationInfo {
+  color: #666;
+  font-size: 14px;
+}
+
+.noOrdersMessage {
+  text-align: center;
+  padding: 60px 20px;
+  color: #666;
+}
+.noOrdersMessage p {
+  font-size: 16px;
+  margin: 0;
+}
+
+.actionCreate {
+  background: #e8f5e8;
+  color: #2e7d32;
+}
+
+.actionUpdate {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.actionAssign {
+  background: #fff3e0;
+  color: #f57c00;
+}
+
+.actionStatusChange {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.actionCancel {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.actionUnassign {
+  background: #fce4ec;
+  color: #ad1457;
+}
+
+.actionDefault {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.roleInfo {
+  color: #666;
+  font-size: 11px;
+  font-weight: normal;
+}
+
+.logMessage {
+  color: #333;
+  font-style: italic;
+  max-width: 200px;
+  word-wrap: break-word;
+}
+
+.orderDetailsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.orderDetailsCard {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+.orderDetailsCard h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 20px 0;
+}
+.orderDetailsCard h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 12px 0;
+}
+
+.orderInfoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.orderInfoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.orderInfoItem label {
+  font-weight: 600;
+  color: #666;
+  font-size: 14px;
+}
+.orderInfoItem span {
+  color: #333;
+  font-size: 14px;
+}
+
+.orderDescription {
+  margin-bottom: 24px;
+}
+.orderDescription label {
+  font-weight: 600;
+  color: #666;
+  font-size: 14px;
+  display: block;
+  margin-bottom: 8px;
+}
+.orderDescription p {
+  color: #333;
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 4px;
+  border: 1px solid #e9ecef;
+}
+
+.orderActions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #e9ecef;
+}
+
+.statusActions h3,
+.assignmentActions h3 {
+  margin-bottom: 12px;
+}
+
+.statusButtons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.statusButton {
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  background: white;
+  color: #333;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+.statusButton:hover {
+  background: #f8f9fa;
+  border-color: #007bff;
+}
+.statusButton.statusButtonActive {
+  background: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.assignmentInfo p {
+  margin: 0 0 12px 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.orderItemsTable,
+.orderLogsTable {
+  overflow-x: auto;
+}
+
+.orderItemsTable .ordersTable,
+.orderLogsTable .ordersTable {
+  margin-top: 0;
+}
+
+@media (max-width: 768px) {
+  .ordersPageContainer {
+    padding: 16px;
+  }
+  .ordersPageHeader {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+  .ordersFiltersRow {
+    flex-direction: column;
+  }
+  .filterSelect,
+  .filterInput {
+    min-width: auto;
+    width: 100%;
+  }
+  .ordersTableContainer {
+    overflow-x: auto;
+  }
+  .ordersTable {
+    min-width: 800px;
+  }
+  .orderActions {
+    flex-direction: column;
+  }
+}/*# sourceMappingURL=styles.module.css.map */

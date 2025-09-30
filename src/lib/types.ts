@@ -430,3 +430,124 @@ export type ProductUpdateRequest = {
 	departmentId?: number;
 	filterValues?: FilterRequest[];
 };
+
+// ===== ТИПЫ ДЛЯ ЗАКАЗОВ =====
+
+export type OrderStatus = "created" | "confirmed" | "completed" | "cancelled";
+
+export type Order = {
+	id: number;
+	title: string;
+	description?: string | null;
+	status: OrderStatus;
+	createdAt: string | Date;
+	updatedAt: string | Date;
+	assignedAt?: string | Date | null;
+	managerId?: number | null;
+	departmentId?: number | null;
+	clientId?: number | null;
+	createdBy: number;
+	// Связи
+	manager?: {
+		id: number;
+		first_name: string | null;
+		last_name: string | null;
+		role: string;
+		department?: DepartmentForLog | null;
+	} | null;
+	department?: DepartmentForLog | null;
+	client?: {
+		id: number;
+		first_name: string | null;
+		last_name: string | null;
+		phone: string;
+	} | null;
+	creator: {
+		id: number;
+		first_name: string | null;
+		last_name: string | null;
+		role: string;
+		department?: DepartmentForLog | null;
+	};
+	orderItems: OrderItem[];
+};
+
+export type OrderItem = {
+	id: number;
+	orderId: number;
+	product_sku: string;
+	product_title: string;
+	product_price: number;
+	product_brand: string;
+	product_image?: string | null;
+	quantity: number;
+};
+
+// Тип для создания заказа
+export type CreateOrderRequest = {
+	title: string;
+	description?: string;
+	clientId?: number; // Для заказов от пользователей
+	departmentId?: number; // Для заказов созданных админом
+	orderItems: {
+		product_sku: string;
+		product_title: string;
+		product_price: number;
+		product_brand: string;
+		product_image?: string;
+		quantity: number;
+	}[];
+};
+
+// Тип для обновления заказа
+export type UpdateOrderRequest = {
+	title?: string;
+	description?: string;
+	status?: OrderStatus;
+	managerId?: number | null; // Назначение/снятие менеджера
+	departmentId?: number | null;
+};
+
+// Тип для ответа API заказов
+export type OrderResponse = {
+	orders?: Order[];
+	order?: Order;
+	total?: number;
+	page?: number;
+	totalPages?: number;
+	error?: string;
+};
+
+// Типы для логов заказов
+export type OrderLogAction = "create" | "update" | "assign" | "status_change" | "cancel" | "unassign";
+
+export type OrderLog = {
+	id: number;
+	createdAt: string | Date;
+	action: OrderLogAction | string;
+	message?: string | null;
+	orderId: number;
+	adminSnapshot?: any;
+	orderSnapshot?: any;
+	managerSnapshot?: any;
+	departmentSnapshot?: any;
+};
+
+export type OrderLogResponse = {
+	data: OrderLog[];
+	total: number;
+	page: number;
+	totalPages: number;
+	error?: string;
+};
+
+// Тип для фильтров заказов
+export type OrderFilter = {
+	status?: OrderStatus[];
+	managerId?: number | null;
+	departmentId?: number | null;
+	clientId?: number | null;
+	createdBy?: number | null;
+	dateFrom?: string;
+	dateTo?: string;
+};

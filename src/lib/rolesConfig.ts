@@ -10,6 +10,9 @@ export type Permission =
 	| "manage_admins"
 	| "manage_managers"
 	| "view_orders"
+	| "manage_orders"
+	| "assign_orders"
+	| "view_orders_logs"
 	| "view_products"
 	| "edit_products"
 	| "edit_categories"
@@ -42,6 +45,9 @@ export const ROLE_PERMISSIONS: Record<Role, RolePermission[]> = {
 		{ permission: "manage_admins", scope: "all" },
 		{ permission: "manage_managers", scope: "all" },
 		{ permission: "view_orders", scope: "all" },
+		{ permission: "manage_orders", scope: "all" },
+		{ permission: "assign_orders", scope: "all" },
+		{ permission: "view_orders_logs", scope: "all" },
 		{ permission: "view_products", scope: "all" },
 		{ permission: "edit_products", scope: "all" },
 		{ permission: "edit_categories", scope: "all" },
@@ -58,6 +64,9 @@ export const ROLE_PERMISSIONS: Record<Role, RolePermission[]> = {
 		{ permission: "manage_managers", scope: "department" },
 		{ permission: "view_products", scope: "department" },
 		{ permission: "view_orders", scope: "department" },
+		{ permission: "manage_orders", scope: "department" },
+		{ permission: "assign_orders", scope: "department" },
+		{ permission: "view_orders_logs", scope: "department" },
 		{ permission: "edit_products", scope: "department" },
 		{ permission: "edit_categories", scope: "department" },
 	],
@@ -68,6 +77,9 @@ export const ROLE_PERMISSIONS: Record<Role, RolePermission[]> = {
 		{ permission: "view_departments_logs", scope: "all" }, // Менеджеры могут просматривать логи всех отделов
 		{ permission: "create_orders", scope: "own" },
 		{ permission: "view_orders", scope: "own" },
+		{ permission: "manage_orders", scope: "own" },
+		{ permission: "assign_orders", scope: "own" },
+		{ permission: "view_orders_logs", scope: "own" },
 	],
 	client: [],
 };

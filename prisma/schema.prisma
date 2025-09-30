@@ -23,6 +23,7 @@ model User {
     department    Department? @relation("DepartmentUsers", fields: [departmentId], references: [id])
     managerOrders Order[]     @relation("ManagerOrders")
     clientOrders  Order[]     @relation("ClientOrders")
+    createdOrders Order[]     @relation("CreatedOrders")
 
     @@map("user")
 }
@@ -141,17 +142,22 @@ model Order {
     id           Int         @id @default(autoincrement()) @map("id")
     title        String      @map("title") @db.VarChar(255)
     description  String?     @map("description") @db.Text
-    status       OrderStatus @default(pending) @map("status")
+    status       OrderStatus @default(created) @map("status")
     createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamp(0)
-    managerId    Int         @map("manager_id")
-    departmentId Int?        @map("department_id")
-    clientId     Int         @map("client_id")
+    updatedAt    DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
+    assignedAt   DateTime?   @map("assigned_at") @db.Timestamp(0) // Когда заказ был взят в работу
+    managerId    Int?        @map("manager_id") // Опциональное поле - может быть null для свободных заказов
+    departmentId Int?        @map("department_id") // Опциональное поле - для заказов от пользователей может быть null
+    clientId     Int?        @map("client_id") // Опциональное поле - для заказов созданных админом может быть null
+    createdBy    Int         @map("created_by") // Кто создал заказ (админ/менеджер/пользователь)
 
     // Связи
-    manager    User        @relation("ManagerOrders", fields: [managerId], references: [id])
+    manager    User?       @relation("ManagerOrders", fields: [managerId], references: [id])
     department Department? @relation(fields: [departmentId], references: [id])
-    client     User        @relation("ClientOrders", fields: [clientId], references: [id])
+    client     User?       @relation("ClientOrders", fields: [clientId], references: [id])
+    creator    User        @relation("CreatedOrders", fields: [createdBy], references: [id])
     orderItems OrderItem[]
+    orderLogs  OrderLog[]
 
     @@map("order")
 }
@@ -367,6 +373,25 @@ model user_log {
     snapshot_after  String? // TODO: удалить после миграции
 }
 
+model OrderLog {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+    action    String   @db.VarChar(255) // "create", "update", "assign", "status_change", "cancel"
+    message   String?  @db.Text
+    orderId   Int      @map("order_id")
+
+    // 📸 Снимки данных (без дублирования ID)
+    adminSnapshot      Json? // Админ который сделал действие
+    orderSnapshot      Json? // Снапшот заказа
+    managerSnapshot    Json? // Снапшот менеджера (если назначение/снятие)
+    departmentSnapshot Json? // Снапшот отдела
+
+    // Связи
+    order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+    @@map("order_log")
+}
+
 // Универсальная модель для всех логов изменений
 model ChangeLog {
     id        Int      @id @default(autoincrement())
@@ -412,9 +437,8 @@ enum FilterType {
 }
 
 enum OrderStatus {
-    pending
-    confirmed
-    shipped
-    delivered
-    cancelled
+    created // Создан
+    confirmed // Подтверждён
+    completed // Выполнен
+    cancelled // Отменён
 }
