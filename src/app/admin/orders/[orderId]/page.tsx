@@ -134,8 +134,9 @@ export default function OrderDetailsPage() {
 	};
 
 	// Форматирование даты
-	const formatDate = (dateString: string) => {
-		return new Date(dateString).toLocaleDateString("ru-RU", {
+	const formatDate = (date: string | Date) => {
+		const dateObj = typeof date === "string" ? new Date(date) : date;
+		return dateObj.toLocaleDateString("ru-RU", {
 			day: "2-digit",
 			month: "2-digit",
 			year: "numeric",
