@@ -92,7 +92,7 @@ export default function OrdersLogsPage() {
 	};
 
 	// Получение текста действия
-	const getActionText = (action: OrderLogAction) => {
+	const getActionText = (action: OrderLogAction | string) => {
 		switch (action) {
 			case "create":
 				return "Создание";
@@ -107,12 +107,12 @@ export default function OrdersLogsPage() {
 			case "unassign":
 				return "Снятие назначения";
 			default:
-				return action;
+				return action || "Неизвестное действие";
 		}
 	};
 
 	// Получение цвета действия
-	const getActionColor = (action: OrderLogAction) => {
+	const getActionColor = (action: OrderLogAction | string) => {
 		switch (action) {
 			case "create":
 				return styles.actionCreate;
