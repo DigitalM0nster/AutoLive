@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { NextResponse, NextRequest } from "next/server";
-import { getUserFromRequest } from "@/middleware/authMiddleware";
+import { getUserFromRequest } from "@/middleware/permissionMiddleware";
 
 // GET /api/promotions
 export async function GET() {
