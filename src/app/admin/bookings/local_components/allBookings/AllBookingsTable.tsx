@@ -1,12 +1,11 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import styles from "../styles.module.scss";
 import FiltersBlock from "@/components/ui/filtersBlock/FiltersBlock";
 import Pagination from "@/components/ui/pagination/Pagination";
 import CustomSelect from "@/components/ui/customSelect/CustomSelect";
 import DateRangePicker from "@/components/ui/dateRangePicker/DateRangePicker";
-import { Order, OrderResponse, OrderStatus, ActiveFilter } from "@/lib/types";
+import { Booking, BookingResponse, BookingStatus, ActiveFilter } from "@/lib/types";
 import Link from "next/link";
 import Loading from "@/components/ui/loading/Loading";
 import { useRouter } from "next/navigation";
@@ -44,30 +43,29 @@ const IdSearchField = React.memo(({ idSearch, onSearchChange, onClearSearch }: {
 	<div className="searchFilterHeader">
 		ID:
 		<div className="searchInput">
-			<input type="text" value={idSearch} onChange={(e) => onSearchChange(e.target.value)} placeholder="Введите ID заказа" />
+			<input type="text" value={idSearch} onChange={(e) => onSearchChange(e.target.value)} placeholder="Введите ID записи" />
 			<div onClick={onClearSearch} className="clearSearchButton"></div>
 		</div>
 	</div>
 ));
 IdSearchField.displayName = "IdSearchField";
 
-export default function AllOrdersTable() {
+export default function AllBookingsTable() {
 	const router = useRouter();
-	const [orders, setOrders] = useState<Order[]>([]);
+	const [bookings, setBookings] = useState<Booking[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [page, setPage] = useState(1);
 	const [total, setTotal] = useState(0);
-	const [statusFilter, setStatusFilter] = useState<"all" | OrderStatus>("all");
+	const [statusFilter, setStatusFilter] = useState<"all" | BookingStatus>("all");
 
 	// Состояние для поиска
 	const [managerSearch, setManagerSearch] = useState("");
 	const [clientSearch, setClientSearch] = useState("");
 	const [departmentFilter, setDepartmentFilter] = useState<"all" | string>("all");
-	const [actionFilter, setActionFilter] = useState<"all" | string>("all");
 	const [idSearch, setIdSearch] = useState("");
 
 	// Состояние для сортировки
-	const [sortBy, setSortBy] = useState<"id" | "title" | "status" | "createdAt" | null>(null);
+	const [sortBy, setSortBy] = useState<"id" | "scheduledDate" | "scheduledTime" | "status" | null>(null);
 	const [sortOrder, setSortOrder] = useState<"asc" | "desc" | null>(null);
 
 	// Состояние для фильтра по дате
@@ -96,13 +94,11 @@ export default function AllOrdersTable() {
 	// Опции для CustomSelect
 	const statusOptions = [
 		{ value: "all", label: "Все статусы" },
-		{ value: "created", label: "Создан" },
-		{ value: "confirmed", label: "Подтверждён" },
-		{ value: "booked", label: "Забронирован" },
-		{ value: "ready", label: "Готов к выдаче" },
-		{ value: "paid", label: "Оплачен" },
-		{ value: "completed", label: "Выполнен" },
-		{ value: "returned", label: "Возврат" },
+		{ value: "scheduled", label: "Запланирована" },
+		{ value: "confirmed", label: "Подтверждена" },
+		{ value: "completed", label: "Выполнена" },
+		{ value: "cancelled", label: "Отменена" },
+		{ value: "no_show", label: "Не явился" },
 	];
 
 	// Опции для менеджеров
@@ -133,20 +129,9 @@ export default function AllOrdersTable() {
 		})),
 	];
 
-	// Опции для действий
-	const actionOptions = [
-		{ value: "all", label: "Все действия" },
-		{ value: "create", label: "Создание" },
-		{ value: "update", label: "Обновление" },
-		{ value: "assign", label: "Назначение" },
-		{ value: "unassign", label: "Снятие назначения" },
-		{ value: "status_change", label: "Изменение статуса" },
-		{ value: "cancel", label: "Отмена" },
-	];
-
-	// Загрузка заказов
+	// Загрузка записей
 	useEffect(() => {
-		const fetchOrders = async () => {
+		const fetchBookings = async () => {
 			setLoading(true);
 			try {
 				const params = new URLSearchParams({
@@ -170,25 +155,25 @@ export default function AllOrdersTable() {
 					params.append("sortOrder", sortOrder);
 				}
 
-				const response = await fetch(`/api/orders?${params}`);
-				const data: OrderResponse = await response.json();
+				const response = await fetch(`/api/bookings?${params}`);
+				const data: BookingResponse = await response.json();
 
 				if (data.error) {
-					console.error("Ошибка загрузки заказов:", data.error);
+					console.error("Ошибка загрузки записей:", data.error);
 					return;
 				}
 
-				setOrders(data.orders || []);
+				setBookings(data.bookings || []);
 				setTotal(data.total || 0);
 			} catch (err) {
-				console.error("Ошибка загрузки заказов:", err);
+				console.error("Ошибка загрузки записей:", err);
 			} finally {
 				setLoading(false);
 			}
 		};
 
-		fetchOrders();
-	}, [page, statusFilter, dateFilter, sortBy, sortOrder, managerSearch, clientSearch, departmentFilter, actionFilter, idSearch]);
+		fetchBookings();
+	}, [page, statusFilter, dateFilter, sortBy, sortOrder, managerSearch, clientSearch, departmentFilter, idSearch]);
 
 	// Загрузка данных для селектов
 	useEffect(() => {
@@ -226,7 +211,7 @@ export default function AllOrdersTable() {
 
 	// Обработчик изменения статуса через CustomSelect
 	const handleStatusChange = (value: string) => {
-		setStatusFilter(value as OrderStatus | "all");
+		setStatusFilter(value as BookingStatus | "all");
 		setPage(1);
 	};
 
@@ -256,11 +241,6 @@ export default function AllOrdersTable() {
 		setPage(1);
 	};
 
-	const handleActionFilterChange = (value: string) => {
-		setActionFilter(value);
-		setPage(1);
-	};
-
 	const handleIdSearchChange = (value: string) => {
 		setIdSearch(value);
 		setPage(1);
@@ -269,25 +249,6 @@ export default function AllOrdersTable() {
 	const handleClearIdSearch = () => {
 		setIdSearch("");
 		setPage(1);
-	};
-
-	// Обработчики для изменения ответственного, отдела и клиента
-	const handleManagerChange = async (orderId: number, managerId: string) => {
-		if (managerId === "none") {
-			await unassignOrder(orderId);
-		} else {
-			await assignOrder(orderId, parseInt(managerId));
-		}
-	};
-
-	const handleDepartmentChange = async (orderId: number, departmentId: string) => {
-		// Здесь будет API для изменения отдела заказа
-		console.log(`Изменение отдела заказа ${orderId} на ${departmentId}`);
-	};
-
-	const handleClientChange = async (orderId: number, clientId: string) => {
-		// Здесь будет API для изменения клиента заказа
-		console.log(`Изменение клиента заказа ${orderId} на ${clientId}`);
 	};
 
 	// Функция для форматирования даты
@@ -315,143 +276,74 @@ export default function AllOrdersTable() {
 	};
 
 	// Функция для рендеринга блока ответственного
-	const renderManagerBlock = (order: Order) => {
-		const managerKey = `manager_${order.id}`;
-		const currentManagerId = order.manager ? order.manager.id.toString() : "none";
+	const renderManagerBlock = (booking: Booking) => {
+		const managerKey = `manager_${booking.id}`;
 
 		return (
 			<div className="fullInfoBlock">
 				<div className={`clickInfoBlock ${activeBlocks[managerKey] ? "active" : ""}`} onClick={() => toggleActiveBlock(managerKey)}>
-					{order.manager ? getUserName(order.manager) : "Не назначен"}
+					{getUserName(booking.manager)}
 				</div>
 				<div className={`openingBlock ${activeBlocks[managerKey] ? "active" : ""}`}>
 					<div className="infoField">
-						<span className="title">Назначить ответственного:</span>
-						<span className="value">
-							<CustomSelect
-								options={managerOptions}
-								value={currentManagerId}
-								onChange={(value) => handleManagerChange(order.id, value)}
-								placeholder="Выберите ответственного"
-								showSearch={true}
-								searchPlaceholder="Поиск ответственного..."
-								className="managerSelect"
-							/>
-						</span>
+						<span className="title">ID:</span>
+						<span className="value">{booking.manager.id}</span>
 					</div>
-					{order.manager && (
-						<>
-							<div className="infoField">
-								<span className="title">ID:</span>
-								<span className="value">{order.manager.id}</span>
-							</div>
-							<div className="infoField">
-								<span className="title">Роль:</span>
-								<span className="value">{order.manager.role || "—"}</span>
-							</div>
-							<div className="infoField">
-								<span className="title">Профиль:</span>
-								<span className="value">
-									<a href={`/admin/users/${order.manager.id}`} className="itemLink">
-										Перейти к профилю
-									</a>
-								</span>
-							</div>
-						</>
-					)}
-				</div>
-			</div>
-		);
-	};
-
-	// Функция для рендеринга блока отдела
-	const renderDepartmentBlock = (order: Order) => {
-		const departmentKey = `department_${order.id}`;
-		const currentDepartmentId = order.department ? order.department.id.toString() : "none";
-
-		return (
-			<div className="fullInfoBlock">
-				<div className={`clickInfoBlock ${activeBlocks[departmentKey] ? "active" : ""}`} onClick={() => toggleActiveBlock(departmentKey)}>
-					{order.department ? order.department.name : "Не выбран"}
-				</div>
-				<div className={`openingBlock ${activeBlocks[departmentKey] ? "active" : ""}`}>
 					<div className="infoField">
-						<span className="title">Выбрать отдел:</span>
+						<span className="title">Роль:</span>
+						<span className="value">{booking.manager.role || "—"}</span>
+					</div>
+					<div className="infoField">
+						<span className="title">Отдел:</span>
+						<span className="value">{booking.manager.department?.name || "—"}</span>
+					</div>
+					<div className="infoField">
+						<span className="title">Профиль:</span>
 						<span className="value">
-							<CustomSelect
-								options={departmentOptions}
-								value={currentDepartmentId}
-								onChange={(value) => handleDepartmentChange(order.id, value)}
-								placeholder="Выберите отдел"
-								className="departmentSelect"
-							/>
+							<a href={`/admin/users/${booking.manager.id}`} className="itemLink">
+								Перейти к профилю
+							</a>
 						</span>
 					</div>
-					{order.department && (
-						<>
-							<div className="infoField">
-								<span className="title">ID:</span>
-								<span className="value">{order.department.id}</span>
-							</div>
-							<div className="infoField">
-								<span className="title">Ссылка:</span>
-								<span className="value">
-									<a href={`/admin/departments/${order.department.id}`} className="itemLink">
-										Перейти к отделу
-									</a>
-								</span>
-							</div>
-						</>
-					)}
 				</div>
 			</div>
 		);
 	};
 
 	// Функция для рендеринга блока клиента
-	const renderClientBlock = (order: Order) => {
-		const clientKey = `client_${order.id}`;
-		const currentClientId = order.client ? order.client.id.toString() : "none";
+	const renderClientBlock = (booking: Booking) => {
+		const clientKey = `client_${booking.id}`;
 
 		return (
 			<div className="fullInfoBlock">
 				<div className={`clickInfoBlock ${activeBlocks[clientKey] ? "active" : ""}`} onClick={() => toggleActiveBlock(clientKey)}>
-					{order.client ? getUserName(order.client) : "Не выбран"}
+					{booking.client ? getUserName(booking.client) : "Не выбран"}
 				</div>
 				<div className={`openingBlock ${activeBlocks[clientKey] ? "active" : ""}`}>
-					<div className="infoField">
-						<span className="title">Выбрать клиента:</span>
-						<span className="value">
-							<CustomSelect
-								options={clientOptions}
-								value={currentClientId}
-								onChange={(value) => handleClientChange(order.id, value)}
-								placeholder="Выберите клиента"
-								showSearch={true}
-								searchPlaceholder="Поиск клиента..."
-								className="clientSelect"
-							/>
-						</span>
-					</div>
-					{order.client && (
+					{booking.client ? (
 						<>
 							<div className="infoField">
 								<span className="title">ID:</span>
-								<span className="value">{order.client.id}</span>
+								<span className="value">{booking.client.id}</span>
 							</div>
 							<div className="infoField">
 								<span className="title">Телефон:</span>
-								<span className="value">{order.client.phone || "—"}</span>
+								<span className="value">{booking.client.phone || "—"}</span>
 							</div>
 							<div className="infoField">
 								<span className="title">Профиль:</span>
 								<span className="value">
-									<a href={`/admin/users/${order.client.id}`} className="itemLink">
+									<a href={`/admin/users/${booking.client.id}`} className="itemLink">
 										Перейти к профилю
 									</a>
 								</span>
 							</div>
 						</>
+					) : (
+						<div className="infoField">
+							<span className="title">Статус:</span>
+							<span className="value">Клиент не зарегистрирован</span>
+						</div>
 					)}
 				</div>
 			</div>
@@ -459,51 +351,35 @@ export default function AllOrdersTable() {
 	};
 
 	// Функция для рендеринга блока действий
-	const renderActionsBlock = (order: Order) => {
-		const actionsKey = `actions_${order.id}`;
+	const renderActionsBlock = (booking: Booking) => {
+		const actionsKey = `actions_${booking.id}`;
 
 		return (
 			<div className="fullInfoBlock">
 				<div className={`clickInfoBlock ${activeBlocks[actionsKey] ? "active" : ""}`} onClick={() => toggleActiveBlock(actionsKey)}>
-					{order.title}
+					Запись #{booking.id}
 				</div>
 				<div className={`openingBlock ${activeBlocks[actionsKey] ? "active" : ""}`}>
 					<div className="infoField">
-						<span className="title">Название:</span>
-						<span className="value">{order.title}</span>
+						<span className="title">Дата:</span>
+						<span className="value">{formatDateFromString(booking.scheduledDate.toString())}</span>
+					</div>
+					<div className="infoField">
+						<span className="title">Время:</span>
+						<span className="value">{booking.scheduledTime}</span>
 					</div>
 					<div className="infoField">
 						<span className="title">Статус:</span>
 						<span className="value">
-							<span className={`statusBadge ${getStatusColor(order.status)}`}>{getStatusText(order.status)}</span>
+							<span className={`statusBadge ${getStatusColor(booking.status)}`}>{getStatusText(booking.status)}</span>
 						</span>
 					</div>
 					<div className="infoField">
 						<span className="title">Просмотр:</span>
 						<span className="value">
-							<button className="viewButton" onClick={() => router.push(`/admin/orders/${order.id}`)}>
-								Открыть заказ
+							<button className="viewButton" onClick={() => router.push(`/admin/bookings/${booking.id}`)}>
+								Открыть запись
 							</button>
-						</span>
-					</div>
-					<div className="infoField">
-						<span className="title">Назначение:</span>
-						<span className="value">
-							{!order.managerId ? (
-								<button
-									className="assignButton"
-									onClick={() => {
-										// Здесь можно добавить модальное окно для выбора ответственного
-										alert("Функция назначения ответственного будет добавлена");
-									}}
-								>
-									Назначить ответственного
-								</button>
-							) : (
-								<button className="unassignButton" onClick={() => unassignOrder(order.id)}>
-									Снять назначение
-								</button>
-							)}
 						</span>
 					</div>
 				</div>
@@ -521,7 +397,6 @@ export default function AllOrdersTable() {
 		setManagerSearch("");
 		setClientSearch("");
 		setDepartmentFilter("all");
-		setActionFilter("all");
 		setIdSearch("");
 		setActiveBlocks({});
 		setPage(1);
@@ -572,15 +447,6 @@ export default function AllOrdersTable() {
 			});
 		}
 
-		if (actionFilter && actionFilter !== "all") {
-			const action = actionOptions.find((option) => option.value === actionFilter);
-			filters.push({
-				key: "actionFilter",
-				label: "Действие",
-				value: action?.label || "Неизвестное действие",
-			});
-		}
-
 		if (idSearch && idSearch.trim() !== "") {
 			filters.push({
 				key: "idSearch",
@@ -601,44 +467,36 @@ export default function AllOrdersTable() {
 	};
 
 	// Получение текста статуса
-	const getStatusText = (status: OrderStatus | "all") => {
+	const getStatusText = (status: BookingStatus | "all") => {
 		switch (status) {
-			case "created":
-				return "Создан";
+			case "scheduled":
+				return "Запланирована";
 			case "confirmed":
-				return "Подтверждён";
-			case "booked":
-				return "Забронирован";
-			case "ready":
-				return "Готов к выдаче";
-			case "paid":
-				return "Оплачен";
+				return "Подтверждена";
 			case "completed":
-				return "Выполнен";
-			case "returned":
-				return "Возврат";
+				return "Выполнена";
+			case "cancelled":
+				return "Отменена";
+			case "no_show":
+				return "Не явился";
 			default:
 				return status;
 		}
 	};
 
 	// Получение цвета статуса
-	const getStatusColor = (status: OrderStatus) => {
+	const getStatusColor = (status: BookingStatus) => {
 		switch (status) {
-			case "created":
+			case "scheduled":
 				return "statusCreated";
 			case "confirmed":
 				return "statusConfirmed";
-			case "booked":
-				return "statusBooked";
-			case "ready":
-				return "statusReady";
-			case "paid":
-				return "statusPaid";
 			case "completed":
 				return "statusCompleted";
-			case "returned":
-				return "statusReturned";
+			case "cancelled":
+				return "statusCancelled";
+			case "no_show":
+				return "statusNoShow";
 			default:
 				return "statusDefault";
 		}
@@ -649,12 +507,12 @@ export default function AllOrdersTable() {
 		switch (sortBy) {
 			case "id":
 				return "ID";
-			case "title":
-				return "Название";
+			case "scheduledDate":
+				return "Дата записи";
+			case "scheduledTime":
+				return "Время записи";
 			case "status":
 				return "Статус";
-			case "createdAt":
-				return "Дата создания";
 			default:
 				return sortBy;
 		}
@@ -667,103 +525,21 @@ export default function AllOrdersTable() {
 			day: "2-digit",
 			month: "2-digit",
 			year: "numeric",
-			hour: "2-digit",
-			minute: "2-digit",
 		});
 	};
 
-	// Назначение заказа ответственному
-	const assignOrder = async (orderId: number, managerId: number) => {
-		try {
-			const response = await fetch(`/api/orders/${orderId}/assign`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({ managerId }),
-			});
-
-			if (response.ok) {
-				// Обновляем список заказов
-				const params = new URLSearchParams({
-					page: page.toString(),
-					limit: limit.toString(),
-				});
-				if (statusFilter !== "all") params.append("status", statusFilter);
-				if (dateFilter.from) params.append("dateFrom", dateFilter.from);
-				if (dateFilter.to) params.append("dateTo", dateFilter.to);
-				if (managerSearch) params.append("managerSearch", managerSearch);
-				if (clientSearch) params.append("clientSearch", clientSearch);
-				if (departmentFilter !== "all") params.append("departmentId", departmentFilter === "none" ? "null" : departmentFilter);
-				if (idSearch) params.append("idSearch", idSearch);
-				if (sortBy && sortOrder) {
-					params.append("sortBy", sortBy);
-					params.append("sortOrder", sortOrder);
-				}
-
-				const response = await fetch(`/api/orders?${params}`);
-				const data: OrderResponse = await response.json();
-				setOrders(data.orders || []);
-				setTotal(data.total || 0);
-			} else {
-				const errorData = await response.json();
-				console.error("Ошибка при назначении заказа:", errorData.error);
-			}
-		} catch (err) {
-			console.error("Error assigning order:", err);
-		}
-	};
-
-	// Снятие назначения с заказа
-	const unassignOrder = async (orderId: number) => {
-		try {
-			const response = await fetch(`/api/orders/${orderId}/assign`, {
-				method: "DELETE",
-			});
-
-			if (response.ok) {
-				// Обновляем список заказов
-				const params = new URLSearchParams({
-					page: page.toString(),
-					limit: limit.toString(),
-				});
-				if (statusFilter !== "all") params.append("status", statusFilter);
-				if (dateFilter.from) params.append("dateFrom", dateFilter.from);
-				if (dateFilter.to) params.append("dateTo", dateFilter.to);
-				if (managerSearch) params.append("managerSearch", managerSearch);
-				if (clientSearch) params.append("clientSearch", clientSearch);
-				if (departmentFilter !== "all") params.append("departmentId", departmentFilter === "none" ? "null" : departmentFilter);
-				if (idSearch) params.append("idSearch", idSearch);
-				if (sortBy && sortOrder) {
-					params.append("sortBy", sortBy);
-					params.append("sortOrder", sortOrder);
-				}
-
-				const response = await fetch(`/api/orders?${params}`);
-				const data: OrderResponse = await response.json();
-				setOrders(data.orders || []);
-				setTotal(data.total || 0);
-			} else {
-				const errorData = await response.json();
-				console.error("Ошибка при снятии назначения:", errorData.error);
-			}
-		} catch (err) {
-			console.error("Error unassigning order:", err);
-		}
-	};
-
 	return (
-		<div className={`tableContent ${styles.tableContent}`}>
+		<div className="tableContent">
 			{/* Используем переиспользуемый блок фильтров без поиска */}
 			<FiltersBlock activeFilters={getActiveFilters()} onResetFilters={resetFilters} />
 
-			<div className={styles.tableContainer}>
-				<table className={styles.table}>
-					<thead className={styles.tableHeader}>
+			<div className="tableContainer">
+				<table className="table">
+					<thead className="tableHeader">
 						<tr>
-							<th className={styles.tableHeaderCell}>
+							<th className="tableHeaderCell">
 								<div className="dateFilterHeader">
-									Дата создания
+									Дата записи
 									<div className={`dateFilter ${dateFilter.from || dateFilter.to ? "active" : ""}`} onClick={() => setShowDateFilter(!showDateFilter)}>
 										{dateFilter.from ? formatDateFromString(dateFilter.from) : "дд.мм.гггг"} —{" "}
 										{dateFilter.to ? formatDateFromString(dateFilter.to) : "дд.мм.гггг"}
@@ -771,83 +547,71 @@ export default function AllOrdersTable() {
 									<DateRangePicker isOpen={showDateFilter} onClose={() => setShowDateFilter(false)} onDateRangeChange={handleDateRangeChange} />
 								</div>
 							</th>
-							<th className={styles.tableHeaderCell}>
+							<th className="tableHeaderCell">
 								<IdSearchField idSearch={idSearch} onSearchChange={handleIdSearchChange} onClearSearch={handleClearIdSearch} />
 							</th>
-							<th className={styles.tableHeaderCell}>
-								<CustomSelect
-									options={statusOptions}
-									value={statusFilter}
-									onChange={handleStatusChange}
-									placeholder="Выберите статус"
-									className={styles.statusSelect}
-								/>
+							<th className="tableHeaderCell">
+								<CustomSelect options={statusOptions} value={statusFilter} onChange={handleStatusChange} placeholder="Выберите статус" className="statusSelect" />
 							</th>
-							<th className={styles.tableHeaderCell}>
+							<th className="tableHeaderCell">
 								<CustomSelect
 									options={departmentOptions}
 									value={departmentFilter}
 									onChange={handleDepartmentFilterChange}
 									placeholder="Выберите отдел"
-									className={styles.departmentSelect}
+									className="departmentSelect"
 								/>
 							</th>
-							<th className={styles.tableHeaderCell}>
+							<th className="tableHeaderCell">
 								<ManagerSearchField managerSearch={managerSearch} onSearchChange={handleManagerSearchChange} onClearSearch={handleClearManagerSearch} />
 							</th>
-							<th className={styles.tableHeaderCell}>
+							<th className="tableHeaderCell">
 								<ClientSearchField clientSearch={clientSearch} onSearchChange={handleClientSearchChange} onClearSearch={handleClearClientSearch} />
 							</th>
-							<th className={styles.tableHeaderCell}>
-								<CustomSelect
-									options={actionOptions}
-									value={actionFilter}
-									onChange={handleActionFilterChange}
-									placeholder="Выберите действие"
-									className={styles.actionSelect}
-								/>
-							</th>
+							<th className="tableHeaderCell">Действия</th>
 						</tr>
 					</thead>
-					<tbody className={styles.tableBody}>
+					<tbody className="tableBody">
 						{loading ? (
 							<tr>
-								<td colSpan={6} className={styles.loadingCell}>
+								<td colSpan={7} className="loadingCell">
 									<Loading />
 								</td>
 							</tr>
-						) : orders.length === 0 ? (
+						) : bookings.length === 0 ? (
 							<tr>
-								<td colSpan={6} className={styles.emptyCell}>
+								<td colSpan={7} className="emptyCell">
 									{statusFilter !== "all" || dateFilter.from || dateFilter.to || managerSearch || clientSearch || departmentFilter !== "all" || idSearch
-										? "Заказы не найдены"
-										: "Нет заказов"}
+										? "Записи не найдены"
+										: "Нет записей"}
 								</td>
 							</tr>
 						) : (
-							orders.map((order) => (
-								<tr key={order.id} className={styles.tableRow}>
-									<td className={styles.tableCell}>{formatDate(order.createdAt)}</td>
-									<td className={`${styles.tableCell} idCell`}>{order.id}</td>
-									<td className={styles.tableCell}>
-										<span className={`${styles.statusBadge} ${styles[getStatusColor(order.status)]}`}>{getStatusText(order.status)}</span>
+							bookings.map((booking) => (
+								<tr key={booking.id} className="tableRow">
+									<td className="tableCell">
+										{formatDate(booking.scheduledDate)} {booking.scheduledTime}
 									</td>
-									<td className={styles.tableCell}>{renderDepartmentBlock(order)}</td>
-									<td className={styles.tableCell}>{renderManagerBlock(order)}</td>
-									<td className={styles.tableCell}>{renderClientBlock(order)}</td>
-									<td className={styles.tableCell}>{renderActionsBlock(order)}</td>
+									<td className="tableCell idCell">{booking.id}</td>
+									<td className="tableCell">
+										<span className={`statusBadge ${getStatusColor(booking.status)}`}>{getStatusText(booking.status)}</span>
+									</td>
+									<td className="tableCell">{booking.manager.department?.name || "—"}</td>
+									<td className="tableCell">{renderManagerBlock(booking)}</td>
+									<td className="tableCell">{renderClientBlock(booking)}</td>
+									<td className="tableCell">{renderActionsBlock(booking)}</td>
 								</tr>
 							))
 						)}
 					</tbody>
 				</table>
-				<Link href="/admin/orders/create" className={`createButton`}>
-					+ Создать заказ
+				<Link href="/admin/bookings/create" className="createButton">
+					+ Создать запись
 				</Link>
 			</div>
 
 			{/* Используем компонент Pagination вместо встроенной пагинации */}
-			<Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} className={styles.ordersPagination} />
+			<Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} className="bookingsPagination" />
 		</div>
 	);
 }
