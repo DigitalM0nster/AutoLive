@@ -283,16 +283,11 @@ export type ProductLog = {
 		description?: string;
 		department?: DepartmentForLog;
 	};
-	department?: {
-		id: number;
-		name: string;
-		multipleDepartments?: boolean; // Флаг для множественных отделов
-		allDepartments?: DepartmentForLog[]; // Все отделы для массовых операций
-	} | null;
 	snapshotBefore?: any;
 	snapshotAfter?: any;
 	userSnapshot?: any;
-	departmentSnapshot?: DepartmentForLog[] | null;
+	departmentSnapshot: DepartmentForLog | null; // Основное поле для отдела товара (единственное число)
+	departmentsSnapshot?: DepartmentForLog[] | null; // Для массовых операций (множественное число)
 	productSnapshot?: any; // Для массовых операций (как в логе импорта)
 	importLogId?: number | null; // Ссылка на лог импорта
 	importLogData?: any; // Данные лога импорта для отображения
@@ -433,7 +428,7 @@ export type ProductUpdateRequest = {
 
 // ===== ТИПЫ ДЛЯ ЗАКАЗОВ =====
 
-export type OrderStatus = "created" | "confirmed" | "completed" | "cancelled";
+export type OrderStatus = "created" | "confirmed" | "booked" | "ready" | "paid" | "completed" | "returned";
 
 export type Order = {
 	id: number;
@@ -485,18 +480,36 @@ export type OrderItem = {
 
 // Тип для создания заказа
 export type CreateOrderRequest = {
-	title: string;
-	description?: string;
 	clientId?: number; // Для заказов от пользователей
-	departmentId?: number; // Для заказов созданных админом
+	managerId?: number; // Ответственный менеджер
+	departmentId?: number; // Для заказов созданных админом (только для суперадмина)
 	orderItems: {
 		product_sku: string;
 		product_title: string;
 		product_price: number;
 		product_brand: string;
-		product_image?: string;
+		product_image?: string | null;
 		quantity: number;
+		supplierDeliveryDate?: string; // Дата поставки поставщиком
+		carModel?: string; // Название автомобиля
+		vinCode?: string; // VIN-код автомобиля
 	}[];
+	// Поля для статусов заказа
+	contactPhone?: string; // 1. Новый - контактный телефон
+	confirmationDate?: string; // 2. Подтвержденный - дата согласования
+	bookedUntil?: string; // 3. Забронирован - забронирован до
+	readyUntil?: string; // 4. Готов к выдаче - отложен до
+	prepaymentAmount?: number; // 4. Готов к выдаче - сумма предоплаты
+	prepaymentDate?: string; // 4. Готов к выдаче - дата внесения предоплаты
+	paymentDate?: string; // 5. Оплачен - дата внесения оплаты
+	orderAmount?: number; // 5. Оплачен - сумма заказа (нередактируемое)
+	completionDate?: string; // 6. Выполнен - дата выполнения
+	returnReason?: string; // 7. Возврат - причина возврата позиции
+	returnDate?: string; // 7. Возврат - дата возврата позиции
+	returnAmount?: number; // 7. Возврат - сумма возврата
+	returnPaymentDate?: string; // 7. Возврат - дата возврата денежных средств
+	returnDocumentNumber?: string; // 7. Возврат - номер документа возврата средств
+	comments?: string[]; // Комментарии
 };
 
 // Тип для обновления заказа
@@ -519,6 +532,7 @@ export type OrderResponse = {
 };
 
 // Типы для логов заказов
+
 export type OrderLogAction = "create" | "update" | "assign" | "status_change" | "cancel" | "unassign";
 
 export type OrderLog = {
@@ -550,4 +564,82 @@ export type OrderFilter = {
 	createdBy?: number | null;
 	dateFrom?: string;
 	dateTo?: string;
+};
+
+// ===== ТИПЫ ДЛЯ ЗАПИСЕЙ (BOOKING) =====
+
+export type BookingStatus = "scheduled" | "confirmed" | "completed" | "cancelled" | "no_show";
+
+export type Booking = {
+	id: number;
+	scheduledDate: string | Date; // Дата записи
+	scheduledTime: string; // Время в формате "14:30"
+	clientId?: number | null; // Опционально - для незарегистрированных клиентов
+	managerId: number; // Обязательно - кто отвечает за запись
+	status: BookingStatus;
+	notes?: string | null; // Примечания, тип услуги и т.д.
+	createdAt: string | Date;
+	updatedAt: string | Date;
+	// Связи
+	client?: {
+		id: number;
+		first_name: string | null;
+		last_name: string | null;
+		phone: string;
+	} | null;
+	manager: {
+		id: number;
+		first_name: string | null;
+		last_name: string | null;
+		role: string;
+		department?: DepartmentForLog | null;
+	};
+};
+
+// Тип для создания записи
+export type CreateBookingRequest = {
+	scheduledDate: string; // Дата в формате "2024-12-25"
+	scheduledTime: string; // Время в формате "14:30"
+	clientId?: number | null; // ID зарегистрированного клиента
+	managerId: number; // ID менеджера
+	notes?: string; // Примечания
+	// Для незарегистрированных клиентов
+	clientName?: string; // Имя клиента
+	clientPhone?: string; // Телефон клиента
+	clientEmail?: string; // Email клиента (опционально)
+};
+
+// Тип для обновления записи
+export type UpdateBookingRequest = {
+	scheduledDate?: string;
+	scheduledTime?: string;
+	clientId?: number | null;
+	managerId?: number;
+	status?: BookingStatus;
+	notes?: string;
+	// Для незарегистрированных клиентов
+	clientName?: string;
+	clientPhone?: string;
+	clientEmail?: string;
+};
+
+// Тип для ответа API записей
+export type BookingResponse = {
+	bookings?: Booking[];
+	booking?: Booking;
+	total?: number;
+	page?: number;
+	totalPages?: number;
+	error?: string;
+};
+
+// Тип для фильтров записей
+export type BookingFilter = {
+	status?: BookingStatus[];
+	managerId?: number | null;
+	clientId?: number | null;
+	dateFrom?: string;
+	dateTo?: string;
+	timeFrom?: string; // Время от
+	timeTo?: string; // Время до
 };

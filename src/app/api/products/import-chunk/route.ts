@@ -410,7 +410,7 @@ export const POST = withPermission(
 								},
 								departmentSnapshot: {
 									id: log.departmentId,
-									name: null,
+									name: userDepartment?.name || null,
 								},
 								productSnapshot: {
 									id: log.productId,

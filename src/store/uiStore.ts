@@ -33,7 +33,7 @@ export const useUiStore = create<UiStore>((set) => ({
 	activateRegisterPopup: () => set({ isActiveRegisterPopup: true }),
 	deactivateRegisterPopup: () => set({ isActiveRegisterPopup: false }),
 
-	// ПОПАП ЗАЯВКИ
+	// ПОПАП ЗАКАЗА
 	activateOrderPopup: () => set({ isActiveOrderPopup: true }),
 	deactivateOrderPopup: () => set({ isActiveOrderPopup: false }),
 

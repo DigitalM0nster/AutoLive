@@ -1,4 +1,4 @@
-// src\app\service-booking\page.tsx
+// src\app\booking\page.tsx
 
 import styles from "./styles.module.scss";
 import NavigationMenu from "@/components/user/navigationMenu/NavigationMenu";

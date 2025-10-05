@@ -25,6 +25,11 @@ export const adminRoutesMeta: Record<string, AdminRouteMeta> = {
 		icon: ShoppingCart,
 		bg: "green",
 	},
+	bookings: {
+		label: "Записи",
+		icon: ClipboardList,
+		bg: "purple",
+	},
 	categories: {
 		label: "Категории",
 		icon: ListOrdered,

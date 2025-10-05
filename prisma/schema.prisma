@@ -20,10 +20,12 @@ model User {
     departmentId Int?       @map("department_id")
 
     // Связи
-    department    Department? @relation("DepartmentUsers", fields: [departmentId], references: [id])
-    managerOrders Order[]     @relation("ManagerOrders")
-    clientOrders  Order[]     @relation("ClientOrders")
-    createdOrders Order[]     @relation("CreatedOrders")
+    department      Department? @relation("DepartmentUsers", fields: [departmentId], references: [id])
+    managerOrders   Order[]     @relation("ManagerOrders")
+    clientOrders    Order[]     @relation("ClientOrders")
+    createdOrders   Order[]     @relation("CreatedOrders")
+    clientBookings  Booking[]   @relation("ClientBookings")
+    managerBookings Booking[]   @relation("ManagerBookings")
 
     @@map("user")
 }
@@ -436,9 +438,38 @@ enum FilterType {
     boolean
 }
 
+model Booking {
+    id            Int           @id @default(autoincrement()) @map("id")
+    scheduledDate DateTime      @map("scheduled_date") @db.Date
+    scheduledTime String        @map("scheduled_time") @db.VarChar(10) // Формат: "14:30"
+    clientId      Int?          @map("client_id") // Опциональное поле - для незарегистрированных клиентов
+    managerId     Int           @map("manager_id") // Обязательное поле - кто отвечает за запись
+    status        BookingStatus @default(scheduled) @map("status")
+    notes         String?       @map("notes") @db.Text // Примечания, тип услуги и т.д.
+    createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamp(0)
+    updatedAt     DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
+
+    // Связи
+    client  User? @relation("ClientBookings", fields: [clientId], references: [id])
+    manager User  @relation("ManagerBookings", fields: [managerId], references: [id])
+
+    @@map("booking")
+}
+
 enum OrderStatus {
     created // Создан
     confirmed // Подтверждён
+    booked // Забронирован
+    ready // Готов к выдаче
+    paid // Оплачен
     completed // Выполнен
-    cancelled // Отменён
+    returned // Возврат
+}
+
+enum BookingStatus {
+    scheduled // Запланирована
+    confirmed // Подтверждена
+    completed // Выполнена
+    cancelled // Отменена
+    no_show // Не явился
 }

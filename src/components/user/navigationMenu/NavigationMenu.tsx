@@ -20,7 +20,7 @@ export default function NavigationMenu({ productId }: NavigationMenuProps) {
 		"/promotions": "Акции",
 		"/service-materials": "Материалы для ТО",
 		"/service-kits": "Комплекты ТО",
-		"/service-booking": "Запись на ТО",
+		"/booking": "Запись на ТО",
 		"/catalog": "Запчасти",
 	};
 

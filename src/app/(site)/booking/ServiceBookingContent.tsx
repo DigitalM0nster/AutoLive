@@ -1,4 +1,4 @@
-// src\app\service-booking\ServiceBookingContent.tsx
+// src\app\booking\ServiceBookingContent.tsx
 
 "use client";
 
@@ -58,7 +58,7 @@ export default function ServiceBookingContent() {
 			const result = await res.json();
 
 			if (res.ok) {
-				alert("Заявка успешно отправлена!");
+				alert("Заказ успешно отправлен!");
 				// Очистка формы
 				setSelectedDate(new Date());
 				setSelectedTime("");

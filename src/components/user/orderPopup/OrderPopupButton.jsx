@@ -13,7 +13,7 @@ export default function OrderPopupButton() {
 				activateOrderPopup();
 			}}
 		>
-			Оставить заявку
+			Оставить заказ
 		</button>
 	);
 }

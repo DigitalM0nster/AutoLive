@@ -698,10 +698,10 @@ export default function UserComponent({ userId, isCreating = false }: UserPagePr
 					</form>
 				</div>
 
-				{/* Блок для заявок пользователя - только для существующих пользователей */}
+				{/* Блок для заказов пользователя - только для существующих пользователей */}
 				{!isCreating && userData && (
 					<div className={styles.ordersCard}>
-						<h2 className={styles.ordersTitle}>Заявки пользователя</h2>
+						<h2 className={styles.ordersTitle}>Заказы пользователя</h2>
 
 						{userData.orders && userData.orders.length > 0 ? (
 							<div className="overflow-x-auto">
@@ -727,7 +727,7 @@ export default function UserComponent({ userId, isCreating = false }: UserPagePr
 								</table>
 							</div>
 						) : (
-							<div className={styles.noOrders}>У пользователя пока нет заявок</div>
+							<div className={styles.noOrders}>У пользователя пока нет заказов</div>
 						)}
 					</div>
 				)}

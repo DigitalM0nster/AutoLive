@@ -54,9 +54,20 @@ export const GET = withPermission(
 			// Преобразуем логи в нужный формат
 			let formattedLogs = logs.map((log) => {
 				const userSnapshot = log.userSnapshot as any;
-				const departmentSnapshot = log.departmentSnapshot as any;
+				let departmentSnapshot = log.departmentSnapshot as any;
 				const snapshotBefore = log.snapshotBefore ? JSON.parse(log.snapshotBefore) : null;
 				const snapshotAfter = log.snapshotAfter ? JSON.parse(log.snapshotAfter) : null;
+
+				// Если departmentSnapshot пустой, заполняем его из снапшотов
+				if (!departmentSnapshot || !departmentSnapshot.id) {
+					const departmentFromSnapshot = snapshotBefore?.department || snapshotAfter?.department;
+					if (departmentFromSnapshot) {
+						departmentSnapshot = {
+							id: departmentFromSnapshot.id,
+							name: departmentFromSnapshot.name,
+						};
+					}
+				}
 
 				return {
 					id: log.id,

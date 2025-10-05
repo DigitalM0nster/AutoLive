@@ -332,15 +332,15 @@ export default function AllUsersLogsTable({
 											{log.snapshotAfter.orders && (
 												<>
 													<div className="infoField">
-														<span className="title">Заявок как клиент:</span>
+														<span className="title">Заказов как клиент:</span>
 														<span className="value">{log.snapshotAfter.orders.total_as_client}</span>
 													</div>
 													<div className="infoField">
-														<span className="title">Заявок как менеджер:</span>
+														<span className="title">Заказов как менеджер:</span>
 														<span className="value">{log.snapshotAfter.orders.total_as_manager}</span>
 													</div>
 													<div className="infoField">
-														<span className="title">Всего заявок:</span>
+														<span className="title">Всего заказов:</span>
 														<span className="value">{log.snapshotAfter.orders.total_as_client + log.snapshotAfter.orders.total_as_manager}</span>
 													</div>
 												</>
@@ -410,15 +410,15 @@ export default function AllUsersLogsTable({
 											{log.snapshotBefore.orders && (
 												<>
 													<div className="infoField">
-														<span className="title">Заявок как клиент:</span>
+														<span className="title">Заказов как клиент:</span>
 														<span className="value">{log.snapshotBefore.orders.total_as_client}</span>
 													</div>
 													<div className="infoField">
-														<span className="title">Заявок как менеджер:</span>
+														<span className="title">Заказов как менеджер:</span>
 														<span className="value">{log.snapshotBefore.orders.total_as_manager}</span>
 													</div>
 													<div className="infoField">
-														<span className="title">Всего заявок:</span>
+														<span className="title">Всего заказов:</span>
 														<span className="value">{log.snapshotBefore.orders.total_as_client + log.snapshotBefore.orders.total_as_manager}</span>
 													</div>
 												</>

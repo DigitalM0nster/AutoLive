@@ -250,9 +250,20 @@ export const GET = withPermission(
 				// Преобразуем логи товаров в нужный формат
 				const productLogs = logs.map((log) => {
 					const userSnapshot = log.userSnapshot as any;
-					const departmentSnapshot = log.departmentSnapshot as any;
+					let departmentSnapshot = log.departmentSnapshot as any;
 					const snapshotBefore = log.snapshotBefore ? JSON.parse(log.snapshotBefore) : null;
 					const snapshotAfter = log.snapshotAfter ? JSON.parse(log.snapshotAfter) : null;
+
+					// Если departmentSnapshot пустой, заполняем его из снапшотов
+					if (!departmentSnapshot || !departmentSnapshot.id) {
+						const departmentFromSnapshot = snapshotBefore?.department || snapshotAfter?.department;
+						if (departmentFromSnapshot) {
+							departmentSnapshot = {
+								id: departmentFromSnapshot.id,
+								name: departmentFromSnapshot.name,
+							};
+						}
+					}
 
 					return {
 						id: log.id,
@@ -281,16 +292,22 @@ export const GET = withPermission(
 									description: snapshotBefore.description,
 									department: snapshotBefore.department,
 							  }
-							: null,
-						department: snapshotBefore?.department
+							: snapshotAfter
 							? {
-									id: snapshotBefore.department.id,
-									name: snapshotBefore.department.name,
+									id: snapshotAfter.id,
+									title: snapshotAfter.title,
+									sku: snapshotAfter.sku,
+									brand: snapshotAfter.brand,
+									price: snapshotAfter.price,
+									category: snapshotAfter.category,
+									description: snapshotAfter.description,
+									department: snapshotAfter.department,
 							  }
-							: snapshotAfter?.department
+							: null,
+						department: departmentSnapshot
 							? {
-									id: snapshotAfter.department.id,
-									name: snapshotAfter.department.name,
+									id: departmentSnapshot.id,
+									name: departmentSnapshot.name,
 							  }
 							: null,
 						snapshotBefore,

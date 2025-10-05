@@ -30,6 +30,7 @@ type UniversalLogOptions = {
 	beforeData?: any; // Полный объект ДО изменений
 	afterData?: any; // Полный объект ПОСЛЕ изменений
 	actions?: DepartmentAction[] | UserAction[]; // Массив действий (для отделов и пользователей)
+	departmentId?: number | null; // ID отдела (переопределяет отдел администратора)
 };
 
 /**
@@ -39,7 +40,7 @@ type UniversalLogOptions = {
  */
 async function getFullUserData(userId: number) {
 	try {
-		// Получаем полную информацию о пользователе с отделом и заявками
+		// Получаем полную информацию о пользователе с отделом и заказами
 		const user = await prisma.user.findUnique({
 			where: { id: userId },
 			include: {
@@ -92,7 +93,7 @@ async function getFullUserData(userId: number) {
 			departmentId: user.departmentId,
 			department: user.department,
 
-			// Заявки пользователя
+			// Заказы пользователя
 			orders: {
 				as_client: user.clientOrders,
 				as_manager: user.managerOrders,
@@ -122,7 +123,7 @@ async function getFullUserData(userId: number) {
  */
 export async function getFullDepartmentData(departmentId: number) {
 	try {
-		// Получаем полную информацию об отделе с пользователями, товарами и заявками
+		// Получаем полную информацию об отделе с пользователями, товарами и заказами
 		const department = await prisma.department.findUnique({
 			where: { id: departmentId },
 			include: {
@@ -276,13 +277,13 @@ async function getFullProductData(productId: number) {
 }
 
 /**
- * Функция для сбора полной информации о заявке
- * @param orderId ID заявки
- * @returns Полная информация о заявке
+ * Функция для сбора полной информации о заказе
+ * @param orderId ID заказа
+ * @returns Полная информация о заказе
  */
 async function getFullOrderData(orderId: number) {
 	try {
-		// Получаем полную информацию о заявке с клиентом, менеджером и отделом
+		// Получаем полную информацию о заказе с клиентом, менеджером и отделом
 		const order = await prisma.order.findUnique({
 			where: { id: orderId },
 			include: {
@@ -317,7 +318,7 @@ async function getFullOrderData(orderId: number) {
 			return null;
 		}
 
-		// Формируем полную информацию о заявке
+		// Формируем полную информацию о заказе
 		const fullOrderData = {
 			// Основная информация
 			id: order.id,
@@ -344,7 +345,7 @@ async function getFullOrderData(orderId: number) {
 
 		return fullOrderData;
 	} catch (error) {
-		console.error("Ошибка при сборе полной информации о заявке:", error);
+		console.error("Ошибка при сборе полной информации о заказе:", error);
 		return null;
 	}
 }
@@ -369,8 +370,8 @@ export async function logChange(options: UniversalLogOptions) {
 			return;
 		}
 
-		// Определяем departmentId из данных администратора
-		const departmentId = adminData.departmentId ?? null;
+		// Определяем departmentId: приоритет у переданного параметра, иначе из данных администратора
+		const departmentId = options.departmentId ?? adminData.departmentId ?? null;
 
 		// Собираем данные в зависимости от типа сущности
 		let snapshotBefore = options.beforeData;
@@ -451,7 +452,7 @@ export async function logChange(options: UniversalLogOptions) {
 					},
 					departmentSnapshot: {
 						id: departmentId,
-						name: adminData.department?.name,
+						name: departmentId ? options.afterData?.department?.name || options.beforeData?.department?.name || "Отдел не найден" : null,
 					},
 					// Временные поля для совместимости
 					userId: adminData.id,
@@ -497,7 +498,7 @@ export async function logProductChange(options: Omit<UniversalLogOptions, "entit
 	});
 }
 
-// Логирование изменений заявок
+// Логирование изменений заказов
 export async function logOrderChange(options: Omit<UniversalLogOptions, "entityType">) {
 	return logChange({
 		...options,

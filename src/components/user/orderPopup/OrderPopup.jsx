@@ -33,7 +33,7 @@ export default function OrderPopup() {
 					<input type="phone" placeholder="Телефон для связи" />
 					<textarea ref={textareaRef} value={comment} onInput={handleInput} placeholder="Комментарий (не обязательно)" className={styles.autoExpandTextarea} />
 					<div className={`button ${styles.button}`} onClick={() => login(deactivateOrderPopup)}>
-						Оставить заявку
+						Оставить заказ
 					</div>
 				</div>
 				<div className={styles.closeIcon} onClick={deactivateOrderPopup}>

@@ -1,6 +1,6 @@
 // Используем стандартные классы из globals.scss
 import { useCallback, useEffect, useState } from "react";
-import { ProductLog, ProductLogResponse, User } from "@/lib/types";
+import { ProductLog, ProductLogResponse, User, DepartmentForLog } from "@/lib/types";
 import Loading from "@/components/ui/loading/Loading";
 
 export default function ProductLogsTable({
@@ -22,7 +22,10 @@ export default function ProductLogsTable({
 	// Изменяем структуру: теперь храним Map с ID пользователя как ключом и полными данными как значением
 	const [existingUsers, setExistingUsers] = useState<Map<number, User>>(new Map());
 	const [existingDepartments, setExistingDepartments] = useState<Set<number>>(new Set());
-	const [departmentsData, setDepartmentsData] = useState<Map<number, { id: number; name: string }>>(new Map());
+	const [departmentsData, setDepartmentsData] = useState<Map<number, DepartmentForLog>>(new Map());
+	// Храним данные категорий
+	const [existingCategories, setExistingCategories] = useState<Set<number>>(new Set());
+	const [categoriesData, setCategoriesData] = useState<Map<number, { id: number; title: string }>>(new Map());
 
 	// Функция для проверки существования пользователей
 	const checkUsersExistence = useCallback(async (userIds: number[]) => {
@@ -56,7 +59,11 @@ export default function ProductLogsTable({
 
 	// Функция для проверки существования отделов
 	const checkDepartmentsExistence = useCallback(async (departmentIds: number[]) => {
-		if (departmentIds.length === 0) return;
+		console.log("🔍 checkDepartmentsExistence called with:", departmentIds);
+		if (departmentIds.length === 0) {
+			console.log("🔍 checkDepartmentsExistence - no department IDs, returning");
+			return;
+		}
 
 		try {
 			// Используем GET запрос с параметрами в URL вместо POST
@@ -72,6 +79,7 @@ export default function ProductLogsTable({
 			if (response.ok) {
 				const data = await response.json();
 				const existingIds = data.existingDepartmentIds || [];
+				console.log("🔍 checkDepartmentsExistence API response:", { departmentIds, existingIds, data });
 				setExistingDepartments(new Set(existingIds));
 			} else {
 				console.error("Ошибка API при проверке существования отделов:", response.status, response.statusText);
@@ -83,6 +91,7 @@ export default function ProductLogsTable({
 
 	// Функция для загрузки актуальных данных отделов
 	const loadDepartmentsData = useCallback(async () => {
+		console.log("🔍 loadDepartmentsData called");
 		setLoading(true);
 		try {
 			const response = await fetch(`/api/departments`, {
@@ -91,7 +100,8 @@ export default function ProductLogsTable({
 
 			if (response.ok) {
 				const departments = await response.json();
-				const departmentsMap = new Map<number, { id: number; name: string }>(departments.map((dept: { id: number; name: string }) => [dept.id, dept]));
+				const departmentsMap = new Map<number, DepartmentForLog>(departments.map((dept: DepartmentForLog) => [dept.id, dept]));
+				console.log("🔍 loadDepartmentsData response:", { departments, departmentsMapKeys: Array.from(departmentsMap.keys()) });
 				setDepartmentsData(departmentsMap);
 			} else {
 				console.error("Ошибка при загрузке данных отделов:", response.status, response.statusText);
@@ -100,6 +110,25 @@ export default function ProductLogsTable({
 			console.error("Ошибка при загрузке данных отделов:", error);
 		} finally {
 			setLoading(false);
+		}
+	}, []);
+
+	// Функция для загрузки актуальных данных категорий
+	const loadCategoriesData = useCallback(async () => {
+		try {
+			const response = await fetch(`/api/categories`, {
+				credentials: "include",
+			});
+
+			if (response.ok) {
+				const categories = await response.json();
+				const categoriesMap = new Map<number, { id: number; title: string }>(categories.map((cat: { id: number; title: string }) => [cat.id, cat]));
+				setCategoriesData(categoriesMap);
+			} else {
+				console.error("Ошибка при загрузке данных категорий:", response.status, response.statusText);
+			}
+		} catch (error) {
+			console.error("Ошибка при загрузке данных категорий:", error);
 		}
 	}, []);
 
@@ -136,10 +165,13 @@ export default function ProductLogsTable({
 
 			// Проверяем существование отделов из логов
 			const departmentIdsToCheck = (data.data || [])
-				.flatMap((log: ProductLog) => [log.admin?.department?.id, log.snapshotBefore?.department?.id, log.snapshotAfter?.department?.id])
-				.filter((id: number | undefined) => id !== undefined && id !== 0) as number[];
+				.flatMap((log: ProductLog) => [log.admin?.department?.id, log.departmentSnapshot?.id, log.snapshotBefore?.department?.id, log.snapshotAfter?.department?.id])
+				.filter((id: number | undefined | null) => id !== undefined && id !== null && id !== 0) as number[];
 
+			console.log("🔍 fetchLogs - departmentIdsToCheck:", departmentIdsToCheck);
 			await checkDepartmentsExistence(departmentIdsToCheck);
+			console.log("🔍 fetchLogs - after checkDepartmentsExistence, existingDepartments:", Array.from(existingDepartments));
+			console.log("🔍 fetchLogs - departmentsData keys:", Array.from(departmentsData.keys()));
 		} catch (err) {
 			console.error("Ошибка при загрузке логов:", err);
 			setError(err instanceof Error ? err.message : "Неизвестная ошибка");
@@ -169,25 +201,126 @@ export default function ProductLogsTable({
 		[existingUsers]
 	);
 
-	// Функция для отображения отдела
+	// Функция для отображения отдела с ссылкой, если отдел существует
 	const renderDepartment = useCallback(
-		(department: any) => {
-			if (!department) return "—";
+		(department: DepartmentForLog | null | undefined, log: ProductLog) => {
+			// Используем ID из объекта department
+			const targetDepartmentId = department?.id;
+			// Отладка только для отдела ПОСЛЕ изменений
+			if (department === log.snapshotAfter?.department) {
+				console.log("🔍 ОТДЕЛ ПОСЛЕ изменений:", {
+					department,
+					targetDepartmentId,
+					existingDepartments: Array.from(existingDepartments),
+					departmentsDataKeys: Array.from(departmentsData.keys()),
+					logId: log.id,
+					logAction: log.action,
+				});
+			}
 
-			// Проверяем, существует ли отдел в базе данных
-			const departmentExists = existingDepartments.has(department.id);
+			if (!targetDepartmentId) return "—";
+
 			// Получаем актуальные данные отдела из departmentsData
-			const actualDepartment = departmentsData.get(department.id);
+			const actualDepartment = departmentsData.get(targetDepartmentId);
+			const snapshotName = department?.name;
+			const actualName = actualDepartment ? actualDepartment.name : snapshotName;
+
+			// Используем departmentsData как основной источник истины для существования
+			const departmentExists = actualDepartment !== undefined;
+
+			// Отладка только для отдела ПОСЛЕ изменений
+			if (department === log.snapshotAfter?.department) {
+				console.log("🔍 ПРОВЕРКА отдела ПОСЛЕ:", {
+					targetDepartmentId,
+					departmentExists,
+					actualDepartment,
+					snapshotName,
+					actualName,
+					willShowDeleted: !departmentExists || !actualDepartment,
+				});
+			}
 
 			if (departmentExists && actualDepartment) {
-				// Если отдел существует, показываем актуальное название
-				return actualDepartment.name;
+				// Если отдел существует
+				if (snapshotName === actualName) {
+					// Если названия совпадают, показываем только актуальное название ссылкой
+					return (
+						<a href={`/admin/departments/${targetDepartmentId}`} className="itemLink">
+							{actualName}
+						</a>
+					);
+				} else {
+					// Если названия разные, показываем название из снапшота и актуальное название в скобочках со ссылкой
+					return (
+						<span>
+							{snapshotName}{" "}
+							<a href={`/admin/departments/${targetDepartmentId}`} className="itemLink">
+								({actualName})
+							</a>
+						</span>
+					);
+				}
 			} else {
-				// Если отдела не существует, показываем название из снапшота
-				return department.name || "—";
+				console.log(log, departmentExists, actualDepartment);
+				// Если отдела не существует, показываем пометку с названием из снапшота
+				return (
+					<span>
+						{snapshotName || `ID: ${targetDepartmentId}`} <span className="deletedItemStatus">(отдел удалён)</span>
+					</span>
+				);
 			}
 		},
-		[existingDepartments, departmentsData]
+		[departmentsData]
+	);
+
+	// Функция для отображения категории с ссылкой, если категория существует
+	const renderCategoryLink = useCallback(
+		(category: { id: number; title: string } | null | undefined) => {
+			// Определяем ID категории
+			const catId = category?.id;
+
+			if (!catId) {
+				return "Без категории";
+			}
+
+			// Получаем актуальные данные категории из categoriesData
+			const actualCategory = categoriesData.get(catId);
+			const snapshotName = category?.title || `ID: ${catId}`;
+			const actualName = actualCategory ? actualCategory.title : snapshotName;
+
+			// Постоянное решение: используем только categoriesData для проверки существования
+			const categoryExists = actualCategory !== undefined;
+
+			if (categoryExists) {
+				// Если категория существует
+				if (snapshotName === actualName) {
+					// Если названия совпадают, показываем только актуальное название ссылкой
+					return (
+						<a href={`/admin/categories/${catId}`} className="itemLink">
+							{actualName}
+						</a>
+					);
+				} else {
+					// Если названия разные, показываем название из снапшота и актуальное название в скобочках со ссылкой
+					return (
+						<span>
+							{snapshotName}{" "}
+							<a href={`/admin/categories/${catId}`} className="itemLink">
+								({actualName})
+							</a>
+						</span>
+					);
+				}
+			} else {
+				// Если категории не существует, показываем пометку с названием из снапшота
+				return (
+					<span>
+						{snapshotName} <span className="deletedItemStatus">(категория удалена)</span>
+					</span>
+				);
+			}
+		},
+		[categoriesData]
 	);
 
 	// Функция для переключения активного состояния блока
@@ -199,7 +332,7 @@ export default function ProductLogsTable({
 	}, []);
 
 	// Функция для отображения ссылки на пользователя с разворачивающимся блоком
-	const renderUserLink = useCallback(
+	const renderUserBlock = useCallback(
 		(
 			log: ProductLog,
 			user: { id: number; first_name?: string | null; last_name?: string | null; middle_name?: string | null; phone?: string; role?: string; department?: any },
@@ -232,7 +365,7 @@ export default function ProductLogsTable({
 						</div>
 						<div className="infoField">
 							<span className="title">Отдел:</span>
-							<span className="value">{renderDepartment(user.department)}</span>
+							<span className="value">{renderDepartment(user.department, log)}</span>
 						</div>
 						{userExists ? (
 							<div className="infoField">
@@ -351,26 +484,15 @@ export default function ProductLogsTable({
 										{categoryChanged && (
 											<tr>
 												<td>Категория</td>
-												<td className="oldValue">
-													{log.snapshotBefore?.category?.title ||
-														(log.snapshotBefore?.categoryId ? `ID: ${log.snapshotBefore.categoryId}` : "Не указано")}
-												</td>
-												<td className="newValue">
-													{log.snapshotAfter?.category?.title || (log.snapshotAfter?.categoryId ? `ID: ${log.snapshotAfter.categoryId}` : "Не указано")}
-												</td>
+												<td className="oldValue">{renderCategoryLink(log.snapshotBefore?.category)}</td>
+												<td className="newValue">{renderCategoryLink(log.snapshotAfter?.category)}</td>
 											</tr>
 										)}
 										{departmentChanged && (
 											<tr>
 												<td>Отдел</td>
-												<td className="oldValue">
-													{log.snapshotBefore?.department?.name ||
-														(log.snapshotBefore?.departmentId ? `ID: ${log.snapshotBefore.departmentId}` : "Не указано")}
-												</td>
-												<td className="newValue">
-													{log.snapshotAfter?.department?.name ||
-														(log.snapshotAfter?.departmentId ? `ID: ${log.snapshotAfter.departmentId}` : "Не указано")}
-												</td>
+												<td className="oldValue">{renderDepartment(log.snapshotBefore?.department, log)}</td>
+												<td className="newValue">{renderDepartment(log.snapshotAfter?.department, log)}</td>
 											</tr>
 										)}
 										{descriptionChanged && (
@@ -417,8 +539,8 @@ export default function ProductLogsTable({
 									<div>SKU: {log.snapshotAfter.sku || "—"}</div>
 									<div>Бренд: {log.snapshotAfter.brand || "—"}</div>
 									<div>Цена: {log.snapshotAfter.price || "—"}</div>
-									<div>Категория: {log.snapshotAfter.category?.title || (log.snapshotAfter.categoryId ? `ID: ${log.snapshotAfter.categoryId}` : "—")}</div>
-									<div>Отдел: {log.snapshotAfter.department?.name || (log.snapshotAfter.departmentId ? `ID: ${log.snapshotAfter.departmentId}` : "—")}</div>
+									<div>Категория: {renderCategoryLink(log.snapshotAfter.category)}</div>
+									<div>Отдел: {log.departmentSnapshot?.name || "—"}</div>
 									<div>Описание: {log.snapshotAfter.description || "—"}</div>
 									<div>
 										Изображение:{" "}
@@ -445,6 +567,10 @@ export default function ProductLogsTable({
 	}, [loadDepartmentsData]);
 
 	useEffect(() => {
+		loadCategoriesData();
+	}, [loadCategoriesData]);
+
+	useEffect(() => {
 		if (productId) {
 			fetchLogs();
 		}
@@ -467,13 +593,13 @@ export default function ProductLogsTable({
 						</tr>
 					) : localLogs.length > 0 ? (
 						localLogs.map((log) => {
-							console.log(log);
+							// console.log(log);
 							return (
 								<tr key={log.id}>
 									<td>
 										<div className="date">{formatDate(log.createdAt)}</div>
 									</td>
-									<td>{log.admin ? renderUserLink(log, log.admin, log.id, "admin") : "—"}</td>
+									<td>{log.admin ? renderUserBlock(log, log.admin, log.id, "admin") : "—"}</td>
 									<td>{getResultBlock(log)}</td>
 								</tr>
 							);

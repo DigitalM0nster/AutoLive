@@ -1051,6 +1051,13 @@ table,
 		&.centerTableHeader {
 			th {
 				vertical-align: middle;
+
+				&.sortableHeader {
+					&::after {
+						top: 50%;
+						transform: translateY(calc(0px - 60%));
+					}
+				}
 			}
 		}
 
@@ -1078,8 +1085,8 @@ table,
 					content: "↕";
 					position: absolute;
 					left: 12px;
-					top: 50%;
-					transform: translateY(-60%);
+					top: 100%;
+					transform: translateY(calc(-16px - 110%));
 					font-size: 12px;
 					color: var(--blue-color);
 					transition: color 0.2s ease;
@@ -2453,14 +2460,32 @@ span {
 	}
 }
 
-// Стили для компонента товара
-.productComponent {
+// Стили для компонента товара и заказа
+.productComponent,
+.orderComponent {
 	.formContainer {
 		background: white;
 		border-radius: 12px;
 		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 		overflow: hidden;
 		border: 1px solid var(--light-grey2-color);
+	}
+
+	.statusBlock {
+		margin: 0px 0px 0px 0px;
+
+		.statusFields {
+			display: flex;
+			flex-direction: column;
+			gap: 24px;
+		}
+
+		.statusHeader {
+			font-size: 18px;
+			text-transform: uppercase;
+			font-weight: 700;
+			margin: 0px 0px 10px 0px;
+		}
 	}
 
 	.formHeader {
@@ -2486,13 +2511,15 @@ span {
 	}
 
 	.formFields {
+		display: flex;
+		flex-direction: column;
+		gap: 24px;
 		padding: 32px;
 
 		.formRow {
 			display: grid;
 			grid-template-columns: 1fr 1fr;
 			gap: 24px;
-			margin-bottom: 24px;
 
 			&:last-child {
 				margin-bottom: 0;
@@ -2502,7 +2529,7 @@ span {
 		.formField {
 			display: flex;
 			flex-direction: column;
-			gap: 8px;
+			gap: 4px;
 
 			label {
 				font-size: 14px;
@@ -2516,7 +2543,7 @@ span {
 			select {
 				width: calc(100% - 32px);
 				padding: 12px 16px;
-				border: 2px solid var(--light-grey2-color);
+				border: 1px solid var(--light-grey2-color);
 				border-radius: 8px;
 				font-size: 14px;
 				font-family: var(--mainFont);
@@ -2825,7 +2852,7 @@ span {
 	.fixedButtons {
 		position: fixed;
 		bottom: 20px;
-		right: 20px;
+		left: calc((100vw - var(--maxContentWidth)) * 0.5);
 		display: flex;
 		gap: 12px;
 		background: white;

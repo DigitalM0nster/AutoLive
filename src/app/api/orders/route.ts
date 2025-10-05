@@ -168,8 +168,8 @@ async function createOrderHandler(req: NextRequest, { user, scope }: { user: any
 		const body: CreateOrderRequest = await req.json();
 
 		// Валидация данных
-		if (!body.title || !body.orderItems || body.orderItems.length === 0) {
-			return NextResponse.json({ error: "Title and order items are required" }, { status: 400 });
+		if (!body.orderItems || body.orderItems.length === 0) {
+			return NextResponse.json({ error: "Order items are required" }, { status: 400 });
 		}
 
 		// Получаем полную информацию о пользователе из базы данных
@@ -192,11 +192,43 @@ async function createOrderHandler(req: NextRequest, { user, scope }: { user: any
 		// Логика определения отдела для заказа
 		let departmentId = body.departmentId;
 
-		// Если заказ создается суперадмином и указан отдел - используем его
-		// Если заказ создается админом/менеджером - используем их отдел
-		// Если заказ от пользователя - отдел может быть null
-		if (user.role === "admin" || user.role === "manager") {
-			departmentId = fullUser.departmentId || undefined;
+		// Получаем отделы товаров в заказе
+		const productSkus = body.orderItems.map((item) => item.product_sku);
+		const products = await prisma.product.findMany({
+			where: {
+				sku: { in: productSkus },
+			},
+			select: {
+				sku: true,
+				departmentId: true,
+			},
+		});
+
+		// Определяем уникальные отделы товаров
+		const productDepartments = [...new Set(products.map((p) => p.departmentId).filter((id) => id !== null))];
+
+		// Логика определения отдела:
+		// 1. Если все товары из одного отдела - заказ попадает в этот отдел
+		// 2. Если товары из разных отделов:
+		//    - Если создает админ/менеджер - заказ попадает в их отдел
+		//    - Если создает пользователь - заказ без отдела
+		if (productDepartments.length === 1) {
+			// Все товары из одного отдела
+			departmentId = productDepartments[0];
+		} else if (productDepartments.length > 1) {
+			// Товары из разных отделов
+			if (user.role === "admin" || user.role === "manager") {
+				// Заказ попадает в отдел создателя
+				departmentId = fullUser.departmentId || undefined;
+			} else {
+				// Заказ без отдела (от пользователя)
+				departmentId = undefined;
+			}
+		}
+
+		// Если суперадмин указал отдел вручную - используем его
+		if (user.role === "superadmin" && body.departmentId) {
+			departmentId = body.departmentId;
 		}
 
 		// Создаем заказ в транзакции
@@ -204,13 +236,14 @@ async function createOrderHandler(req: NextRequest, { user, scope }: { user: any
 			// Создаем заказ
 			const newOrder = await tx.order.create({
 				data: {
-					title: body.title,
-					description: body.description,
+					title: `Заказ #${Date.now()}`, // Временное название для совместимости
+					description: null,
 					status: "created",
 					clientId: body.clientId || null,
+					managerId: body.managerId || null,
 					departmentId: departmentId,
 					createdBy: fullUser.id,
-					// Поля managerId и assignedAt остаются null для свободных заказов
+					// Поле assignedAt остается null для свободных заказов
 				},
 				include: {
 					manager: {
@@ -276,7 +309,7 @@ async function createOrderHandler(req: NextRequest, { user, scope }: { user: any
 			await tx.orderLog.create({
 				data: {
 					action: "create",
-					message: `Заказ "${body.title}" создан`,
+					message: `Заказ создан`,
 					orderId: newOrder.id,
 					adminSnapshot: {
 						id: fullUser.id,

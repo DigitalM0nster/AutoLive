@@ -195,6 +195,11 @@ export default function BulkDeleteDetailsComponent({ bulkLogId, productsSnapshot
 	// Функция для отображения товара с разворачивающимся блоком
 	const renderProductBlock = useCallback(
 		(product: any, index: number) => {
+			// Проверяем, что товар существует и имеет ID
+			if (!product || !product.id) {
+				return "—";
+			}
+
 			const productKey = `product_${index}_${product.id}`;
 
 			return (

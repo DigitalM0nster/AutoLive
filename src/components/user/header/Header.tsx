@@ -67,7 +67,7 @@ export default function Header() {
 						{[
 							{ label: "Материалы для ТО", path: "/service-materials" },
 							{ label: "Комплекты ТО", path: "/service-kits" },
-							{ label: "Запись на ТО", path: "/service-booking" },
+							{ label: "Запись на ТО", path: "/booking" },
 							{ label: "Запчасти", path: "/catalog" },
 							{ label: "Акции", path: "/discounts" },
 							{ label: "Контакты", path: "/contacts" },

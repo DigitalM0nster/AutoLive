@@ -518,7 +518,7 @@ export default function ProductComponent({ productId, isCreating = false, userRo
 
 			if (isCreating) {
 				// Перенаправляем на страницу созданного товара
-				router.push(`/admin/product-management/products/${data.id}`);
+				router.push(`/admin/product-management/products/${data.product.id}`);
 			} else {
 				// Обновляем данные товара
 				setProductData(data);
@@ -620,6 +620,12 @@ export default function ProductComponent({ productId, isCreating = false, userRo
 
 				{canEdit && (
 					<div className={`formFields`}>
+						{/* Блок загрузки изображения */}
+						<div className="formRow">
+							<div className="formField">
+								<ImageUpload imageUrl={imagePreview} onImageChange={handleImageChange} onImageRemove={handleImageRemove} disabled={!canEdit} />
+							</div>
+						</div>
 						<div className={`formRow`}>
 							<div className={`formField`}>
 								<label htmlFor="title">Название товара *</label>
@@ -632,11 +638,6 @@ export default function ProductComponent({ productId, isCreating = false, userRo
 									disabled={!canEdit}
 									placeholder="Введите название товара"
 								/>
-							</div>
-
-							{/* Блок загрузки изображения */}
-							<div className="formField">
-								<ImageUpload imageUrl={imagePreview} onImageChange={handleImageChange} onImageRemove={handleImageRemove} disabled={!canEdit} />
 							</div>
 						</div>
 
@@ -695,10 +696,13 @@ export default function ProductComponent({ productId, isCreating = false, userRo
 										))}
 									</select>
 								) : (
-									<div className={`readOnlyField`}>
-										{productData?.department?.name || "Не указан"}
-										<div className={`fieldNote`}>Только суперадмин может изменять отдел товара</div>
-									</div>
+									<input
+										type="text"
+										value={isCreating ? user?.department?.name || "Не указан" : productData?.department?.name || "Не указан"}
+										disabled={true}
+										className={`disabledInput`}
+										title="Только суперадмин может изменять отдел товара"
+									/>
 								)}
 							</div>
 							<div className={`formField`}>

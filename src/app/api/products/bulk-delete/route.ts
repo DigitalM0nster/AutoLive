@@ -93,7 +93,12 @@ export const POST = withPermission(
 						userId: user.id,
 						productId: singleProduct.id,
 						userSnapshot: userData,
-						departmentSnapshot: userData.department || undefined,
+						departmentSnapshot: singleProduct.department
+							? {
+									id: singleProduct.department.id,
+									name: singleProduct.department.name,
+							  }
+							: undefined,
 						snapshotBefore: JSON.stringify({
 							id: singleProduct.id,
 							title: singleProduct.title,

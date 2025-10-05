@@ -79,7 +79,6 @@ export default function ImportDetailsComponent({ importLogId, onClose }: ImportD
 				message: "Товар пропущен при импорте",
 				admin: undefined,
 				targetProduct: undefined,
-				department: null,
 				snapshotBefore: null,
 				snapshotAfter: null,
 				userSnapshot: null,
@@ -99,7 +98,6 @@ export default function ImportDetailsComponent({ importLogId, onClose }: ImportD
 				message: "Товар является повтором",
 				admin: undefined,
 				targetProduct: undefined,
-				department: null,
 				snapshotBefore: null,
 				snapshotAfter: null,
 				userSnapshot: null,
@@ -220,9 +218,14 @@ export default function ImportDetailsComponent({ importLogId, onClose }: ImportD
 	const renderProductLink = useCallback(
 		(
 			log: ProductLog,
-			product: { id: number; title?: string; sku?: string; brand?: string; price?: number; description?: string; category?: any; department?: any },
+			product: { id: number; title?: string; sku?: string; brand?: string; price?: number; description?: string; category?: any; department?: any } | null,
 			logId: number
 		) => {
+			// Проверяем, что товар существует и имеет ID
+			if (!product || !product.id) {
+				return "—";
+			}
+
 			// Проверяем, существует ли товар в базе данных
 			const productExists = existingProducts.has(product.id);
 			// Получаем актуальные данные товара из existingProducts
@@ -325,9 +328,7 @@ export default function ImportDetailsComponent({ importLogId, onClose }: ImportD
 											</div>
 											<div className="infoField">
 												<span className="title">Отдел:</span>
-												<span className="value">
-													{log.snapshotAfter.department?.name || (log.snapshotAfter.departmentId ? `ID: ${log.snapshotAfter.departmentId}` : "—")}
-												</span>
+												<span className="value">{log.departmentSnapshot?.name || "—"}</span>
 											</div>
 										</>
 									)}

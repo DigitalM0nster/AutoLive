@@ -283,27 +283,24 @@ export default function AllProductsLogsTable({
 
 	// Функция для определения отдела товара в логе
 	const getProductDepartment = useCallback((log: ProductLog) => {
-		// Для разных типов действий используем разные источники данных
+		// Теперь везде используем departmentSnapshot - это отдел товара
+		if (log.departmentSnapshot && log.departmentSnapshot.id) {
+			return log.departmentSnapshot;
+		}
+
+		// Fallback для старых логов или случаев, когда departmentSnapshot не заполнен
 		switch (log.action) {
 			case "create":
-				// Для создания товара берем отдел из snapshotAfter
 				return log.snapshotAfter?.department || (log.snapshotAfter?.departmentId ? { id: log.snapshotAfter.departmentId } : null);
 
 			case "update":
-				// Для обновления товара берем отдел ДО изменений (snapshotBefore)
 				return log.snapshotBefore?.department || (log.snapshotBefore?.departmentId ? { id: log.snapshotBefore.departmentId } : null);
 
 			case "delete":
-				// Для удаления товара берем отдел из snapshotBefore
 				return log.snapshotBefore?.department || (log.snapshotBefore?.departmentId ? { id: log.snapshotBefore.departmentId } : null);
 
 			case "bulk_delete":
-				// Для массового удаления отдел уже правильно определен в API
-				return log.bulkLogData?.productsSnapshot[0].department;
-
-			case "import":
-				// Для импорта отдел не применим
-				return log.departmentSnapshot;
+				return log.bulkLogData?.productsSnapshot[0]?.department;
 
 			default:
 				return null;
@@ -395,7 +392,7 @@ export default function AllProductsLogsTable({
 				.map((log: ProductLog) => {
 					return log.admin?.department?.id;
 				})
-				.filter((id: number | undefined) => id !== undefined && id !== 0) as number[];
+				.filter((id: number | undefined | null) => id !== undefined && id !== null && id !== 0) as number[];
 
 			const productDepartmentIds = formattedLogs
 				.map((log: ProductLog) => {
@@ -403,7 +400,7 @@ export default function AllProductsLogsTable({
 					const productDepartment = getProductDepartment(log);
 					return productDepartment?.id;
 				})
-				.filter((id: number | undefined) => id !== undefined && id !== 0) as number[];
+				.filter((id: number | undefined | null) => id !== undefined && id !== null && id !== 0) as number[];
 
 			const departmentIdsToCheck = [...new Set([...adminDepartmentIds, ...productDepartmentIds])];
 
@@ -807,9 +804,14 @@ export default function AllProductsLogsTable({
 				department?: any;
 				productFilterValues?: ProductFilterValue[];
 				image?: string;
-			},
+			} | null,
 			logId: number
 		) => {
+			// Проверяем, что товар существует и имеет ID
+			if (!product || !product.id) {
+				return "—";
+			}
+
 			// Проверяем, существует ли товар в базе данных
 			const productExists = existingProducts.has(product.id);
 			// Получаем актуальные данные товара из existingProducts
@@ -847,9 +849,7 @@ export default function AllProductsLogsTable({
 						</div>
 						<div className="infoField">
 							<span className="title">Отдел:</span>
-							<span className="value">
-								{log.action === "update" ? renderDepartmentLink(log.snapshotBefore?.department) : renderDepartmentLink(product.department)}
-							</span>
+							<span className="value">{renderDepartmentLink(log.departmentSnapshot)}</span>
 						</div>
 						<div className="infoField">
 							<span className="title">Категория:</span>
@@ -1010,7 +1010,7 @@ export default function AllProductsLogsTable({
 											</div>
 											<div className="infoField">
 												<span className="title">Отдел:</span>
-												<span className="value">{renderDepartmentLink(log.snapshotBefore?.department)}</span>
+												<span className="value">{renderDepartmentLink(log.departmentSnapshot)}</span>
 											</div>
 											<div className="infoField">
 												<span className="title">Категория:</span>
@@ -1087,7 +1087,7 @@ export default function AllProductsLogsTable({
 											</div>
 											<div className="infoField">
 												<span className="title">Отдел:</span>
-												<span className="value">{renderDepartmentLink(log.snapshotBefore?.department)}</span>
+												<span className="value">{renderDepartmentLink(log.departmentSnapshot)}</span>
 											</div>
 											<div className="infoField">
 												<span className="title">Категория:</span>
@@ -1240,14 +1240,8 @@ export default function AllProductsLogsTable({
 													{departmentChanged && (
 														<tr>
 															<td>Отдел</td>
-															<td className="oldValue">
-																{log.snapshotBefore?.department?.name ||
-																	(log.snapshotBefore?.departmentId ? `ID: ${log.snapshotBefore.departmentId}` : "Не указано")}
-															</td>
-															<td className="newValue">
-																{log.snapshotAfter?.department?.name ||
-																	(log.snapshotAfter?.departmentId ? `ID: ${log.snapshotAfter.departmentId}` : "Не указано")}
-															</td>
+															<td className="oldValue">{renderDepartmentLink(log.snapshotBefore?.department)}</td>
+															<td className="newValue">{renderDepartmentLink(log.snapshotAfter?.department)}</td>
 														</tr>
 													)}
 													{imageChanged && (
@@ -1431,7 +1425,7 @@ export default function AllProductsLogsTable({
 						</tr>
 					) : localLogs.length > 0 ? (
 						localLogs.map((log: ProductLog) => {
-							// console.log(log);
+							console.log(log);
 							return (
 								<tr key={log.id}>
 									<td>
@@ -1441,8 +1435,8 @@ export default function AllProductsLogsTable({
 									<td>
 										{getProductDepartment(log)
 											? log.action === "bulk_delete"
-												? log.departmentSnapshot && log.departmentSnapshot.length > 0
-													? log.departmentSnapshot.map((department: DepartmentForLog, index: number) => renderDepartmentBlock(log, department, log.id))
+												? log.departmentsSnapshot && log.departmentsSnapshot.length > 0
+													? log.departmentsSnapshot.map((department: DepartmentForLog, index: number) => renderDepartmentBlock(log, department, log.id))
 													: "sd"
 												: renderDepartmentBlock(log, getProductDepartment(log), log.id)
 											: "—"}
@@ -1493,7 +1487,7 @@ export default function AllProductsLogsTable({
 												)}
 											</div>
 										) : log.targetProduct ? (
-											renderProductLink(log, log.snapshotBefore, log.id)
+											renderProductLink(log, log.snapshotBefore || log.targetProduct, log.id)
 										) : (
 											"—"
 										)}

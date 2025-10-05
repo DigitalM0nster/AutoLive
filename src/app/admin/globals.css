@@ -1008,6 +1008,11 @@ table thead.centerTableHeader th,
 .table thead.centerTableHeader th {
   vertical-align: middle;
 }
+table thead.centerTableHeader th.sortableHeader::after,
+.table thead.centerTableHeader th.sortableHeader::after {
+  top: 50%;
+  transform: translateY(calc(0px - 60%));
+}
 table thead th,
 .table thead th {
   padding: 16px 12px;
@@ -1035,8 +1040,8 @@ table thead th.sortableHeader::after,
   content: "↕";
   position: absolute;
   left: 12px;
-  top: 50%;
-  transform: translateY(-60%);
+  top: 100%;
+  transform: translateY(calc(-16px - 110%));
   font-size: 12px;
   color: var(--blue-color);
   transition: color 0.2s ease;
@@ -2345,14 +2350,33 @@ span.oldName:after {
   background-color: var(--primary-active-color);
 }
 
-.productComponent .formContainer {
+.productComponent .formContainer,
+.orderComponent .formContainer {
   background: white;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   overflow: hidden;
   border: 1px solid var(--light-grey2-color);
 }
-.productComponent .formHeader {
+.productComponent .statusBlock,
+.orderComponent .statusBlock {
+  margin: 0px 0px 0px 0px;
+}
+.productComponent .statusBlock .statusFields,
+.orderComponent .statusBlock .statusFields {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.productComponent .statusBlock .statusHeader,
+.orderComponent .statusBlock .statusHeader {
+  font-size: 18px;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin: 0px 0px 10px 0px;
+}
+.productComponent .formHeader,
+.orderComponent .formHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -2360,35 +2384,44 @@ span.oldName:after {
   background: linear-gradient(135deg, var(--light-grey-color) 0%, white 100%);
   border-bottom: 1px solid var(--light-grey2-color);
 }
-.productComponent .formHeader h2 {
+.productComponent .formHeader h2,
+.orderComponent .formHeader h2 {
   font-size: 24px;
   font-weight: 600;
   color: var(--text-color);
   margin: 0;
 }
-.productComponent .formHeader .formActions {
+.productComponent .formHeader .formActions,
+.orderComponent .formHeader .formActions {
   display: flex;
   gap: 12px;
   align-items: center;
 }
-.productComponent .formFields {
+.productComponent .formFields,
+.orderComponent .formFields {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
   padding: 32px;
 }
-.productComponent .formFields .formRow {
+.productComponent .formFields .formRow,
+.orderComponent .formFields .formRow {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
-  margin-bottom: 24px;
 }
-.productComponent .formFields .formRow:last-child {
+.productComponent .formFields .formRow:last-child,
+.orderComponent .formFields .formRow:last-child {
   margin-bottom: 0;
 }
-.productComponent .formFields .formField {
+.productComponent .formFields .formField,
+.orderComponent .formFields .formField {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
-.productComponent .formFields .formField label {
+.productComponent .formFields .formField label,
+.orderComponent .formFields .formField label {
   font-size: 14px;
   font-weight: 500;
   color: var(--text-color);
@@ -2396,10 +2429,13 @@ span.oldName:after {
 }
 .productComponent .formFields .formField input,
 .productComponent .formFields .formField textarea,
-.productComponent .formFields .formField select {
+.productComponent .formFields .formField select,
+.orderComponent .formFields .formField input,
+.orderComponent .formFields .formField textarea,
+.orderComponent .formFields .formField select {
   width: calc(100% - 32px);
   padding: 12px 16px;
-  border: 2px solid var(--light-grey2-color);
+  border: 1px solid var(--light-grey2-color);
   border-radius: 8px;
   font-size: 14px;
   font-family: var(--mainFont);
@@ -2408,43 +2444,57 @@ span.oldName:after {
 }
 .productComponent .formFields .formField input:focus,
 .productComponent .formFields .formField textarea:focus,
-.productComponent .formFields .formField select:focus {
+.productComponent .formFields .formField select:focus,
+.orderComponent .formFields .formField input:focus,
+.orderComponent .formFields .formField textarea:focus,
+.orderComponent .formFields .formField select:focus {
   outline: none;
   border-color: var(--blue-color);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 .productComponent .formFields .formField input:disabled,
 .productComponent .formFields .formField textarea:disabled,
-.productComponent .formFields .formField select:disabled {
+.productComponent .formFields .formField select:disabled,
+.orderComponent .formFields .formField input:disabled,
+.orderComponent .formFields .formField textarea:disabled,
+.orderComponent .formFields .formField select:disabled {
   background: var(--light-grey-color);
   color: #6b7280;
   cursor: not-allowed;
 }
-.productComponent .formFields .formField input::-moz-placeholder, .productComponent .formFields .formField textarea::-moz-placeholder, .productComponent .formFields .formField select::-moz-placeholder {
+.productComponent .formFields .formField input::-moz-placeholder, .productComponent .formFields .formField textarea::-moz-placeholder, .productComponent .formFields .formField select::-moz-placeholder, .orderComponent .formFields .formField input::-moz-placeholder, .orderComponent .formFields .formField textarea::-moz-placeholder, .orderComponent .formFields .formField select::-moz-placeholder {
   color: #9ca3af;
 }
 .productComponent .formFields .formField input::placeholder,
 .productComponent .formFields .formField textarea::placeholder,
-.productComponent .formFields .formField select::placeholder {
+.productComponent .formFields .formField select::placeholder,
+.orderComponent .formFields .formField input::placeholder,
+.orderComponent .formFields .formField textarea::placeholder,
+.orderComponent .formFields .formField select::placeholder {
   color: #9ca3af;
 }
-.productComponent .formFields .formField select {
+.productComponent .formFields .formField select,
+.orderComponent .formFields .formField select {
   width: 100%;
 }
-.productComponent .formFields .formField textarea {
+.productComponent .formFields .formField textarea,
+.orderComponent .formFields .formField textarea {
   resize: vertical;
   min-height: 100px;
 }
-.productComponent .formFields .fieldNote {
+.productComponent .formFields .fieldNote,
+.orderComponent .formFields .fieldNote {
   font-size: 12px;
   color: var(--orange-color);
   font-style: italic;
   margin-top: 4px;
 }
-.productComponent .viewModeContainer {
+.productComponent .viewModeContainer,
+.orderComponent .viewModeContainer {
   padding: 32px;
 }
-.productComponent .viewModeContainer .productInfoCard {
+.productComponent .viewModeContainer .productInfoCard,
+.orderComponent .viewModeContainer .productInfoCard {
   display: grid;
   grid-template-columns: 300px 1fr;
   gap: 32px;
@@ -2455,18 +2505,21 @@ span.oldName:after {
   border: 1px solid var(--light-grey2-color);
 }
 @media (max-width: 768px) {
-  .productComponent .viewModeContainer .productInfoCard {
+  .productComponent .viewModeContainer .productInfoCard,
+  .orderComponent .viewModeContainer .productInfoCard {
     grid-template-columns: 1fr;
   }
 }
-.productComponent .viewModeContainer .productImageSection {
+.productComponent .viewModeContainer .productImageSection,
+.orderComponent .viewModeContainer .productImageSection {
   background: var(--light-grey-color);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
 }
-.productComponent .viewModeContainer .productImageSection .productImage {
+.productComponent .viewModeContainer .productImageSection .productImage,
+.orderComponent .viewModeContainer .productImageSection .productImage {
   max-width: 100%;
   max-height: 250px;
   -o-object-fit: contain;
@@ -2474,7 +2527,8 @@ span.oldName:after {
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
-.productComponent .viewModeContainer .productImageSection .noImagePlaceholder {
+.productComponent .viewModeContainer .productImageSection .noImagePlaceholder,
+.orderComponent .viewModeContainer .productImageSection .noImagePlaceholder {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2484,18 +2538,21 @@ span.oldName:after {
   border-radius: 8px;
   border: 2px dashed #d1d5db;
 }
-.productComponent .viewModeContainer .productImageSection .noImagePlaceholder span {
+.productComponent .viewModeContainer .productImageSection .noImagePlaceholder span,
+.orderComponent .viewModeContainer .productImageSection .noImagePlaceholder span {
   color: #6b7280;
   font-size: 14px;
   font-weight: 500;
 }
-.productComponent .viewModeContainer .productDetailsSection {
+.productComponent .viewModeContainer .productDetailsSection,
+.orderComponent .viewModeContainer .productDetailsSection {
   padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
-.productComponent .viewModeContainer .productDetailsSection .productInfoRow {
+.productComponent .viewModeContainer .productDetailsSection .productInfoRow,
+.orderComponent .viewModeContainer .productDetailsSection .productInfoRow {
   display: grid;
   grid-template-columns: 140px 1fr;
   gap: 16px;
@@ -2503,52 +2560,61 @@ span.oldName:after {
   padding: 12px 0;
   border-bottom: 1px solid var(--light-grey-color);
 }
-.productComponent .viewModeContainer .productDetailsSection .productInfoRow.fullWidth {
+.productComponent .viewModeContainer .productDetailsSection .productInfoRow.fullWidth,
+.orderComponent .viewModeContainer .productDetailsSection .productInfoRow.fullWidth {
   grid-template-columns: 1fr;
   gap: 8px;
 }
-.productComponent .viewModeContainer .productDetailsSection .productInfoRow:last-child {
+.productComponent .viewModeContainer .productDetailsSection .productInfoRow:last-child,
+.orderComponent .viewModeContainer .productDetailsSection .productInfoRow:last-child {
   border-bottom: none;
 }
-.productComponent .viewModeContainer .productDetailsSection .productInfoRow .infoLabel {
+.productComponent .viewModeContainer .productDetailsSection .productInfoRow .infoLabel,
+.orderComponent .viewModeContainer .productDetailsSection .productInfoRow .infoLabel {
   font-size: 14px;
   font-weight: 600;
   color: #6b7280;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
-.productComponent .viewModeContainer .productDetailsSection .productInfoRow .infoValue {
+.productComponent .viewModeContainer .productDetailsSection .productInfoRow .infoValue,
+.orderComponent .viewModeContainer .productDetailsSection .productInfoRow .infoValue {
   font-size: 16px;
   font-weight: 500;
   color: var(--text-color);
   word-break: break-word;
 }
-.productComponent .viewModeContainer .productDetailsSection .productInfoRow .infoValue.priceValue {
+.productComponent .viewModeContainer .productDetailsSection .productInfoRow .infoValue.priceValue,
+.orderComponent .viewModeContainer .productDetailsSection .productInfoRow .infoValue.priceValue {
   font-size: 20px;
   font-weight: 700;
   color: var(--green-color);
 }
-.productComponent .viewModeContainer .productDetailsSection .productInfoRow .infoValue.descriptionValue {
+.productComponent .viewModeContainer .productDetailsSection .productInfoRow .infoValue.descriptionValue,
+.orderComponent .viewModeContainer .productDetailsSection .productInfoRow .infoValue.descriptionValue {
   line-height: 1.6;
   background: var(--light-grey-color);
   padding: 16px;
   border-radius: 8px;
   border-left: 4px solid var(--blue-color);
 }
-.productComponent .noEditMessage {
+.productComponent .noEditMessage,
+.orderComponent .noEditMessage {
   padding: 40px;
   text-align: center;
   background: var(--light-grey-color);
   border-radius: 12px;
   border: 2px dashed var(--grey2-color);
 }
-.productComponent .noEditMessage p {
+.productComponent .noEditMessage p,
+.orderComponent .noEditMessage p {
   font-size: 16px;
   color: #6b7280;
   margin: 0;
   font-weight: 500;
 }
-.productComponent .primaryButton {
+.productComponent .primaryButton,
+.orderComponent .primaryButton {
   background: var(--blue-color);
   color: white;
   border: none;
@@ -2562,24 +2628,29 @@ span.oldName:after {
   align-items: center;
   gap: 8px;
 }
-.productComponent .primaryButton:hover:not(:disabled) {
+.productComponent .primaryButton:hover:not(:disabled),
+.orderComponent .primaryButton:hover:not(:disabled) {
   background: var(--dark-blue-color);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
-.productComponent .primaryButton:disabled {
+.productComponent .primaryButton:disabled,
+.orderComponent .primaryButton:disabled {
   background: #9ca3af;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
 }
-.productComponent .primaryButton.hasChanges {
+.productComponent .primaryButton.hasChanges,
+.orderComponent .primaryButton.hasChanges {
   background: var(--green-color);
 }
-.productComponent .primaryButton.hasChanges:hover:not(:disabled) {
+.productComponent .primaryButton.hasChanges:hover:not(:disabled),
+.orderComponent .primaryButton.hasChanges:hover:not(:disabled) {
   background: var(--dark-green-color);
 }
-.productComponent .dangerButton {
+.productComponent .dangerButton,
+.orderComponent .dangerButton {
   background: var(--red-color);
   color: white;
   border: none;
@@ -2593,49 +2664,58 @@ span.oldName:after {
   align-items: center;
   gap: 8px;
 }
-.productComponent .dangerButton:hover:not(:disabled) {
+.productComponent .dangerButton:hover:not(:disabled),
+.orderComponent .dangerButton:hover:not(:disabled) {
   background: var(--dark-red-color);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
-.productComponent .dangerButton:disabled {
+.productComponent .dangerButton:disabled,
+.orderComponent .dangerButton:disabled {
   background: #9ca3af;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
 }
-.productComponent .filtersSection {
+.productComponent .filtersSection,
+.orderComponent .filtersSection {
   margin-top: 32px;
   padding-top: 24px;
   border-top: 2px solid var(--light-grey-color);
 }
-.productComponent .filtersSection .filtersTitle {
+.productComponent .filtersSection .filtersTitle,
+.orderComponent .filtersSection .filtersTitle {
   font-size: 18px;
   font-weight: 600;
   color: var(--text-color);
   margin-bottom: 20px;
 }
-.productComponent .filtersSection .filtersContainer {
+.productComponent .filtersSection .filtersContainer,
+.orderComponent .filtersSection .filtersContainer {
   display: flex;
   flex-direction: column;
   gap: 24px;
 }
-.productComponent .filtersSection .filterGroup {
+.productComponent .filtersSection .filterGroup,
+.orderComponent .filtersSection .filterGroup {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
-.productComponent .filtersSection .filterGroup .filterLabel {
+.productComponent .filtersSection .filterGroup .filterLabel,
+.orderComponent .filtersSection .filterGroup .filterLabel {
   font-size: 14px;
   font-weight: 600;
   color: var(--text-color);
 }
-.productComponent .filtersSection .filterGroup .filterValues {
+.productComponent .filtersSection .filterGroup .filterValues,
+.orderComponent .filtersSection .filterGroup .filterValues {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 12px;
 }
-.productComponent .filtersSection .filterGroup .filterValueItem {
+.productComponent .filtersSection .filterGroup .filterValueItem,
+.orderComponent .filtersSection .filterGroup .filterValueItem {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -2646,32 +2726,38 @@ span.oldName:after {
   transition: all 0.2s ease;
   border: 2px solid transparent;
 }
-.productComponent .filtersSection .filterGroup .filterValueItem:hover {
+.productComponent .filtersSection .filterGroup .filterValueItem:hover,
+.orderComponent .filtersSection .filterGroup .filterValueItem:hover {
   background: var(--light-grey2-color);
 }
-.productComponent .filtersSection .filterGroup .filterValueItem .filterValueText {
+.productComponent .filtersSection .filterGroup .filterValueItem .filterValueText,
+.orderComponent .filtersSection .filterGroup .filterValueItem .filterValueText {
   font-size: 14px;
   color: var(--text-color);
   -webkit-user-select: none;
      -moz-user-select: none;
           user-select: none;
 }
-.productComponent .filtersSection .filterGroup .filterValueItem.active {
+.productComponent .filtersSection .filterGroup .filterValueItem.active,
+.orderComponent .filtersSection .filterGroup .filterValueItem.active {
   background: var(--blue-color);
   border-color: var(--blue-color);
 }
-.productComponent .filtersSection .filterGroup .filterValueItem.active .filterValueText {
+.productComponent .filtersSection .filterGroup .filterValueItem.active .filterValueText,
+.orderComponent .filtersSection .filterGroup .filterValueItem.active .filterValueText {
   color: white;
   font-weight: 500;
 }
-.productComponent .filtersSection .filterGroup .filterValueItem.disabled {
+.productComponent .filtersSection .filterGroup .filterValueItem.disabled,
+.orderComponent .filtersSection .filterGroup .filterValueItem.disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
-.productComponent .fixedButtons {
+.productComponent .fixedButtons,
+.orderComponent .fixedButtons {
   position: fixed;
   bottom: 20px;
-  right: 20px;
+  left: calc((100vw - var(--maxContentWidth)) * 0.5);
   display: flex;
   gap: 12px;
   background: white;
@@ -2682,7 +2768,8 @@ span.oldName:after {
   z-index: 1000;
   animation: slideUp 0.3s ease-out;
 }
-.productComponent .fixedButtons button {
+.productComponent .fixedButtons button,
+.orderComponent .fixedButtons button {
   padding: 12px 24px;
   font-size: 14px;
   font-weight: 600;
@@ -2692,29 +2779,35 @@ span.oldName:after {
   transition: all 0.2s ease;
   min-width: 120px;
 }
-.productComponent .fixedButtons button.primaryButton {
+.productComponent .fixedButtons button.primaryButton,
+.orderComponent .fixedButtons button.primaryButton {
   background: var(--blue-color);
   color: white;
 }
-.productComponent .fixedButtons button.primaryButton:hover:not(:disabled) {
+.productComponent .fixedButtons button.primaryButton:hover:not(:disabled),
+.orderComponent .fixedButtons button.primaryButton:hover:not(:disabled) {
   background: var(--blue-dark-color);
   transform: translateY(-1px);
 }
-.productComponent .fixedButtons button.primaryButton:disabled {
+.productComponent .fixedButtons button.primaryButton:disabled,
+.orderComponent .fixedButtons button.primaryButton:disabled {
   background: var(--light-grey-color);
   cursor: not-allowed;
   opacity: 0.6;
 }
-.productComponent .fixedButtons button.secondaryButton {
+.productComponent .fixedButtons button.secondaryButton,
+.orderComponent .fixedButtons button.secondaryButton {
   background: var(--light-grey-color);
   color: var(--text-color);
   border: 1px solid var(--grey-color);
 }
-.productComponent .fixedButtons button.secondaryButton:hover:not(:disabled) {
+.productComponent .fixedButtons button.secondaryButton:hover:not(:disabled),
+.orderComponent .fixedButtons button.secondaryButton:hover:not(:disabled) {
   background: var(--light-grey2-color);
   transform: translateY(-1px);
 }
-.productComponent .fixedButtons button.secondaryButton:disabled {
+.productComponent .fixedButtons button.secondaryButton:disabled,
+.orderComponent .fixedButtons button.secondaryButton:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -2728,12 +2821,14 @@ span.oldName:after {
     transform: translateY(0);
   }
 }
-.productComponent .filtersValue {
+.productComponent .filtersValue,
+.orderComponent .filtersValue {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
-.productComponent .filtersValue .filterDisplayGroup {
+.productComponent .filtersValue .filterDisplayGroup,
+.orderComponent .filtersValue .filterDisplayGroup {
   display: flex;
   align-items: flex-start;
   gap: 8px;
@@ -2741,18 +2836,21 @@ span.oldName:after {
   background: var(--light-grey-color);
   border-radius: 6px;
 }
-.productComponent .filtersValue .filterDisplayGroup .filterDisplayLabel {
+.productComponent .filtersValue .filterDisplayGroup .filterDisplayLabel,
+.orderComponent .filtersValue .filterDisplayGroup .filterDisplayLabel {
   font-size: 14px;
   font-weight: 600;
   color: var(--text-color);
   min-width: 80px;
 }
-.productComponent .filtersValue .filterDisplayGroup .filterDisplayValues {
+.productComponent .filtersValue .filterDisplayGroup .filterDisplayValues,
+.orderComponent .filtersValue .filterDisplayGroup .filterDisplayValues {
   font-size: 14px;
   color: var(--text-color);
   flex: 1;
 }
-.productComponent .skeletonTitle {
+.productComponent .skeletonTitle,
+.orderComponent .skeletonTitle {
   height: 24px;
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200% 100%;
@@ -2760,11 +2858,13 @@ span.oldName:after {
   border-radius: 4px;
   width: 300px;
 }
-.productComponent .skeletonActions {
+.productComponent .skeletonActions,
+.orderComponent .skeletonActions {
   display: flex;
   gap: 12px;
 }
-.productComponent .skeletonButton {
+.productComponent .skeletonButton,
+.orderComponent .skeletonButton {
   height: 40px;
   width: 120px;
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
@@ -2772,7 +2872,8 @@ span.oldName:after {
   animation: loading 1.5s infinite;
   border-radius: 8px;
 }
-.productComponent .skeletonLabel {
+.productComponent .skeletonLabel,
+.orderComponent .skeletonLabel {
   height: 16px;
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200% 100%;
@@ -2781,7 +2882,8 @@ span.oldName:after {
   width: 80px;
   margin-bottom: 8px;
 }
-.productComponent .skeletonInput {
+.productComponent .skeletonInput,
+.orderComponent .skeletonInput {
   height: 40px;
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200% 100%;
@@ -2797,42 +2899,52 @@ span.oldName:after {
   }
 }
 @media (max-width: 768px) {
-  .productComponent .formHeader {
+  .productComponent .formHeader,
+  .orderComponent .formHeader {
     flex-direction: column;
     gap: 16px;
     align-items: stretch;
     text-align: center;
   }
-  .productComponent .formHeader .formActions {
+  .productComponent .formHeader .formActions,
+  .orderComponent .formHeader .formActions {
     justify-content: center;
   }
-  .productComponent .formFields {
+  .productComponent .formFields,
+  .orderComponent .formFields {
     padding: 24px;
   }
-  .productComponent .formFields .formRow {
+  .productComponent .formFields .formRow,
+  .orderComponent .formFields .formRow {
     grid-template-columns: 1fr;
     gap: 16px;
   }
-  .productComponent .viewModeContainer {
+  .productComponent .viewModeContainer,
+  .orderComponent .viewModeContainer {
     padding: 24px;
   }
-  .productComponent .viewModeContainer .productDetailsSection .productInfoRow {
+  .productComponent .viewModeContainer .productDetailsSection .productInfoRow,
+  .orderComponent .viewModeContainer .productDetailsSection .productInfoRow {
     grid-template-columns: 1fr;
     gap: 8px;
     text-align: left;
   }
 }
 @media (max-width: 480px) {
-  .productComponent .formHeader {
+  .productComponent .formHeader,
+  .orderComponent .formHeader {
     padding: 20px;
   }
-  .productComponent .formHeader h2 {
+  .productComponent .formHeader h2,
+  .orderComponent .formHeader h2 {
     font-size: 20px;
   }
-  .productComponent .formFields {
+  .productComponent .formFields,
+  .orderComponent .formFields {
     padding: 20px;
   }
-  .productComponent .viewModeContainer {
+  .productComponent .viewModeContainer,
+  .orderComponent .viewModeContainer {
     padding: 20px;
   }
 }

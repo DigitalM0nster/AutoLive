@@ -172,12 +172,58 @@ export const GET = withPermission(
 export const POST = withPermission(
 	async (req: NextRequest, { user }: ExtendedRequestContext) => {
 		try {
-			const data = await req.json();
+			const formData = await req.formData();
 
-			const departmentId = user.role === "superadmin" ? data.departmentId ?? null : user.departmentId ?? null;
+			// Извлекаем данные из FormData
+			const data = {
+				title: formData.get("title") as string,
+				sku: formData.get("sku") as string,
+				brand: formData.get("brand") as string,
+				price: formData.get("price") as string,
+				supplierPrice: formData.get("supplierPrice") as string,
+				description: formData.get("description") as string,
+				categoryId: formData.get("categoryId") as string,
+				departmentId: formData.get("departmentId") as string,
+				filterValues: formData.get("filterValues") as string,
+			};
 
-			if (user.role === "admin" && !departmentId) {
-				return new NextResponse("Администратор должен иметь отдел", { status: 400 });
+			// Обрабатываем загрузку изображения
+			const imageFile = formData.get("imageFile") as File | null;
+			let imageUrl = null;
+
+			if (imageFile && imageFile.size > 0) {
+				try {
+					// Используем простую систему загрузки файлов
+					const { uploadFile, validateFile } = await import("@/lib/simpleFileUpload");
+
+					// Валидируем файл
+					const validation = validateFile(imageFile);
+					if (!validation.isValid) {
+						return NextResponse.json({ error: validation.error }, { status: 400 });
+					}
+
+					// Загружаем файл (временно используем 0 как ID, потом обновим)
+					const uploadResult = await uploadFile(imageFile, {
+						prefix: "product",
+						entityId: 0, // Временно, обновим после создания товара
+					});
+
+					imageUrl = uploadResult.url;
+				} catch (error) {
+					console.error("Ошибка загрузки изображения:", error);
+					return NextResponse.json({ error: "Ошибка загрузки изображения" }, { status: 500 });
+				}
+			}
+
+			// Преобразуем строки в числа где необходимо
+			const parsedDepartmentId = data.departmentId ? parseInt(data.departmentId) : null;
+			const parsedCategoryId = data.categoryId ? parseInt(data.categoryId) : null;
+
+			const departmentId = user.role === "superadmin" ? parsedDepartmentId : user.departmentId;
+
+			// departmentId обязательно для создания товара
+			if (!departmentId) {
+				return new NextResponse("Отдел обязателен для создания товара", { status: 400 });
 			}
 
 			const rawSku = String(data.sku).trim();
@@ -189,7 +235,7 @@ export const POST = withPermission(
 				where: {
 					sku: normalizedSku,
 					brand: normalizedBrand,
-					departmentId: departmentId ?? null,
+					departmentId,
 				},
 			});
 
@@ -212,7 +258,7 @@ export const POST = withPermission(
 						priceFrom: { lte: supplierPrice },
 						OR: [{ priceTo: null }, { priceTo: { gte: supplierPrice } }],
 						...(data.brand && { brand: normalizedBrand }),
-						...(data.categoryId && { categoryId: data.categoryId }),
+						...(parsedCategoryId && { categoryId: parsedCategoryId }),
 					},
 					orderBy: { priceFrom: "desc" },
 				});
@@ -234,7 +280,7 @@ export const POST = withPermission(
 
 			const allowedCategoryIds = allowedCategories.map((ac) => ac.categoryId);
 
-			let categoryIdToUse = data.categoryId;
+			let categoryIdToUse = parsedCategoryId;
 			if (categoryIdToUse) {
 				if (allowedCategoryIds.length === 0) {
 					// Если для отдела нет разрешенных категорий, не позволяем устанавливать категорию
@@ -254,15 +300,45 @@ export const POST = withPermission(
 					supplierPrice,
 					brand: rawBrand,
 					description: data.description?.trim() || null,
-					image: data.image?.trim() || null,
+					image: imageUrl || null,
 					categoryId: categoryIdToUse,
 					departmentId,
 				},
 			});
 
+			// Если есть изображение, обновляем путь с правильным ID товара
+			if (imageUrl && imageFile) {
+				try {
+					const { uploadFile, validateFile } = await import("@/lib/simpleFileUpload");
+
+					// Загружаем файл с правильным ID товара
+					const uploadResult = await uploadFile(imageFile, {
+						prefix: "product",
+						entityId: newProduct.id,
+					});
+
+					// Обновляем товар с правильным путем к изображению
+					await prisma.product.update({
+						where: { id: newProduct.id },
+						data: { image: uploadResult.url },
+					});
+				} catch (error) {
+					console.error("Ошибка обновления пути изображения:", error);
+				}
+			}
+
 			// Добавляем фильтры если они есть
-			if (data.filterValues && Array.isArray(data.filterValues)) {
-				const filterValueRecords = data.filterValues.flatMap((filter: FilterRequest) =>
+			let parsedFilterValues = null;
+			if (data.filterValues) {
+				try {
+					parsedFilterValues = JSON.parse(data.filterValues);
+				} catch (e) {
+					console.error("Ошибка парсинга filterValues:", e);
+				}
+			}
+
+			if (parsedFilterValues && Array.isArray(parsedFilterValues)) {
+				const filterValueRecords = parsedFilterValues.flatMap((filter: FilterRequest) =>
 					filter.valueIds.map((valueId: number) => ({
 						productId: newProduct.id,
 						filterValueId: valueId,
@@ -299,6 +375,8 @@ export const POST = withPermission(
 				adminId: user.id,
 				message: "Ручное создание товара пользователем из админки.",
 				afterData: fullProductData,
+				// Передаем правильный departmentId товара для логирования
+				departmentId: departmentId,
 			});
 
 			return NextResponse.json({ product: newProduct });

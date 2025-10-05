@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { OrderLog, OrderLogResponse, OrderLogAction } from "@/lib/types";
-import styles from "../styles.module.scss";
+import styles from "../local_components/styles.module.scss";
 
 export default function OrdersLogsPage() {
 	const router = useRouter();

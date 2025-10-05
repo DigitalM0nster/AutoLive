@@ -27,14 +27,14 @@ export const GET = withPermission(
 
 				if (isNumeric) {
 					// Если запрос - число, ищем по ID или телефону
-					where.OR = [{ id: parseInt(searchQuery, 10) }, { phone: { contains: searchQuery } }];
+					where.OR = [{ id: parseInt(searchQuery, 10) }, { phone: { contains: searchQuery, mode: "insensitive" } }];
 				} else {
-					// Иначе ищем по ФИО или телефону
+					// Иначе ищем по ФИО или телефону (нечувствительно к регистру)
 					where.OR = [
-						{ first_name: { contains: searchQuery } },
-						{ last_name: { contains: searchQuery } },
-						{ middle_name: { contains: searchQuery } },
-						{ phone: { contains: searchQuery } },
+						{ first_name: { contains: searchQuery, mode: "insensitive" } },
+						{ last_name: { contains: searchQuery, mode: "insensitive" } },
+						{ middle_name: { contains: searchQuery, mode: "insensitive" } },
+						{ phone: { contains: searchQuery, mode: "insensitive" } },
 					];
 				}
 			}
