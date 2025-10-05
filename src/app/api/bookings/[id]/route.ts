@@ -6,9 +6,10 @@ import { UpdateBookingRequest, BookingResponse } from "@/lib/types";
 const prisma = new PrismaClient();
 
 // GET /api/bookings/[id] - Получить запись по ID
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
 	try {
-		const id = parseInt(params.id);
+		const resolvedParams = await params;
+		const id = parseInt(resolvedParams.id);
 
 		if (isNaN(id)) {
 			return NextResponse.json({ error: "Некорректный ID записи" }, { status: 400 });
@@ -58,9 +59,10 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 }
 
 // PUT /api/bookings/[id] - Обновить запись
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
 	try {
-		const id = parseInt(params.id);
+		const resolvedParams = await params;
+		const id = parseInt(resolvedParams.id);
 
 		if (isNaN(id)) {
 			return NextResponse.json({ error: "Некорректный ID записи" }, { status: 400 });
@@ -168,9 +170,10 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 // DELETE /api/bookings/[id] - Удалить запись
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
 	try {
-		const id = parseInt(params.id);
+		const resolvedParams = await params;
+		const id = parseInt(resolvedParams.id);
 
 		if (isNaN(id)) {
 			return NextResponse.json({ error: "Некорректный ID записи" }, { status: 400 });
