@@ -718,7 +718,7 @@ export default function UserComponent({ userId, isCreating = false }: UserPagePr
 										{userData.orders.map((order) => (
 											<tr key={order.id}>
 												<td>{order.id}</td>
-												<td>{order.title}</td>
+												<td>Заказ #{order.id}</td>
 												<td>{order.status}</td>
 												<td>{formatDate(order.createdAt)}</td>
 											</tr>

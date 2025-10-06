@@ -56,4 +56,8 @@
 }
 .datePickerField.error .dateInput:hover {
   border-color: #d32f2f;
+}
+.datePickerField.error .dateInput .placeholder {
+  color: #f44336;
+  opacity: 0.7;
 }/*# sourceMappingURL=DatePickerField.module.css.map */

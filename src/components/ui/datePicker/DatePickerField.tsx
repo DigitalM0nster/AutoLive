@@ -11,10 +11,14 @@ interface DatePickerFieldProps {
 	placeholder?: string;
 	className?: string;
 	disabled?: boolean;
+	onFocus?: () => void;
 }
 
-export default function DatePickerField({ label, value, onChange, placeholder = "Выберите дату", className = "", disabled = false }: DatePickerFieldProps) {
+export default function DatePickerField({ label, value, onChange, placeholder = "Выберите дату", className = "", disabled = false, onFocus }: DatePickerFieldProps) {
 	const [isOpen, setIsOpen] = useState(false);
+
+	// Отладочная информация для проверки класса error
+	console.log(`🗓️ DatePickerField "${label}": className="${className}", hasError=${className.includes("error")}`);
 
 	// Функция для форматирования даты для отображения
 	const formatDisplayDate = (dateString: string): string => {
@@ -37,6 +41,9 @@ export default function DatePickerField({ label, value, onChange, placeholder = 
 	const handleTogglePicker = () => {
 		if (!disabled) {
 			setIsOpen(!isOpen);
+			if (onFocus) {
+				onFocus();
+			}
 		}
 	};
 

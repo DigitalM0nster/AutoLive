@@ -142,8 +142,7 @@ model ServiceKit {
 
 model Order {
     id           Int         @id @default(autoincrement()) @map("id")
-    title        String      @map("title") @db.VarChar(255)
-    description  String?     @map("description") @db.Text
+    comments     String[]    @map("comments")
     status       OrderStatus @default(created) @map("status")
     createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamp(0)
     updatedAt    DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)

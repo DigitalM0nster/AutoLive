@@ -8,6 +8,7 @@ import { Order, User, ProductListItem, CreateOrderRequest, OrderStatus } from "@
 import { showSuccessToast, showErrorToast } from "@/components/ui/toast/ToastProvider";
 import Loading from "@/components/ui/loading/Loading";
 import DatePickerField from "@/components/ui/datePicker/DatePickerField";
+import datePickerFieldStyles from "@/components/ui/datePicker/DatePickerField.module.scss";
 
 type OrderPageProps = {
 	orderId?: string | number; // Если не указан, значит создаем новый заказ
@@ -444,13 +445,36 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 		return `+7(${formattedNumber.slice(1, 4)})${formattedNumber.slice(4, 7)}-${formattedNumber.slice(7, 9)}-${formattedNumber.slice(9, 11)}`;
 	};
 
+	// Функция для очистки ошибок поля
+	const clearFieldError = (fieldName: string) => {
+		setFieldErrors((prev) => {
+			const newErrors = new Set(prev);
+			newErrors.delete(fieldName);
+			return newErrors;
+		});
+	};
+
 	// Функция валидации полей для статуса
 	const validateStatusFields = (status: OrderStatus): { isValid: boolean; missingFields: string[]; errorFields: string[] } => {
 		const missingFields: string[] = [];
 		const errorFields: string[] = [];
 
-		// 1. Новый - контактный телефон и состав заказа
-		if (status === "created" || status === "confirmed" || status === "booked" || status === "ready" || status === "paid" || status === "completed" || status === "returned") {
+		console.log("🔍 Валидация для статуса:", status);
+		console.log("📊 Текущие данные:", {
+			contactPhone: formData.contactPhone,
+			departmentId: formData.departmentId,
+			confirmationDate: formData.confirmationDate,
+			selectedClient: selectedClient ? `${selectedClient.first_name} ${selectedClient.last_name}` : null,
+			selectedManager: selectedManager ? `${selectedManager.first_name} ${selectedManager.last_name}` : null,
+			orderItemsCount: orderItems.length,
+		});
+
+		// Проверяем ВСЕ статусы от "created" до текущего статуса
+		const statusOrder = ["created", "confirmed", "booked", "ready", "paid", "completed", "returned"];
+		const currentStatusIndex = statusOrder.indexOf(status);
+
+		// 1. Новый - контактный телефон и состав заказа (всегда проверяем)
+		if (currentStatusIndex >= 0) {
 			if (!formData.contactPhone.trim()) {
 				missingFields.push("Контактный телефон");
 				errorFields.push("contactPhone");
@@ -461,8 +485,8 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 			}
 		}
 
-		// 2. Подтвержденный - клиент, ответственный, отдел, дата согласования
-		if (status === "confirmed" || status === "booked" || status === "ready" || status === "paid" || status === "completed" || status === "returned") {
+		// 2. Подтвержденный - клиент, ответственный, отдел, дата согласования, дата поставки поставщиком
+		if (currentStatusIndex >= 1) {
 			if (!selectedClient) {
 				missingFields.push("Клиент");
 				errorFields.push("clientSearch");
@@ -487,10 +511,16 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 				missingFields.push("Дата согласования");
 				errorFields.push("confirmationDate");
 			}
+			// Проверяем, что у всех товаров заполнена дата поставки поставщиком
+			const itemsWithoutSupplierDate = orderItems.filter((item) => !item.supplierDeliveryDate);
+			if (itemsWithoutSupplierDate.length > 0) {
+				missingFields.push("Дата поставки поставщиком");
+				errorFields.push("supplierDeliveryDate");
+			}
 		}
 
 		// 3. Забронирован - забронирован до
-		if (status === "booked" || status === "ready" || status === "paid" || status === "completed" || status === "returned") {
+		if (currentStatusIndex >= 2) {
 			if (!formData.bookedUntil) {
 				missingFields.push("Забронирован до");
 				errorFields.push("bookedUntil");
@@ -498,7 +528,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 		}
 
 		// 4. Готов к выдаче - отложен до, сумма предоплаты, дата внесения предоплаты
-		if (status === "ready" || status === "paid" || status === "completed" || status === "returned") {
+		if (currentStatusIndex >= 3) {
 			if (!formData.readyUntil) {
 				missingFields.push("Отложен до");
 				errorFields.push("readyUntil");
@@ -514,7 +544,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 		}
 
 		// 5. Оплачен - дата внесения оплаты, сумма заказа
-		if (status === "paid" || status === "completed" || status === "returned") {
+		if (currentStatusIndex >= 4) {
 			if (!formData.paymentDate) {
 				missingFields.push("Дата внесения оплаты");
 				errorFields.push("paymentDate");
@@ -526,7 +556,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 		}
 
 		// 6. Выполнен - дата выполнения
-		if (status === "completed" || status === "returned") {
+		if (currentStatusIndex >= 5) {
 			if (!formData.completionDate) {
 				missingFields.push("Дата выполнения");
 				errorFields.push("completionDate");
@@ -534,7 +564,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 		}
 
 		// 7. Возврат - все поля возврата
-		if (status === "returned") {
+		if (currentStatusIndex >= 6) {
 			if (!formData.returnReason) {
 				missingFields.push("Причина возврата позиции");
 				errorFields.push("returnReason");
@@ -557,6 +587,10 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 			}
 		}
 
+		console.log("❌ Найдены ошибки:", missingFields);
+		console.log("🎯 Поля с ошибками:", errorFields);
+		console.log("✅ Валидность:", missingFields.length === 0);
+
 		return {
 			isValid: missingFields.length === 0,
 			missingFields,
@@ -572,7 +606,9 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 
 			// Валидируем поля для текущего статуса
 			const validation = validateStatusFields(currentStatus);
+			console.log("💾 Результат валидации:", validation);
 			if (!validation.isValid) {
+				console.log("🚫 Устанавливаем ошибки полей:", validation.errorFields);
 				setFieldErrors(new Set(validation.errorFields));
 				showErrorToast(`Необходимо заполнить: ${validation.missingFields.join(", ")}`);
 				return;
@@ -710,7 +746,9 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 										onChange={(e) => {
 											const formatted = formatPhoneNumber(e.target.value);
 											setFormData((prev) => ({ ...prev, contactPhone: formatted }));
+											clearFieldError("contactPhone");
 										}}
+										onFocus={() => clearFieldError("contactPhone")}
 										placeholder="+7(995)123-45-67"
 										className={fieldErrors.has("contactPhone") ? "error" : ""}
 										disabled={!canEditStatusField("created")}
@@ -727,7 +765,9 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 											onChange={(e) => {
 												setProductSearch(e.target.value);
 												handleProductSearch(e.target.value);
+												clearFieldError("productSearch");
 											}}
+											onFocus={() => clearFieldError("productSearch")}
 											placeholder="Поиск товаров по названию, артикулу или бренду"
 											className={fieldErrors.has("productSearch") ? "error" : ""}
 										/>
@@ -750,13 +790,13 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 									</div>
 								</div>
 
-								{/* Список товаров в заказе */}
+								{/* Список товаров в заказе - только для просмотра */}
 								{orderItems.length > 0 && (
 									<div className={`formField`}>
 										<label>Товары в заказе ({orderItems.length})</label>
-										<div className={`orderItemsList`}>
+										<div className={`orderItemsList readonly`}>
 											{orderItems.map((item, index) => (
-												<div key={index} className={`orderItem borderBlock`}>
+												<div key={index} className={`orderItem borderBlock readonly`}>
 													<div className="itemHeader">
 														<div className="itemInfo">
 															<span className="itemTitle">{item.product_title}</span>
@@ -812,15 +852,6 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 
 														<div className="formRow">
 															<div className="formField">
-																<DatePickerField
-																	label="Дата поставки поставщиком"
-																	value={item.supplierDeliveryDate || ""}
-																	onChange={(date) => updateProductField(item.product_sku, "supplierDeliveryDate", date)}
-																	placeholder="Выберите дату поставки"
-																	disabled={!canEditStatusField("created")}
-																/>
-															</div>
-															<div className="formField">
 																<label>Название автомобиля</label>
 																<input
 																	type="text"
@@ -831,9 +862,6 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 																	disabled={!canEditStatusField("created")}
 																/>
 															</div>
-														</div>
-
-														<div className="formRow">
 															<div className="formField">
 																<label>VIN-код автомобиля</label>
 																<input
@@ -845,6 +873,9 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 																	disabled={!canEditStatusField("created")}
 																/>
 															</div>
+														</div>
+
+														<div className="formRow">
 															<div className="formField">
 																<label>Сумма</label>
 																<input
@@ -890,7 +921,9 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 												onChange={(e) => {
 													setClientSearch(e.target.value);
 													handleClientSearch(e.target.value);
+													clearFieldError("clientSearch");
 												}}
+												onFocus={() => clearFieldError("clientSearch")}
 												placeholder="Поиск клиента по имени или телефону"
 												className={fieldErrors.has("clientSearch") ? "error" : ""}
 												disabled={!canEditStatusField("confirmed")}
@@ -944,7 +977,9 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 												onChange={(e) => {
 													setManagerSearch(e.target.value);
 													handleManagerSearch(e.target.value);
+													clearFieldError("managerSearch");
 												}}
+												onFocus={() => clearFieldError("managerSearch")}
 												placeholder={
 													formData.departmentId
 														? `Поиск менеджера отдела "${departments.find((d) => d.id.toString() === formData.departmentId)?.name || ""}"`
@@ -990,7 +1025,11 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 												id="departmentId"
 												name="departmentId"
 												value={formData.departmentId}
-												onChange={(e) => handleDepartmentChange(e.target.value)}
+												onChange={(e) => {
+													handleDepartmentChange(e.target.value);
+													clearFieldError("departmentId");
+												}}
+												onFocus={() => clearFieldError("departmentId")}
 												className={fieldErrors.has("departmentId") ? "error" : ""}
 												disabled={!canEditStatusField("confirmed")}
 											>
@@ -1017,13 +1056,56 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 										<DatePickerField
 											label="Дата согласования"
 											value={formData.confirmationDate}
-											onChange={(date) => setFormData((prev) => ({ ...prev, confirmationDate: date }))}
+											onChange={(date) => {
+												setFormData((prev) => ({ ...prev, confirmationDate: date }));
+												clearFieldError("confirmationDate");
+											}}
+											onFocus={() => clearFieldError("confirmationDate")}
 											placeholder="Выберите дату согласования"
 											className={fieldErrors.has("confirmationDate") ? "error" : ""}
 											disabled={!canEditStatusField("confirmed")}
 										/>
 									</div>
 								</div>
+
+								{/* Блок редактирования товаров для статуса Подтвержденный */}
+								{orderItems.length > 0 && (
+									<div className={`formField`}>
+										<label>Редактирование товаров</label>
+										<div className={`orderItemsList editable`}>
+											{orderItems.map((item, index) => (
+												<div key={index} className={`orderItem borderBlock editable`}>
+													<div className="itemHeader">
+														<div className="itemInfo">
+															<span className="itemTitle">{item.product_title}</span>
+															<span className="itemSku">Артикул: {item.product_sku}</span>
+															<span className="itemBrand">Бренд: {item.product_brand}</span>
+														</div>
+													</div>
+
+													<div className="itemFields">
+														<div className="formRow">
+															<div className="formField">
+																<DatePickerField
+																	label="Дата поставки поставщиком"
+																	value={item.supplierDeliveryDate || ""}
+																	onChange={(date) => {
+																		updateProductField(item.product_sku, "supplierDeliveryDate", date);
+																		clearFieldError("supplierDeliveryDate");
+																	}}
+																	onFocus={() => clearFieldError("supplierDeliveryDate")}
+																	placeholder="Выберите дату поставки"
+																	className={fieldErrors.has("supplierDeliveryDate") ? "error" : ""}
+																	disabled={!canEditStatusField("confirmed")}
+																/>
+															</div>
+														</div>
+													</div>
+												</div>
+											))}
+										</div>
+									</div>
+								)}
 							</div>
 						</div>
 
@@ -1039,7 +1121,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 										value={formData.bookedUntil}
 										onChange={(date) => setFormData((prev) => ({ ...prev, bookedUntil: date }))}
 										placeholder="Выберите дату бронирования"
-										className={fieldErrors.has("bookedUntil") ? "error" : ""}
+										className={fieldErrors.has("bookedUntil") ? `${datePickerFieldStyles.error}` : ""}
 										disabled={!canEditStatusField("booked")}
 									/>
 								</div>
@@ -1059,7 +1141,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 											value={formData.readyUntil}
 											onChange={(date) => setFormData((prev) => ({ ...prev, readyUntil: date }))}
 											placeholder="Выберите дату отложения"
-											className={fieldErrors.has("readyUntil") ? "error" : ""}
+											className={fieldErrors.has("readyUntil") ? `${datePickerFieldStyles.error}` : ""}
 											disabled={!canEditStatusField("ready")}
 										/>
 									</div>
@@ -1082,7 +1164,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 										value={formData.prepaymentDate}
 										onChange={(date) => setFormData((prev) => ({ ...prev, prepaymentDate: date }))}
 										placeholder="Выберите дату предоплаты"
-										className={fieldErrors.has("prepaymentDate") ? "error" : ""}
+										className={fieldErrors.has("prepaymentDate") ? `${datePickerFieldStyles.error}` : ""}
 										disabled={!canEditStatusField("ready")}
 									/>
 								</div>
@@ -1107,7 +1189,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 											value={formData.paymentDate}
 											onChange={(date) => setFormData((prev) => ({ ...prev, paymentDate: date }))}
 											placeholder="Выберите дату оплаты"
-											className={fieldErrors.has("paymentDate") ? "error" : ""}
+											className={fieldErrors.has("paymentDate") ? `${datePickerFieldStyles.error}` : ""}
 											disabled={!canEditStatusField("paid")}
 										/>
 									</div>
@@ -1145,7 +1227,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 										value={formData.completionDate}
 										onChange={(date) => setFormData((prev) => ({ ...prev, completionDate: date }))}
 										placeholder="Выберите дату выполнения"
-										className={fieldErrors.has("completionDate") ? "error" : ""}
+										className={fieldErrors.has("completionDate") ? `${datePickerFieldStyles.error}` : ""}
 										disabled={!canEditStatusField("completed")}
 									/>
 								</div>
@@ -1175,7 +1257,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 											value={formData.returnDate}
 											onChange={(date) => setFormData((prev) => ({ ...prev, returnDate: date }))}
 											placeholder="Выберите дату возврата"
-											className={fieldErrors.has("returnDate") ? "error" : ""}
+											className={fieldErrors.has("returnDate") ? `${datePickerFieldStyles.error}` : ""}
 											disabled={!canEditStatusField("returned")}
 										/>
 									</div>
@@ -1199,7 +1281,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 											value={formData.returnPaymentDate}
 											onChange={(date) => setFormData((prev) => ({ ...prev, returnPaymentDate: date }))}
 											placeholder="Выберите дату возврата средств"
-											className={fieldErrors.has("returnPaymentDate") ? "error" : ""}
+											className={fieldErrors.has("returnPaymentDate") ? `${datePickerFieldStyles.error}` : ""}
 											disabled={!canEditStatusField("returned")}
 										/>
 									</div>

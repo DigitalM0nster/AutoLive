@@ -35,11 +35,11 @@ export async function getUserFromRequest(req: NextRequest, allowedRoles: Role[] 
 }
 
 export function withPermission(
-	handler: (req: NextRequest, context: { user: any; scope: "all" | "department" | "own" }) => Promise<NextResponse>,
+	handler: (req: NextRequest, context: { user: any; scope: "all" | "department" | "own"; params: any }) => Promise<NextResponse>,
 	requiredPermission: Permission,
 	allowedRoles: Role[] = []
 ) {
-	return async (req: NextRequest): Promise<NextResponse> => {
+	return async (req: NextRequest, context: { params: any }): Promise<NextResponse> => {
 		const { user, error, status } = await getUserFromRequest(req, allowedRoles);
 
 		if (!user) {
@@ -52,7 +52,7 @@ export function withPermission(
 			return NextResponse.json({ error: "Недостаточно прав" }, { status: 403 });
 		}
 
-		// Всё ок — вызываем основной обработчик и передаём scope
-		return handler(req, { user, scope: permission.scope });
+		// Всё ок — вызываем основной обработчик и передаём scope и параметры
+		return handler(req, { user, scope: permission.scope, params: context.params });
 	};
 }

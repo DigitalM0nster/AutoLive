@@ -432,8 +432,7 @@ export type OrderStatus = "created" | "confirmed" | "booked" | "ready" | "paid" 
 
 export type Order = {
 	id: number;
-	title: string;
-	description?: string | null;
+	comments: string[];
 	status: OrderStatus;
 	createdAt: string | Date;
 	updatedAt: string | Date;

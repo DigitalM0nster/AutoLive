@@ -4,9 +4,9 @@ import { withPermission } from "@/middleware/permissionMiddleware";
 import { OrderResponse, UpdateOrderRequest } from "@/lib/types";
 
 // Получение конкретного заказа
-async function getOrderHandler(req: NextRequest, { user, scope }: { user: any; scope: "all" | "department" | "own" }) {
+async function getOrderHandler(req: NextRequest, { user, scope, params }: { user: any; scope: "all" | "department" | "own"; params: { orderId: string } }) {
 	try {
-		const orderId = parseInt(req.url.split("/").slice(-2, -1)[0]); // Извлекаем orderId из URL
+		const orderId = parseInt(params.orderId); // Извлекаем orderId из параметров
 
 		if (isNaN(orderId)) {
 			return NextResponse.json({ error: "Invalid order ID" }, { status: 400 });
@@ -123,9 +123,9 @@ async function getOrderHandler(req: NextRequest, { user, scope }: { user: any; s
 }
 
 // Обновление заказа
-async function updateOrderHandler(req: NextRequest, { user, scope }: { user: any; scope: "all" | "department" | "own" }) {
+async function updateOrderHandler(req: NextRequest, { user, scope, params }: { user: any; scope: "all" | "department" | "own"; params: { orderId: string } }) {
 	try {
-		const orderId = parseInt(req.url.split("/").slice(-2, -1)[0]); // Извлекаем orderId из URL
+		const orderId = parseInt(params.orderId); // Извлекаем orderId из параметров
 		const body: UpdateOrderRequest = await req.json();
 
 		if (isNaN(orderId)) {
@@ -184,8 +184,7 @@ async function updateOrderHandler(req: NextRequest, { user, scope }: { user: any
 			// Подготавливаем данные для обновления
 			const updateData: any = {};
 
-			if (body.title !== undefined) updateData.title = body.title;
-			if (body.description !== undefined) updateData.description = body.description;
+			if (body.comments !== undefined) updateData.comments = body.comments;
 			if (body.status !== undefined) updateData.status = body.status;
 
 			// Логика назначения менеджера
@@ -294,7 +293,6 @@ async function updateOrderHandler(req: NextRequest, { user, scope }: { user: any
 					},
 					orderSnapshot: {
 						id: order.id,
-						title: order.title,
 						status: order.status,
 						managerId: order.managerId,
 						departmentId: order.departmentId,
@@ -318,5 +316,10 @@ async function updateOrderHandler(req: NextRequest, { user, scope }: { user: any
 }
 
 // Экспорт с проверкой разрешений
-export const GET = withPermission(getOrderHandler, "view_orders", ["superadmin", "admin", "manager"]);
-export const PUT = withPermission(updateOrderHandler, "manage_orders", ["superadmin", "admin", "manager"]);
+export async function GET(req: NextRequest, { params }: { params: { orderId: string } }) {
+	return withPermission(getOrderHandler, "view_orders", ["superadmin", "admin", "manager"])(req, { params });
+}
+
+export async function PUT(req: NextRequest, { params }: { params: { orderId: string } }) {
+	return withPermission(updateOrderHandler, "manage_orders", ["superadmin", "admin", "manager"])(req, { params });
+}

@@ -78,7 +78,6 @@ async function getUserHandler(req: NextRequest, context: { user: any; scope: "al
 				: null,
 			orders: userData.managerOrders.map((order) => ({
 				id: order.id,
-				title: order.title,
 				status: order.status,
 				createdAt: order.createdAt,
 			})),

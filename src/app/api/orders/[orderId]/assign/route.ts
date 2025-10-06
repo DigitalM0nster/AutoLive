@@ -196,7 +196,6 @@ async function assignOrderHandler(req: NextRequest, { user, scope }: { user: any
 					},
 					orderSnapshot: {
 						id: updatedOrder.id,
-						title: updatedOrder.title,
 						status: updatedOrder.status,
 						managerId: updatedOrder.managerId,
 						departmentId: updatedOrder.departmentId,
@@ -379,7 +378,6 @@ async function unassignOrderHandler(req: NextRequest, { user, scope }: { user: a
 					},
 					orderSnapshot: {
 						id: updatedOrder.id,
-						title: updatedOrder.title,
 						status: updatedOrder.status,
 						managerId: updatedOrder.managerId,
 						departmentId: updatedOrder.departmentId,

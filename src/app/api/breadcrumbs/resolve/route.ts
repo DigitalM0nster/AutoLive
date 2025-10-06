@@ -50,6 +50,13 @@ export async function GET(request: Request) {
 						labels[seg] = `ID: ${seg} | ${user.phone}`;
 					}
 				}
+
+				if (prev === "orders") {
+					const order = await prisma.order.findUnique({ where: { id: Number(seg) } });
+					if (order) {
+						labels[seg] = `Заказ #${seg}`;
+					}
+				}
 			}
 		}
 

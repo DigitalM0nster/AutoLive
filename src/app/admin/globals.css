@@ -15,6 +15,7 @@
   --grey2-color: rgba(215, 215, 215, 1);
   --blue-color: rgba(59, 130, 246, 1);
   --dark-blue-color: rgba(25, 65, 143, 1);
+  --light-red-color: rgba(239, 68, 68, 0.1);
   --red-color: rgba(239, 68, 68, 1);
   --dark-red-color: rgba(151, 23, 44, 1);
   --green-color: rgba(16, 185, 129, 1);
@@ -2473,6 +2474,28 @@ span.oldName:after {
 .orderComponent .formFields .formField select::placeholder {
   color: #9ca3af;
 }
+.productComponent .formFields .formField input.error,
+.productComponent .formFields .formField textarea.error,
+.productComponent .formFields .formField select.error,
+.orderComponent .formFields .formField input.error,
+.orderComponent .formFields .formField textarea.error,
+.orderComponent .formFields .formField select.error {
+  border-color: var(--red-color);
+  background: var(--light-red-color);
+}
+.productComponent .formFields .formField input.error::-moz-placeholder, .productComponent .formFields .formField textarea.error::-moz-placeholder, .productComponent .formFields .formField select.error::-moz-placeholder, .orderComponent .formFields .formField input.error::-moz-placeholder, .orderComponent .formFields .formField textarea.error::-moz-placeholder, .orderComponent .formFields .formField select.error::-moz-placeholder {
+  color: var(--red-color);
+  opacity: 0.5;
+}
+.productComponent .formFields .formField input.error::placeholder,
+.productComponent .formFields .formField textarea.error::placeholder,
+.productComponent .formFields .formField select.error::placeholder,
+.orderComponent .formFields .formField input.error::placeholder,
+.orderComponent .formFields .formField textarea.error::placeholder,
+.orderComponent .formFields .formField select.error::placeholder {
+  color: var(--red-color);
+  opacity: 0.5;
+}
 .productComponent .formFields .formField select,
 .orderComponent .formFields .formField select {
   width: 100%;
@@ -3144,4 +3167,28 @@ span.oldName:after {
   :root {
     --maxContentWidth: 90vw;
   }
+}
+.orderItemsList.readonly .orderItem {
+  opacity: 0.7;
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+}
+.orderItemsList.readonly .orderItem .itemFields {
+  display: none;
+}
+.orderItemsList.readonly .orderItem .removeButton {
+  display: none;
+}
+.orderItemsList.readonly .orderItem .quantityControls {
+  display: none;
+}
+.orderItemsList.editable .orderItem {
+  background-color: #fff3cd;
+  border: 1px solid #ffc107;
+}
+.orderItemsList.editable .orderItem .itemHeader .removeButton {
+  display: none;
+}
+.orderItemsList.editable .orderItem .quantityControls {
+  display: none;
 }/*# sourceMappingURL=globals.css.map */

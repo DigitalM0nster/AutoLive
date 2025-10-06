@@ -236,8 +236,7 @@ async function createOrderHandler(req: NextRequest, { user, scope }: { user: any
 			// Создаем заказ
 			const newOrder = await tx.order.create({
 				data: {
-					title: `Заказ #${Date.now()}`, // Временное название для совместимости
-					description: null,
+					comments: [],
 					status: "created",
 					clientId: body.clientId || null,
 					managerId: body.managerId || null,
@@ -325,7 +324,6 @@ async function createOrderHandler(req: NextRequest, { user, scope }: { user: any
 					},
 					orderSnapshot: {
 						id: newOrder.id,
-						title: newOrder.title,
 						status: newOrder.status,
 						managerId: newOrder.managerId,
 						departmentId: newOrder.departmentId,

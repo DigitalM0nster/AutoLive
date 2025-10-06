@@ -95,7 +95,9 @@ export const GET = withPermission(
 					managerOrders: {
 						select: {
 							id: true,
-							title: true,
+							comments: true,
+							status: true,
+							createdAt: true,
 						},
 					},
 					department: true,
@@ -123,7 +125,9 @@ export const GET = withPermission(
 					: null,
 				orders: u.managerOrders.map((o) => ({
 					id: o.id,
-					title: o.title,
+					comments: o.comments,
+					status: o.status,
+					createdAt: o.createdAt,
 				})),
 			}));
 

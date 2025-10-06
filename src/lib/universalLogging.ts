@@ -50,28 +50,8 @@ async function getFullUserData(userId: number) {
 						name: true,
 					},
 				},
-				clientOrders: {
-					select: {
-						id: true,
-						title: true,
-						description: true,
-						status: true,
-						createdAt: true,
-						managerId: true,
-						departmentId: true,
-					},
-				},
-				managerOrders: {
-					select: {
-						id: true,
-						title: true,
-						description: true,
-						status: true,
-						createdAt: true,
-						clientId: true,
-						departmentId: true,
-					},
-				},
+				clientOrders: true,
+				managerOrders: true,
 			},
 		});
 
@@ -155,7 +135,7 @@ export async function getFullDepartmentData(departmentId: number) {
 				orders: {
 					select: {
 						id: true,
-						title: true,
+						comments: true,
 						status: true,
 						createdAt: true,
 					},
@@ -322,8 +302,7 @@ async function getFullOrderData(orderId: number) {
 		const fullOrderData = {
 			// Основная информация
 			id: order.id,
-			title: order.title,
-			description: order.description,
+			comments: order.comments,
 			status: order.status,
 			createdAt: order.createdAt,
 			clientId: order.clientId,
@@ -338,7 +317,7 @@ async function getFullOrderData(orderId: number) {
 			// Статистика
 			statistics: {
 				has_manager: !!order.managerId,
-				has_description: !!order.description,
+				has_comments: order.comments.length > 0,
 				days_since_creation: Math.floor((Date.now() - new Date(order.createdAt).getTime()) / (1000 * 60 * 60 * 24)),
 			},
 		};

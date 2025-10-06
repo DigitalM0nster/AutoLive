@@ -465,13 +465,9 @@ export default function AllOrdersTable() {
 		return (
 			<div className="fullInfoBlock">
 				<div className={`clickInfoBlock ${activeBlocks[actionsKey] ? "active" : ""}`} onClick={() => toggleActiveBlock(actionsKey)}>
-					{order.title}
+					Заказ #{order.id}
 				</div>
 				<div className={`openingBlock ${activeBlocks[actionsKey] ? "active" : ""}`}>
-					<div className="infoField">
-						<span className="title">Название:</span>
-						<span className="value">{order.title}</span>
-					</div>
 					<div className="infoField">
 						<span className="title">Статус:</span>
 						<span className="value">

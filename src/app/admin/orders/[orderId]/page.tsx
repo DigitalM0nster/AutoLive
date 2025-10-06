@@ -46,7 +46,7 @@ export default async function OrderDetailPage({ params }: PageParams) {
 			<div className={`tableContainer`}>
 				<div className={`tabsContainer`}>
 					<Link href={`/admin/orders/${orderId}`} className={`tabButton active`}>
-						{user.role === "manager" ? "Просмотр заказа" : "Управление заказой"}
+						{user.role === "manager" ? "Просмотр заказа" : "Управление заказом"}
 					</Link>
 					<Link href={`/admin/orders/${orderId}/logs`} className={`tabButton`}>
 						История изменений заказа
