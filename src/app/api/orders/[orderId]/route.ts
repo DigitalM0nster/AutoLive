@@ -316,10 +316,12 @@ async function updateOrderHandler(req: NextRequest, { user, scope, params }: { u
 }
 
 // Экспорт с проверкой разрешений
-export async function GET(req: NextRequest, { params }: { params: { orderId: string } }) {
-	return withPermission(getOrderHandler, "view_orders", ["superadmin", "admin", "manager"])(req, { params });
+export async function GET(req: NextRequest, { params }: { params: Promise<{ orderId: string }> }) {
+	const resolvedParams = await params;
+	return withPermission(getOrderHandler, "view_orders", ["superadmin", "admin", "manager"])(req, { params: resolvedParams });
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { orderId: string } }) {
-	return withPermission(updateOrderHandler, "manage_orders", ["superadmin", "admin", "manager"])(req, { params });
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ orderId: string }> }) {
+	const resolvedParams = await params;
+	return withPermission(updateOrderHandler, "manage_orders", ["superadmin", "admin", "manager"])(req, { params: resolvedParams });
 }

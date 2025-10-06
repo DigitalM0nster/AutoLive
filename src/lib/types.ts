@@ -33,7 +33,7 @@ export type User = {
 	status: string;
 	orders: {
 		id: number;
-		title: string;
+		comments: string[];
 		status: string;
 		createdAt: string;
 	}[];
@@ -513,8 +513,7 @@ export type CreateOrderRequest = {
 
 // Тип для обновления заказа
 export type UpdateOrderRequest = {
-	title?: string;
-	description?: string;
+	comments?: string[];
 	status?: OrderStatus;
 	managerId?: number | null; // Назначение/снятие менеджера
 	departmentId?: number | null;
