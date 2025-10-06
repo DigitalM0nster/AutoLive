@@ -46,7 +46,7 @@ async function getUserHandler(req: NextRequest, context: { user: any; scope: "al
 				managerOrders: {
 					select: {
 						id: true,
-						title: true,
+						comments: true,
 						status: true,
 						createdAt: true,
 					},
@@ -282,7 +282,7 @@ async function updateUserHandler(req: NextRequest, context: { user: any; scope: 
 					orders: {
 						select: {
 							id: true,
-							title: true,
+							comments: true,
 							status: true,
 							createdAt: true,
 						},
@@ -360,7 +360,7 @@ async function updateUserHandler(req: NextRequest, context: { user: any; scope: 
 					orders: {
 						select: {
 							id: true,
-							title: true,
+							comments: true,
 							status: true,
 							createdAt: true,
 						},
@@ -445,7 +445,7 @@ async function updateUserHandler(req: NextRequest, context: { user: any; scope: 
 						orders: {
 							select: {
 								id: true,
-								title: true,
+								comments: true,
 								status: true,
 								createdAt: true,
 							},

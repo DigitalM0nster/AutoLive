@@ -52,7 +52,7 @@ export const GET = withPermission(
 					orders: {
 						select: {
 							id: true,
-							title: true,
+							comments: true,
 							status: true,
 							createdAt: true,
 						},
@@ -422,7 +422,7 @@ export const PATCH = withPermission(
 					orders: {
 						select: {
 							id: true,
-							title: true,
+							comments: true,
 							status: true,
 							createdAt: true,
 						},
