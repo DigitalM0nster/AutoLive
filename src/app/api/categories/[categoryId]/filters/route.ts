@@ -46,6 +46,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ categor
 			id: filter.id,
 			title: filter.title,
 			type: filter.type,
+			unit: filter.unit, // Добавляем единицу измерения
 			values: filter.values.map((value) => ({
 				id: value.id,
 				value: value.value,

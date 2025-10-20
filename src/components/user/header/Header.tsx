@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { useUiStore } from "@/store/uiStore";
@@ -12,11 +12,11 @@ import OrderPopup from "@/components/user/orderPopup/OrderPopup";
 
 export default function Header() {
 	const { isLogined, user, initAuth, logout } = useAuthStore();
-	const { activateLoginPopup } = useUiStore();
+	const { activateLoginPopup, setHeaderHeight } = useUiStore();
 	const router = useRouter();
 
 	const [activeBurger, setActiveBurger] = useState(false);
-
+	const headerRef = useRef<HTMLDivElement>(null);
 	const getDisplayName = () => {
 		if (!user) return "Загрузка...";
 
@@ -45,12 +45,15 @@ export default function Header() {
 	// Авторизация при загрузке
 	useEffect(() => {
 		initAuth();
+		setTimeout(() => {
+			setHeaderHeight(headerRef.current?.clientHeight || 100);
+		}, 100);
 	}, [initAuth]);
 
 	return (
 		<>
 			<div className={`${styles.background} ${activeBurger ? styles.active : ""}`} onClick={() => setActiveBurger(false)} />
-			<div className={`${styles.header} ${activeBurger ? styles.active : ""}`}>
+			<div className={`${styles.header} ${activeBurger ? styles.active : ""}`} ref={headerRef}>
 				<div className={styles.headerContent}>
 					<div className={styles.leftBlock}>
 						<div className={styles.logo} onClick={() => router.push("/")}>

@@ -164,6 +164,23 @@
   width: -moz-fit-content;
   width: fit-content;
 }
+.filtersList .filterCard .filterUnit .inputBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.filtersList .filterCard .filterUnit .filterUnitInput {
+  width: calc(100% - 26px);
+  padding: 8px 12px;
+  border: 1px solid var(--grey-color);
+  border-radius: 6px;
+  font-size: 14px;
+  background: #f8f9fa;
+}
+.filtersList .filterCard .filterUnit .filterUnitInput:focus {
+  border-color: var(--blue-color);
+  background: white;
+}
 .filtersList .filterCard .inputBlock {
   display: flex;
   flex-direction: column;
@@ -253,4 +270,24 @@
 }
 .filtersList .filterCard .valuesList .addValueButton:hover {
   border: 1px dashed var(--blue-color);
+}
+.filtersList .filterCard .valuesList .rangeInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.filtersList .filterCard .valuesList .rangeInfo .rangeDescription {
+  color: #495057;
+  margin: 0;
+}
+.filtersList .filterCard .valuesList .rangeInfo .rangeExample {
+  color: #6c757d;
+  font-style: italic;
+  margin: 0;
 }/*# sourceMappingURL=styles.module.css.map */

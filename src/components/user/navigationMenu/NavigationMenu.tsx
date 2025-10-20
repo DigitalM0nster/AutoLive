@@ -18,10 +18,10 @@ export default function NavigationMenu({ productId }: NavigationMenuProps) {
 
 	const pages: Record<string, string> = {
 		"/promotions": "Акции",
-		"/service-materials": "Материалы для ТО",
+		"/categories": "Материалы для ТО",
 		"/service-kits": "Комплекты ТО",
 		"/booking": "Запись на ТО",
-		"/catalog": "Запчасти",
+		"/products": "Запчасти",
 	};
 
 	// 🔄 Обновлённый fetch категорий
@@ -32,13 +32,13 @@ export default function NavigationMenu({ productId }: NavigationMenuProps) {
 			.catch(() => setCategories([]));
 	}, []);
 
-	// 🔄 Обновлённый fetch продукта
+	// Загружаем данные о продукте, если передан productId
 	useEffect(() => {
 		if (productId) {
-			fetch(`/api/products/${productId}`)
+			fetch(`/api/products/${productId}/public`)
 				.then((res) => res.json())
-				.then(setProduct)
-				.catch(() => setProduct(null));
+				.then((data) => setProduct(data.product))
+				.catch((err) => console.error("Ошибка загрузки продукта:", err));
 		}
 	}, [productId]);
 
@@ -50,19 +50,68 @@ export default function NavigationMenu({ productId }: NavigationMenuProps) {
 	const breadcrumbs = useMemo(() => {
 		const segments = pathname.split("/").filter(Boolean);
 
+		// Специальная логика для прямого пути к продукту /products/[productId]
+		if (segments[0] === "products" && segments.length === 2) {
+			const productId = segments[1];
+
+			// Если данные о продукте еще не загружены, показываем загрузку
+			if (/^\d+$/.test(productId) && !product) {
+				return [{ name: "Загрузка...", path: `/products/${productId}` }];
+			}
+
+			if (/^\d+$/.test(productId) && product?.title) {
+				const breadcrumbs = [];
+
+				// Добавляем "Материалы для ТО", если есть категория
+				if (product.categoryId) {
+					breadcrumbs.push({
+						name: "Материалы для ТО",
+						path: "/categories",
+					});
+
+					const categoryTitle = getCategoryTitle(product.categoryId);
+					if (categoryTitle) {
+						breadcrumbs.push({
+							name: categoryTitle,
+							path: `/categories/${product.categoryId}`,
+						});
+					}
+				}
+
+				// Добавляем товар
+				breadcrumbs.push({
+					name: product.title,
+					path: `/products/${productId}`,
+				});
+
+				return breadcrumbs;
+			}
+
+			// Если это прямой путь к продукту, но данные не загружены, возвращаем пустой массив
+			return [];
+		}
+
+		// Обычная логика для остальных путей
 		return segments
 			.map((segment, index) => {
 				const fullPath = "/" + segments.slice(0, index + 1).join("/");
 
 				let name: string = pages[fullPath] ?? decodeURIComponent(segment);
 
-				if (segments[0] === "service-materials" || segments[0] === "catalog") {
-					if (index === 1) {
+				// Логика для категорий /categories/[categoryId]
+				if (segments[0] === "categories" && index === 1) {
+					// Проверяем, является ли сегмент ID категории (число)
+					if (/^\d+$/.test(segment)) {
 						const categoryTitle = getCategoryTitle(segment);
 						if (!categoryTitle) return null;
 						name = categoryTitle;
 					}
-					if (index === 2) {
+				}
+
+				// Логика для продуктов /products/[productId] - только если это НЕ прямой путь
+				if (segments[0] === "products" && index === 1 && segments.length > 2) {
+					// Проверяем, является ли сегмент ID продукта (число)
+					if (/^\d+$/.test(segment)) {
 						if (!product?.title) return null;
 						name = product.title;
 					}
@@ -100,11 +149,23 @@ export default function NavigationMenu({ productId }: NavigationMenuProps) {
 
 			<div className={styles.navLine}>
 				<div className={styles.pages}>
-					{Object.entries(pages).map(([path, name]) => (
-						<div key={path} className={`button ${styles.pageButton} ${pathname.startsWith(path) ? styles.active : ""}`} onClick={() => router.push(path)}>
-							{name}
-						</div>
-					))}
+					{Object.entries(pages).map(([path, name]) => {
+						// Специальная логика для продуктов с категорией
+						let isActive = pathname.startsWith(path);
+
+						// Если это страница продукта и у продукта есть категория, то активным должно быть "Материалы для ТО"
+						if (pathname.startsWith("/products/") && product?.categoryId && path === "/categories") {
+							isActive = true;
+						} else if (pathname.startsWith("/products/") && product?.categoryId && path === "/products") {
+							isActive = false;
+						}
+
+						return (
+							<div key={path} className={`button ${styles.pageButton} ${isActive ? styles.active : ""}`} onClick={() => router.push(path)}>
+								{name}
+							</div>
+						);
+					})}
 				</div>
 			</div>
 		</div>

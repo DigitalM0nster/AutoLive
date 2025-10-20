@@ -1,0 +1,209 @@
+.filterPanel {
+  position: sticky;
+  top: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 50px;
+  width: 240px;
+  min-width: 240px;
+  height: -moz-fit-content;
+  height: fit-content;
+  min-height: 35vh;
+  background: #f8f8f8;
+  padding: 20px;
+  border-radius: 10px;
+}
+
+.filterContent {
+  flex-direction: column;
+  gap: 20px;
+}
+
+.filterBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.filterName {
+  font-weight: bold;
+}
+
+.brandSelect {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 14px;
+  outline: none;
+  background: white;
+  cursor: pointer;
+}
+.brandSelect:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.priceInputWrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.priceInput {
+  width: 80px;
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  text-align: center;
+  font-size: 14px;
+  outline: none;
+}
+
+.sliderWrapper {
+  position: relative;
+  width: 100%;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.priceInputs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.priceLabels {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  transform: translateY(-15px);
+}
+
+.slider {
+  position: absolute;
+  width: 100%;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+       appearance: none;
+  height: 5px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.slider::-webkit-slider-runnable-track {
+  background: #ccc;
+  height: 5px;
+  border-radius: 5px;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  transform: translate(0, -5px);
+  background: #3d3d3d;
+  border-radius: 50%;
+  cursor: pointer;
+  position: relative;
+  z-index: 2;
+}
+
+.rangeTrack {
+  position: absolute;
+  height: 5px;
+  background: #007bff;
+  border-radius: 5px;
+  z-index: 1;
+}
+
+.minPrice,
+.maxPrice {
+  font-size: 14px;
+  color: #333;
+  width: 50px;
+  text-align: center;
+}
+
+.resetButton:hover {
+  background: #3d3d3d;
+}
+
+.multiSelect {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.checkboxLabel input[type=checkbox] {
+  margin: 0;
+  width: 16px;
+  height: 16px;
+}
+.checkboxLabel span {
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
+}
+
+.rangeFilter {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rangeLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 5px;
+}
+
+.rangeInputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rangeInput {
+  width: 80px;
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  text-align: center;
+  font-size: 14px;
+  outline: none;
+}
+.rangeInput:focus {
+  border-color: #007bff;
+}
+
+.rangeSeparator {
+  font-weight: 500;
+  color: #666;
+}
+
+.rangeUnit {
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+}/*# sourceMappingURL=styles.module.css.map */

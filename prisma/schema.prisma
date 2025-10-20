@@ -79,6 +79,7 @@ model Filter {
     id         Int        @id @default(autoincrement()) @map("id")
     title      String     @map("title") @db.VarChar(255)
     type       FilterType @default(select) @map("type")
+    unit       String?    @map("unit") @db.VarChar(50) // Единица измерения для range фильтров
     categoryId Int        @map("category_id")
 
     // Связи

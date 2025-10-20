@@ -542,6 +542,13 @@ export default function CategoryPageClient({ initialData, isCreateMode = false }
 					setOriginalTitle(formTitle);
 					setOriginalImage(imagePreview);
 
+					// Обновляем исходные данные фильтров
+					setFilters(filters);
+					// Обновляем initialData для корректного сравнения
+					if (initialData) {
+						initialData.filters = filters;
+					}
+
 					// Сбрасываем флаги изменений
 					setIsFormChanged(false);
 
@@ -612,6 +619,7 @@ export default function CategoryPageClient({ initialData, isCreateMode = false }
 			return (
 				filter.title !== original.title ||
 				filter.type !== original.type ||
+				filter.unit !== original.unit ||
 				filter.values.length !== original.values.length ||
 				filter.values.some((value, index) => original.values[index]?.value !== value.value)
 			);
@@ -619,6 +627,54 @@ export default function CategoryPageClient({ initialData, isCreateMode = false }
 		if (modifiedFilters.length > 0) {
 			changes.push(`Изменено фильтров: ${modifiedFilters.length}`);
 		}
+
+		// Детальные изменения в фильтрах (включая единицы измерения и значения)
+		filters.forEach((filter) => {
+			const original = originalFilters.find((orig) => orig.id === filter.id);
+			if (!original) return;
+
+			// Собираем все изменения для этого фильтра
+			const filterChanges: string[] = [];
+
+			// Проверяем изменения в единице измерения
+			if (filter.unit !== original.unit) {
+				const oldUnit = original.unit || "не указана";
+				const newUnit = filter.unit || "не указана";
+				filterChanges.push(`единица измерения: "${oldUnit}" → "${newUnit}"`);
+			}
+
+			// Проверяем изменения в значениях фильтров
+			if (filter.type === "boolean") {
+				// Для boolean фильтров НЕ сортируем значения, чтобы сохранить порядок
+				const originalValues = original.values.map((v) => v.value);
+				const currentValues = filter.values.map((v) => v.value);
+
+				if (JSON.stringify(originalValues) !== JSON.stringify(currentValues)) {
+					const oldValues = originalValues.length > 0 ? originalValues.join(", ") : "нет значений";
+					const newValues = currentValues.length > 0 ? currentValues.join(", ") : "нет значений";
+					filterChanges.push(`значения: "${oldValues}" → "${newValues}"`);
+				}
+			} else if (filter.type !== "range") {
+				// Для остальных типов фильтров (кроме range) сортируем значения
+				const originalValues = original.values.map((v) => v.value).sort();
+				const currentValues = filter.values.map((v) => v.value).sort();
+
+				if (JSON.stringify(originalValues) !== JSON.stringify(currentValues)) {
+					const oldValues = originalValues.length > 0 ? originalValues.join(", ") : "нет значений";
+					const newValues = currentValues.length > 0 ? currentValues.join(", ") : "нет значений";
+					filterChanges.push(`значения: "${oldValues}" → "${newValues}"`);
+				}
+			}
+
+			// Если есть изменения в этом фильтре, добавляем их
+			if (filterChanges.length > 0) {
+				changes.push(`FILTER_START:${filter.title}`);
+				filterChanges.forEach((change) => {
+					changes.push(`FILTER_CHANGE:${change}`);
+				});
+				changes.push(`FILTER_END`);
+			}
+		});
 
 		return changes;
 	};
@@ -806,12 +862,11 @@ export default function CategoryPageClient({ initialData, isCreateMode = false }
 				confirmText={isCreateMode ? "Создать категорию" : "Сохранить изменения"}
 				cancelText="Отмена"
 			>
-				<div>
-					<p>
-						{isCreateMode
-							? "Вы собираетесь создать новую категорию со следующими параметрами:"
-							: `Вы собираетесь сохранить следующие изменения в категории <strong>${category?.title}</strong>:`}
-					</p>
+				<div className="changesBlock">
+					<div className="changesTitleBlock">
+						<p>{isCreateMode ? "Вы собираетесь создать новую категорию со следующими параметрами:" : `Вы собираетесь сохранить следующие изменения в категории `}</p>
+						{!isCreateMode && <p style={{ fontWeight: "bold", margin: "0 0 10px 0" }}>"{category?.title}"</p>}
+					</div>
 
 					{isCreateMode ? (
 						// Для режима создания показываем что будет создано
@@ -835,11 +890,96 @@ export default function CategoryPageClient({ initialData, isCreateMode = false }
 					) : (
 						// Для режима редактирования показываем конкретные изменения
 						<div className="changesList">
-							{getChangesDescription().map((change, index) => (
-								<div key={index} className="changeItem">
-									{change}
-								</div>
-							))}
+							{(() => {
+								const changes = getChangesDescription();
+								const elements: React.ReactNode[] = [];
+								let currentFilterTitle = "";
+								let currentFilterChanges: string[] = [];
+								let isInFilter = false;
+
+								changes.forEach((change, index) => {
+									if (change.startsWith("FILTER_START:")) {
+										// Если уже есть открытый фильтр, закрываем его
+										if (isInFilter && currentFilterChanges.length > 0) {
+											elements.push(
+												<div
+													key={`filter-${elements.length}`}
+													className="changeItem borderBlock"
+													style={{
+														padding: "12px 16px",
+														margin: "8px 0",
+														borderRadius: "8px",
+														backgroundColor: "#f8f9fa",
+														border: "1px solid #e9ecef",
+													}}
+												>
+													<div style={{ fontWeight: "bold", marginBottom: "8px" }}>{currentFilterTitle}</div>
+													{currentFilterChanges.map((filterChange, changeIndex) => {
+														const [label, values] = filterChange.split(": ");
+														const [oldValue, newValue] = values.split(" → ");
+
+														return (
+															<div key={changeIndex} style={{ marginBottom: "4px" }}>
+																<span style={{ fontWeight: "500" }}>{label}:</span>{" "}
+																<span style={{ textDecoration: "line-through", color: "#dc3545" }}>{oldValue}</span> →{" "}
+																<span style={{ color: "#28a745", fontWeight: "500" }}>{newValue}</span>
+															</div>
+														);
+													})}
+												</div>
+											);
+										}
+
+										// Начинаем новый фильтр
+										currentFilterTitle = change.replace("FILTER_START:", "");
+										currentFilterChanges = [];
+										isInFilter = true;
+									} else if (change.startsWith("FILTER_CHANGE:")) {
+										currentFilterChanges.push(change.replace("FILTER_CHANGE:", ""));
+									} else if (change === "FILTER_END") {
+										// Закрываем текущий фильтр
+										if (currentFilterChanges.length > 0) {
+											elements.push(
+												<div
+													key={`filter-${elements.length}`}
+													className="changeItem borderBlock"
+													style={{
+														padding: "12px 16px",
+														margin: "8px 0",
+														borderRadius: "8px",
+														backgroundColor: "#f8f9fa",
+														border: "1px solid #e9ecef",
+													}}
+												>
+													<div style={{ fontWeight: "bold", marginBottom: "8px" }}>{currentFilterTitle}</div>
+													{currentFilterChanges.map((filterChange, changeIndex) => {
+														const [label, values] = filterChange.split(": ");
+														const [oldValue, newValue] = values.split(" → ");
+
+														return (
+															<div key={changeIndex} style={{ marginBottom: "4px" }}>
+																<span style={{ fontWeight: "500" }}>{label}:</span>{" "}
+																<span style={{ textDecoration: "line-through", color: "#dc3545" }}>{oldValue}</span> →{" "}
+																<span style={{ color: "#28a745", fontWeight: "500" }}>{newValue}</span>
+															</div>
+														);
+													})}
+												</div>
+											);
+										}
+										isInFilter = false;
+									} else {
+										// Обычные изменения (не фильтры)
+										elements.push(
+											<div key={index} className="changeItem">
+												{change}
+											</div>
+										);
+									}
+								});
+
+								return elements;
+							})()}
 						</div>
 					)}
 				</div>

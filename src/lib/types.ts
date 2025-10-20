@@ -123,6 +123,7 @@ export type CategoryFilter = {
 	id: number;
 	title: string;
 	type: FilterType;
+	unit?: string; // Единица измерения для range фильтров
 	values: FilterValue[];
 };
 
@@ -239,6 +240,7 @@ export type CategoryFilterForSelection = {
 	id: number;
 	title: string;
 	type: FilterType;
+	unit?: string; // Единица измерения для range фильтров
 	values: FilterValue[];
 };
 
@@ -246,6 +248,8 @@ export type CategoryFilterForSelection = {
 export type SelectedFilterValue = {
 	filterId: number;
 	valueIds: number[];
+	// Для диапазона (range) - числовое значение
+	rangeValue?: number;
 };
 
 export type ProductResponse = {

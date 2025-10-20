@@ -874,6 +874,10 @@ textarea.error::placeholder {
   color: var(--red-color);
   border: 1px solid var(--red-color);
 }
+.popup .changesTitleBlock * {
+  display: inline-block;
+  white-space: pre-wrap;
+}
 
 .pagination {
   display: flex;
@@ -2426,7 +2430,6 @@ span.oldName:after {
   font-size: 14px;
   font-weight: 500;
   color: var(--text-color);
-  margin-bottom: 4px;
 }
 .productComponent .formFields .formField input,
 .productComponent .formFields .formField textarea,
@@ -2723,7 +2726,7 @@ span.oldName:after {
 .orderComponent .filtersSection .filterGroup {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 4px;
 }
 .productComponent .filtersSection .filterGroup .filterLabel,
 .orderComponent .filtersSection .filterGroup .filterLabel {
@@ -2736,6 +2739,12 @@ span.oldName:after {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 12px;
+}
+.productComponent .filtersSection .filterGroup .filterRangeInput,
+.orderComponent .filtersSection .filterGroup .filterRangeInput {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 .productComponent .filtersSection .filterGroup .filterValueItem,
 .orderComponent .filtersSection .filterGroup .filterValueItem {
@@ -2776,6 +2785,44 @@ span.oldName:after {
   opacity: 0.5;
   cursor: not-allowed;
 }
+.productComponent .filtersSection .filterGroup .filterBoolean,
+.orderComponent .filtersSection .filterGroup .filterBoolean {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.productComponent .filtersSection .filterGroup .filterBoolean .booleanOption,
+.orderComponent .filtersSection .filterGroup .filterBoolean .booleanOption {
+  display: flex;
+  position: relative;
+  gap: 5px;
+  cursor: pointer;
+}
+.productComponent .filtersSection .filterGroup .filterBoolean .booleanOption.active:before,
+.orderComponent .filtersSection .filterGroup .filterBoolean .booleanOption.active:before {
+  border: 2px solid var(--blue-color);
+}
+.productComponent .filtersSection .filterGroup .filterBoolean .booleanOption.active:after,
+.orderComponent .filtersSection .filterGroup .filterBoolean .booleanOption.active:after {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: var(--blue-color);
+  border-radius: 50%;
+  left: 5px;
+  top: 5px;
+}
+.productComponent .filtersSection .filterGroup .filterBoolean .booleanOption:before,
+.orderComponent .filtersSection .filterGroup .filterBoolean .booleanOption:before {
+  content: "";
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--grey-color);
+  vertical-align: middle;
+}
 .productComponent .fixedButtons,
 .orderComponent .fixedButtons {
   position: fixed;
@@ -2804,12 +2851,12 @@ span.oldName:after {
 }
 .productComponent .fixedButtons button.primaryButton,
 .orderComponent .fixedButtons button.primaryButton {
-  background: var(--blue-color);
+  background: var(--green-color);
   color: white;
 }
 .productComponent .fixedButtons button.primaryButton:hover:not(:disabled),
 .orderComponent .fixedButtons button.primaryButton:hover:not(:disabled) {
-  background: var(--blue-dark-color);
+  background: var(--dark-green-color);
   transform: translateY(-1px);
 }
 .productComponent .fixedButtons button.primaryButton:disabled,
@@ -2820,13 +2867,14 @@ span.oldName:after {
 }
 .productComponent .fixedButtons button.secondaryButton,
 .orderComponent .fixedButtons button.secondaryButton {
-  background: var(--light-grey-color);
-  color: var(--text-color);
-  border: 1px solid var(--grey-color);
+  background: transparent;
+  color: var(--red-color);
+  border: 1px solid var(--red-color);
 }
 .productComponent .fixedButtons button.secondaryButton:hover:not(:disabled),
 .orderComponent .fixedButtons button.secondaryButton:hover:not(:disabled) {
-  background: var(--light-grey2-color);
+  border: 1px solid var(--dark-red-color);
+  color: var(--dark-red-color);
   transform: translateY(-1px);
 }
 .productComponent .fixedButtons button.secondaryButton:disabled,

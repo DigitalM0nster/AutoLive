@@ -33,10 +33,22 @@ export async function GET(req: Request) {
 			return NextResponse.json({ error: "Категория не найдена" }, { status: 404 });
 		}
 
-		// Удаляем supplierPrice из всех товаров
+		// Удаляем supplierPrice из всех товаров и преобразуем фильтры
 		const sanitizedProducts = category.products.map((product) => {
-			const { supplierPrice, ...rest } = product;
-			return rest;
+			const { supplierPrice, productFilterValues, ...rest } = product;
+
+			// Преобразуем productFilterValues в формат filters
+			const filters = productFilterValues.map((pfv) => ({
+				filterId: pfv.filterValue.filterId,
+				valueId: pfv.filterValueId,
+				value: pfv.filterValue.value,
+				filter: pfv.filterValue.filter,
+			}));
+
+			return {
+				...rest,
+				filters,
+			};
 		});
 
 		return NextResponse.json({

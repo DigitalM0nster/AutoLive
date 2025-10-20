@@ -180,6 +180,28 @@
 		.filterType {
 		}
 
+		.filterUnit {
+			.inputBlock {
+				display: flex;
+				flex-direction: column;
+				gap: 2px;
+			}
+
+			.filterUnitInput {
+				width: calc(100% - 26px);
+				padding: 8px 12px;
+				border: 1px solid var(--grey-color);
+				border-radius: 6px;
+				font-size: 14px;
+				background: #f8f9fa;
+
+				&:focus {
+					border-color: var(--blue-color);
+					background: white;
+				}
+			}
+		}
+
 		.inputBlock {
 			display: flex;
 			flex-direction: column;
@@ -277,6 +299,30 @@
 
 				&:hover {
 					border: 1px dashed var(--blue-color);
+				}
+			}
+
+			// Стили для информации о диапазонах
+			.rangeInfo {
+				display: flex;
+				flex-direction: column;
+				gap: 8px;
+				padding: 12px;
+				background: #f8f9fa;
+				border: 1px solid #e9ecef;
+				border-radius: 6px;
+				font-size: 12px;
+				line-height: 1.4;
+
+				.rangeDescription {
+					color: #495057;
+					margin: 0;
+				}
+
+				.rangeExample {
+					color: #6c757d;
+					font-style: italic;
+					margin: 0;
 				}
 			}
 		}

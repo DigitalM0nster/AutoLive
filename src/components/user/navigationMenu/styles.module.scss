@@ -28,7 +28,20 @@
 }
 
 .nav {
+	max-width: 300px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 	cursor: pointer;
+	// display: inline-block;
+	// vertical-align: top;
+
+	/* Альтернативное решение с line-clamp для многострочного текста */
+
+	display: -webkit-box;
+	-webkit-line-clamp: 1;
+	-webkit-box-orient: vertical;
+	white-space: normal;
 	&:hover {
 		text-decoration: underline;
 	}

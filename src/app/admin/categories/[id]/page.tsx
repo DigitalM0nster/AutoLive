@@ -47,6 +47,7 @@ export default async function CategoryPage({ params }: PageParams) {
 				id: filter.id,
 				title: filter.title,
 				type: filter.type as any, // Временно используем any, пока не обновим схему Prisma
+				unit: filter.unit || undefined, // Добавляем единицу измерения
 				description: undefined,
 				required: false,
 				values:

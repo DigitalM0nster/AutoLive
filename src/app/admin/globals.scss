@@ -912,6 +912,13 @@ textarea {
 		color: var(--red-color);
 		border: 1px solid var(--red-color);
 	}
+
+	.changesTitleBlock {
+		* {
+			display: inline-block;
+			white-space: pre-wrap;
+		}
+	}
 }
 
 .pagination {
@@ -2536,7 +2543,6 @@ span {
 				font-size: 14px;
 				font-weight: 500;
 				color: var(--text-color);
-				margin-bottom: 4px;
 			}
 
 			input,
@@ -2805,7 +2811,7 @@ span {
 		.filterGroup {
 			display: flex;
 			flex-direction: column;
-			gap: 12px;
+			gap: 4px;
 
 			.filterLabel {
 				font-size: 14px;
@@ -2817,6 +2823,12 @@ span {
 				display: grid;
 				grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
 				gap: 12px;
+			}
+
+			.filterRangeInput {
+				display: flex;
+				align-items: center;
+				gap: 4px;
 			}
 
 			.filterValueItem {
@@ -2855,6 +2867,43 @@ span {
 					cursor: not-allowed;
 				}
 			}
+
+			.filterBoolean {
+				display: flex;
+				flex-direction: column;
+				gap: 5px;
+				.booleanOption {
+					display: flex;
+					position: relative;
+					gap: 5px;
+					cursor: pointer;
+
+					&.active {
+						&:before {
+							border: 2px solid var(--blue-color);
+						}
+						&:after {
+							content: "";
+							position: absolute;
+							width: 10px;
+							height: 10px;
+							background: var(--blue-color);
+							border-radius: 50%;
+							left: 5px;
+							top: 5px;
+						}
+					}
+					&:before {
+						content: "";
+						display: inline-block;
+						width: 16px;
+						height: 16px;
+						border-radius: 50%;
+						border: 2px solid var(--grey-color);
+						vertical-align: middle;
+					}
+				}
+			}
 		}
 	}
 
@@ -2884,11 +2933,11 @@ span {
 			min-width: 120px;
 
 			&.primaryButton {
-				background: var(--blue-color);
+				background: var(--green-color);
 				color: white;
 
 				&:hover:not(:disabled) {
-					background: var(--blue-dark-color);
+					background: var(--dark-green-color);
 					transform: translateY(-1px);
 				}
 
@@ -2900,12 +2949,13 @@ span {
 			}
 
 			&.secondaryButton {
-				background: var(--light-grey-color);
-				color: var(--text-color);
-				border: 1px solid var(--grey-color);
+				background: transparent;
+				color: var(--red-color);
+				border: 1px solid var(--red-color);
 
 				&:hover:not(:disabled) {
-					background: var(--light-grey2-color);
+					border: 1px solid var(--dark-red-color);
+					color: var(--dark-red-color);
 					transform: translateY(-1px);
 				}
 

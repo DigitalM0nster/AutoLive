@@ -1,0 +1,198 @@
+.materialContainer {
+  flex-direction: column;
+  gap: 20px;
+}
+.materialContainer .block {
+  gap: 50px;
+}
+
+.filterPanel {
+  position: sticky;
+  top: 150px;
+  background-color: #f3f3f3;
+  width: 310px;
+  min-width: 310px;
+  height: -moz-fit-content;
+  height: fit-content;
+  min-height: 50vh;
+  border-radius: 10px;
+  padding: 30px 20px;
+}
+
+.productsList {
+  width: 100%;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.productsList .productItem,
+.productsList a.productItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 30px;
+  width: calc(25% - 40px - 20px);
+  height: -moz-fit-content;
+  height: fit-content;
+  padding: 20px;
+  border-radius: 10px;
+  border: 1px solid #f3f3f3;
+  color: black;
+  text-decoration: none;
+}
+.productsList .productItem .itemContentBlock,
+.productsList a.productItem .itemContentBlock {
+  flex-direction: column;
+}
+.productsList .productItem a,
+.productsList a.productItem a {
+  display: flex;
+  position: relative;
+  color: initial;
+  text-decoration: none;
+}
+.productsList .productItem .topBlock,
+.productsList a.productItem .topBlock {
+  width: 100%;
+  flex-direction: column;
+  gap: 10px;
+}
+.productsList .productItem .topBlock .imageBlock,
+.productsList a.productItem .topBlock .imageBlock {
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 150px;
+  background-color: #f3f3f3;
+  border-radius: 10px;
+}
+.productsList .productItem .topBlock .imageBlock .noImage,
+.productsList a.productItem .topBlock .imageBlock .noImage {
+  width: 80px;
+  height: 80px;
+}
+.productsList .productItem .topBlock .nameBlock,
+.productsList a.productItem .topBlock .nameBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+  width: 100%;
+  white-space: nowrap;
+}
+.productsList .productItem .topBlock .nameBlock span,
+.productsList a.productItem .topBlock .nameBlock span {
+  width: 100%;
+  overflow: hidden;
+}
+.productsList .productItem .bottomBlock,
+.productsList a.productItem .bottomBlock {
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.productsList .productItem .bottomBlock .priceBlock,
+.productsList a.productItem .bottomBlock .priceBlock {
+  font-size: 20px;
+  font-weight: 500;
+}
+.productsList .productItem a.button,
+.productsList a.productItem a.button {
+  color: white;
+}
+.productsList .productItem a.button:hover,
+.productsList a.productItem a.button:hover {
+  color: white;
+  background-color: #3d3d3d;
+}
+.productsList .productItem .block,
+.productsList a.productItem .block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.productsList .productItem .block.productMarqueeBlock .marqueeBlock,
+.productsList a.productItem .block.productMarqueeBlock .marqueeBlock {
+  position: relative;
+  overflow: hidden;
+}
+.productsList .productItem .block.productMarqueeBlock:hover .title.long,
+.productsList .productItem .block.productMarqueeBlock:hover .sku.long,
+.productsList .productItem .block.productMarqueeBlock:hover .brand.long,
+.productsList a.productItem .block.productMarqueeBlock:hover .title.long,
+.productsList a.productItem .block.productMarqueeBlock:hover .sku.long,
+.productsList a.productItem .block.productMarqueeBlock:hover .brand.long {
+  transform: translateX(0);
+  animation: button_marquee 2s linear infinite;
+  animation-play-state: running;
+}
+.productsList .productItem .block.productMarqueeBlock .title,
+.productsList .productItem .block.productMarqueeBlock .sku,
+.productsList .productItem .block.productMarqueeBlock .brand,
+.productsList a.productItem .block.productMarqueeBlock .title,
+.productsList a.productItem .block.productMarqueeBlock .sku,
+.productsList a.productItem .block.productMarqueeBlock .brand {
+  position: relative;
+  width: auto;
+  white-space: nowrap;
+  overflow: visible;
+}
+.productsList .productItem .block.productMarqueeBlock .title.long:after,
+.productsList .productItem .block.productMarqueeBlock .sku.long:after,
+.productsList .productItem .block.productMarqueeBlock .brand.long:after,
+.productsList a.productItem .block.productMarqueeBlock .title.long:after,
+.productsList a.productItem .block.productMarqueeBlock .sku.long:after,
+.productsList a.productItem .block.productMarqueeBlock .brand.long:after {
+  content: attr(data-title);
+  position: absolute;
+  display: inline-block;
+  width: auto;
+  left: calc(100% + 20px);
+}
+.productsList .productItem .block.productMarqueeBlock .sku,
+.productsList a.productItem .block.productMarqueeBlock .sku {
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  opacity: 1;
+}
+.productsList .productItem .block .descr,
+.productsList .productItem .block a.descr,
+.productsList a.productItem .block .descr,
+.productsList a.productItem .block a.descr {
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: black;
+  opacity: 0.5;
+  text-transform: uppercase;
+  font-weight: 300;
+}
+.productsList .productItem .block .name,
+.productsList a.productItem .block .name {
+  font-size: 15px;
+  font-weight: 400px;
+  color: black;
+}
+
+.sortingPanel {
+  gap: 30px;
+}
+.sortingPanel .sortBlock {
+  gap: 5px;
+}
+.sortingPanel .sortBlock select {
+  border-radius: 0px;
+}
+.sortingPanel .sortBlock option {
+  border-radius: 0px;
+  background-color: red;
+}
+@keyframes button_marquee {
+  0% {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-120%);
+  }
+}/*# sourceMappingURL=styles.module.css.map */

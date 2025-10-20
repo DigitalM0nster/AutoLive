@@ -1,0 +1,174 @@
+.productItem {
+	gap: 30px;
+	flex-wrap: wrap;
+}
+
+.imageBlock {
+	justify-content: center;
+	align-items: center;
+	width: 350px;
+	height: 300px;
+	background-color: #dddddd;
+	order: 1;
+	border-radius: 10px;
+	overflow: hidden;
+
+	.noImage {
+		width: 120px;
+		height: 120px;
+	}
+}
+
+.filtersBlock {
+	flex-direction: column;
+	width: 350px;
+	order: 3;
+	border-radius: 10px;
+
+	.filtersTitle {
+		background-color: #dddddd;
+		padding: 10px;
+		font-size: 16px;
+		font-weight: 600;
+		text-transform: uppercase;
+		border-radius: 10px 10px 0 0;
+	}
+
+	.filtersList {
+		width: calc(100% - 1px);
+		background-color: white;
+		border: 1px solid #dddddd;
+		border-collapse: collapse;
+		display: table;
+
+		.filterItem {
+			display: table-row;
+			&:last-child {
+				border-radius: 0px 0px 10px 0px;
+			}
+
+			.name,
+			.values {
+				display: table-cell;
+				border: 1px solid #dddddd;
+				padding: 12px 15px;
+				vertical-align: top;
+				word-wrap: break-word;
+			}
+
+			.name {
+				width: 50%;
+				font-weight: 500;
+				background-color: #f8f8f8;
+			}
+
+			.values {
+				width: 50%;
+				background-color: white;
+
+				.value {
+					display: inline-block;
+					margin-right: 8px;
+					margin-bottom: 4px;
+					padding: 4px 8px;
+					background-color: #e9ecef;
+					border-radius: 4px;
+					font-size: 14px;
+
+					&:last-child {
+						margin-right: 0;
+					}
+				}
+			}
+		}
+	}
+}
+
+.descriptionBlock {
+	flex-direction: column;
+	justify-content: flex-start;
+	gap: 30px;
+	order: 2;
+	width: calc(100% - 30px - 350px);
+	min-width: 450px;
+	max-height: 300px;
+
+	.textBlock {
+		flex-direction: column;
+		overflow: hidden;
+	}
+
+	.description {
+		overflow-y: auto;
+	}
+}
+
+.buttonBlock {
+	align-self: flex-start;
+	width: fit-content;
+	order: 4;
+
+	&.mobile {
+		display: none;
+	}
+
+	.column {
+		flex-direction: column;
+		gap: 5px;
+		align-items: center;
+	}
+
+	.price {
+		font-size: 20px;
+		font-weight: 700;
+	}
+}
+
+@media (max-width: 980px) {
+	.descriptionBlock {
+		width: 100%;
+	}
+	.buttonBlock {
+		display: none;
+		&.mobile {
+			display: flex;
+			align-items: flex-start;
+			width: 100%;
+		}
+	}
+}
+
+@media (max-width: 768px) {
+	.filtersBlock {
+		width: 100%;
+	}
+}
+
+@media (max-width: 640px) {
+	.descriptionBlock {
+		min-width: unset;
+	}
+
+	.filtersBlock {
+		.filtersTitle {
+			width: calc(100% - 20px);
+			border-left: 1px solid #dddddd;
+			border-right: 1px solid #dddddd;
+		}
+		.filtersList {
+			overflow-x: auto;
+			border-left: 1px solid #dddddd;
+			border-right: 1px solid #dddddd;
+			.filterItem {
+				.name {
+					border-left: none;
+					min-width: 180px;
+				}
+				.values {
+					border-right: none;
+					min-width: 180px;
+				}
+			}
+		}
+	}
+}

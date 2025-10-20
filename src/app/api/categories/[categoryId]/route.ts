@@ -85,6 +85,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 								data: {
 									title: filter.title.trim(),
 									type: filter.type || "select",
+									unit: filter.unit || null, // Добавляем единицу измерения
 									categoryId: categoryId,
 								},
 							});

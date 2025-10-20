@@ -101,57 +101,72 @@ export default function FilterCard({
 				</div>
 			</div>
 
-			<div className={`filterValues ${styles.filterValues}`}>
-				<div className={styles.inputBlock}>
-					<div className={styles.inputDescription}>Значения фильтра ({filter.values.length})</div>
-					<div className={`${styles.valuesList} ${valuesError ? "error" : ""} ${valuesError ? styles.error : ""}`}>
-						{filter.values.length === 0 ? (
-							<div className={`emptyValues ${styles.emptyValues} ${valuesError ? "errorMessage" : ""}`}>
-								{valuesError ? <div className="errorMessage">{valuesError}</div> : <p>Значения не добавлены</p>}
-							</div>
-						) : (
-							filter.values.map((value) => (
-								<div key={value.id} className={`valueItem ${styles.valueItem}`}>
-									<input
-										type="text"
-										value={value.value}
-										onChange={(e) => {
-											handleValueChange(value.id, e.target.value);
-											// Очищаем ошибку конкретного значения при вводе
-											if (e.target.value.trim()) {
-												onClearValueError(value.id);
-											}
-										}}
-										className={`valueInput ${styles.valueInput} ${filter.type === "boolean" ? styles.readonly : ""} ${valueErrors?.[value.id] ? "error" : ""} ${
-											valueErrors?.[value.id] ? styles.error : ""
-										}`}
-										placeholder={valueErrors?.[value.id] ? "Заполните значение" : "Значение фильтра"}
-										readOnly={filter.type === "boolean"}
-									/>
-									{filter.type !== "boolean" && (
-										<button
-											type="button"
-											onClick={() => onDeleteValue(value.id)}
-											className={`removeValueButton ${styles.removeValueButton}`}
-											title="Удалить значение"
-										>
-											<X size={14} />
-										</button>
-									)}
-								</div>
-							))
-						)}
-
-						{/* Кнопка добавления значения */}
-						{filter.type !== "boolean" && (
-							<button type="button" onClick={handleAddValue} className={`addValueButton ${styles.addValueButton}`}>
-								<Plus size={16} />
-								Добавить значение
-							</button>
-						)}
+			{/* Поле для единицы измерения (только для range) */}
+			{filter.type === "range" && (
+				<div className={`filterUnit ${styles.filterUnit}`}>
+					<div className={styles.inputBlock}>
+						<div className={styles.inputDescription}>Единица измерения</div>
+						<input
+							type="text"
+							value={filter.unit || ""}
+							onChange={(e) => onUpdateFilter(filter.id, { unit: e.target.value })}
+							className={`filterUnitInput ${styles.filterUnitInput}`}
+							placeholder="л, кг, шт, см, мм и т.д."
+						/>
 					</div>
 				</div>
-			</div>
+			)}
+
+			{filter.type !== "range" && (
+				<div className={`filterValues ${styles.filterValues}`}>
+					<div className={styles.inputBlock}>
+						<div className={styles.inputDescription}>Значения фильтра ({filter.values.length})</div>
+						<div className={`${styles.valuesList} ${valuesError ? "error" : ""} ${valuesError ? styles.error : ""}`}>
+							{filter.values.length === 0 ? (
+								<div className={`emptyValues ${styles.emptyValues} ${valuesError ? "errorMessage" : ""}`}>
+									{valuesError ? <div className="errorMessage">{valuesError}</div> : <p>Значения не добавлены</p>}
+								</div>
+							) : (
+								filter.values.map((value) => (
+									<div key={value.id} className={`valueItem ${styles.valueItem}`}>
+										<input
+											type="text"
+											value={value.value}
+											onChange={(e) => {
+												handleValueChange(value.id, e.target.value);
+												// Очищаем ошибку конкретного значения при вводе
+												if (e.target.value.trim()) {
+													onClearValueError(value.id);
+												}
+											}}
+											className={`valueInput ${styles.valueInput} ${valueErrors?.[value.id] ? "error" : ""} ${valueErrors?.[value.id] ? styles.error : ""}`}
+											placeholder={valueErrors?.[value.id] ? "Заполните значение" : "Значение фильтра"}
+										/>
+										{filter.type !== "boolean" && (
+											<button
+												type="button"
+												onClick={() => onDeleteValue(value.id)}
+												className={`removeValueButton ${styles.removeValueButton}`}
+												title="Удалить значение"
+											>
+												<X size={14} />
+											</button>
+										)}
+									</div>
+								))
+							)}
+
+							{/* Кнопка добавления значения */}
+							{filter.type !== "boolean" && (
+								<button type="button" onClick={handleAddValue} className={`addValueButton ${styles.addValueButton}`}>
+									<Plus size={16} />
+									Добавить значение
+								</button>
+							)}
+						</div>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }

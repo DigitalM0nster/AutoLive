@@ -97,6 +97,8 @@ export async function GET(req: NextRequest, context: { params: Promise<{ product
 						},
 					});
 
+					console.log("🔍 API - Filter:", filter.id, filter.type, "Selected values:", selectedValues);
+
 					return {
 						...filter,
 						selected_values: selectedValues.map((pfv) => pfv.filterValue),
@@ -274,24 +276,82 @@ export const PATCH = withPermission(
 			if (filterValuesString) {
 				try {
 					const filterValues = JSON.parse(filterValuesString as string);
+					console.log("🔍 API - Received filterValues:", filterValues);
 
 					// Удаляем все существующие фильтры товара
 					await prisma.productFilterValue.deleteMany({
 						where: { productId: productId },
 					});
 
-					// Добавляем новые фильтры
-					const filterValueRecords = filterValues.flatMap((filter: any) =>
-						filter.valueIds.map((valueId: number) => ({
-							productId,
-							filterValueId: valueId,
-						}))
-					);
+					// Обрабатываем каждый фильтр
+					for (const filter of filterValues) {
+						console.log("🔍 API - Processing filter:", filter);
 
-					if (filterValueRecords.length > 0) {
-						await prisma.productFilterValue.createMany({
-							data: filterValueRecords,
+						// Получаем информацию о фильтре
+						const filterInfo = await prisma.filter.findUnique({
+							where: { id: filter.filterId },
+							select: { type: true },
 						});
+
+						console.log("🔍 API - Filter info:", filterInfo);
+
+						if (filterInfo?.type === "range") {
+							// Для диапазона используем rangeValue
+							console.log("🔍 API - Processing range filter:", filter.filterId, "rangeValue:", filter.rangeValue);
+							if (filter.rangeValue !== undefined && filter.rangeValue !== null) {
+								// Ищем существующее значение для этого фильтра и товара
+								const existingValue = await prisma.productFilterValue.findFirst({
+									where: {
+										productId,
+										filterValue: {
+											filterId: filter.filterId,
+										},
+									},
+									include: {
+										filterValue: true,
+									},
+								});
+
+								console.log("🔍 API - Existing value:", existingValue);
+
+								if (existingValue) {
+									// Обновляем существующее значение
+									console.log("🔍 API - Updating existing value:", existingValue.filterValueId, "to:", filter.rangeValue.toString());
+									await prisma.filterValue.update({
+										where: { id: existingValue.filterValueId },
+										data: { value: filter.rangeValue.toString() },
+									});
+								} else {
+									// Создаем новое значение
+									console.log("🔍 API - Creating new value for filter:", filter.filterId, "value:", filter.rangeValue.toString());
+									const newFilterValue = await prisma.filterValue.create({
+										data: {
+											filterId: filter.filterId,
+											value: filter.rangeValue.toString(),
+										},
+									});
+
+									// Связываем с товаром
+									await prisma.productFilterValue.create({
+										data: {
+											productId,
+											filterValueId: newFilterValue.id,
+										},
+									});
+									console.log("🔍 API - Created and linked new value:", newFilterValue.id);
+								}
+							}
+						} else if (filter.valueIds && filter.valueIds.length > 0) {
+							// Для остальных типов фильтров используем существующие ID
+							const filterValueRecords = filter.valueIds.map((valueId: number) => ({
+								productId,
+								filterValueId: valueId,
+							}));
+
+							await prisma.productFilterValue.createMany({
+								data: filterValueRecords,
+							});
+						}
 					}
 				} catch (error) {
 					console.error("Ошибка при обработке фильтров:", error);

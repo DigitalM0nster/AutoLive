@@ -46,10 +46,10 @@ export default function Home() {
 						<div className={styles.blockContent}>
 							<div className={styles.pagesBlock}>
 								{[
-									{ name: "Материалы для ТО", link: "/service-materials", img: "/images/maslo.svg" },
+									{ name: "Материалы для ТО", link: "/categories", img: "/images/maslo.svg" },
 									{ name: "Комплекты ТО", link: "/service-kits", img: "/images/boxes.svg" },
 									{ name: "Запись на ТО", link: "/booking", img: "/images/customerSupport.svg" },
-									{ name: "Запчасти", link: "/catalog", img: "/images/tormoz.svg" },
+									{ name: "Запчасти", link: "/products", img: "/images/tormoz.svg" },
 								].map((item, index) => (
 									<Link href={item.link} key={index} className={styles.pageItem}>
 										<div className={styles.itemLeft}>

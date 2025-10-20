@@ -17,6 +17,9 @@ type UiStore = {
 
 	startLoading: () => void;
 	stopLoading: () => void;
+
+	headerHeight: number;
+	setHeaderHeight: (height: number) => void;
 };
 
 export const useUiStore = create<UiStore>((set) => ({
@@ -40,4 +43,8 @@ export const useUiStore = create<UiStore>((set) => ({
 	// ЗАГРУЗКА
 	startLoading: () => set({ isLoading: true }),
 	stopLoading: () => set({ isLoading: false }),
+
+	// ШАПКА
+	headerHeight: 0,
+	setHeaderHeight: (height: number) => set({ headerHeight: height }),
 }));
