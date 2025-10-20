@@ -35,7 +35,7 @@ export default async function CategoryPage({ params }: PageParams) {
 	}
 
 	// Загружаем фильтры категории
-	const filtersRes = await fetch(`/api/categories/${categoryId}/filters/public`, {
+	const filtersRes = await fetch(`${baseUrl}/api/categories/${categoryId}/filters/public`, {
 		next: { revalidate: 3600 },
 	});
 
