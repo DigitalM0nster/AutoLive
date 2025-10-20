@@ -11,7 +11,7 @@ export const metadata = {
 };
 
 export default async function Promotions() {
-	const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/promotions`, {
+	const res = await fetch(`/api/promotions`, {
 		next: { revalidate: 3600 },
 	});
 

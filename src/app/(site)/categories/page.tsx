@@ -9,7 +9,8 @@ import type { Category, Product } from "@/lib/types";
 
 export async function generateMetadata(): Promise<Metadata> {
 	try {
-		const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/categories`, {
+		const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "";
+		const res = await fetch(`${baseUrl}/api/categories`, {
 			next: { revalidate: 3600 },
 		});
 
@@ -52,14 +53,12 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function CategoriesPage() {
 	try {
-		// Проверяем, что переменная окружения установлена
-		if (!process.env.NEXT_PUBLIC_BASE_URL) {
-			console.error("NEXT_PUBLIC_BASE_URL не установлена");
-			throw new Error("Конфигурация не найдена");
-		}
-
 		// Загружаем категории
-		const categoriesRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/categories`, {
+		const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "";
+		console.log("Base URL:", baseUrl);
+		console.log("Full URL:", `${baseUrl}/api/categories`);
+
+		const categoriesRes = await fetch(`${baseUrl}/api/categories`, {
 			next: { revalidate: 3600 },
 		});
 
@@ -69,7 +68,7 @@ export default async function CategoriesPage() {
 		}
 
 		// Загружаем все продукты через публичный API
-		const productsRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/products/public`, {
+		const productsRes = await fetch(`${baseUrl}/api/products/public`, {
 			next: { revalidate: 3600 },
 		});
 

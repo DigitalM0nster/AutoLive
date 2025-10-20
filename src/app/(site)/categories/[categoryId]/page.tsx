@@ -19,7 +19,7 @@ export default async function CategoryPage({ params }: PageParams) {
 	}
 
 	// Загружаем данные категории с товарами
-	const categoryRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/products/get-products-by-category?category=${categoryId}`, {
+	const categoryRes = await fetch(`/api/products/get-products-by-category?category=${categoryId}`, {
 		next: { revalidate: 3600 },
 	});
 
@@ -34,7 +34,7 @@ export default async function CategoryPage({ params }: PageParams) {
 	}
 
 	// Загружаем фильтры категории
-	const filtersRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/categories/${categoryId}/filters/public`, {
+	const filtersRes = await fetch(`/api/categories/${categoryId}/filters/public`, {
 		next: { revalidate: 3600 },
 	});
 
