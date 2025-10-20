@@ -865,7 +865,7 @@ export default function CategoryPageClient({ initialData, isCreateMode = false }
 				<div className="changesBlock">
 					<div className="changesTitleBlock">
 						<p>{isCreateMode ? "Вы собираетесь создать новую категорию со следующими параметрами:" : `Вы собираетесь сохранить следующие изменения в категории `}</p>
-						{!isCreateMode && <p style={{ fontWeight: "bold", margin: "0 0 10px 0" }}>"{category?.title}"</p>}
+						{!isCreateMode && <p style={{ fontWeight: "bold", margin: "0 0 10px 0" }}>&quot;{category?.title}&quot;</p>}
 					</div>
 
 					{isCreateMode ? (
