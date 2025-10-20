@@ -19,7 +19,8 @@ export default async function CategoryPage({ params }: PageParams) {
 	}
 
 	// Загружаем данные категории с товарами
-	const categoryRes = await fetch(`/api/products/get-products-by-category?category=${categoryId}`, {
+	const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "";
+	const categoryRes = await fetch(`${baseUrl}/api/products/get-products-by-category?category=${categoryId}`, {
 		next: { revalidate: 3600 },
 	});
 

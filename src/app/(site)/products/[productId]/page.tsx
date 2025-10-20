@@ -15,7 +15,8 @@ export default async function DirectProductPage({ params }: PageParams) {
 		return <div className="text-center">Загрузка...</div>;
 	}
 
-	const res = await fetch(`/api/products/${productId}/public`, {
+	const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "";
+	const res = await fetch(`${baseUrl}/api/products/${productId}/public`, {
 		cache: "no-store",
 	});
 

@@ -11,11 +11,13 @@ export const metadata = {
 };
 
 export default async function Promotions() {
-	const res = await fetch(`/api/promotions`, {
+	const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "";
+	const res = await fetch(`${baseUrl}/api/promotions`, {
 		next: { revalidate: 3600 },
 	});
 
 	if (!res.ok) {
+		console.error(`Ошибка API: ${res.status} ${res.statusText}`);
 		return <div className="text-center">Ошибка загрузки акций</div>;
 	}
 
