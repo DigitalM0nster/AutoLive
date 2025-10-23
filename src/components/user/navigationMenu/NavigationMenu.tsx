@@ -26,10 +26,20 @@ export default function NavigationMenu({ productId }: NavigationMenuProps) {
 
 	// 🔄 Обновлённый fetch категорий
 	useEffect(() => {
+		console.log("Загружаем категории...");
 		fetch("/api/categories")
-			.then((res) => res.json())
-			.then(setCategories)
-			.catch(() => setCategories([]));
+			.then((res) => {
+				console.log("Ответ API категорий:", res.status);
+				return res.json();
+			})
+			.then((data) => {
+				console.log("Загруженные категории:", data);
+				setCategories(data);
+			})
+			.catch((err) => {
+				console.error("Ошибка загрузки категорий:", err);
+				setCategories([]);
+			});
 	}, []);
 
 	// Загружаем данные о продукте, если передан productId
@@ -43,7 +53,16 @@ export default function NavigationMenu({ productId }: NavigationMenuProps) {
 	}, [productId]);
 
 	const getCategoryTitle = (id: string | number): string | undefined => {
+		console.log("Ищем категорию с ID:", id, "в списке:", categories);
+
+		// Проверяем, что categories является массивом
+		if (!Array.isArray(categories)) {
+			console.log("categories не является массивом:", typeof categories, categories);
+			return undefined;
+		}
+
 		const found = categories.find((cat) => cat.id.toString() === id.toString());
+		console.log("Найденная категория:", found);
 		return found?.title;
 	};
 
@@ -91,6 +110,48 @@ export default function NavigationMenu({ productId }: NavigationMenuProps) {
 			return [];
 		}
 
+		// Специальная логика для прямого пути к категории /categories/[categoryId]
+		if (segments[0] === "categories" && segments.length === 2) {
+			const categoryId = segments[1];
+
+			// Если это ID категории (число)
+			if (/^\d+$/.test(categoryId)) {
+				// Проверяем, что categories загружены и является массивом
+				if (Array.isArray(categories) && categories.length > 0) {
+					const categoryTitle = getCategoryTitle(categoryId);
+					console.log("Category ID:", categoryId, "Title:", categoryTitle, "Categories:", categories);
+
+					if (categoryTitle) {
+						return [
+							{
+								name: "Материалы для ТО",
+								path: "/categories",
+							},
+							{
+								name: categoryTitle,
+								path: `/categories/${categoryId}`,
+							},
+						];
+					}
+				}
+
+				// Если категории не загружены или категория не найдена, показываем базовую структуру
+				return [
+					{
+						name: "Материалы для ТО",
+						path: "/categories",
+					},
+					{
+						name: `...`,
+						path: `/categories/${categoryId}`,
+					},
+				];
+			}
+
+			// Если это не ID категории, возвращаем пустой массив
+			return [];
+		}
+
 		// Обычная логика для остальных путей
 		return segments
 			.map((segment, index) => {
@@ -98,8 +159,8 @@ export default function NavigationMenu({ productId }: NavigationMenuProps) {
 
 				let name: string = pages[fullPath] ?? decodeURIComponent(segment);
 
-				// Логика для категорий /categories/[categoryId]
-				if (segments[0] === "categories" && index === 1) {
+				// Логика для категорий /categories/[categoryId] - только если это НЕ прямой путь
+				if (segments[0] === "categories" && index === 1 && segments.length > 2) {
 					// Проверяем, является ли сегмент ID категории (число)
 					if (/^\d+$/.test(segment)) {
 						const categoryTitle = getCategoryTitle(segment);
