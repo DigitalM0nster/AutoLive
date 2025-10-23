@@ -1,6 +1,7 @@
 // src\app\layout.tsx
 
 import "./index.scss";
+import "./skeleton-styles.scss";
 import Header from "@/components/user/header/Header";
 import Footer from "@/components/user/footer/Footer";
 import CONFIG from "@/lib/config";

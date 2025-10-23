@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(req: Request) {
+	const startTime = Date.now();
 	try {
 		const { searchParams } = new URL(req.url);
 		const page = parseInt(searchParams.get("page") || "1");
@@ -65,6 +66,9 @@ export async function GET(req: Request) {
 			};
 		});
 
+		const executionTime = Date.now() - startTime;
+		console.log(`📊 API /products выполнен за ${executionTime}мс`);
+
 		return NextResponse.json({
 			products: sanitizedProducts,
 			pagination: {
@@ -76,6 +80,30 @@ export async function GET(req: Request) {
 		});
 	} catch (error) {
 		console.error("Ошибка получения публичных товаров:", error);
+
+		// Специальная обработка ошибок подключения к базе данных
+		if (error instanceof Error) {
+			if (error.message.includes("connection pool") || error.message.includes("P1017")) {
+				console.error("Проблема с пулом соединений базы данных");
+				return NextResponse.json(
+					{
+						error: "Временная проблема с подключением к базе данных. Попробуйте позже.",
+					},
+					{ status: 503 }
+				); // 503 Service Unavailable
+			}
+
+			if (error.message.includes("timeout")) {
+				console.error("Таймаут подключения к базе данных");
+				return NextResponse.json(
+					{
+						error: "Превышено время ожидания подключения к базе данных.",
+					},
+					{ status: 504 }
+				); // 504 Gateway Timeout
+			}
+		}
+
 		return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
 	}
 }

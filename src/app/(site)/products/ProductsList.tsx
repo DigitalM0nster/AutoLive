@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import styles from "./styles.module.scss";
 import type { Product } from "@/lib/types";
+import ProductsSkeleton from "./ProductsSkeleton";
 
 interface ProductsListProps {
 	searchQuery: string;
@@ -58,7 +59,7 @@ export default function ProductsList({ searchQuery }: ProductsListProps) {
 	const totalPages = Math.ceil(totalProducts / itemsPerPage);
 
 	if (loading) {
-		return <div className={styles.loading}>Загрузка товаров...</div>;
+		return <ProductsSkeleton />;
 	}
 
 	if (products.length === 0) {

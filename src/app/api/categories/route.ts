@@ -63,6 +63,30 @@ export async function GET(request: NextRequest) {
 		return NextResponse.json(formattedCategories);
 	} catch (error) {
 		console.error("Ошибка при получении категорий:", error);
+
+		// Специальная обработка ошибок подключения к базе данных
+		if (error instanceof Error) {
+			if (error.message.includes("connection pool") || error.message.includes("P1017")) {
+				console.error("Проблема с пулом соединений базы данных");
+				return NextResponse.json(
+					{
+						error: "Временная проблема с подключением к базе данных. Попробуйте позже.",
+					},
+					{ status: 503 }
+				); // 503 Service Unavailable
+			}
+
+			if (error.message.includes("timeout")) {
+				console.error("Таймаут подключения к базе данных");
+				return NextResponse.json(
+					{
+						error: "Превышено время ожидания подключения к базе данных.",
+					},
+					{ status: 504 }
+				); // 504 Gateway Timeout
+			}
+		}
+
 		return NextResponse.json({ error: "Ошибка при получении категорий" }, { status: 500 });
 	}
 }
@@ -151,6 +175,30 @@ export async function POST(request: NextRequest) {
 		return NextResponse.json(createdCategory);
 	} catch (error) {
 		console.error("Ошибка при создании категории:", error);
+
+		// Специальная обработка ошибок подключения к базе данных
+		if (error instanceof Error) {
+			if (error.message.includes("connection pool") || error.message.includes("P1017")) {
+				console.error("Проблема с пулом соединений базы данных");
+				return NextResponse.json(
+					{
+						error: "Временная проблема с подключением к базе данных. Попробуйте позже.",
+					},
+					{ status: 503 }
+				); // 503 Service Unavailable
+			}
+
+			if (error.message.includes("timeout")) {
+				console.error("Таймаут подключения к базе данных");
+				return NextResponse.json(
+					{
+						error: "Превышено время ожидания подключения к базе данных.",
+					},
+					{ status: 504 }
+				); // 504 Gateway Timeout
+			}
+		}
+
 		return NextResponse.json({ error: "Ошибка при создании категории" }, { status: 500 });
 	}
 }

@@ -10,6 +10,7 @@ export default function ProductsPage() {
 			<div className="screenContent">
 				<NavigationMenu />
 				<h1 className={`pageTitle ${styles.pageTitle}`}>Запчасти</h1>
+
 				<ProductsPageClient />
 			</div>
 		</div>

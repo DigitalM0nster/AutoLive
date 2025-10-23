@@ -135,14 +135,14 @@ export default function NavigationMenu({ productId }: NavigationMenuProps) {
 					}
 				}
 
-				// Если категории не загружены или категория не найдена, показываем базовую структуру
+				// Если категории не загружены или категория не найдена, показываем ID
 				return [
 					{
 						name: "Материалы для ТО",
 						path: "/categories",
 					},
 					{
-						name: `...`,
+						name: ``,
 						path: `/categories/${categoryId}`,
 					},
 				];
