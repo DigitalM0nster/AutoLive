@@ -1,4 +1,5 @@
 "use client";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { Role } from "@/lib/rolesConfig";
 import { adminRoutesMeta } from "@/lib/adminRoutesMeta";
@@ -20,6 +21,22 @@ type Props = {
 };
 
 export default function AdminDashboard({ user }: Props) {
+	const [ordersCounts, setOrdersCounts] = useState<{ unassignedCount: number; departmentCount: number } | null>(null);
+
+	useEffect(() => {
+		let isMounted = true;
+		(async () => {
+			try {
+				const res = await fetch("/api/orders/count-new-orders", { credentials: "include" });
+				if (!res.ok) return;
+				const data = await res.json();
+				if (isMounted) setOrdersCounts({ unassignedCount: data.unassignedCount ?? 0, departmentCount: data.departmentCount ?? 0 });
+			} catch {}
+		})();
+		return () => {
+			isMounted = false;
+		};
+	}, []);
 	const sections: Section[] = ["departments", "users", "orders", "bookings", "categories", "content", "product-management"]
 		.map((key): Section | null => {
 			const meta = adminRoutesMeta[key];
@@ -45,6 +62,9 @@ export default function AdminDashboard({ user }: Props) {
 						</div>
 						<h3 className="cardTitle">{label}</h3>
 						<p className="cardButton">{description ? description : `Перейти в раздел “${label}”`}</p>
+						{href === "/admin/orders" && (
+							<div className="cardOrdersNumber">{ordersCounts ? `${ordersCounts.unassignedCount} | ${ordersCounts.departmentCount}` : "—"}</div>
+						)}
 					</Link>
 				))}
 			</div>

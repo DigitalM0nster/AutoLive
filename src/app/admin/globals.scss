@@ -412,6 +412,17 @@ a.button {
 			// color: var(--grey-color);
 			opacity: 0.5;
 		}
+
+		.cardOrdersNumber {
+			position: absolute;
+			right: 25px;
+			top: 25px;
+			border-radius: 50%;
+			font-size: 12px;
+			background-color: var(--red-color);
+			color: white;
+			padding: 5px;
+		}
 	}
 }
 
