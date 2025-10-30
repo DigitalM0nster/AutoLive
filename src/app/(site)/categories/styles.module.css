@@ -25,6 +25,9 @@
   height: 85px;
   cursor: pointer;
 }
+.categoryItem:hover .categoryTitleBlock .title {
+  transition: color 0.3s ease;
+}
 .categoryItem:hover .button {
   text-decoration: underline;
 }
@@ -134,14 +137,6 @@
   font-size: 16px;
   font-weight: 500;
   line-height: 1.4;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  animation: scrollText 10s linear infinite;
-  animation-play-state: paused;
-}
-.productItem .nameBlock span:hover {
-  animation-play-state: running;
 }
 .productItem .nameBlock .hidden {
   display: none;
@@ -170,11 +165,103 @@
   background-color: #2980b9;
 }
 
-@keyframes scrollText {
+.skeletonItem {
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  animation: skeletonPulse 2s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+}
+.skeletonItem::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  pointer-events: none;
+}
+
+.skeletonShimmer {
+  background: linear-gradient(90deg, #f0f2f5 0%, #e1e5e9 25%, #f0f2f5 50%, #e1e5e9 75%, #f0f2f5 100%);
+  background-size: 300% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+.skeletonTitle {
+  height: 28px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  position: relative;
+  animation-delay: calc(var(--index, 0) * 0.1s);
+}
+
+.skeletonButton {
+  width: 120px;
+  height: 20px;
+  border-radius: 10px;
+  animation-delay: calc(var(--index, 0) * 0.1s + 0.2s);
+}
+
+.skeletonBackground {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+  border-radius: 40px 0px 0px 0px;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  opacity: 0.5;
+}
+
+.skeletonImage {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  position: absolute;
+  bottom: 15px;
+  left: 15px;
+  animation-delay: calc(var(--index, 0) * 0.1s + 0.4s);
+}
+
+@keyframes skeletonPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.95;
+    transform: scale(1.01);
+  }
+}
+@keyframes shimmer {
   0% {
-    transform: translateX(0);
+    background-position: -300% 0;
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
   }
   100% {
-    transform: translateX(-100%);
+    background-position: 300% 0;
+    opacity: 1;
+  }
+}
+.skeletonItem:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+@media (max-width: 1280px) {
+  .skeletonItem {
+    animation-duration: 2.2s;
+  }
+}
+@media (max-width: 980px) {
+  .skeletonItem {
+    animation-duration: 2.5s;
   }
 }/*# sourceMappingURL=styles.module.css.map */

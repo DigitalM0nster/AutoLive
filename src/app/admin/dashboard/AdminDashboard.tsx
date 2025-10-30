@@ -37,7 +37,7 @@ export default function AdminDashboard({ user }: Props) {
 			isMounted = false;
 		};
 	}, []);
-	const sections: Section[] = ["departments", "users", "orders", "bookings", "categories", "content", "product-management"]
+	const sections: Section[] = ["departments", "users", "categories", "product-management", "bookings", "orders", "content"]
 		.map((key): Section | null => {
 			const meta = adminRoutesMeta[key];
 			if (!meta || !meta.icon || !meta.bg) return null;
@@ -62,8 +62,8 @@ export default function AdminDashboard({ user }: Props) {
 						</div>
 						<h3 className="cardTitle">{label}</h3>
 						<p className="cardButton">{description ? description : `Перейти в раздел “${label}”`}</p>
-						{href === "/admin/orders" && (
-							<div className="cardOrdersNumber">{ordersCounts ? `${ordersCounts.unassignedCount} | ${ordersCounts.departmentCount}` : "—"}</div>
+						{href === "/admin/orders" && ordersCounts && ordersCounts.unassignedCount + ordersCounts.departmentCount > 0 && (
+							<div className="cardNewOrdersNumber">{ordersCounts.unassignedCount + ordersCounts.departmentCount}</div>
 						)}
 					</Link>
 				))}

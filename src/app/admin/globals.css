@@ -417,6 +417,17 @@ a.button.disabled {
   font-weight: 500;
   opacity: 0.5;
 }
+.cardsList .cardItem .cardNewOrdersNumber,
+.cardsList a.cardItem .cardNewOrdersNumber {
+  position: absolute;
+  right: 25px;
+  top: 25px;
+  border-radius: 50%;
+  font-size: 12px;
+  background-color: var(--red-color);
+  color: white;
+  padding: 5px;
+}
 
 .detailsList {
   display: flex;

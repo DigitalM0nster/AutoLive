@@ -111,6 +111,31 @@
   font-weight: 700;
 }
 
+.button {
+  position: relative;
+  transition: all 0.3s ease;
+}
+.button.added {
+  background-color: rgb(16, 185, 129);
+  border-color: rgb(16, 185, 129);
+  animation: buttonPulse 0.3s ease-in-out;
+}
+.button.added:hover {
+  background-color: rgb(16, 185, 129);
+  border-color: rgb(16, 185, 129);
+}
+
+@keyframes buttonPulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
 @media (max-width: 980px) {
   .descriptionBlock {
     width: 100%;
