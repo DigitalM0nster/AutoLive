@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { useUiStore } from "@/store/uiStore";
+import { useCartStore } from "@/store/cartStore";
 import styles from "./styles.module.scss";
 import LoginPopup from "@/components/user/loginPopup/LoginPopup";
 import OrderPopup from "@/components/user/orderPopup/OrderPopup";
@@ -13,9 +14,12 @@ import OrderPopup from "@/components/user/orderPopup/OrderPopup";
 export default function Header() {
 	const { isLogined, user, initAuth, logout } = useAuthStore();
 	const { activateLoginPopup, setHeaderHeight } = useUiStore();
+	const { getTotalItems, items } = useCartStore(); // Получаем функцию для подсчета товаров и список товаров
+	const totalItems = getTotalItems(); // Получаем общее количество товаров в корзине
 	const router = useRouter();
 
 	const [activeBurger, setActiveBurger] = useState(false);
+	const [isAnimating, setIsAnimating] = useState(false); // Состояние для анимации корзины
 	const headerRef = useRef<HTMLDivElement>(null);
 	const getDisplayName = () => {
 		if (!user) return "Загрузка...";
@@ -49,6 +53,22 @@ export default function Header() {
 			setHeaderHeight(headerRef.current?.clientHeight || 100);
 		}, 100);
 	}, [initAuth]);
+
+	// Анимация корзины при добавлении товара
+	// Отслеживаем общее количество товаров, а не длину массива
+	const prevTotalItems = useRef(totalItems);
+	useEffect(() => {
+		if (totalItems > prevTotalItems.current) {
+			setIsAnimating(true);
+			const timer = setTimeout(() => {
+				setIsAnimating(false);
+			}, 500); // Длительность анимации 0.5 секунды
+
+			prevTotalItems.current = totalItems;
+			return () => clearTimeout(timer);
+		}
+		prevTotalItems.current = totalItems;
+	}, [totalItems]);
 
 	return (
 		<>
@@ -111,11 +131,11 @@ export default function Header() {
 								<div className={styles.phoneNumber}>+7 (995) 409-18-82</div>
 							</div>
 						</div>
-						<div className={styles.cart}>
-							<div className={styles.cartIcon}>
+						<div className={styles.cart} onClick={() => router.push("/cart")}>
+							<div className={`${styles.cartIcon} ${isAnimating ? styles.cartAnimating : ""}`}>
 								<img src="/images/cartIcon.svg" alt="Корзина" />
 							</div>
-							<div className={styles.cartNumber}>(0)</div>
+							<div className={styles.cartNumber}>({totalItems})</div>
 						</div>
 					</div>
 				</div>

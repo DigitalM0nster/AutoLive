@@ -20,7 +20,9 @@ export const prisma =
 		// 100+ пользователей: connection_limit=3
 		datasources: {
 			db: {
-				url: process.env.DB_URL + "?connection_limit=10&pool_timeout=60&connect_timeout=60",
+				// Для локальной разработки на Windows/Neon: pgbouncer=true, sslmode=require,
+				// минимальный connection_limit для стабильности, увеличенные таймауты
+				url: (process.env.DB_URL || "") + "?pgbouncer=true&sslmode=require&connection_limit=1&pool_timeout=120&connect_timeout=120",
 			},
 		},
 		// Дополнительные настройки для стабильности

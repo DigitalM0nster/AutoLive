@@ -5,7 +5,7 @@ import NavigationMenu from "@/components/user/navigationMenu/NavigationMenu";
 import styles from "./styles.module.scss";
 import CONFIG from "@/lib/config";
 import type { Metadata } from "next";
-import type { Category } from "@/lib/types";
+import { prisma } from "@/lib/prisma";
 import CategoryContent from "./CategoryContent";
 import CategorySkeleton from "./CategorySkeleton";
 
@@ -18,25 +18,25 @@ type PageParams = {
 export async function generateMetadata({ params }: PageParams): Promise<Metadata> {
 	try {
 		const { categoryId } = await params;
-		const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "";
+		const id = parseInt(categoryId);
 
-		// Загружаем данные категории для метаданных
-		const categoryRes = await fetch(`${baseUrl}/api/products/get-products-by-category?category=${categoryId}`, {
-			next: { revalidate: 3600 },
-		});
-
-		if (!categoryRes.ok) {
-			console.error(`Ошибка API категории: ${categoryRes.status} ${categoryRes.statusText}`);
+		if (isNaN(id)) {
 			return {
 				title: `Категория товаров в ${CONFIG.STORE_NAME} | ${CONFIG.CITY}`,
 				description: `Широкий выбор товаров в ${CONFIG.CITY}. Доставка по ${CONFIG.CITY} и всей России.`,
 			};
 		}
 
-		const categoryData = await categoryRes.json();
+		// Загружаем данные категории напрямую из базы данных
+		// Используем только нужные поля для метаданных (не нужно загружать все товары)
+		const category = await prisma.category.findUnique({
+			where: { id },
+			select: {
+				title: true,
+			},
+		});
 
-		if (!categoryData || !categoryData.category) {
-			console.error("API категории вернул неверные данные:", categoryData);
+		if (!category) {
 			return {
 				title: `Категория товаров в ${CONFIG.STORE_NAME} | ${CONFIG.CITY}`,
 				description: `Широкий выбор товаров в ${CONFIG.CITY}. Доставка по ${CONFIG.CITY} и всей России.`,
@@ -44,7 +44,6 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
 		}
 
 		const { CITY, STORE_NAME, DOMAIN } = CONFIG;
-		const category = categoryData.category;
 
 		return {
 			title: `${category.title} в ${STORE_NAME} | ${CITY}`,

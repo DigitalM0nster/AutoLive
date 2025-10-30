@@ -1,82 +1,108 @@
 import styles from "./styles.module.scss";
 import CategoryPageClient from "./CategoryPageClient";
-import type { Category } from "@/lib/types";
+import { prisma } from "@/lib/prisma";
 
-// Функция для загрузки данных категории с retry логикой
-// Вынесена отдельно для лучшей читаемости и тестируемости
-async function loadCategoryData(categoryId: string, retries = 3): Promise<any> {
-	const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "";
+// Функция для загрузки данных категории напрямую из базы данных
+// Используем Prisma напрямую вместо HTTP-запросов к API
+// Это намного быстрее, так как нет лишнего HTTP-круга через сеть
+async function loadCategoryData(categoryId: string) {
+	const id = parseInt(categoryId);
 
-	for (let attempt = 1; attempt <= retries; attempt++) {
-		try {
-			// Загружаем данные категории с товарами и фильтрами параллельно
-			const [categoryRes, filtersRes] = await Promise.allSettled([
-				fetch(`${baseUrl}/api/products/get-products-by-category?category=${categoryId}`, {
-					next: { revalidate: 3600 },
-				}),
-				fetch(`${baseUrl}/api/categories/${categoryId}/filters/public`, {
-					next: { revalidate: 3600 },
-				}),
-			]);
-
-			// Проверяем основной запрос категории
-			if (categoryRes.status === "rejected" || !categoryRes.value.ok) {
-				if (attempt === retries) {
-					throw new Error(`Ошибка загрузки данных категории: ${categoryRes.value?.status || "Network error"}`);
-				}
-				// Ждем перед повторной попыткой
-				await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
-				continue;
-			}
-
-			const categoryData = await categoryRes.value.json();
-
-			if (!categoryData || !categoryData.category) {
-				throw new Error("Неверный формат данных категории");
-			}
-
-			// Обрабатываем фильтры (не критично)
-			let filters = [];
-			if (filtersRes.status === "fulfilled" && filtersRes.value.ok) {
-				try {
-					filters = await filtersRes.value.json();
-				} catch (filterError) {
-					console.warn("Не удалось распарсить фильтры:", filterError);
-				}
-			}
-
-			// Добавляем фильтры к данным категории
-			const categoryDataWithFilters = {
-				...categoryData,
-				category: {
-					...categoryData.category,
-					filters: filters,
-				},
-			};
-
-			return categoryDataWithFilters;
-		} catch (error) {
-			if (attempt === retries) {
-				throw error;
-			}
-			// Ждем перед повторной попыткой
-			await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
-		}
+	if (isNaN(id)) {
+		throw new Error("Некорректный ID категории");
 	}
+
+	// Загружаем данные категории с товарами и фильтрами параллельно
+	// Используем Promise.all для одновременной загрузки всех данных
+	const [category, filters] = await Promise.all([
+		// Получаем категорию со всеми товарами и их фильтрами
+		prisma.category.findUnique({
+			where: { id },
+			include: {
+				products: {
+					include: {
+						productFilterValues: {
+							include: {
+								filterValue: {
+									include: { filter: true },
+								},
+							},
+						},
+					},
+				},
+			},
+		}),
+		// Получаем фильтры категории с их значениями
+		prisma.filter.findMany({
+			where: { categoryId: id },
+			include: {
+				values: {
+					orderBy: { value: "asc" },
+				},
+			},
+			orderBy: { id: "asc" },
+		}),
+	]);
+
+	if (!category) {
+		throw new Error("Категория не найдена");
+	}
+
+	// Преобразуем данные товаров: удаляем supplierPrice и форматируем фильтры
+	// Это такая же логика, как была в API endpoint
+	const sanitizedProducts = category.products.map((product) => {
+		const { supplierPrice, productFilterValues, ...rest } = product;
+
+		// Преобразуем productFilterValues в формат filters
+		const filters = productFilterValues.map((pfv) => ({
+			filterId: pfv.filterValue.filterId,
+			valueId: pfv.filterValueId,
+			value: pfv.filterValue.value,
+			filter: pfv.filterValue.filter,
+		}));
+
+		return {
+			...rest,
+			filters,
+		};
+	});
+
+	// Форматируем фильтры категории в нужный формат
+	const formattedFilters = filters.map((filter) => ({
+		id: filter.id,
+		title: filter.title,
+		type: filter.type,
+		unit: filter.unit,
+		values: filter.values.map((value) => ({
+			id: value.id,
+			value: value.value,
+		})),
+	}));
+
+	// Возвращаем данные в том же формате, что и API
+	return {
+		category: {
+			...category,
+			products: sanitizedProducts,
+			filters: formattedFilters,
+		},
+	};
 }
 
 // Компонент для отображения контента страницы категории
-// Вынесен в отдельный компонент для работы с Suspense
 export default async function CategoryContent({ categoryId }: { categoryId: string }) {
 	try {
-		// Загружаем данные
+		// Загружаем данные напрямую из базы данных
 		const categoryData = await loadCategoryData(categoryId);
+		// ВАЖНО: преобразуем данные к сериализуемому виду для передачи в client-компонент
+		// Prisma может возвращать типы (например, Decimal), которые не сериализуются в props
+		const clientSafeCategoryData = JSON.parse(JSON.stringify(categoryData));
 
 		// Рендерим контент
 		return (
 			<>
 				<h1 className={`pageTitle ${styles.pageTitle}`}>{categoryData.category.title}</h1>
-				<CategoryPageClient categoryData={categoryData} />
+				<CategoryPageClient categoryData={clientSafeCategoryData} />
 			</>
 		);
 	} catch (error) {

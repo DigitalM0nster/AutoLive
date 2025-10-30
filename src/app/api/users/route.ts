@@ -1,8 +1,10 @@
+export const runtime = "nodejs";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { withPermission } from "@/middleware/permissionMiddleware";
 import type { User } from "@/lib/types";
 import { logUserChange, logDepartmentChange } from "@/lib/universalLogging";
+import { withDbRetry } from "@/lib/utils";
 
 interface ExtendedRequestContext {
 	user: Pick<User, "id" | "role"> & { departmentId: number | null };
@@ -89,25 +91,18 @@ export const GET = withPermission(
 				orderBy = { phone: sortOrder };
 			}
 
-			const users = await prisma.user.findMany({
-				where,
-				include: {
-					managerOrders: {
-						select: {
-							id: true,
-							comments: true,
-							status: true,
-							createdAt: true,
-						},
-					},
-					department: true,
-				},
-				skip,
-				take: limit,
-				orderBy,
+			const [users, total] = await withDbRetry(async () => {
+				const u = await prisma.user.findMany({
+					where,
+					// Упростим include для стабильности локально; при необходимости расширим позже
+					include: { department: true },
+					skip,
+					take: limit,
+					orderBy,
+				});
+				const t = await prisma.user.count({ where });
+				return [u, t] as const;
 			});
-
-			const total = await prisma.user.count({ where });
 
 			const mappedUsers = users.map((u) => ({
 				id: u.id,
@@ -123,12 +118,7 @@ export const GET = withPermission(
 							name: u.department.name,
 					  }
 					: null,
-				orders: u.managerOrders.map((o) => ({
-					id: o.id,
-					comments: o.comments,
-					status: o.status,
-					createdAt: o.createdAt,
-				})),
+				orders: [],
 			}));
 
 			return NextResponse.json({ users: mappedUsers, total });

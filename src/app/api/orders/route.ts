@@ -1,7 +1,9 @@
+export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withPermission } from "@/middleware/permissionMiddleware";
 import { OrderResponse, CreateOrderRequest } from "@/lib/types";
+import { withDbRetry } from "@/lib/utils";
 
 // Получение списка заказов с фильтрацией по ролям
 async function getOrdersHandler(req: NextRequest, { user, scope }: { user: any; scope: "all" | "department" | "own" }) {
@@ -86,65 +88,26 @@ async function getOrdersHandler(req: NextRequest, { user, scope }: { user: any; 
 			whereClause.clientId = parseInt(clientId);
 		}
 
-		// Получаем заказы с пагинацией
-		const [orders, total] = await Promise.all([
-			prisma.order.findMany({
+		// Получаем заказы с пагинацией (с ретраями)
+		const [orders, total] = await withDbRetry(async () => {
+			const list = await prisma.order.findMany({
 				where: whereClause,
 				include: {
 					manager: {
-						select: {
-							id: true,
-							first_name: true,
-							last_name: true,
-							role: true,
-							department: {
-								select: {
-									id: true,
-									name: true,
-								},
-							},
-						},
+						select: { id: true, first_name: true, last_name: true, role: true, department: { select: { id: true, name: true } } },
 					},
-					department: {
-						select: {
-							id: true,
-							name: true,
-						},
-					},
-					client: {
-						select: {
-							id: true,
-							first_name: true,
-							last_name: true,
-							phone: true,
-						},
-					},
-					creator: {
-						select: {
-							id: true,
-							first_name: true,
-							last_name: true,
-							role: true,
-							department: {
-								select: {
-									id: true,
-									name: true,
-								},
-							},
-						},
-					},
+					department: { select: { id: true, name: true } },
+					client: { select: { id: true, first_name: true, last_name: true, phone: true } },
+					creator: { select: { id: true, first_name: true, last_name: true, role: true, department: { select: { id: true, name: true } } } },
 					orderItems: true,
 				},
-				orderBy: {
-					createdAt: "desc",
-				},
+				orderBy: { createdAt: "desc" },
 				skip,
 				take: limit,
-			}),
-			prisma.order.count({
-				where: whereClause,
-			}),
-		]);
+			});
+			const cnt = await prisma.order.count({ where: whereClause });
+			return [list, cnt] as const;
+		});
 
 		const totalPages = Math.ceil(total / limit);
 

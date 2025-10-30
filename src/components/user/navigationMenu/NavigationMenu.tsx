@@ -69,6 +69,16 @@ export default function NavigationMenu({ productId }: NavigationMenuProps) {
 	const breadcrumbs = useMemo(() => {
 		const segments = pathname.split("/").filter(Boolean);
 
+		// Добавляем корзину в хлебные крошки
+		if (segments[0] === "cart") {
+			return [
+				{
+					name: "Корзина",
+					path: "/cart",
+				},
+			];
+		}
+
 		// Специальная логика для прямого пути к продукту /products/[productId]
 		if (segments[0] === "products" && segments.length === 2) {
 			const productId = segments[1];

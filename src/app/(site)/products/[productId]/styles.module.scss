@@ -124,6 +124,34 @@
 	}
 }
 
+.button {
+	position: relative;
+	transition: all 0.3s ease;
+
+	&.added {
+		background-color: rgba(16, 185, 129, 1);
+		border-color: rgba(16, 185, 129, 1);
+		animation: buttonPulse 0.3s ease-in-out;
+
+		&:hover {
+			background-color: rgba(16, 185, 129, 1);
+			border-color: rgba(16, 185, 129, 1);
+		}
+	}
+}
+
+@keyframes buttonPulse {
+	0% {
+		transform: scale(1);
+	}
+	50% {
+		transform: scale(1.05);
+	}
+	100% {
+		transform: scale(1);
+	}
+}
+
 @media (max-width: 980px) {
 	.descriptionBlock {
 		width: 100%;

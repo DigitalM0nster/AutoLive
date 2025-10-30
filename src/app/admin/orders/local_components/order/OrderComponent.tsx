@@ -31,6 +31,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 		departmentId: "",
 		managerId: "",
 		// Поля для статусов
+		contactName: "",
 		contactPhone: "",
 		confirmationDate: "",
 		bookedUntil: "",
@@ -153,8 +154,14 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 				});
 
 				if (!response.ok) {
-					const errorData = await response.json();
-					throw new Error(errorData.error || "Ошибка при загрузке данных заказа");
+					let message = "Ошибка при загрузке данных заказа";
+					try {
+						const errorData = await response.json();
+						if (errorData?.error) message = errorData.error;
+					} catch {}
+					setError(message);
+					setLoading(false);
+					return;
 				}
 
 				const data = await response.json();
@@ -166,6 +173,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 					clientId: order.clientId?.toString() || "",
 					departmentId: order.departmentId?.toString() || "",
 					managerId: order.managerId?.toString() || "",
+					contactName: "",
 					contactPhone: "",
 					confirmationDate: "",
 					bookedUntil: "",
@@ -473,11 +481,18 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 		const statusOrder = ["created", "confirmed", "booked", "ready", "paid", "completed", "returned"];
 		const currentStatusIndex = statusOrder.indexOf(status);
 
-		// 1. Новый - контактный телефон и состав заказа (всегда проверяем)
+		// 1. Новый - контакты либо выбранный клиент, и состав заказа (всегда проверяем)
 		if (currentStatusIndex >= 0) {
-			if (!formData.contactPhone.trim()) {
-				missingFields.push("Контактный телефон");
-				errorFields.push("contactPhone");
+			// Если клиент ещё не выбран, требуем имя и телефон
+			if (!selectedClient) {
+				if (!formData.contactName.trim()) {
+					missingFields.push("Имя клиента (лида)");
+					errorFields.push("contactName");
+				}
+				if (!formData.contactPhone.trim()) {
+					missingFields.push("Контактный телефон");
+					errorFields.push("contactPhone");
+				}
 			}
 			if (orderItems.length === 0) {
 				missingFields.push("Состав заказа");
@@ -731,29 +746,54 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 						</div>
 
 						{/* Блоки статусов заказа */}
-						{/* 1. Новый - Контактный телефон */}
+						{/* 1. Новый - Контактные данные лида (если клиент не выбран) */}
 						<div className={`statusBlock borderBlock ${currentStatus === "created" ? "active" : ""}`}>
 							<div className={`statusHeader`}>
 								<h3>1. Новый</h3>
 							</div>
 							<div className={`statusFields`}>
-								<div className={`formField`}>
-									<label htmlFor="contactPhone">Контактный телефон</label>
-									<input
-										id="contactPhone"
-										type="tel"
-										value={formData.contactPhone}
-										onChange={(e) => {
-											const formatted = formatPhoneNumber(e.target.value);
-											setFormData((prev) => ({ ...prev, contactPhone: formatted }));
-											clearFieldError("contactPhone");
-										}}
-										onFocus={() => clearFieldError("contactPhone")}
-										placeholder="+7(995)123-45-67"
-										className={fieldErrors.has("contactPhone") ? "error" : ""}
-										disabled={!canEditStatusField("created")}
-									/>
-								</div>
+								{!selectedClient ? (
+									<>
+										<div className={`formField`}>
+											<label htmlFor="contactName">Имя клиента</label>
+											<input
+												id="contactName"
+												type="text"
+												value={formData.contactName}
+												onChange={(e) => {
+													setFormData((prev) => ({ ...prev, contactName: e.target.value }));
+													clearFieldError("contactName");
+												}}
+												onFocus={() => clearFieldError("contactName")}
+												placeholder="Иван"
+												className={fieldErrors.has("contactName") ? "error" : ""}
+												disabled={!canEditStatusField("created")}
+											/>
+										</div>
+										<div className={`formField`}>
+											<label htmlFor="contactPhone">Контактный телефон</label>
+											<input
+												id="contactPhone"
+												type="tel"
+												value={formData.contactPhone}
+												onChange={(e) => {
+													const formatted = formatPhoneNumber(e.target.value);
+													setFormData((prev) => ({ ...prev, contactPhone: formatted }));
+													clearFieldError("contactPhone");
+												}}
+												onFocus={() => clearFieldError("contactPhone")}
+												placeholder="+7(995)123-45-67"
+												className={fieldErrors.has("contactPhone") ? "error" : ""}
+												disabled={!canEditStatusField("created")}
+											/>
+										</div>
+									</>
+								) : (
+									<div className={`formField`}>
+										<label>Контакты лида</label>
+										<input type="text" value="Клиент выбран — контакты скрыты" disabled />
+									</div>
+								)}
 
 								<div className={`formField`}>
 									<label htmlFor="productSearch">Состав заказа</label>

@@ -82,7 +82,7 @@ export default function AllOrdersTable() {
 	const [departments, setDepartments] = useState<{ id: number; name: string }[]>([]);
 	const [clients, setClients] = useState<{ id: number; first_name: string | null; last_name: string | null; middle_name: string | null }[]>([]);
 
-	const limit = 20;
+	const limit = 10;
 
 	// Функция для получения имени пользователя
 	const getUserName = (user: { first_name?: string | null; last_name?: string | null; middle_name?: string | null }) => {
@@ -170,11 +170,21 @@ export default function AllOrdersTable() {
 					params.append("sortOrder", sortOrder);
 				}
 
-				const response = await fetch(`/api/orders?${params}`);
+				const controller = new AbortController();
+				const timeout = setTimeout(() => controller.abort(), 15000);
+				const response = await fetch(`/api/orders?${params}`, { signal: controller.signal });
+				clearTimeout(timeout);
+				if (!response.ok) {
+					console.error("Ошибка загрузки заказов: статус", response.status);
+					setOrders([]);
+					setTotal(0);
+					return;
+				}
 				const data: OrderResponse = await response.json();
-
-				if (data.error) {
-					console.error("Ошибка загрузки заказов:", data.error);
+				if ((data as any)?.error) {
+					console.error("Ошибка загрузки заказов:", (data as any).error);
+					setOrders([]);
+					setTotal(0);
 					return;
 				}
 
@@ -196,23 +206,29 @@ export default function AllOrdersTable() {
 			try {
 				// Загружаем ответственных (пользователи с ролями manager, admin, superadmin)
 				const managersResponse = await fetch("/api/users?role=manager&role=admin&role=superadmin");
-				const managersData = await managersResponse.json();
-				if (managersData.users) {
-					setManagers(managersData.users);
+				if (managersResponse.ok) {
+					const managersData = await managersResponse.json();
+					if (managersData.users) {
+						setManagers(managersData.users);
+					}
 				}
 
 				// Загружаем отделы
 				const departmentsResponse = await fetch("/api/departments");
-				const departmentsData = await departmentsResponse.json();
-				if (departmentsData.departments) {
-					setDepartments(departmentsData.departments);
+				if (departmentsResponse.ok) {
+					const departmentsData = await departmentsResponse.json();
+					if (departmentsData.departments) {
+						setDepartments(departmentsData.departments);
+					}
 				}
 
 				// Загружаем клиентов (пользователи с ролью client)
 				const clientsResponse = await fetch("/api/users?role=client");
-				const clientsData = await clientsResponse.json();
-				if (clientsData.users) {
-					setClients(clientsData.users);
+				if (clientsResponse.ok) {
+					const clientsData = await clientsResponse.json();
+					if (clientsData.users) {
+						setClients(clientsData.users);
+					}
 				}
 			} catch (error) {
 				console.error("Ошибка загрузки данных для селектов:", error);

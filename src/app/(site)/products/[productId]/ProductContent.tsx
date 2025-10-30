@@ -1,31 +1,77 @@
 import styles from "./styles.module.scss";
+import AddToCartButton from "./AddToCartButton";
+import { prisma } from "@/lib/prisma";
 
-// Функция для загрузки данных товара
-// Вынесена отдельно для лучшей читаемости и тестируемости
+// Функция для загрузки данных товара напрямую из базы данных
+// Используем Prisma напрямую вместо HTTP-запроса к API
+// Это намного быстрее, так как нет лишнего HTTP-круга через сеть
 async function loadProductData(productId: string) {
-	const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "";
+	const id = parseInt(productId);
 
-	const res = await fetch(`${baseUrl}/api/products/${productId}/public`, {
-		cache: "no-store",
-	});
-
-	if (!res.ok) {
-		throw new Error(`Ошибка загрузки товара: ${res.status}`);
+	if (isNaN(id)) {
+		throw new Error("Некорректный ID товара");
 	}
 
-	const { product } = await res.json();
+	// Прямой запрос к базе данных с теми же include, что были в API
+	// Получаем товар со всеми связанными данными
+	const product = await prisma.product.findUnique({
+		where: { id },
+		include: {
+			department: { select: { id: true, name: true } },
+			category: { select: { id: true, title: true } },
+			productFilterValues: {
+				include: {
+					filterValue: {
+						include: {
+							filter: { select: { id: true, title: true, type: true } },
+						},
+					},
+				},
+			},
+		},
+	});
 
 	if (!product) {
 		throw new Error("Товар не найден");
 	}
 
-	return product;
+	// Преобразуем фильтры в нужный формат (такая же логика, как в API)
+	// Группируем фильтры по названию для удобного отображения
+	const filters = product.productFilterValues.map((pfv) => ({
+		title: pfv.filterValue.filter.title,
+		type: pfv.filterValue.filter.type,
+		selected_values: [
+			{
+				value: pfv.filterValue.value,
+			},
+		],
+	}));
+
+	// Группируем фильтры с одинаковыми названиями
+	const groupedFilters = filters.reduce((acc: any[], filter) => {
+		const existingFilter = acc.find((f) => f.title === filter.title);
+		if (existingFilter) {
+			existingFilter.selected_values.push(...filter.selected_values);
+		} else {
+			acc.push(filter);
+		}
+		return acc;
+	}, []);
+
+	// Возвращаем товар в том же формате, что и API
+	// Удаляем supplierPrice (закупочная цена, не должна показываться клиентам)
+	const { supplierPrice, ...productWithoutSupplierPrice } = product;
+
+	return {
+		...productWithoutSupplierPrice,
+		categoryTitle: product.category?.title || null,
+		filters: groupedFilters,
+	};
 }
 
 // Компонент для отображения контента страницы товара
-// Вынесен в отдельный компонент для работы с Suspense
 export default async function ProductContent({ productId }: { productId: string }) {
-	// Загружаем данные
+	// Загружаем данные напрямую из базы данных
 	const product = await loadProductData(productId);
 
 	// Рендерим контент
@@ -64,7 +110,7 @@ export default async function ProductContent({ productId }: { productId: string 
 				<div className={styles.buttonBlock}>
 					<div className={styles.column}>
 						<div className={styles.price}>Цена: {product.price}₽</div>
-						<div className={`button ${styles.button}`}>В корзину</div>
+						<AddToCartButton product={product} />
 					</div>
 				</div>
 			</div>
@@ -72,7 +118,7 @@ export default async function ProductContent({ productId }: { productId: string 
 			<div className={`${styles.buttonBlock} ${styles.mobile}`}>
 				<div className={styles.column}>
 					<div className={styles.price}>Цена: {product.price}₽</div>
-					<div className={`button ${styles.button}`}>В корзину</div>
+					<AddToCartButton product={product} />
 				</div>
 			</div>
 		</div>
