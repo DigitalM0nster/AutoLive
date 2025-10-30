@@ -51,43 +51,24 @@ export async function POST(req: NextRequest) {
 		}
 		const departmentId = uniqueDepartments.size === 1 ? [...uniqueDepartments][0] : null;
 
-		// Создаём/находим пользователя-клиента по телефону
-		// Номер телефона в БД хранится как строка. Добавим +7 префикс, если это российский формат из 11 цифр, иначе сохраним как есть.
+		// ПУБЛИЧНАЯ ЗАЯВКА: НЕ ПРИВЯЗЫВАЕМ заказ к пользователю по номеру телефона
+		// Телефон и имя — это только контактные данные лида. Пользователь не создаётся и не изменяется.
 		const normalizedPhone = rawPhone.length === 11 && rawPhone.startsWith("7") ? `+${rawPhone}` : rawPhone;
 
-		// Имя разобьём на first_name (остальное можно опустить для простоты)
-		const [firstName, ...rest] = rawName.split(" ");
-		const lastName = rest.join(" ") || null;
-
-		const client = await prisma.user.upsert({
-			where: { phone: normalizedPhone },
-			update: {
-				first_name: firstName || null,
-				last_name: lastName,
-				role: "client",
-				status: "verified",
-			},
-			create: {
-				phone: normalizedPhone,
-				password: "", // не используется для публичной заявки
-				first_name: firstName || null,
-				last_name: lastName,
-				role: "client",
-				status: "unverified",
-			},
-		});
+		// createdBy для публичной заявки — null (требует миграции: Order.createdBy сделать опциональным)
 
 		// Создаём заказ и позиции в транзакции
 		const order = await prisma.$transaction(async (tx) => {
 			const newOrder = await tx.order.create({
 				data: {
-					comments: [],
+					// Сохраняем контактные данные лида в комментариях заказа
+					comments: [`contact_name: ${rawName}`, `contact_phone: ${normalizedPhone}`],
 					status: "created",
-					clientId: client.id,
+					clientId: null, // клиент не привязан — только контакты
 					managerId: null,
 					departmentId: departmentId,
-					createdBy: client.id, // пользователь сам создаёт заявку
-				},
+					createdBy: undefined, // публичная заявка — без создателя в системе
+				} as any,
 			});
 
 			await tx.orderItem.createMany({

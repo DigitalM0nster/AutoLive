@@ -151,13 +151,13 @@ model Order {
     managerId    Int?        @map("manager_id") // Опциональное поле - может быть null для свободных заказов
     departmentId Int?        @map("department_id") // Опциональное поле - для заказов от пользователей может быть null
     clientId     Int?        @map("client_id") // Опциональное поле - для заказов созданных админом может быть null
-    createdBy    Int         @map("created_by") // Кто создал заказ (админ/менеджер/пользователь)
+    createdBy    Int?        @map("created_by") // Кто создал заказ (админ/менеджер/пользователь). Для публичной заявки может быть null
 
     // Связи
     manager    User?       @relation("ManagerOrders", fields: [managerId], references: [id])
     department Department? @relation(fields: [departmentId], references: [id])
     client     User?       @relation("ClientOrders", fields: [clientId], references: [id])
-    creator    User        @relation("CreatedOrders", fields: [createdBy], references: [id])
+    creator    User?       @relation("CreatedOrders", fields: [createdBy], references: [id])
     orderItems OrderItem[]
     orderLogs  OrderLog[]
 

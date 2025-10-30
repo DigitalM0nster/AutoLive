@@ -79,12 +79,11 @@ export default function Header() {
 						<div className={styles.logo} onClick={() => router.push("/")}>
 							<img src="/images/logo.svg" alt="Логотип" />
 						</div>
-						{user?.role === "admin" ||
-							(user?.role === "superadmin" && (
-								<div className={styles.dashboardButton} onClick={() => router.push("/admin/dashboard")}>
-									Вход в админ панель
-								</div>
-							))}
+						{(user?.role === "admin" || user?.role === "superadmin" || user?.role === "manager") && (
+							<div className={styles.dashboardButton} onClick={() => router.push("/admin/dashboard")}>
+								Вход в админ панель
+							</div>
+						)}
 					</div>
 					<div className={styles.centerBlock}>
 						{[

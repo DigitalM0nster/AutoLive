@@ -262,7 +262,7 @@ export default function AllUsersLogsTable({
 								<span className="title">Профиль:</span>
 								<span className="value">
 									<a href={`/admin/users/${user.id}`} className="itemLink">
-										{actualUser?.first_name || ""} {actualUser?.last_name || ""} {actualUser?.middle_name || ""}
+										{actualUser?.last_name || ""} {actualUser?.first_name || ""} {actualUser?.middle_name || ""}
 									</a>
 								</span>
 							</div>
@@ -352,7 +352,7 @@ export default function AllUsersLogsTable({
 											<span className="title">Профиль:</span>
 											<span className="value">
 												<a href={`/admin/users/${log.targetUser.id}`} className="itemLink">
-													{actualUser?.first_name || ""} {actualUser?.last_name || ""} {actualUser?.middle_name || ""}
+													{actualUser?.last_name || ""} {actualUser?.first_name || ""} {actualUser?.middle_name || ""}
 												</a>
 											</span>
 										</div>
@@ -430,7 +430,7 @@ export default function AllUsersLogsTable({
 											<span className="title">Профиль:</span>
 											<span className="value">
 												<a href={`/admin/users/${log.targetUser.id}`} className="itemLink">
-													{actualUser?.first_name || ""} {actualUser?.last_name || ""} {actualUser?.middle_name || ""}
+													{actualUser?.last_name || ""} {actualUser?.first_name || ""} {actualUser?.middle_name || ""}
 												</a>
 											</span>
 										</div>
@@ -534,7 +534,7 @@ export default function AllUsersLogsTable({
 													<span className="title">Профиль:</span>
 													<span className="value">
 														<a href={`/admin/users/${log.targetUser.id}`} className="itemLink">
-															{actualUser?.first_name || ""} {actualUser?.last_name || ""} {actualUser?.middle_name || ""}
+															{actualUser?.last_name || ""} {actualUser?.first_name || ""} {actualUser?.middle_name || ""}
 														</a>
 													</span>
 												</div>

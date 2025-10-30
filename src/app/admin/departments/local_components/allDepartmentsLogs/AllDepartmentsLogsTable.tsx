@@ -315,7 +315,7 @@ export default function AllDepartmentsLogsTable({
 						}`}
 						onClick={() => toggleActiveBlock(userLogKey)}
 					>
-						{getUserName({ first_name: user.first_name || null, last_name: user.last_name || null, middle_name: user.middle_name || null })}
+						{getUserName({ last_name: user.last_name || null, first_name: user.first_name || null, middle_name: user.middle_name || null })}
 					</div>
 					<div className={`openingBlock ${activeBlocks[userLogKey] ? "active" : ""}`}>
 						<div className="infoField">
