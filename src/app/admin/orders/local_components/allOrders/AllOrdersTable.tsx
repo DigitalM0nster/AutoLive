@@ -96,7 +96,7 @@ export default function AllOrdersTable() {
 	// Опции для CustomSelect
 	const statusOptions = [
 		{ value: "all", label: "Все статусы" },
-		{ value: "created", label: "Создан" },
+		{ value: "created", label: "Новый" },
 		{ value: "confirmed", label: "Подтверждён" },
 		{ value: "booked", label: "Забронирован" },
 		{ value: "ready", label: "Готов к выдаче" },
@@ -616,7 +616,7 @@ export default function AllOrdersTable() {
 	const getStatusText = (status: OrderStatus | "all") => {
 		switch (status) {
 			case "created":
-				return "Создан";
+				return "Новый";
 			case "confirmed":
 				return "Подтверждён";
 			case "booked":

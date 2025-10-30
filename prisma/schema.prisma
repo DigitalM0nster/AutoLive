@@ -457,7 +457,7 @@ model Booking {
 }
 
 enum OrderStatus {
-    created // Создан
+    created // Новый
     confirmed // Подтверждён
     booked // Забронирован
     ready // Готов к выдаче
