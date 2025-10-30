@@ -20,6 +20,7 @@ export default function Header() {
 
 	const [activeBurger, setActiveBurger] = useState(false);
 	const [isAnimating, setIsAnimating] = useState(false); // Состояние для анимации корзины
+	const [mounted, setMounted] = useState(false); // Флаг монтирования для избежания SSR-гидратации
 	const headerRef = useRef<HTMLDivElement>(null);
 	const getDisplayName = () => {
 		if (!user) return "Загрузка...";
@@ -53,6 +54,11 @@ export default function Header() {
 			setHeaderHeight(headerRef.current?.clientHeight || 100);
 		}, 100);
 	}, [initAuth]);
+
+	// Флаг монтирования (избегаем несоответствия SSR/CSR по количеству товаров)
+	useEffect(() => {
+		setMounted(true);
+	}, []);
 
 	// Анимация корзины при добавлении товара
 	// Отслеживаем общее количество товаров, а не длину массива
@@ -134,7 +140,9 @@ export default function Header() {
 							<div className={`${styles.cartIcon} ${isAnimating ? styles.cartAnimating : ""}`}>
 								<img src="/images/cartIcon.svg" alt="Корзина" />
 							</div>
-							<div className={styles.cartNumber}>({totalItems})</div>
+							<div className={styles.cartNumber} suppressHydrationWarning>
+								{mounted ? `(${totalItems})` : "(0)"}
+							</div>
 						</div>
 					</div>
 				</div>
