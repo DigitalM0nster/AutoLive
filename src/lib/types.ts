@@ -444,7 +444,7 @@ export type Order = {
 	managerId?: number | null;
 	departmentId?: number | null;
 	clientId?: number | null;
-	createdBy: number;
+	createdBy?: number | null;
 	// Связи
 	manager?: {
 		id: number;
@@ -460,13 +460,13 @@ export type Order = {
 		last_name: string | null;
 		phone: string;
 	} | null;
-	creator: {
+	creator?: {
 		id: number;
 		first_name: string | null;
 		last_name: string | null;
 		role: string;
 		department?: DepartmentForLog | null;
-	};
+	} | null;
 	orderItems: OrderItem[];
 };
 
