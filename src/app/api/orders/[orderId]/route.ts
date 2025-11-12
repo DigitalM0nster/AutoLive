@@ -179,13 +179,126 @@ async function updateOrderHandler(req: NextRequest, { user, scope, params }: { u
 			return NextResponse.json({ error: "Order not found or access denied" }, { status: 404 });
 		}
 
+		const statusTimeline = ["created", "confirmed", "booked", "ready", "paid", "completed", "returned"] as const;
+		const currentStatusIndex = statusTimeline.indexOf(currentOrder.status as (typeof statusTimeline)[number]);
+
+		if (user.role === "manager") {
+			if (body.status) {
+				const requestedStatusIndex = statusTimeline.indexOf(body.status as (typeof statusTimeline)[number]);
+				if (requestedStatusIndex !== -1 && requestedStatusIndex < currentStatusIndex) {
+					return NextResponse.json({ error: "Менеджер не может откатывать статус назад" }, { status: 400 });
+				}
+			}
+
+			if (currentStatusIndex > 0) {
+				if (body.managerId !== undefined || body.departmentId !== undefined || body.finalDeliveryDate !== undefined) {
+					return NextResponse.json({ error: "Менеджеру запрещено изменять данные уже подтверждённых статусов" }, { status: 400 });
+				}
+			}
+		}
+
+		let targetManagerId: number | null | undefined = body.managerId !== undefined ? body.managerId : currentOrder.managerId;
+		let targetDepartmentId: number | null | undefined = body.departmentId !== undefined ? body.departmentId : currentOrder.departmentId;
+
+		let responsibleUser: {
+			id: number;
+			role: string;
+			departmentId: number | null;
+		} | null = null;
+
+		if (targetManagerId !== undefined && targetManagerId !== null) {
+			responsibleUser = await prisma.user.findUnique({
+				where: { id: targetManagerId },
+				select: {
+					id: true,
+					role: true,
+					departmentId: true,
+				},
+			});
+
+			if (!responsibleUser) {
+				return NextResponse.json({ error: "Ответственный не найден" }, { status: 400 });
+			}
+
+			if (["admin", "manager"].includes(responsibleUser.role) && !responsibleUser.departmentId) {
+				return NextResponse.json({ error: "Ответственный без отдела не может быть назначен" }, { status: 400 });
+			}
+
+			if (user.role === "admin") {
+				if (responsibleUser.role === "admin" && responsibleUser.id !== fullUser.id) {
+					return NextResponse.json({ error: "Админ может назначить ответственным только себя" }, { status: 400 });
+				}
+				if (responsibleUser.departmentId !== fullUser.departmentId) {
+					return NextResponse.json({ error: "Можно назначать только сотрудников своего отдела" }, { status: 400 });
+				}
+				targetDepartmentId = fullUser.departmentId;
+			}
+
+			if (user.role === "superadmin") {
+				const isSelf = targetManagerId === fullUser.id;
+				if (isSelf) {
+					targetDepartmentId = null;
+				} else {
+					if (!["admin", "manager"].includes(responsibleUser.role)) {
+						return NextResponse.json({ error: "Ответственным может быть только админ или менеджер" }, { status: 400 });
+					}
+					if (!targetDepartmentId) {
+						return NextResponse.json({ error: "Для назначения сотрудника выберите отдел" }, { status: 400 });
+					}
+					if (responsibleUser.departmentId !== targetDepartmentId) {
+						return NextResponse.json({ error: "Ответственный должен принадлежать выбранному отделу" }, { status: 400 });
+					}
+				}
+			}
+
+			if (user.role === "manager" && targetManagerId !== fullUser.id) {
+				return NextResponse.json({ error: "Менеджер может обновлять назначение только на себя" }, { status: 400 });
+			}
+
+			if (targetDepartmentId && responsibleUser.departmentId && responsibleUser.id !== fullUser.id && responsibleUser.departmentId !== targetDepartmentId) {
+				return NextResponse.json({ error: "Ответственный должен быть из выбранного отдела" }, { status: 400 });
+			}
+		} else if (user.role === "manager") {
+			// Менеджер не может оставить заказ без ответственного
+			targetManagerId = fullUser.id;
+		}
+
+		if (targetDepartmentId !== undefined && targetDepartmentId !== null) {
+			const existingDepartment = await prisma.department.findUnique({
+				where: { id: targetDepartmentId },
+				select: { id: true },
+			});
+
+			if (!existingDepartment) {
+				return NextResponse.json({ error: "Указан несуществующий отдел" }, { status: 400 });
+			}
+		}
+
+		let finalDeliveryDateValue: Date | null | undefined = undefined;
+		if (body.finalDeliveryDate !== undefined) {
+			if (body.finalDeliveryDate === null) {
+				finalDeliveryDateValue = null;
+			} else {
+				const parsed = new Date(body.finalDeliveryDate);
+				if (isNaN(parsed.getTime())) {
+					return NextResponse.json({ error: "Некорректная дата финальной поставки клиенту" }, { status: 400 });
+				}
+				finalDeliveryDateValue = parsed;
+			}
+		}
+
 		// Обновляем заказ в транзакции
 		const updatedOrder = await prisma.$transaction(async (tx) => {
 			// Подготавливаем данные для обновления
 			const updateData: any = {};
 
 			if (body.comments !== undefined) updateData.comments = body.comments;
-			if (body.status !== undefined) updateData.status = body.status;
+			if (body.status !== undefined) {
+				updateData.status = body.status;
+				if (body.status === "confirmed" && currentOrder.status !== "confirmed") {
+					updateData.confirmationDate = new Date();
+				}
+			}
 
 			// Логика назначения менеджера
 			if (body.managerId !== undefined) {
@@ -202,6 +315,14 @@ async function updateOrderHandler(req: NextRequest, { user, scope, params }: { u
 
 			if (body.departmentId !== undefined) {
 				updateData.departmentId = body.departmentId;
+			}
+
+			if (user.role === "superadmin" && targetManagerId === fullUser.id) {
+				updateData.departmentId = null;
+			}
+
+			if (finalDeliveryDateValue !== undefined) {
+				updateData.finalDeliveryDate = finalDeliveryDateValue;
 			}
 
 			// Обновляем заказ
@@ -297,6 +418,8 @@ async function updateOrderHandler(req: NextRequest, { user, scope, params }: { u
 						managerId: order.managerId,
 						departmentId: order.departmentId,
 						clientId: order.clientId,
+						confirmationDate: (order as any).confirmationDate ?? null,
+						finalDeliveryDate: (order as any).finalDeliveryDate ?? null,
 					},
 				},
 			});

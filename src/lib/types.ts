@@ -440,6 +440,8 @@ export type Order = {
 	status: OrderStatus;
 	createdAt: string | Date;
 	updatedAt: string | Date;
+	confirmationDate?: string | Date | null;
+	finalDeliveryDate?: string | Date | null;
 	assignedAt?: string | Date | null;
 	managerId?: number | null;
 	departmentId?: number | null;
@@ -481,6 +483,37 @@ export type OrderItem = {
 	quantity: number;
 };
 
+export type OrderItemClient = Omit<OrderItem, "id" | "orderId"> & {
+	id?: number;
+	orderId?: number;
+	supplierDeliveryDate?: string;
+	carModel?: string;
+	vinCode?: string;
+	department: DepartmentForProduct;
+	productId?: number;
+};
+
+export type OrderFormState = {
+	clientId: string;
+	departmentId: string;
+	managerId: string;
+	contactName: string;
+	contactPhone: string;
+	finalDeliveryDate: string;
+	bookedUntil: string;
+	readyUntil: string;
+	prepaymentAmount: string;
+	prepaymentDate: string;
+	paymentDate: string;
+	orderAmount: string;
+	completionDate: string;
+	returnReason: string;
+	returnDate: string;
+	returnAmount: string;
+	returnPaymentDate: string;
+	returnDocumentNumber: string;
+};
+
 // Тип для создания заказа
 export type CreateOrderRequest = {
 	clientId?: number; // Для заказов от пользователей
@@ -499,7 +532,6 @@ export type CreateOrderRequest = {
 	}[];
 	// Поля для статусов заказа
 	contactPhone?: string; // 1. Новый - контактный телефон
-	confirmationDate?: string; // 2. Подтвержденный - дата согласования
 	bookedUntil?: string; // 3. Забронирован - забронирован до
 	readyUntil?: string; // 4. Готов к выдаче - отложен до
 	prepaymentAmount?: number; // 4. Готов к выдаче - сумма предоплаты
@@ -512,7 +544,9 @@ export type CreateOrderRequest = {
 	returnAmount?: number; // 7. Возврат - сумма возврата
 	returnPaymentDate?: string; // 7. Возврат - дата возврата денежных средств
 	returnDocumentNumber?: string; // 7. Возврат - номер документа возврата средств
+	finalDeliveryDate?: string; // 2. Подтвержденный - финальная дата поставки клиенту
 	comments?: string[]; // Комментарии
+	status?: OrderStatus;
 };
 
 // Тип для обновления заказа
@@ -521,6 +555,7 @@ export type UpdateOrderRequest = {
 	status?: OrderStatus;
 	managerId?: number | null; // Назначение/снятие менеджера
 	departmentId?: number | null;
+	finalDeliveryDate?: string | null;
 };
 
 // Тип для ответа API заказов

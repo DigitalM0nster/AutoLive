@@ -72,6 +72,8 @@ a.button {
 	display: flex;
 	align-items: center;
 	gap: 5px;
+	text-align: center;
+	justify-content: center;
 	width: fit-content;
 	height: fit-content;
 	padding: 10px 25px;
@@ -1420,6 +1422,13 @@ table,
 			justify-content: space-between;
 			align-items: center;
 
+			&.noMore {
+				cursor: default;
+				&:after {
+					display: none;
+				}
+			}
+
 			&:after {
 				content: "подробнее";
 				display: flex;
@@ -2565,7 +2574,6 @@ span {
 				border-radius: 8px;
 				font-size: 14px;
 				font-family: var(--mainFont);
-				transition: all 0.3s ease;
 				background: white;
 
 				&:focus {
@@ -2592,6 +2600,17 @@ span {
 						opacity: 0.5;
 					}
 				}
+
+				&.quantityInput {
+					width: 30px;
+					text-align: center;
+					-moz-appearance: textfield;
+
+					&::-webkit-outer-spin-button,
+					&::-webkit-inner-spin-button {
+						-webkit-appearance: none;
+					}
+				}
 			}
 
 			select {
@@ -2609,6 +2628,28 @@ span {
 			color: var(--orange-color);
 			font-style: italic;
 			margin-top: 4px;
+		}
+	}
+
+	.formField {
+		.selectedClient {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			span {
+				display: flex;
+				align-items: center;
+				gap: 10px;
+			}
+		}
+	}
+
+	button {
+		&.removeButton {
+			padding: 10px 25px;
+			background: var(--red-color);
+			box-shadow: none;
+			color: white;
 		}
 	}
 
@@ -3069,6 +3110,157 @@ span {
 		}
 	}
 
+	// Стили для визуального разделения блоков товаров
+	.orderItemsList {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+
+		&.readonly {
+			.orderItem {
+				opacity: 0.7;
+				background-color: #f8f9fa;
+				border: 1px solid #e9ecef;
+
+				.itemFields {
+					display: none; // Скрываем поля редактирования
+				}
+
+				.removeButton {
+					display: none; // Скрываем кнопку удаления
+				}
+
+				.quantityControls {
+					display: none; // Скрываем контролы количества
+				}
+			}
+		}
+
+		&.editable {
+			.orderItem {
+				background-color: #fff3cd;
+				border: 1px solid #ffc107;
+
+				.itemHeader {
+					.removeButton {
+						display: none; // Скрываем кнопку удаления в режиме редактирования
+					}
+				}
+
+				.quantityControls {
+					display: none; // Скрываем контролы количества в режиме редактирования
+				}
+			}
+		}
+
+		.itemInfo {
+			display: flex;
+			flex-direction: column;
+			gap: 5px;
+			font-size: 15px;
+
+			.itemTitle {
+				font-size: 18px;
+				font-weight: 600;
+			}
+		}
+	}
+
+	.orderItem {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+
+		.itemFields {
+			display: flex;
+			flex-direction: column;
+			gap: 10px;
+		}
+		.removeButton {
+			position: absolute;
+			right: 20px;
+			top: 20px;
+		}
+		.quantityControls {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+		}
+	}
+
+	.searchContainer {
+		position: relative;
+
+		input {
+			transition: 0s;
+			&.activeSearch {
+				border-color: var(--blue-color);
+				box-shadow: 0 0 3px rgba(59, 130, 246, 0.1);
+				border-radius: 10px 10px 0 0;
+			}
+		}
+	}
+
+	.searchResults {
+		display: flex;
+		flex-direction: column;
+		position: absolute;
+		width: calc(100% - 0px);
+		background: white;
+		z-index: 1;
+		top: calc(100% - 2px);
+		border: 1px solid var(--light-grey2-color);
+		border-color: var(--blue-color);
+		border-top: 1px solid transparent;
+		border-radius: 0 0 10px 10px;
+		overflow: hidden;
+		max-height: 300px;
+		overflow-y: auto;
+
+		&.loading {
+			padding: 20px 10px;
+		}
+	}
+
+	.searchResultItem {
+		border-bottom: 1px solid var(--grey-color);
+		padding: 10px;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		overflow: hidden;
+
+		&:hover {
+			background: var(--light-grey-color);
+		}
+
+		&:first-child {
+			border-top: 1px solid var(--grey-color);
+		}
+
+		&:last-child {
+			border-bottom: none;
+		}
+
+		.productInfo {
+			font-size: 14px;
+			display: flex;
+			align-items: center;
+			gap: 5px;
+		}
+
+		.productTitle {
+			font-weight: 600;
+		}
+
+		.additionalInfoBorderBlock {
+			font-size: 12px;
+			border: 1px solid var(--grey-color);
+			padding: 10px 15px;
+			border-radius: 20px;
+		}
+	}
+
 	// Адаптивность
 	@media (max-width: 768px) {
 		.formHeader {
@@ -3354,45 +3546,5 @@ span {
 }
 @media (max-width: 480px) {
 	:root {
-	}
-}
-
-// Стили для визуального разделения блоков товаров
-.orderItemsList {
-	&.readonly {
-		.orderItem {
-			opacity: 0.7;
-			background-color: #f8f9fa;
-			border: 1px solid #e9ecef;
-
-			.itemFields {
-				display: none; // Скрываем поля редактирования
-			}
-
-			.removeButton {
-				display: none; // Скрываем кнопку удаления
-			}
-
-			.quantityControls {
-				display: none; // Скрываем контролы количества
-			}
-		}
-	}
-
-	&.editable {
-		.orderItem {
-			background-color: #fff3cd;
-			border: 1px solid #ffc107;
-
-			.itemHeader {
-				.removeButton {
-					display: none; // Скрываем кнопку удаления в режиме редактирования
-				}
-			}
-
-			.quantityControls {
-				display: none; // Скрываем контролы количества в режиме редактирования
-			}
-		}
 	}
 }

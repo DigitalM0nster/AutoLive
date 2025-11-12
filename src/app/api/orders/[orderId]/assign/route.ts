@@ -7,7 +7,12 @@ async function assignOrderHandler(req: NextRequest, { user, scope }: { user: any
 	try {
 		const orderId = parseInt(req.url.split("/").slice(-3, -1)[0]); // Извлекаем orderId из URL
 		const body = await req.json();
-		const { managerId } = body;
+		let { managerId } = body;
+
+		// Менеджер может назначить заказ только на себя (логика "взял в работу").
+		if (scope === "own") {
+			managerId = user.id;
+		}
 
 		if (isNaN(orderId)) {
 			return NextResponse.json({ error: "Invalid order ID" }, { status: 400 });
@@ -32,6 +37,11 @@ async function assignOrderHandler(req: NextRequest, { user, scope }: { user: any
 
 		if (!fullUser) {
 			return NextResponse.json({ error: "User not found" }, { status: 404 });
+		}
+
+		// Проверяем, что админ/менеджер вообще привязан к отделу.
+		if ((user.role === "admin" || user.role === "manager") && !fullUser.departmentId) {
+			return NextResponse.json({ error: "Нельзя назначать заказ без привязки к отделу" }, { status: 400 });
 		}
 
 		// Базовые условия для проверки доступа
@@ -89,6 +99,11 @@ async function assignOrderHandler(req: NextRequest, { user, scope }: { user: any
 			return NextResponse.json({ error: "Order not found or access denied" }, { status: 404 });
 		}
 
+		// Менеджер может брать только заказы своего отдела (если отдел указан).
+		if (scope === "own" && order.departmentId && order.departmentId !== fullUser.departmentId) {
+			return NextResponse.json({ error: "Менеджер может брать только заказы своего отдела" }, { status: 403 });
+		}
+
 		// Проверяем, что заказ свободен (если назначает не суперадмин)
 		if (scope !== "all" && order.managerId !== null) {
 			return NextResponse.json({ error: "Order is already assigned to a manager" }, { status: 400 });
@@ -98,9 +113,15 @@ async function assignOrderHandler(req: NextRequest, { user, scope }: { user: any
 		const manager = await prisma.user.findFirst({
 			where: {
 				id: managerId,
-				role: { in: ["admin", "manager"] },
-				// Если заказ принадлежит отделу, менеджер должен быть из того же отдела
-				...(order.departmentId
+				OR: [
+					{ role: { in: ["admin", "manager"] } },
+					{
+						id: fullUser.id,
+						role: "superadmin",
+					},
+				],
+				// Если это не суперадмин, убедимся, что отдел совпадает с отделом заказа (если он есть).
+				...(order.departmentId && !(managerId === fullUser.id && fullUser.role === "superadmin")
 					? {
 							departmentId: order.departmentId,
 					  }
@@ -118,6 +139,26 @@ async function assignOrderHandler(req: NextRequest, { user, scope }: { user: any
 
 		if (!manager) {
 			return NextResponse.json({ error: "Manager not found or does not belong to the required department" }, { status: 400 });
+		}
+
+		// Нельзя назначать администратора без отдела или менеджера без отдела
+		if (["admin", "manager"].includes(manager.role) && !manager.departmentId) {
+			return NextResponse.json({ error: "Нельзя назначить ответственного без отдела" }, { status: 400 });
+		}
+
+		// Администратор может назначить только себя или менеджеров своего отдела.
+		if (scope === "department" && fullUser.role === "admin") {
+			if (manager.role === "admin" && manager.id !== fullUser.id) {
+				return NextResponse.json({ error: "Админ может назначить ответственным только себя" }, { status: 400 });
+			}
+			if (manager.departmentId !== fullUser.departmentId) {
+				return NextResponse.json({ error: "Можно назначать только сотрудников своего отдела" }, { status: 400 });
+			}
+		}
+
+		// Менеджер (scope own) может назначить только себя.
+		if (scope === "own" && manager.id !== fullUser.id) {
+			return NextResponse.json({ error: "Менеджер может брать заказы только на себя" }, { status: 400 });
 		}
 
 		// Назначаем заказ в транзакции

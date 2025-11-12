@@ -152,8 +152,11 @@ async function createOrderHandler(req: NextRequest, { user, scope }: { user: any
 			return NextResponse.json({ error: "User not found" }, { status: 404 });
 		}
 
-		// Логика определения отдела для заказа
+		// ── Подготавливаем данные для отдела и ответственного ──
+		// Здесь и дальше отдел и ответственный валидируем вручную по правилам заказчика.
 		let departmentId = body.departmentId;
+		const requestedManagerId = body.managerId ?? null;
+		let resolvedManagerId: number | null = null;
 
 		// Получаем отделы товаров в заказе
 		const productSkus = body.orderItems.map((item) => item.product_sku);
@@ -189,24 +192,155 @@ async function createOrderHandler(req: NextRequest, { user, scope }: { user: any
 			}
 		}
 
-		// Если суперадмин указал отдел вручную - используем его
-		if (user.role === "superadmin" && body.departmentId) {
-			departmentId = body.departmentId;
+		// ── Коррекция отдела с учётом роли автора ──
+		if (user.role === "superadmin") {
+			// Суперадмин может указать любой отдел вручную (приоритетно).
+			if (body.departmentId) {
+				departmentId = body.departmentId;
+			}
+		} else if (user.role === "admin") {
+			// Админ обязан работать внутри своего отдела.
+			if (!fullUser.departmentId) {
+				return NextResponse.json({ error: "Администратор без отдела не может создать заказ" }, { status: 400 });
+			}
+			departmentId = fullUser.departmentId;
+		} else if (user.role === "manager") {
+			// Менеджер тоже должен работать внутри своего отдела.
+			if (!fullUser.departmentId) {
+				return NextResponse.json({ error: "Менеджер без отдела не может создать заказ" }, { status: 400 });
+			}
+			departmentId = fullUser.departmentId;
 		}
+
+		// ── Определяем ответственного ──
+		// Для менеджера заказчика правило: он автоматически становится ответственным.
+		if (user.role === "manager") {
+			resolvedManagerId = fullUser.id;
+		} else if (user.role === "admin") {
+			// Админ может назначить себя или менеджеров своего отдела.
+			if (requestedManagerId) {
+				resolvedManagerId = requestedManagerId;
+			} else {
+				// Явно не назначаем никого: заказ может остаться свободным, если админ так решил.
+				resolvedManagerId = null;
+			}
+		} else {
+			// Для суперадмина и остальных ролей ответственным становится тот, кто пришёл в теле запроса.
+			resolvedManagerId = requestedManagerId;
+		}
+
+		let responsibleUser: {
+			id: number;
+			role: string;
+			departmentId: number | null;
+		} | null = null;
+
+		if (resolvedManagerId !== null) {
+			responsibleUser = await prisma.user.findUnique({
+				where: { id: resolvedManagerId },
+				select: {
+					id: true,
+					role: true,
+					departmentId: true,
+				},
+			});
+
+			if (!responsibleUser) {
+				return NextResponse.json({ error: "Указан несуществующий ответственный" }, { status: 400 });
+			}
+
+			// Менеджером/админом без отдела быть нельзя (по требованиям).
+			if (["admin", "manager"].includes(responsibleUser.role) && !responsibleUser.departmentId) {
+				return NextResponse.json({ error: "Ответственный без отдела не может быть назначен на заказ" }, { status: 400 });
+			}
+
+			// Админ может назначить только себя или менеджеров своего отдела.
+			if (user.role === "admin") {
+				if (responsibleUser.role === "admin" && responsibleUser.id !== fullUser.id) {
+					return NextResponse.json({ error: "Админ может назначить ответственным только себя" }, { status: 400 });
+				}
+				if (responsibleUser.departmentId !== fullUser.departmentId) {
+					return NextResponse.json({ error: "Можно назначать только сотрудников своего отдела" }, { status: 400 });
+				}
+			}
+
+			// Суперадмин может назначить себя или сотрудников выбранного отдела.
+			if (user.role === "superadmin") {
+				const isSelf = responsibleUser.id === fullUser.id;
+				if (!isSelf) {
+					if (!["admin", "manager"].includes(responsibleUser.role)) {
+						return NextResponse.json({ error: "Ответственным может быть только админ или менеджер" }, { status: 400 });
+					}
+					if (!departmentId || responsibleUser.departmentId !== departmentId) {
+						return NextResponse.json({ error: "Ответственный должен принадлежать указанному отделу" }, { status: 400 });
+					}
+				}
+			}
+
+			// Менеджеру назначаем только самого себя (пользовательская логика выше).
+			if (user.role === "manager" && responsibleUser.id !== fullUser.id) {
+				return NextResponse.json({ error: "Менеджер может создавать заявки только на себя" }, { status: 400 });
+			}
+
+			// Если отдел заказа известен, то ответственный должен принадлежать этому отделу (кроме случая супер-админа, который назначает себя).
+			if (departmentId && responsibleUser.departmentId && responsibleUser.id !== fullUser.id && responsibleUser.departmentId !== departmentId) {
+				return NextResponse.json({ error: "Ответственный должен принадлежать отделу заказа" }, { status: 400 });
+			}
+		}
+
+		// Для менеджера заявка всегда закрепляется на нём. Если контроль выше не позволил выбрать ответственного, сбрасываем на null.
+		if (user.role === "manager") {
+			resolvedManagerId = responsibleUser?.id ?? fullUser.id;
+		}
+
+		const isSuperadminSelf = user.role === "superadmin" && resolvedManagerId === fullUser.id;
+
+		if (isSuperadminSelf) {
+			departmentId = undefined;
+		}
+
+		// Если отдел указан (или вычислен) - убедимся, что он существует.
+		if (departmentId !== undefined && departmentId !== null) {
+			const existingDepartment = await prisma.department.findUnique({
+				where: { id: departmentId },
+				select: { id: true },
+			});
+
+			if (!existingDepartment) {
+				return NextResponse.json({ error: "Указан несуществующий отдел" }, { status: 400 });
+			}
+		}
+
+		let finalDeliveryDate: Date | null = null;
+		if (body.finalDeliveryDate) {
+			const parsedFinalDelivery = new Date(body.finalDeliveryDate);
+			if (isNaN(parsedFinalDelivery.getTime())) {
+				return NextResponse.json({ error: "Некорректная дата финальной поставки клиенту" }, { status: 400 });
+			}
+			finalDeliveryDate = parsedFinalDelivery;
+		}
+
+		const status = body.status ?? "created";
+		const confirmationDate = status === "confirmed" ? new Date() : null;
+
+		// Собираем данные для создания заказа
+		const orderDataToCreate: any = {
+			comments: [],
+			status,
+			clientId: body.clientId || null,
+			managerId: resolvedManagerId,
+			departmentId: departmentId ?? null,
+			createdBy: fullUser.id,
+			finalDeliveryDate,
+			confirmationDate,
+			// Поле assignedAt остается null для свободных заказов
+		};
 
 		// Создаем заказ в транзакции
 		const order = await prisma.$transaction(async (tx) => {
 			// Создаем заказ
 			const newOrder = await tx.order.create({
-				data: {
-					comments: [],
-					status: "created",
-					clientId: body.clientId || null,
-					managerId: body.managerId || null,
-					departmentId: departmentId,
-					createdBy: fullUser.id,
-					// Поле assignedAt остается null для свободных заказов
-				},
+				data: orderDataToCreate,
 				include: {
 					manager: {
 						select: {
@@ -291,6 +425,8 @@ async function createOrderHandler(req: NextRequest, { user, scope }: { user: any
 						managerId: newOrder.managerId,
 						departmentId: newOrder.departmentId,
 						clientId: newOrder.clientId,
+						confirmationDate: (newOrder as any).confirmationDate ?? null,
+						finalDeliveryDate: (newOrder as any).finalDeliveryDate ?? null,
 					},
 				},
 			});

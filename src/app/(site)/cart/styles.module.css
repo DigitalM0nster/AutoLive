@@ -109,6 +109,7 @@
 }
 
 .quantityButton {
+  padding: 0;
   width: 35px;
   height: 35px;
   border-radius: 50%;
@@ -174,6 +175,17 @@
 }
 .summaryRow:last-of-type {
   border-bottom: none;
+}
+
+.checkoutForm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.formRow {
+  display: flex;
+  gap: 5px;
 }
 
 .totalAmount {

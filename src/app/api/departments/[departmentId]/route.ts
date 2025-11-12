@@ -530,11 +530,6 @@ export const DELETE = withPermission(
 				return NextResponse.json({ error: "Отдел не найден" }, { status: 404 });
 			}
 
-			// Проверяем только заказы (пользователей удалим из отдела)
-			if (department.orders.length > 0) {
-				return NextResponse.json({ error: "Нельзя удалить отдел с привязанными заказами" }, { status: 400 });
-			}
-
 			// Сначала логируем удаление отдела с информацией о пользователях (если они есть)
 			if (department.users.length > 0) {
 				// Логируем удаление отдела с информацией о пользователях
@@ -567,6 +562,18 @@ export const DELETE = withPermission(
 					actions: ["delete_department" as const],
 					addedUsers: undefined,
 					removedUsers: undefined,
+				});
+			}
+
+			// У заявок нужно снять отдел и ответственного, чтобы выполнить правило "заявка остаётся, но без отдела".
+			if (department.orders.length > 0) {
+				await prisma.order.updateMany({
+					where: { departmentId },
+					data: {
+						departmentId: null,
+						managerId: null,
+						assignedAt: null,
+					},
 				});
 			}
 

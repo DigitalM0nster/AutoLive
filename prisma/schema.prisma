@@ -142,16 +142,18 @@ model ServiceKit {
 }
 
 model Order {
-    id           Int         @id @default(autoincrement()) @map("id")
-    comments     String[]    @map("comments")
-    status       OrderStatus @default(created) @map("status")
-    createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamp(0)
-    updatedAt    DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
-    assignedAt   DateTime?   @map("assigned_at") @db.Timestamp(0) // Когда заказ был взят в работу
-    managerId    Int?        @map("manager_id") // Опциональное поле - может быть null для свободных заказов
-    departmentId Int?        @map("department_id") // Опциональное поле - для заказов от пользователей может быть null
-    clientId     Int?        @map("client_id") // Опциональное поле - для заказов созданных админом может быть null
-    createdBy    Int?        @map("created_by") // Кто создал заказ (админ/менеджер/пользователь). Для публичной заявки может быть null
+    id                Int         @id @default(autoincrement()) @map("id")
+    comments          String[]    @map("comments")
+    status            OrderStatus @default(created) @map("status")
+    createdAt         DateTime    @default(now()) @map("created_at") @db.Timestamp(0)
+    updatedAt         DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
+    confirmationDate  DateTime?   @map("confirmation_date") @db.Timestamp(0)
+    finalDeliveryDate DateTime?   @map("final_delivery_date") @db.Timestamp(0)
+    assignedAt        DateTime?   @map("assigned_at") @db.Timestamp(0) // Когда заказ был взят в работу
+    managerId         Int?        @map("manager_id") // Опциональное поле - может быть null для свободных заказов
+    departmentId      Int?        @map("department_id") // Опциональное поле - для заказов от пользователей может быть null
+    clientId          Int?        @map("client_id") // Опциональное поле - для заказов созданных админом может быть null
+    createdBy         Int?        @map("created_by") // Кто создал заказ (админ/менеджер/пользователь). Для публичной заявки может быть null
 
     // Связи
     manager    User?       @relation("ManagerOrders", fields: [managerId], references: [id])

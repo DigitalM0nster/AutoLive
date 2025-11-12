@@ -72,6 +72,8 @@ a.button {
   display: flex;
   align-items: center;
   gap: 5px;
+  text-align: center;
+  justify-content: center;
   width: -moz-fit-content;
   width: fit-content;
   height: -moz-fit-content;
@@ -1378,6 +1380,14 @@ table .fullInfoBlock .clickInfoBlock,
   justify-content: space-between;
   align-items: center;
 }
+table .fullInfoBlock .clickInfoBlock.noMore,
+.table .fullInfoBlock .clickInfoBlock.noMore {
+  cursor: default;
+}
+table .fullInfoBlock .clickInfoBlock.noMore:after,
+.table .fullInfoBlock .clickInfoBlock.noMore:after {
+  display: none;
+}
 table .fullInfoBlock .clickInfoBlock:after,
 .table .fullInfoBlock .clickInfoBlock:after {
   content: "подробнее";
@@ -2454,7 +2464,6 @@ span.oldName:after {
   border-radius: 8px;
   font-size: 14px;
   font-family: var(--mainFont);
-  transition: all 0.3s ease;
   background: white;
 }
 .productComponent .formFields .formField input:focus,
@@ -2510,6 +2519,29 @@ span.oldName:after {
   color: var(--red-color);
   opacity: 0.5;
 }
+.productComponent .formFields .formField input.quantityInput,
+.productComponent .formFields .formField textarea.quantityInput,
+.productComponent .formFields .formField select.quantityInput,
+.orderComponent .formFields .formField input.quantityInput,
+.orderComponent .formFields .formField textarea.quantityInput,
+.orderComponent .formFields .formField select.quantityInput {
+  width: 30px;
+  text-align: center;
+  -moz-appearance: textfield;
+}
+.productComponent .formFields .formField input.quantityInput::-webkit-outer-spin-button, .productComponent .formFields .formField input.quantityInput::-webkit-inner-spin-button,
+.productComponent .formFields .formField textarea.quantityInput::-webkit-outer-spin-button,
+.productComponent .formFields .formField textarea.quantityInput::-webkit-inner-spin-button,
+.productComponent .formFields .formField select.quantityInput::-webkit-outer-spin-button,
+.productComponent .formFields .formField select.quantityInput::-webkit-inner-spin-button,
+.orderComponent .formFields .formField input.quantityInput::-webkit-outer-spin-button,
+.orderComponent .formFields .formField input.quantityInput::-webkit-inner-spin-button,
+.orderComponent .formFields .formField textarea.quantityInput::-webkit-outer-spin-button,
+.orderComponent .formFields .formField textarea.quantityInput::-webkit-inner-spin-button,
+.orderComponent .formFields .formField select.quantityInput::-webkit-outer-spin-button,
+.orderComponent .formFields .formField select.quantityInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
 .productComponent .formFields .formField select,
 .orderComponent .formFields .formField select {
   width: 100%;
@@ -2525,6 +2557,25 @@ span.oldName:after {
   color: var(--orange-color);
   font-style: italic;
   margin-top: 4px;
+}
+.productComponent .formField .selectedClient,
+.orderComponent .formField .selectedClient {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.productComponent .formField .selectedClient span,
+.orderComponent .formField .selectedClient span {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.productComponent button.removeButton,
+.orderComponent button.removeButton {
+  padding: 10px 25px;
+  background: var(--red-color);
+  box-shadow: none;
+  color: white;
 }
 .productComponent .viewModeContainer,
 .orderComponent .viewModeContainer {
@@ -2980,6 +3031,153 @@ span.oldName:after {
     background-position: -200% 0;
   }
 }
+.productComponent .orderItemsList,
+.orderComponent .orderItemsList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.productComponent .orderItemsList.readonly .orderItem,
+.orderComponent .orderItemsList.readonly .orderItem {
+  opacity: 0.7;
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+}
+.productComponent .orderItemsList.readonly .orderItem .itemFields,
+.orderComponent .orderItemsList.readonly .orderItem .itemFields {
+  display: none;
+}
+.productComponent .orderItemsList.readonly .orderItem .removeButton,
+.orderComponent .orderItemsList.readonly .orderItem .removeButton {
+  display: none;
+}
+.productComponent .orderItemsList.readonly .orderItem .quantityControls,
+.orderComponent .orderItemsList.readonly .orderItem .quantityControls {
+  display: none;
+}
+.productComponent .orderItemsList.editable .orderItem,
+.orderComponent .orderItemsList.editable .orderItem {
+  background-color: #fff3cd;
+  border: 1px solid #ffc107;
+}
+.productComponent .orderItemsList.editable .orderItem .itemHeader .removeButton,
+.orderComponent .orderItemsList.editable .orderItem .itemHeader .removeButton {
+  display: none;
+}
+.productComponent .orderItemsList.editable .orderItem .quantityControls,
+.orderComponent .orderItemsList.editable .orderItem .quantityControls {
+  display: none;
+}
+.productComponent .orderItemsList .itemInfo,
+.orderComponent .orderItemsList .itemInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 15px;
+}
+.productComponent .orderItemsList .itemInfo .itemTitle,
+.orderComponent .orderItemsList .itemInfo .itemTitle {
+  font-size: 18px;
+  font-weight: 600;
+}
+.productComponent .orderItem,
+.orderComponent .orderItem {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.productComponent .orderItem .itemFields,
+.orderComponent .orderItem .itemFields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.productComponent .orderItem .removeButton,
+.orderComponent .orderItem .removeButton {
+  position: absolute;
+  right: 20px;
+  top: 20px;
+}
+.productComponent .orderItem .quantityControls,
+.orderComponent .orderItem .quantityControls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.productComponent .searchContainer,
+.orderComponent .searchContainer {
+  position: relative;
+}
+.productComponent .searchContainer input,
+.orderComponent .searchContainer input {
+  transition: 0s;
+}
+.productComponent .searchContainer input.activeSearch,
+.orderComponent .searchContainer input.activeSearch {
+  border-color: var(--blue-color);
+  box-shadow: 0 0 3px rgba(59, 130, 246, 0.1);
+  border-radius: 10px 10px 0 0;
+}
+.productComponent .searchResults,
+.orderComponent .searchResults {
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  width: calc(100% - 0px);
+  background: white;
+  z-index: 1;
+  top: calc(100% - 2px);
+  border: 1px solid var(--light-grey2-color);
+  border-color: var(--blue-color);
+  border-top: 1px solid transparent;
+  border-radius: 0 0 10px 10px;
+  overflow: hidden;
+  max-height: 300px;
+  overflow-y: auto;
+}
+.productComponent .searchResults.loading,
+.orderComponent .searchResults.loading {
+  padding: 20px 10px;
+}
+.productComponent .searchResultItem,
+.orderComponent .searchResultItem {
+  border-bottom: 1px solid var(--grey-color);
+  padding: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+.productComponent .searchResultItem:hover,
+.orderComponent .searchResultItem:hover {
+  background: var(--light-grey-color);
+}
+.productComponent .searchResultItem:first-child,
+.orderComponent .searchResultItem:first-child {
+  border-top: 1px solid var(--grey-color);
+}
+.productComponent .searchResultItem:last-child,
+.orderComponent .searchResultItem:last-child {
+  border-bottom: none;
+}
+.productComponent .searchResultItem .productInfo,
+.orderComponent .searchResultItem .productInfo {
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.productComponent .searchResultItem .productTitle,
+.orderComponent .searchResultItem .productTitle {
+  font-weight: 600;
+}
+.productComponent .searchResultItem .additionalInfoBorderBlock,
+.orderComponent .searchResultItem .additionalInfoBorderBlock {
+  font-size: 12px;
+  border: 1px solid var(--grey-color);
+  padding: 10px 15px;
+  border-radius: 20px;
+}
 @media (max-width: 768px) {
   .productComponent .formHeader,
   .orderComponent .formHeader {
@@ -3226,28 +3424,4 @@ span.oldName:after {
   :root {
     --maxContentWidth: 90vw;
   }
-}
-.orderItemsList.readonly .orderItem {
-  opacity: 0.7;
-  background-color: #f8f9fa;
-  border: 1px solid #e9ecef;
-}
-.orderItemsList.readonly .orderItem .itemFields {
-  display: none;
-}
-.orderItemsList.readonly .orderItem .removeButton {
-  display: none;
-}
-.orderItemsList.readonly .orderItem .quantityControls {
-  display: none;
-}
-.orderItemsList.editable .orderItem {
-  background-color: #fff3cd;
-  border: 1px solid #ffc107;
-}
-.orderItemsList.editable .orderItem .itemHeader .removeButton {
-  display: none;
-}
-.orderItemsList.editable .orderItem .quantityControls {
-  display: none;
 }/*# sourceMappingURL=globals.css.map */

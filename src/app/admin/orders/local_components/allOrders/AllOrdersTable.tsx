@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import styles from "../styles.module.scss";
 import FiltersBlock from "@/components/ui/filtersBlock/FiltersBlock";
 import Pagination from "@/components/ui/pagination/Pagination";
@@ -322,6 +322,19 @@ export default function AllOrdersTable() {
 		setPage(1);
 	};
 
+	// Показываем отдел как ссылку, если он есть у заказа
+	const renderDepartmentLink = useCallback((department?: { id: number; name: string } | null) => {
+		if (!department || !department.id) {
+			return "Не выбран";
+		}
+
+		return (
+			<Link href={`/admin/departments/${department.id}`} className="itemLink">
+				{department.name}
+			</Link>
+		);
+	}, []);
+
 	// Функция для переключения активного блока
 	const toggleActiveBlock = (blockKey: string) => {
 		setActiveBlocks((prev) => ({
@@ -333,28 +346,16 @@ export default function AllOrdersTable() {
 	// Функция для рендеринга блока ответственного
 	const renderManagerBlock = (order: Order) => {
 		const managerKey = `manager_${order.id}`;
-		const currentManagerId = order.manager ? order.manager.id.toString() : "none";
 
 		return (
 			<div className="fullInfoBlock">
-				<div className={`clickInfoBlock ${activeBlocks[managerKey] ? "active" : ""}`} onClick={() => toggleActiveBlock(managerKey)}>
+				<div
+					className={`clickInfoBlock ${activeBlocks[managerKey] ? "active" : ""} ${order.manager ? "" : "noMore"}`}
+					onClick={() => (order.manager ? toggleActiveBlock(managerKey) : null)}
+				>
 					{order.manager ? getUserName(order.manager) : "Не назначен"}
 				</div>
 				<div className={`openingBlock ${activeBlocks[managerKey] ? "active" : ""}`}>
-					<div className="infoField">
-						<span className="title">Назначить ответственного:</span>
-						<span className="value">
-							<CustomSelect
-								options={managerOptions}
-								value={currentManagerId}
-								onChange={(value) => handleManagerChange(order.id, value)}
-								placeholder="Выберите ответственного"
-								showSearch={true}
-								searchPlaceholder="Поиск ответственного..."
-								className="managerSelect"
-							/>
-						</span>
-					</div>
 					{order.manager && (
 						<>
 							<div className="infoField">
@@ -383,26 +384,16 @@ export default function AllOrdersTable() {
 	// Функция для рендеринга блока отдела
 	const renderDepartmentBlock = (order: Order) => {
 		const departmentKey = `department_${order.id}`;
-		const currentDepartmentId = order.department ? order.department.id.toString() : "none";
 
 		return (
 			<div className="fullInfoBlock">
-				<div className={`clickInfoBlock ${activeBlocks[departmentKey] ? "active" : ""}`} onClick={() => toggleActiveBlock(departmentKey)}>
-					{order.department ? order.department.name : "Не выбран"}
+				<div
+					className={`clickInfoBlock ${activeBlocks[departmentKey] ? "active" : ""} ${order.department ? "" : "noMore"}`}
+					onClick={() => (order.department ? toggleActiveBlock(departmentKey) : null)}
+				>
+					{renderDepartmentLink(order.department)}
 				</div>
 				<div className={`openingBlock ${activeBlocks[departmentKey] ? "active" : ""}`}>
-					<div className="infoField">
-						<span className="title">Выбрать отдел:</span>
-						<span className="value">
-							<CustomSelect
-								options={departmentOptions}
-								value={currentDepartmentId}
-								onChange={(value) => handleDepartmentChange(order.id, value)}
-								placeholder="Выберите отдел"
-								className="departmentSelect"
-							/>
-						</span>
-					</div>
 					{order.department && (
 						<>
 							<div className="infoField">
@@ -411,11 +402,7 @@ export default function AllOrdersTable() {
 							</div>
 							<div className="infoField">
 								<span className="title">Ссылка:</span>
-								<span className="value">
-									<a href={`/admin/departments/${order.department.id}`} className="itemLink">
-										Перейти к отделу
-									</a>
-								</span>
+								<span className="value">{renderDepartmentLink(order.department)}</span>
 							</div>
 						</>
 					)}
@@ -427,28 +414,16 @@ export default function AllOrdersTable() {
 	// Функция для рендеринга блока клиента
 	const renderClientBlock = (order: Order) => {
 		const clientKey = `client_${order.id}`;
-		const currentClientId = order.client ? order.client.id.toString() : "none";
 
 		return (
 			<div className="fullInfoBlock">
-				<div className={`clickInfoBlock ${activeBlocks[clientKey] ? "active" : ""}`} onClick={() => toggleActiveBlock(clientKey)}>
+				<div
+					className={`clickInfoBlock ${activeBlocks[clientKey] ? "active" : ""} ${order.client ? "" : "noMore"}`}
+					onClick={() => (order.client ? toggleActiveBlock(clientKey) : null)}
+				>
 					{order.client ? getUserName(order.client) : "Не выбран"}
 				</div>
 				<div className={`openingBlock ${activeBlocks[clientKey] ? "active" : ""}`}>
-					<div className="infoField">
-						<span className="title">Выбрать клиента:</span>
-						<span className="value">
-							<CustomSelect
-								options={clientOptions}
-								value={currentClientId}
-								onChange={(value) => handleClientChange(order.id, value)}
-								placeholder="Выберите клиента"
-								showSearch={true}
-								searchPlaceholder="Поиск клиента..."
-								className="clientSelect"
-							/>
-						</span>
-					</div>
 					{order.client && (
 						<>
 							<div className="infoField">
@@ -476,50 +451,10 @@ export default function AllOrdersTable() {
 
 	// Функция для рендеринга блока действий
 	const renderActionsBlock = (order: Order) => {
-		const actionsKey = `actions_${order.id}`;
-
 		return (
-			<div className="fullInfoBlock">
-				<div className={`clickInfoBlock ${activeBlocks[actionsKey] ? "active" : ""}`} onClick={() => toggleActiveBlock(actionsKey)}>
-					Заказ #{order.id}
-				</div>
-				<div className={`openingBlock ${activeBlocks[actionsKey] ? "active" : ""}`}>
-					<div className="infoField">
-						<span className="title">Статус:</span>
-						<span className="value">
-							<span className={`statusBadge ${getStatusColor(order.status)}`}>{getStatusText(order.status)}</span>
-						</span>
-					</div>
-					<div className="infoField">
-						<span className="title">Просмотр:</span>
-						<span className="value">
-							<button className="viewButton" onClick={() => router.push(`/admin/orders/${order.id}`)}>
-								Открыть заказ
-							</button>
-						</span>
-					</div>
-					<div className="infoField">
-						<span className="title">Назначение:</span>
-						<span className="value">
-							{!order.managerId ? (
-								<button
-									className="assignButton"
-									onClick={() => {
-										// Здесь можно добавить модальное окно для выбора ответственного
-										alert("Функция назначения ответственного будет добавлена");
-									}}
-								>
-									Назначить ответственного
-								</button>
-							) : (
-								<button className="unassignButton" onClick={() => unassignOrder(order.id)}>
-									Снять назначение
-								</button>
-							)}
-						</span>
-					</div>
-				</div>
-			</div>
+			<button className="viewButton" onClick={() => router.push(`/admin/orders/${order.id}`)}>
+				Открыть заказ
+			</button>
 		);
 	};
 
