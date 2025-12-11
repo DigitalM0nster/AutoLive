@@ -26,6 +26,7 @@ type StatusConfirmedSectionProps = {
 	orderTotal: number;
 	orderData: Order | null;
 	currentStatus: string;
+	statusDate?: string | null;
 };
 
 const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
@@ -48,7 +49,19 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 	orderTotal,
 	orderData,
 	currentStatus,
+	statusDate,
 }) => {
+	const formatDate = (value?: string | Date | null) => {
+		if (!value) return "";
+		const date = new Date(value);
+		if (isNaN(date.getTime())) return "";
+		const day = String(date.getDate()).padStart(2, "0");
+		const month = String(date.getMonth() + 1).padStart(2, "0");
+		const year = date.getFullYear();
+		const hours = String(date.getHours()).padStart(2, "0");
+		const minutes = String(date.getMinutes()).padStart(2, "0");
+		return `${day}.${month}.${year} ${hours}:${minutes}`;
+	};
 	const [clientSearch, setClientSearch] = useState("");
 	const [clientSearchResults, setClientSearchResults] = useState<User[]>([]);
 	const [isSearchingClients, setIsSearchingClients] = useState(false);
@@ -307,11 +320,6 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 
 	const [isExpanded, setIsExpanded] = useState(isActive);
 
-	// Синхронизируем состояние развернутости с активным статусом
-	useEffect(() => {
-		setIsExpanded(isActive);
-	}, [isActive]);
-
 	const toggleExpand = () => {
 		setIsExpanded(!isExpanded);
 	};
@@ -320,6 +328,7 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 		<div className={`statusBlock borderBlock ${isExpanded ? "active" : ""}`}>
 			<div className={`statusHeader`} onClick={toggleExpand}>
 				<h3>2. Подтверждённый</h3>
+				{statusDate && <span className={`statusDate`}>Присвоен: {formatDate(statusDate)}</span>}
 			</div>
 			<div className={`statusFields`}>
 				<div className={`formRow`}>
@@ -349,42 +358,124 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 								</button>
 							)}
 						</div>
-						<div className={`searchContainer`}>
-							<input
-								id="clientSearch"
-								type="text"
-								value={clientSearch}
-								onChange={(e) => handleClientManualInput(e.target.value)}
-								onFocus={() => {
-									if (clientBlurTimeout.current) clearTimeout(clientBlurTimeout.current);
-									setIsClientSearchFocused(true);
-									clearFieldError("clientSearch");
-								}}
-								onBlur={handleClientBlur}
-								placeholder="Поиск клиента по имени или телефону"
-								className={`${fieldErrors.has("clientSearch") ? "error" : ""} ${isClientSearchFocused && clientSearch.length >= 2 ? "activeSearch" : ""}`}
-								disabled={!canEdit}
-							/>
-							{isClientSearchFocused && isSearchingClients && clientSearch && (
-								<div className="searchResults loading">
-									<Loading />
-								</div>
-							)}
+						{!selectedClient && (
+							<div className={`searchContainer`}>
+								<input
+									id="clientSearch"
+									type="text"
+									value={clientSearch}
+									onChange={(e) => handleClientManualInput(e.target.value)}
+									onFocus={() => {
+										if (clientBlurTimeout.current) clearTimeout(clientBlurTimeout.current);
+										setIsClientSearchFocused(true);
+										clearFieldError("clientSearch");
+									}}
+									onBlur={handleClientBlur}
+									placeholder="Поиск клиента по имени или телефону"
+									className={`${fieldErrors.has("clientSearch") ? "error" : ""} ${isClientSearchFocused && clientSearch.length >= 2 ? "activeSearch" : ""}`}
+									disabled={!canEdit}
+								/>
+								{isClientSearchFocused && isSearchingClients && clientSearch && (
+									<div className="searchResults loading">
+										<Loading />
+									</div>
+								)}
 
-							{isClientSearchFocused && clientSearch && !isSearchingClients && (
-								<div className="searchResults">
-									{clientSearchResults.length > 0 ? (
-										clientSearchResults.map((client) => (
-											<div key={client.id} className={`searchResultItem`} onMouseDown={() => handleClientSelect(client)}>
-												{client.first_name} {client.last_name} - {client.phone}
-											</div>
-										))
-									) : (
-										<div className={`searchResultItem`}>Нет результатов</div>
-									)}
-								</div>
+								{isClientSearchFocused && clientSearch && !isSearchingClients && (
+									<div className="searchResults">
+										{clientSearchResults.length > 0 ? (
+											clientSearchResults.map((client) => (
+												<div key={client.id} className={`searchResultItem`} onMouseDown={() => handleClientSelect(client)}>
+													{client.first_name} {client.last_name} - {client.phone}
+												</div>
+											))
+										) : (
+											<div className={`searchResultItem`}>Нет результатов</div>
+										)}
+									</div>
+								)}
+							</div>
+						)}
+					</div>
+				</div>
+				<div className="formRow">
+					<div className={`formField`}>
+						<label htmlFor="managerSearch">Ответственный</label>
+						<div className={`selectedClient`}>
+							<span>
+								{selectedManager ? (
+									<>
+										<Link href={`/admin/users/${selectedManager.id}`} className="itemLink" target="_blank">
+											{selectedManager.first_name} {selectedManager.last_name} ({selectedManager.phone})
+										</Link>
+										{selectedManager.department && (
+											<>
+												{" — "}
+												<Link href={`/admin/departments/${selectedManager.department.id}`} className="itemLink" target="_blank">
+													{selectedManager.department.name}
+												</Link>
+											</>
+										)}
+									</>
+								) : (
+									"Не указан"
+								)}
+							</span>
+							{selectedManager && userRole !== "manager" && canEdit && (
+								<button type="button" onClick={handleManagerClear} className={`removeButton`}>
+									Убрать ответственного ×
+								</button>
 							)}
 						</div>
+						{!selectedManager && (
+							<div className={`searchContainer`}>
+								<input
+									id="managerSearch"
+									type="text"
+									value={managerSearch}
+									onChange={(e) => handleManagerManualInput(e.target.value)}
+									onFocus={() => {
+										if (managerBlurTimeout.current) clearTimeout(managerBlurTimeout.current);
+										setIsManagerSearchFocused(true);
+										clearFieldError("managerSearch");
+									}}
+									onBlur={handleManagerBlur}
+									placeholder={
+										formData.departmentId
+											? `Поиск менеджера отдела "${departments.find((d) => d.id.toString() === formData.departmentId)?.name || ""}"`
+											: "Поиск менеджера по имени или телефону"
+									}
+									className={`${fieldErrors.has("managerSearch") ? "error" : ""} ${isManagerSearchFocused && managerSearch.length >= 2 ? "activeSearch" : ""}`}
+									disabled={userRole === "manager" || !canEdit}
+								/>
+								{isManagerSearchFocused && isSearchingManagers && managerSearch && (
+									<div className="searchResults loading">
+										<Loading />
+									</div>
+								)}
+
+								{isManagerSearchFocused && managerSearch && !isSearchingManagers && (
+									<div className="searchResults">
+										{managerSearchResults.length > 0 ? (
+											managerSearchResults.map((manager) => (
+												<div key={manager.id} className={`searchResultItem`} onMouseDown={() => handleManagerSelect(manager)}>
+													{manager.first_name} {manager.last_name} - {manager.phone}
+													{manager.department && ` (${manager.department.name})`}
+												</div>
+											))
+										) : (
+											<div className={`searchResultItem`}>Нет результатов</div>
+										)}
+									</div>
+								)}
+							</div>
+						)}
+						{userRole === "manager" && <p className="helpText">Менеджер всегда назначается ответственным автоматически.</p>}
+						{userRole === "superadmin" && user && (!selectedManager || selectedManager.id !== user.id) && canEdit && (
+							<button type="button" className="selfAssignButton" onClick={() => handleManagerSelect(user)}>
+								Назначить себя ответственным
+							</button>
+						)}
 					</div>
 				</div>
 				<div className="formRow">
@@ -428,82 +519,6 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 							/>
 						)}
 					</div>
-					<div className={`formField`}>
-						<label htmlFor="managerSearch">Ответственный</label>
-						<div className={`selectedClient`}>
-							<span>
-								{selectedManager ? (
-									<>
-										<Link href={`/admin/users/${selectedManager.id}`} className="itemLink" target="_blank">
-											{selectedManager.first_name} {selectedManager.last_name} ({selectedManager.phone})
-										</Link>
-										{selectedManager.department && (
-											<>
-												{" — "}
-												<Link href={`/admin/departments/${selectedManager.department.id}`} className="itemLink" target="_blank">
-													{selectedManager.department.name}
-												</Link>
-											</>
-										)}
-									</>
-								) : (
-									"Не указан"
-								)}
-							</span>
-							{selectedManager && userRole !== "manager" && canEdit && (
-								<button type="button" onClick={handleManagerClear} className={`removeButton`}>
-									Убрать ответственного ×
-								</button>
-							)}
-						</div>
-						<div className={`searchContainer`}>
-							<input
-								id="managerSearch"
-								type="text"
-								value={managerSearch}
-								onChange={(e) => handleManagerManualInput(e.target.value)}
-								onFocus={() => {
-									if (managerBlurTimeout.current) clearTimeout(managerBlurTimeout.current);
-									setIsManagerSearchFocused(true);
-									clearFieldError("managerSearch");
-								}}
-								onBlur={handleManagerBlur}
-								placeholder={
-									formData.departmentId
-										? `Поиск менеджера отдела "${departments.find((d) => d.id.toString() === formData.departmentId)?.name || ""}"`
-										: "Поиск менеджера по имени или телефону"
-								}
-								className={`${fieldErrors.has("managerSearch") ? "error" : ""} ${isManagerSearchFocused && managerSearch.length >= 2 ? "activeSearch" : ""}`}
-								disabled={userRole === "manager" || !canEdit}
-							/>
-							{isManagerSearchFocused && isSearchingManagers && managerSearch && (
-								<div className="searchResults loading">
-									<Loading />
-								</div>
-							)}
-
-							{isManagerSearchFocused && managerSearch && !isSearchingManagers && (
-								<div className="searchResults">
-									{managerSearchResults.length > 0 ? (
-										managerSearchResults.map((manager) => (
-											<div key={manager.id} className={`searchResultItem`} onMouseDown={() => handleManagerSelect(manager)}>
-												{manager.first_name} {manager.last_name} - {manager.phone}
-												{manager.department && ` (${manager.department.name})`}
-											</div>
-										))
-									) : (
-										<div className={`searchResultItem`}>Нет результатов</div>
-									)}
-								</div>
-							)}
-						</div>
-						{userRole === "manager" && <p className="helpText">Менеджер всегда назначается ответственным автоматически.</p>}
-						{userRole === "superadmin" && user && (!selectedManager || selectedManager.id !== user.id) && canEdit && (
-							<button type="button" className="selfAssignButton" onClick={() => handleManagerSelect(user)}>
-								Назначить себя ответственным
-							</button>
-						)}
-					</div>
 				</div>
 
 				{orderItems.length > 0 && (
@@ -512,7 +527,8 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 						<div className={`orderItemsList${canEdit ? " editable" : " readonly"}`}>
 							{orderItems.map((item, index) => (
 								<div key={index} className={`orderItem borderBlock${canEdit ? " editable" : " readonly"}`}>
-									<div className="itemHeader">
+									<div className="formField">
+										<div className="formFieldTitle">Данные товара</div>
 										<div className="itemInfo">
 											<span className="itemTitle">
 												{item.productId ? (
@@ -523,13 +539,24 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 													item.product_title
 												)}
 											</span>
-											<span className="itemSku">Артикул: {item.product_sku}</span>
-											<span className="itemBrand">Бренд: {item.product_brand}</span>
-											<span className="itemDepartment">
-												<Link href={`/admin/departments/${item.department.id}`} className="itemLink" target="_blank">
-													{item.department.name}
-												</Link>
-											</span>
+											<div className="itemInfoFields">
+												<div className="infoField">
+													<span className="infoLabel">Артикул:</span>
+													<div className="text">{item.product_sku}</div>
+												</div>
+												<div className="infoField">
+													<span className="infoLabel">Бренд:</span>
+													<div className="text">{item.product_brand}</div>
+												</div>
+												<div className="infoField">
+													<span className="infoLabel">Отдел:</span>
+													<div className="text">
+														<Link href={`/admin/departments/${item.department.id}`} className="itemLink" target="_blank">
+															{item.department.name}
+														</Link>
+													</div>
+												</div>
+											</div>
 										</div>
 									</div>
 

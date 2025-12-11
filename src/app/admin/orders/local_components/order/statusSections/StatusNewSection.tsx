@@ -14,9 +14,21 @@ type StatusNewSectionProps = {
 	fieldErrors: Set<string>;
 	clearFieldError: (field: string) => void;
 	canEdit: boolean;
+	statusDate?: string | null;
 };
 
-export default function StatusNewSection({ isActive, formData, setFormData, orderItems, setOrderItems, orderTotal, fieldErrors, clearFieldError, canEdit }: StatusNewSectionProps) {
+export default function StatusNewSection({
+	isActive,
+	formData,
+	setFormData,
+	orderItems,
+	setOrderItems,
+	orderTotal,
+	fieldErrors,
+	clearFieldError,
+	canEdit,
+	statusDate,
+}: StatusNewSectionProps) {
 	const [productSearch, setProductSearch] = useState("");
 	const [searchResults, setSearchResults] = useState<ProductListItem[]>([]);
 	const [isSearching, setIsSearching] = useState(false);
@@ -161,19 +173,27 @@ export default function StatusNewSection({ isActive, formData, setFormData, orde
 
 	const [isExpanded, setIsExpanded] = useState(isActive);
 
-	// Синхронизируем состояние развернутости с активным статусом
-	useEffect(() => {
-		setIsExpanded(isActive);
-	}, [isActive]);
-
 	const toggleExpand = () => {
 		setIsExpanded(!isExpanded);
+	};
+
+	const formatDate = (value?: string | Date | null) => {
+		if (!value) return "";
+		const date = new Date(value);
+		if (isNaN(date.getTime())) return "";
+		const day = String(date.getDate()).padStart(2, "0");
+		const month = String(date.getMonth() + 1).padStart(2, "0");
+		const year = date.getFullYear();
+		const hours = String(date.getHours()).padStart(2, "0");
+		const minutes = String(date.getMinutes()).padStart(2, "0");
+		return `${day}.${month}.${year} ${hours}:${minutes}`;
 	};
 
 	return (
 		<div className={`statusBlock borderBlock ${isExpanded ? "active" : ""}`}>
 			<div className={`statusHeader`} onClick={toggleExpand}>
 				<h3>1. Новый</h3>
+				{statusDate && <span className={`statusDate`}>Присвоен: {formatDate(statusDate)}</span>}
 			</div>
 			<div className={`statusFields`}>
 				<>

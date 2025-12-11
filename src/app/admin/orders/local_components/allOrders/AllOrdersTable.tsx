@@ -73,10 +73,6 @@ export default function AllOrdersTable() {
 	const [dateFilter, setDateFilter] = useState<{ from: string; to: string }>({ from: "", to: "" });
 	const [showDateFilter, setShowDateFilter] = useState(false);
 
-	// Состояние для фильтра по дате присвоения текущего статуса
-	const [statusDateFilter, setStatusDateFilter] = useState<{ from: string; to: string }>({ from: "", to: "" });
-	const [showStatusDateFilter, setShowStatusDateFilter] = useState(false);
-
 	// Состояние для фильтра по дате доставки клиенту
 	const [deliveryDateFilter, setDeliveryDateFilter] = useState<{ from: string; to: string }>({ from: "", to: "" });
 	const [showDeliveryDateFilter, setShowDeliveryDateFilter] = useState(false);
@@ -156,10 +152,6 @@ export default function AllOrdersTable() {
 				if (dateFilter.from) params.append("dateFrom", dateFilter.from);
 				if (dateFilter.to) params.append("dateTo", dateFilter.to);
 
-				// Добавляем фильтр по дате присвоения текущего статуса
-				if (statusDateFilter.from) params.append("statusDateFrom", statusDateFilter.from);
-				if (statusDateFilter.to) params.append("statusDateTo", statusDateFilter.to);
-
 				// Добавляем фильтр по дате доставки клиенту
 				if (deliveryDateFilter.from) params.append("deliveryDateFrom", deliveryDateFilter.from);
 				if (deliveryDateFilter.to) params.append("deliveryDateTo", deliveryDateFilter.to);
@@ -202,7 +194,7 @@ export default function AllOrdersTable() {
 		};
 
 		fetchOrders();
-	}, [page, statusFilter, dateFilter, statusDateFilter, deliveryDateFilter, sortBy, sortOrder, managerSearch, clientSearch, departmentFilter, idSearch]);
+	}, [page, statusFilter, dateFilter, deliveryDateFilter, sortBy, sortOrder, managerSearch, clientSearch, departmentFilter, idSearch]);
 
 	// Загрузка данных для селектов
 	useEffect(() => {
@@ -321,12 +313,6 @@ export default function AllOrdersTable() {
 	// Обработчик изменения диапазона дат создания
 	const handleDateRangeChange = (startDate: string, endDate: string) => {
 		setDateFilter({ from: startDate, to: endDate });
-		setPage(1);
-	};
-
-	// Обработчик изменения диапазона дат присвоения текущего статуса
-	const handleStatusDateRangeChange = (startDate: string, endDate: string) => {
-		setStatusDateFilter({ from: startDate, to: endDate });
 		setPage(1);
 	};
 
@@ -468,8 +454,6 @@ export default function AllOrdersTable() {
 		setStatusFilter("all");
 		setDateFilter({ from: "", to: "" });
 		setShowDateFilter(false);
-		setStatusDateFilter({ from: "", to: "" });
-		setShowStatusDateFilter(false);
 		setDeliveryDateFilter({ from: "", to: "" });
 		setShowDeliveryDateFilter(false);
 		setSortBy(null);
@@ -499,16 +483,6 @@ export default function AllOrdersTable() {
 				key: "date",
 				label: "Дата создания",
 				value: `${dateFilter.from ? formatDateFromString(dateFilter.from) : "дд.мм.гггг"} — ${dateFilter.to ? formatDateFromString(dateFilter.to) : "дд.мм.гггг"}`,
-			});
-		}
-
-		if (statusDateFilter.from || statusDateFilter.to) {
-			filters.push({
-				key: "statusDate",
-				label: "Дата присвоения статуса",
-				value: `${statusDateFilter.from ? formatDateFromString(statusDateFilter.from) : "дд.мм.гггг"} — ${
-					statusDateFilter.to ? formatDateFromString(statusDateFilter.to) : "дд.мм.гггг"
-				}`,
 			});
 		}
 
@@ -648,8 +622,6 @@ export default function AllOrdersTable() {
 				if (statusFilter !== "all") params.append("status", statusFilter);
 				if (dateFilter.from) params.append("dateFrom", dateFilter.from);
 				if (dateFilter.to) params.append("dateTo", dateFilter.to);
-				if (statusDateFilter.from) params.append("statusDateFrom", statusDateFilter.from);
-				if (statusDateFilter.to) params.append("statusDateTo", statusDateFilter.to);
 				if (deliveryDateFilter.from) params.append("deliveryDateFrom", deliveryDateFilter.from);
 				if (deliveryDateFilter.to) params.append("deliveryDateTo", deliveryDateFilter.to);
 				if (managerSearch) params.append("managerSearch", managerSearch);
@@ -690,8 +662,6 @@ export default function AllOrdersTable() {
 				if (statusFilter !== "all") params.append("status", statusFilter);
 				if (dateFilter.from) params.append("dateFrom", dateFilter.from);
 				if (dateFilter.to) params.append("dateTo", dateFilter.to);
-				if (statusDateFilter.from) params.append("statusDateFrom", statusDateFilter.from);
-				if (statusDateFilter.to) params.append("statusDateTo", statusDateFilter.to);
 				if (deliveryDateFilter.from) params.append("deliveryDateFrom", deliveryDateFilter.from);
 				if (deliveryDateFilter.to) params.append("deliveryDateTo", deliveryDateFilter.to);
 				if (managerSearch) params.append("managerSearch", managerSearch);
@@ -748,19 +718,6 @@ export default function AllOrdersTable() {
 								/>
 							</th>
 							<th className={styles.tableHeaderCell}>
-								<div className="dateFilterHeader">
-									Дата присвоения текущего статуса
-									<div
-										className={`dateFilter ${statusDateFilter.from || statusDateFilter.to ? "active" : ""}`}
-										onClick={() => setShowStatusDateFilter(!showStatusDateFilter)}
-									>
-										{statusDateFilter.from ? formatDateFromString(statusDateFilter.from) : "дд.мм.гггг"} —{" "}
-										{statusDateFilter.to ? formatDateFromString(statusDateFilter.to) : "дд.мм.гггг"}
-									</div>
-									<DateRangePicker isOpen={showStatusDateFilter} onClose={() => setShowStatusDateFilter(false)} onDateRangeChange={handleStatusDateRangeChange} />
-								</div>
-							</th>
-							<th className={styles.tableHeaderCell}>
 								<CustomSelect
 									options={departmentOptions}
 									value={departmentFilter}
@@ -797,22 +754,14 @@ export default function AllOrdersTable() {
 					<tbody className={styles.tableBody}>
 						{loading ? (
 							<tr>
-								<td colSpan={7} className={styles.loadingCell}>
+								<td colSpan={6} className={styles.loadingCell}>
 									<Loading />
 								</td>
 							</tr>
 						) : orders.length === 0 ? (
 							<tr>
-								<td colSpan={7} className={styles.emptyCell}>
-									{statusFilter !== "all" ||
-									dateFilter.from ||
-									dateFilter.to ||
-									statusDateFilter.from ||
-									statusDateFilter.to ||
-									managerSearch ||
-									clientSearch ||
-									departmentFilter !== "all" ||
-									idSearch
+								<td colSpan={6} className={styles.emptyCell}>
+									{statusFilter !== "all" || dateFilter.from || dateFilter.to || managerSearch || clientSearch || departmentFilter !== "all" || idSearch
 										? "Заказы не найдены"
 										: "Нет заказов"}
 								</td>
@@ -832,7 +781,6 @@ export default function AllOrdersTable() {
 									<td className={styles.tableCell}>
 										<span className={`${styles.statusBadge} ${styles[getStatusColor(order.status)]}`}>{getStatusText(order.status)}</span>
 									</td>
-									<td className={styles.tableCell}>{order.statusChangeDate ? formatDate(order.statusChangeDate) : "—"}</td>
 									<td className={styles.tableCell}>{renderDepartmentBlock(order)}</td>
 									<td className={styles.tableCell}>{renderManagerBlock(order)}</td>
 									<td className={styles.tableCell}>{renderClientBlock(order)}</td>

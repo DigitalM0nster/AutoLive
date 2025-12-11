@@ -69,6 +69,16 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 	const [departments, setDepartments] = useState<DepartmentForLog[]>([]);
 
 	const [selectedManager, setSelectedManager] = useState<User | null>(null);
+	// Состояние для дат присвоения статусов
+	const [statusDates, setStatusDates] = useState<Record<OrderStatus, string | null>>({
+		created: null,
+		confirmed: null,
+		booked: null,
+		ready: null,
+		paid: null,
+		completed: null,
+		returned: null,
+	});
 	const orderTotal = useMemo(() => orderItems.reduce((total, item) => total + item.product_price * item.quantity, 0), [orderItems]);
 
 	const isAdminOrSuperadmin = userRole === "superadmin" || userRole === "admin";
@@ -269,6 +279,50 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 				setComments(order.comments || []);
 				setSelectedClient(order.client || null);
 				setSelectedManager(order.manager || null);
+
+				// Загружаем логи заказа для получения дат присвоения статусов
+				try {
+					const logsResponse = await fetch(`/api/orders/${orderId}/logs?limit=1000`, {
+						credentials: "include",
+					});
+
+					if (logsResponse.ok) {
+						const logsData = await logsResponse.json();
+						const logs = logsData.data || [];
+
+						// Вычисляем дату первого присвоения каждого статуса
+						const statusDatesMap: Record<OrderStatus, string | null> = {
+							created: null,
+							confirmed: null,
+							booked: null,
+							ready: null,
+							paid: null,
+							completed: null,
+							returned: null,
+						};
+
+						// Проходим по логам в обратном порядке (от старых к новым) и находим первое присвоение каждого статуса
+						const statusChangeLogs = logs.filter((log: any) => log.action === "status_change" && log.orderSnapshot?.status).reverse(); // Переворачиваем, чтобы идти от старых к новым
+
+						statusChangeLogs.forEach((log: any) => {
+							const status = log.orderSnapshot?.status as OrderStatus;
+							if (status && !statusDatesMap[status]) {
+								// Сохраняем первую дату присвоения этого статуса
+								statusDatesMap[status] = log.createdAt;
+							}
+						});
+
+						// Если заказ создан, но нет лога изменения статуса, используем дату создания заказа
+						if (!statusDatesMap.created && order.createdAt) {
+							statusDatesMap.created = typeof order.createdAt === "string" ? order.createdAt : order.createdAt.toISOString();
+						}
+
+						setStatusDates(statusDatesMap);
+					}
+				} catch (logsError) {
+					console.error("Ошибка загрузки логов заказа:", logsError);
+					// Не прерываем загрузку, если логи не загрузились
+				}
 			} catch (err) {
 				console.error("Ошибка загрузки заказа:", err);
 				setError(err instanceof Error ? err.message : "Неизвестная ошибка");
@@ -330,7 +384,9 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 		const day = String(date.getDate()).padStart(2, "0");
 		const month = String(date.getMonth() + 1).padStart(2, "0");
 		const year = date.getFullYear();
-		return `${day}.${month}.${year}`;
+		const hours = String(date.getHours()).padStart(2, "0");
+		const minutes = String(date.getMinutes()).padStart(2, "0");
+		return `${day}.${month}.${year} ${hours}:${minutes}`;
 	};
 
 	// Функция для получения текста статуса
@@ -903,27 +959,98 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 			<div className={`formContainer`}>
 				<div className={`formHeader`}>
 					<h2>{isCreating ? "Создание заказа" : isViewMode ? `Просмотр заказа #${orderData?.id}` : `Заказ #${orderData?.id}`}</h2>
-					{!isCreating && orderData && (
-						<div className={`orderInfoFields`}>
-							<div className={`infoField`}>
-								<span className={`infoLabel`}>Дата оформления заказа:</span>
-								<span className={`infoValue`}>{formatDate(orderData.createdAt)}</span>
-							</div>
-							<div className={`infoField`}>
-								<span className={`infoLabel`}>Текущий статус:</span>
-								<span className={`infoValue`}>{getStatusText(currentStatus || orderData.status)}</span>
-							</div>
-							<div className={`infoField`}>
-								<span className={`infoLabel`}>Дата присвоения текущего статуса:</span>
-								<span className={`infoValue`}>{formatDate(orderData.statusChangeDate) || "Не указана"}</span>
-							</div>
-							<div className={`infoField`}>
-								<span className={`infoLabel`}>Дата доставки клиенту:</span>
-								<span className={`infoValue`}>{formatDate(orderData.finalDeliveryDate) || "Не указана"}</span>
-							</div>
-							<div className={`infoField`}>
-								<span className={`infoLabel`}>Номер связанного ТО:</span>
-								<span className={`infoValue`}>—</span>
+					{(orderData || isCreating) && (
+						<div className={`orderMainInfo`}>
+							<div className={`orderInfoFields`}>
+								<div className="infoRow">
+									{orderData && (
+										<>
+											<div className={`infoField`}>
+												<span className={`infoLabel`}>Дата оформления заказа:</span>
+												<span className={`infoValue`}>{formatDate(orderData.createdAt)}</span>
+											</div>
+											<div className={`infoField`}>
+												<span className={`infoLabel`}>Текущий статус:</span>
+												<div className={`statusWithDate`}>
+													{isEditMode ? (
+														<select
+															value={currentStatus || orderData?.status || "created"}
+															onChange={(e) => setCurrentStatus(e.target.value as OrderStatus)}
+															className={`statusSelect`}
+														>
+															{getAvailableStatuses(currentStatus || orderData?.status || "created").map((status) => (
+																<option key={status} value={status}>
+																	{status === "created" && "1. Новый"}
+																	{status === "confirmed" && "2. Подтвержденный"}
+																	{status === "booked" && "3. Забронирован"}
+																	{status === "ready" && "4. Готов к выдаче"}
+																	{status === "paid" && "5. Оплачен"}
+																	{status === "completed" && "6. Выполнен"}
+																	{status === "returned" && "7. Возврат"}
+																</option>
+															))}
+														</select>
+													) : (
+														<span className={`infoValue`}>{getStatusText(currentStatus || orderData?.status || "created")}</span>
+													)}
+													{orderData && (
+														<span className={`statusDateInfo`}>
+															{statusDates[currentStatus || orderData.status] || orderData.statusChangeDate
+																? `Присвоен: ${formatDate(statusDates[currentStatus || orderData.status] || orderData.statusChangeDate)}`
+																: "Дата не указана"}
+														</span>
+													)}
+												</div>
+											</div>
+											<div className={`infoField`}>
+												<span className={`infoLabel`}>Дата доставки клиенту:</span>
+												<span className={`infoValue`}>{formatDate(orderData.finalDeliveryDate) || "Не указана"}</span>
+											</div>
+											<div className={`infoField`}>
+												<span className={`infoLabel`}>Номер связанного ТО:</span>
+												<span className={`infoValue`}>—</span>
+											</div>
+										</>
+									)}
+								</div>
+								<div className="infoRow">
+									<div className={`infoField`}>
+										<span className={`infoLabel`}>Клиент:</span>
+										<span className={`infoValue`}>
+											{(() => {
+												const client = selectedClient || orderData?.client;
+												const clientName = client ? `${client.first_name || ""} ${client.last_name || ""}`.trim() || "Не указан" : "Не указан";
+												const clientId = client?.id;
+
+												return clientId ? (
+													<Link href={`/admin/users/${clientId}`} className="itemLink" target="_blank">
+														{clientName}
+													</Link>
+												) : (
+													clientName
+												);
+											})()}
+										</span>
+									</div>
+									<div className={`infoField`}>
+										<span className={`infoLabel`}>Ответственный:</span>
+										<span className={`infoValue`}>
+											{(() => {
+												const manager = selectedManager || orderData?.manager;
+												const managerName = manager ? `${manager.first_name || ""} ${manager.last_name || ""}`.trim() || "Не назначен" : "Не назначен";
+												const managerId = manager?.id;
+
+												return managerId ? (
+													<Link href={`/admin/users/${managerId}`} className="itemLink" target="_blank">
+														{managerName}
+													</Link>
+												) : (
+													managerName
+												);
+											})()}
+										</span>
+									</div>
+								</div>
 							</div>
 						</div>
 					)}
@@ -931,26 +1058,6 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 
 				{isEditMode && (
 					<div className={`formFields`}>
-						{/* Статус заказа */}
-						<div className={`formRow`}>
-							<div className={`formField`}>
-								<label htmlFor="orderStatus">Статус заказа</label>
-								<select id="orderStatus" name="orderStatus" value={currentStatus} onChange={(e) => setCurrentStatus(e.target.value as OrderStatus)}>
-									{getAvailableStatuses(currentStatus).map((status) => (
-										<option key={status} value={status}>
-											{status === "created" && "1. Новый"}
-											{status === "confirmed" && "2. Подтвержденный"}
-											{status === "booked" && "3. Забронирован"}
-											{status === "ready" && "4. Готов к выдаче"}
-											{status === "paid" && "5. Оплачен"}
-											{status === "completed" && "6. Выполнен"}
-											{status === "returned" && "7. Возврат"}
-										</option>
-									))}
-								</select>
-							</div>
-						</div>
-
 						{/* Блоки статусов заказа */}
 						{/* 1. Новый - Контактные данные лида (если клиент не выбран) */}
 						<StatusNewSection
@@ -963,6 +1070,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 							fieldErrors={fieldErrors}
 							clearFieldError={clearFieldError}
 							canEdit={createdStatusEditable}
+							statusDate={statusDates.created}
 						/>
 
 						{/* 2. Подтвержденный - Клиент, ответственный, состав заказа, дата согласования */}
@@ -986,6 +1094,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 							orderTotal={orderTotal}
 							orderData={orderData}
 							currentStatus={currentStatus}
+							statusDate={statusDates.confirmed}
 						/>
 
 						{/* 3. Забронирован - Забронирован до */}
@@ -996,6 +1105,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 							canEdit={bookedStatusEditable}
 							fieldErrors={fieldErrors}
 							clearFieldError={clearFieldError}
+							statusDate={statusDates.booked}
 						/>
 
 						{/* 4. Готов к выдаче - Отложен до, сумма предоплаты, дата внесения предоплаты */}
@@ -1006,6 +1116,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 							canEdit={readyStatusEditable}
 							fieldErrors={fieldErrors}
 							clearFieldError={clearFieldError}
+							statusDate={statusDates.ready}
 						/>
 
 						{/* 5. Оплачен - Дата внесения оплаты, сумма заказа */}
@@ -1016,6 +1127,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 							canEdit={paidStatusEditable}
 							fieldErrors={fieldErrors}
 							clearFieldError={clearFieldError}
+							statusDate={statusDates.paid}
 						/>
 
 						{/* 6. Выполнен - Дата выполнения */}
@@ -1026,6 +1138,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 							canEdit={completedStatusEditable}
 							fieldErrors={fieldErrors}
 							clearFieldError={clearFieldError}
+							statusDate={statusDates.completed}
 						/>
 
 						{/* 7. Возврат - Все поля возврата */}
@@ -1036,6 +1149,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 							canEdit={returnedStatusEditable}
 							fieldErrors={fieldErrors}
 							clearFieldError={clearFieldError}
+							statusDate={statusDates.returned}
 						/>
 
 						{/* Комментарии */}
@@ -1105,28 +1219,14 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 			{/* Фиксированные кнопки для изменений */}
 			{isEditMode && (isCreating || hasChanges) && (
 				<div className={`fixedButtons`}>
-					<div className={`formField`}>
-						<label htmlFor="orderStatus">Статус заказа</label>
-						<select id="orderStatus" name="orderStatus" value={currentStatus} onChange={(e) => setCurrentStatus(e.target.value as OrderStatus)}>
-							{getAvailableStatuses(currentStatus).map((status) => (
-								<option key={status} value={status}>
-									{status === "created" && "1. Новый"}
-									{status === "confirmed" && "2. Подтвержденный"}
-									{status === "booked" && "3. Забронирован"}
-									{status === "ready" && "4. Готов к выдаче"}
-									{status === "paid" && "5. Оплачен"}
-									{status === "completed" && "6. Выполнен"}
-									{status === "returned" && "7. Возврат"}
-								</option>
-							))}
-						</select>
+					<div className="buttonsBlock">
+						<button onClick={() => router.push("/admin/orders")} className={`secondaryButton`} disabled={isSaving}>
+							Отмена
+						</button>
+						<button onClick={handleSave} className={`primaryButton`} disabled={isSaving || orderItems.length === 0}>
+							{isSaving ? "Сохранение..." : isCreating ? "Создать заказ" : "Сохранить изменения"}
+						</button>
 					</div>
-					<button onClick={() => router.push("/admin/orders")} className={`secondaryButton`} disabled={isSaving}>
-						Отмена
-					</button>
-					<button onClick={handleSave} className={`primaryButton`} disabled={isSaving || orderItems.length === 0}>
-						{isSaving ? "Сохранение..." : isCreating ? "Создать заказ" : "Сохранить изменения"}
-					</button>
 				</div>
 			)}
 		</div>

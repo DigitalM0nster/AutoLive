@@ -2444,12 +2444,13 @@ span.oldName:after {
 }
 .productComponent .formHeader,
 .orderComponent .formHeader {
+  z-index: 100;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
   padding: 24px 32px;
   background: linear-gradient(135deg, var(--light-grey-color) 0%, white 100%);
   border-bottom: 1px solid var(--light-grey2-color);
+  overflow: hidden;
 }
 .productComponent .formHeader h2,
 .orderComponent .formHeader h2 {
@@ -2463,6 +2464,21 @@ span.oldName:after {
   display: flex;
   gap: 12px;
   align-items: center;
+}
+.productComponent .orderMainInfo,
+.orderComponent .orderMainInfo {
+  padding: 24px 0px;
+}
+.productComponent .orderMainInfo .orderInfoFields,
+.orderComponent .orderMainInfo .orderInfoFields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.productComponent .orderMainInfo .orderInfoFields .infoRow,
+.orderComponent .orderMainInfo .orderInfoFields .infoRow {
+  display: flex;
+  gap: 16px;
 }
 .productComponent .formFields,
 .orderComponent .formFields {
@@ -2486,12 +2502,6 @@ span.oldName:after {
   display: flex;
   flex-direction: column;
   gap: 4px;
-}
-.productComponent .formFields .formField label,
-.orderComponent .formFields .formField label {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-color);
 }
 .productComponent .formFields .formField input,
 .productComponent .formFields .formField textarea,
@@ -2599,6 +2609,23 @@ span.oldName:after {
   font-style: italic;
   margin-top: 4px;
 }
+.productComponent .formField,
+.orderComponent .formField {
+  padding: 20px;
+  border-radius: 10px;
+  border: 1px solid var(--grey-color);
+}
+.productComponent .formField .formFieldTitle,
+.productComponent .formField label,
+.orderComponent .formField .formFieldTitle,
+.orderComponent .formField label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1.4;
+}
 .productComponent .formField .selectedClient,
 .orderComponent .formField .selectedClient {
   display: flex;
@@ -2610,6 +2637,53 @@ span.oldName:after {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+.productComponent .infoField,
+.orderComponent .infoField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: -moz-fit-content;
+  width: fit-content;
+  padding: 12px 16px;
+  background: var(--light-grey-color);
+  border: 1px solid var(--light-grey2-color);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+.productComponent .infoField:hover,
+.orderComponent .infoField:hover {
+  background: #f0f4f8;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+.productComponent .infoField .infoLabel,
+.orderComponent .infoField .infoLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1.4;
+}
+.productComponent .infoField .infoValue,
+.orderComponent .infoField .infoValue {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-color);
+  word-break: break-word;
+  line-height: 1.5;
+}
+.productComponent .infoField .statusWithDate,
+.orderComponent .infoField .statusWithDate {
+  display: flex;
+  flex-direction: column;
+}
+.productComponent .infoField .statusWithDate .statusDateInfo,
+.orderComponent .infoField .statusWithDate .statusDateInfo {
+  font-size: 12px;
+  color: #6b7280;
+  font-style: italic;
+  margin-top: 4px;
 }
 .productComponent button.removeButton,
 .orderComponent button.removeButton {
@@ -2941,6 +3015,16 @@ span.oldName:after {
   z-index: 1000;
   animation: slideUp 0.3s ease-out;
 }
+.productComponent .fixedButtons .formField,
+.orderComponent .fixedButtons .formField {
+  display: flex;
+  flex-direction: column;
+}
+.productComponent .fixedButtons .buttonsBlock,
+.orderComponent .fixedButtons .buttonsBlock {
+  display: flex;
+  gap: 10px;
+}
 .productComponent .fixedButtons button,
 .orderComponent .fixedButtons button {
   padding: 12px 24px;
@@ -3098,8 +3182,8 @@ span.oldName:after {
 }
 .productComponent .orderItemsList.editable .orderItem,
 .orderComponent .orderItemsList.editable .orderItem {
-  background-color: #fff3cd;
-  border: 1px solid #ffc107;
+  background-color: var(--light-grey-color);
+  border: 1px solid var(--light-grey2-color);
 }
 .productComponent .orderItemsList.editable .orderItem .itemHeader .removeButton,
 .orderComponent .orderItemsList.editable .orderItem .itemHeader .removeButton {
@@ -3116,10 +3200,12 @@ span.oldName:after {
   gap: 5px;
   font-size: 15px;
 }
-.productComponent .orderItemsList .itemInfo .itemTitle,
-.orderComponent .orderItemsList .itemInfo .itemTitle {
-  font-size: 18px;
-  font-weight: 600;
+.productComponent .orderItemsList .itemInfo .itemInfoFields,
+.orderComponent .orderItemsList .itemInfo .itemInfoFields {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 5px;
 }
 .productComponent .orderItem,
 .orderComponent .orderItem {
@@ -3226,10 +3312,20 @@ span.oldName:after {
     gap: 16px;
     align-items: stretch;
     text-align: center;
+    padding: 20px 24px;
   }
   .productComponent .formHeader .formActions,
   .orderComponent .formHeader .formActions {
     justify-content: center;
+  }
+  .productComponent .orderMainInfo,
+  .orderComponent .orderMainInfo {
+    padding: 20px 24px;
+  }
+  .productComponent .orderMainInfo .orderInfoFields,
+  .orderComponent .orderMainInfo .orderInfoFields {
+    flex-direction: column;
+    gap: 12px;
   }
   .productComponent .formFields,
   .orderComponent .formFields {
@@ -3254,11 +3350,31 @@ span.oldName:after {
 @media (max-width: 480px) {
   .productComponent .formHeader,
   .orderComponent .formHeader {
-    padding: 20px;
+    padding: 16px;
   }
   .productComponent .formHeader h2,
   .orderComponent .formHeader h2 {
     font-size: 20px;
+  }
+  .productComponent .orderMainInfo,
+  .orderComponent .orderMainInfo {
+    padding: 16px;
+  }
+  .productComponent .orderMainInfo .orderInfoFields,
+  .orderComponent .orderMainInfo .orderInfoFields {
+    gap: 10px;
+  }
+  .productComponent .orderMainInfo .orderInfoFields .infoField,
+  .orderComponent .orderMainInfo .orderInfoFields .infoField {
+    padding: 10px 12px;
+  }
+  .productComponent .orderMainInfo .orderInfoFields .infoField .infoLabel,
+  .orderComponent .orderMainInfo .orderInfoFields .infoField .infoLabel {
+    font-size: 11px;
+  }
+  .productComponent .orderMainInfo .orderInfoFields .infoField .infoValue,
+  .orderComponent .orderMainInfo .orderInfoFields .infoField .infoValue {
+    font-size: 14px;
   }
   .productComponent .formFields,
   .orderComponent .formFields {
