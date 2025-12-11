@@ -2386,20 +2386,61 @@ span.oldName:after {
 }
 .productComponent .statusBlock,
 .orderComponent .statusBlock {
+  padding: 0px;
   margin: 0px 0px 0px 0px;
+  overflow: hidden;
+}
+.productComponent .statusBlock.active .statusFields,
+.orderComponent .statusBlock.active .statusFields {
+  display: flex;
+}
+.productComponent .statusBlock.active .statusHeader:hover:after,
+.orderComponent .statusBlock.active .statusHeader:hover:after {
+  transform: translate(0px, -3px) rotate(180deg);
+}
+.productComponent .statusBlock.active .statusHeader:after,
+.orderComponent .statusBlock.active .statusHeader:after {
+  transform: translate(0px, 0px) rotate(180deg);
 }
 .productComponent .statusBlock .statusFields,
 .orderComponent .statusBlock .statusFields {
-  display: flex;
+  display: none;
   flex-direction: column;
   gap: 24px;
+  margin: 10px 0px 0px 0px;
+  padding: 20px;
 }
 .productComponent .statusBlock .statusHeader,
 .orderComponent .statusBlock .statusHeader {
+  display: flex;
+  position: relative;
+  align-items: center;
+  justify-content: space-between;
   font-size: 18px;
   text-transform: uppercase;
   font-weight: 700;
-  margin: 0px 0px 10px 0px;
+  cursor: pointer;
+  padding: 20px;
+  background-color: var(--light-grey-color);
+}
+.productComponent .statusBlock .statusHeader:hover,
+.orderComponent .statusBlock .statusHeader:hover {
+  background-color: var(--light-grey2-color);
+}
+.productComponent .statusBlock .statusHeader:hover:after,
+.orderComponent .statusBlock .statusHeader:hover:after {
+  transform: translate(0px, 3px) rotate(0deg);
+}
+.productComponent .statusBlock .statusHeader:after,
+.orderComponent .statusBlock .statusHeader:after {
+  content: "";
+  display: block;
+  width: 0px;
+  height: 0px;
+  border: 6px solid transparent;
+  border-top: 8px solid black;
+  transform: translate(0px, 0px) rotate(0deg);
+  transition: 0.1s;
 }
 .productComponent .formHeader,
 .orderComponent .formHeader {

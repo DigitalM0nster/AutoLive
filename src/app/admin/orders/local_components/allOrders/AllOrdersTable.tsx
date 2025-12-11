@@ -17,7 +17,7 @@ const ManagerSearchField = React.memo(
 		<div className="searchFilterHeader">
 			Ответственный:
 			<div className="searchInput">
-				<input type="text" value={managerSearch} onChange={(e) => onSearchChange(e.target.value)} placeholder="Введите имя ответственного" />
+				<input type="text" value={managerSearch} onChange={(e) => onSearchChange(e.target.value)} placeholder="ФИО ответственного" />
 				<div onClick={onClearSearch} className="clearSearchButton"></div>
 			</div>
 		</div>
@@ -63,7 +63,6 @@ export default function AllOrdersTable() {
 	const [managerSearch, setManagerSearch] = useState("");
 	const [clientSearch, setClientSearch] = useState("");
 	const [departmentFilter, setDepartmentFilter] = useState<"all" | string>("all");
-	const [actionFilter, setActionFilter] = useState<"all" | string>("all");
 	const [idSearch, setIdSearch] = useState("");
 
 	// Состояние для сортировки
@@ -73,6 +72,14 @@ export default function AllOrdersTable() {
 	// Состояние для фильтра по дате
 	const [dateFilter, setDateFilter] = useState<{ from: string; to: string }>({ from: "", to: "" });
 	const [showDateFilter, setShowDateFilter] = useState(false);
+
+	// Состояние для фильтра по дате присвоения текущего статуса
+	const [statusDateFilter, setStatusDateFilter] = useState<{ from: string; to: string }>({ from: "", to: "" });
+	const [showStatusDateFilter, setShowStatusDateFilter] = useState(false);
+
+	// Состояние для фильтра по дате доставки клиенту
+	const [deliveryDateFilter, setDeliveryDateFilter] = useState<{ from: string; to: string }>({ from: "", to: "" });
+	const [showDeliveryDateFilter, setShowDeliveryDateFilter] = useState(false);
 
 	// Состояние для активных блоков (разворачивающаяся информация)
 	const [activeBlocks, setActiveBlocks] = useState<{ [key: string]: boolean }>({});
@@ -133,17 +140,6 @@ export default function AllOrdersTable() {
 		})),
 	];
 
-	// Опции для действий
-	const actionOptions = [
-		{ value: "all", label: "Все действия" },
-		{ value: "create", label: "Создание" },
-		{ value: "update", label: "Обновление" },
-		{ value: "assign", label: "Назначение" },
-		{ value: "unassign", label: "Снятие назначения" },
-		{ value: "status_change", label: "Изменение статуса" },
-		{ value: "cancel", label: "Отмена" },
-	];
-
 	// Загрузка заказов
 	useEffect(() => {
 		const fetchOrders = async () => {
@@ -156,9 +152,17 @@ export default function AllOrdersTable() {
 
 				if (statusFilter !== "all") params.append("status", statusFilter);
 
-				// Добавляем фильтр по дате
+				// Добавляем фильтр по дате создания
 				if (dateFilter.from) params.append("dateFrom", dateFilter.from);
 				if (dateFilter.to) params.append("dateTo", dateFilter.to);
+
+				// Добавляем фильтр по дате присвоения текущего статуса
+				if (statusDateFilter.from) params.append("statusDateFrom", statusDateFilter.from);
+				if (statusDateFilter.to) params.append("statusDateTo", statusDateFilter.to);
+
+				// Добавляем фильтр по дате доставки клиенту
+				if (deliveryDateFilter.from) params.append("deliveryDateFrom", deliveryDateFilter.from);
+				if (deliveryDateFilter.to) params.append("deliveryDateTo", deliveryDateFilter.to);
 
 				if (managerSearch) params.append("managerSearch", managerSearch);
 				if (clientSearch) params.append("clientSearch", clientSearch);
@@ -198,7 +202,7 @@ export default function AllOrdersTable() {
 		};
 
 		fetchOrders();
-	}, [page, statusFilter, dateFilter, sortBy, sortOrder, managerSearch, clientSearch, departmentFilter, actionFilter, idSearch]);
+	}, [page, statusFilter, dateFilter, statusDateFilter, deliveryDateFilter, sortBy, sortOrder, managerSearch, clientSearch, departmentFilter, idSearch]);
 
 	// Загрузка данных для селектов
 	useEffect(() => {
@@ -217,7 +221,10 @@ export default function AllOrdersTable() {
 				const departmentsResponse = await fetch("/api/departments");
 				if (departmentsResponse.ok) {
 					const departmentsData = await departmentsResponse.json();
-					if (departmentsData.departments) {
+					// API возвращает массив отделов, а не объект с полем departments
+					if (Array.isArray(departmentsData)) {
+						setDepartments(departmentsData);
+					} else if (departmentsData.departments) {
 						setDepartments(departmentsData.departments);
 					}
 				}
@@ -272,11 +279,6 @@ export default function AllOrdersTable() {
 		setPage(1);
 	};
 
-	const handleActionFilterChange = (value: string) => {
-		setActionFilter(value);
-		setPage(1);
-	};
-
 	const handleIdSearchChange = (value: string) => {
 		setIdSearch(value);
 		setPage(1);
@@ -316,9 +318,21 @@ export default function AllOrdersTable() {
 		return `${day}.${month}.${year}`;
 	};
 
-	// Обработчик изменения диапазона дат
+	// Обработчик изменения диапазона дат создания
 	const handleDateRangeChange = (startDate: string, endDate: string) => {
 		setDateFilter({ from: startDate, to: endDate });
+		setPage(1);
+	};
+
+	// Обработчик изменения диапазона дат присвоения текущего статуса
+	const handleStatusDateRangeChange = (startDate: string, endDate: string) => {
+		setStatusDateFilter({ from: startDate, to: endDate });
+		setPage(1);
+	};
+
+	// Обработчик изменения диапазона дат доставки клиенту
+	const handleDeliveryDateRangeChange = (startDate: string, endDate: string) => {
+		setDeliveryDateFilter({ from: startDate, to: endDate });
 		setPage(1);
 	};
 
@@ -449,26 +463,20 @@ export default function AllOrdersTable() {
 		);
 	};
 
-	// Функция для рендеринга блока действий
-	const renderActionsBlock = (order: Order) => {
-		return (
-			<button className="viewButton" onClick={() => router.push(`/admin/orders/${order.id}`)}>
-				Открыть заказ
-			</button>
-		);
-	};
-
 	// Функция для сброса всех фильтров
 	const resetFilters = () => {
 		setStatusFilter("all");
 		setDateFilter({ from: "", to: "" });
 		setShowDateFilter(false);
+		setStatusDateFilter({ from: "", to: "" });
+		setShowStatusDateFilter(false);
+		setDeliveryDateFilter({ from: "", to: "" });
+		setShowDeliveryDateFilter(false);
 		setSortBy(null);
 		setSortOrder(null);
 		setManagerSearch("");
 		setClientSearch("");
 		setDepartmentFilter("all");
-		setActionFilter("all");
 		setIdSearch("");
 		setActiveBlocks({});
 		setPage(1);
@@ -489,8 +497,18 @@ export default function AllOrdersTable() {
 		if (dateFilter.from || dateFilter.to) {
 			filters.push({
 				key: "date",
-				label: "Дата",
+				label: "Дата создания",
 				value: `${dateFilter.from ? formatDateFromString(dateFilter.from) : "дд.мм.гггг"} — ${dateFilter.to ? formatDateFromString(dateFilter.to) : "дд.мм.гггг"}`,
+			});
+		}
+
+		if (statusDateFilter.from || statusDateFilter.to) {
+			filters.push({
+				key: "statusDate",
+				label: "Дата присвоения статуса",
+				value: `${statusDateFilter.from ? formatDateFromString(statusDateFilter.from) : "дд.мм.гггг"} — ${
+					statusDateFilter.to ? formatDateFromString(statusDateFilter.to) : "дд.мм.гггг"
+				}`,
 			});
 		}
 
@@ -515,16 +533,7 @@ export default function AllOrdersTable() {
 			filters.push({
 				key: "departmentFilter",
 				label: "Отдел",
-				value: department?.name || "Неизвестный отдел",
-			});
-		}
-
-		if (actionFilter && actionFilter !== "all") {
-			const action = actionOptions.find((option) => option.value === actionFilter);
-			filters.push({
-				key: "actionFilter",
-				label: "Действие",
-				value: action?.label || "Неизвестное действие",
+				value: department?.name || (departmentFilter === "none" ? "Без отдела" : "Неизвестный отдел"),
 			});
 		}
 
@@ -639,6 +648,10 @@ export default function AllOrdersTable() {
 				if (statusFilter !== "all") params.append("status", statusFilter);
 				if (dateFilter.from) params.append("dateFrom", dateFilter.from);
 				if (dateFilter.to) params.append("dateTo", dateFilter.to);
+				if (statusDateFilter.from) params.append("statusDateFrom", statusDateFilter.from);
+				if (statusDateFilter.to) params.append("statusDateTo", statusDateFilter.to);
+				if (deliveryDateFilter.from) params.append("deliveryDateFrom", deliveryDateFilter.from);
+				if (deliveryDateFilter.to) params.append("deliveryDateTo", deliveryDateFilter.to);
 				if (managerSearch) params.append("managerSearch", managerSearch);
 				if (clientSearch) params.append("clientSearch", clientSearch);
 				if (departmentFilter !== "all") params.append("departmentId", departmentFilter === "none" ? "null" : departmentFilter);
@@ -677,6 +690,10 @@ export default function AllOrdersTable() {
 				if (statusFilter !== "all") params.append("status", statusFilter);
 				if (dateFilter.from) params.append("dateFrom", dateFilter.from);
 				if (dateFilter.to) params.append("dateTo", dateFilter.to);
+				if (statusDateFilter.from) params.append("statusDateFrom", statusDateFilter.from);
+				if (statusDateFilter.to) params.append("statusDateTo", statusDateFilter.to);
+				if (deliveryDateFilter.from) params.append("deliveryDateFrom", deliveryDateFilter.from);
+				if (deliveryDateFilter.to) params.append("deliveryDateTo", deliveryDateFilter.to);
 				if (managerSearch) params.append("managerSearch", managerSearch);
 				if (clientSearch) params.append("clientSearch", clientSearch);
 				if (departmentFilter !== "all") params.append("departmentId", departmentFilter === "none" ? "null" : departmentFilter);
@@ -731,6 +748,19 @@ export default function AllOrdersTable() {
 								/>
 							</th>
 							<th className={styles.tableHeaderCell}>
+								<div className="dateFilterHeader">
+									Дата присвоения текущего статуса
+									<div
+										className={`dateFilter ${statusDateFilter.from || statusDateFilter.to ? "active" : ""}`}
+										onClick={() => setShowStatusDateFilter(!showStatusDateFilter)}
+									>
+										{statusDateFilter.from ? formatDateFromString(statusDateFilter.from) : "дд.мм.гггг"} —{" "}
+										{statusDateFilter.to ? formatDateFromString(statusDateFilter.to) : "дд.мм.гггг"}
+									</div>
+									<DateRangePicker isOpen={showStatusDateFilter} onClose={() => setShowStatusDateFilter(false)} onDateRangeChange={handleStatusDateRangeChange} />
+								</div>
+							</th>
+							<th className={styles.tableHeaderCell}>
 								<CustomSelect
 									options={departmentOptions}
 									value={departmentFilter}
@@ -746,27 +776,43 @@ export default function AllOrdersTable() {
 								<ClientSearchField clientSearch={clientSearch} onSearchChange={handleClientSearchChange} onClearSearch={handleClearClientSearch} />
 							</th>
 							<th className={styles.tableHeaderCell}>
-								<CustomSelect
-									options={actionOptions}
-									value={actionFilter}
-									onChange={handleActionFilterChange}
-									placeholder="Выберите действие"
-									className={styles.actionSelect}
-								/>
+								<div className="dateFilterHeader">
+									Дата доставки клиенту
+									<div
+										className={`dateFilter ${deliveryDateFilter.from || deliveryDateFilter.to ? "active" : ""}`}
+										onClick={() => setShowDeliveryDateFilter(!showDeliveryDateFilter)}
+									>
+										{deliveryDateFilter.from ? formatDateFromString(deliveryDateFilter.from) : "дд.мм.гггг"} —{" "}
+										{deliveryDateFilter.to ? formatDateFromString(deliveryDateFilter.to) : "дд.мм.гггг"}
+									</div>
+									<DateRangePicker
+										isOpen={showDeliveryDateFilter}
+										onClose={() => setShowDeliveryDateFilter(false)}
+										onDateRangeChange={handleDeliveryDateRangeChange}
+									/>
+								</div>
 							</th>
 						</tr>
 					</thead>
 					<tbody className={styles.tableBody}>
 						{loading ? (
 							<tr>
-								<td colSpan={6} className={styles.loadingCell}>
+								<td colSpan={7} className={styles.loadingCell}>
 									<Loading />
 								</td>
 							</tr>
 						) : orders.length === 0 ? (
 							<tr>
-								<td colSpan={6} className={styles.emptyCell}>
-									{statusFilter !== "all" || dateFilter.from || dateFilter.to || managerSearch || clientSearch || departmentFilter !== "all" || idSearch
+								<td colSpan={7} className={styles.emptyCell}>
+									{statusFilter !== "all" ||
+									dateFilter.from ||
+									dateFilter.to ||
+									statusDateFilter.from ||
+									statusDateFilter.to ||
+									managerSearch ||
+									clientSearch ||
+									departmentFilter !== "all" ||
+									idSearch
 										? "Заказы не найдены"
 										: "Нет заказов"}
 								</td>
@@ -775,14 +821,22 @@ export default function AllOrdersTable() {
 							orders.map((order) => (
 								<tr key={order.id} className={styles.tableRow}>
 									<td className={styles.tableCell}>{formatDate(order.createdAt)}</td>
-									<td className={`${styles.tableCell} idCell`}>{order.id}</td>
+									<td className={`${styles.tableCell} idCell`}>
+										<div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+											<span>{order.id}</span>
+											<button className="viewButton" onClick={() => router.push(`/admin/orders/${order.id}`)}>
+												Перейти
+											</button>
+										</div>
+									</td>
 									<td className={styles.tableCell}>
 										<span className={`${styles.statusBadge} ${styles[getStatusColor(order.status)]}`}>{getStatusText(order.status)}</span>
 									</td>
+									<td className={styles.tableCell}>{order.statusChangeDate ? formatDate(order.statusChangeDate) : "—"}</td>
 									<td className={styles.tableCell}>{renderDepartmentBlock(order)}</td>
 									<td className={styles.tableCell}>{renderManagerBlock(order)}</td>
 									<td className={styles.tableCell}>{renderClientBlock(order)}</td>
-									<td className={styles.tableCell}>{renderActionsBlock(order)}</td>
+									<td className={styles.tableCell}>{order.finalDeliveryDate ? formatDate(order.finalDeliveryDate) : "—"}</td>
 								</tr>
 							))
 						)}

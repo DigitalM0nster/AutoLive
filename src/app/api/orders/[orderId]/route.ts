@@ -111,8 +111,29 @@ async function getOrderHandler(req: NextRequest, { user, scope, params }: { user
 			return NextResponse.json({ error: "Order not found or access denied" }, { status: 404 });
 		}
 
+		// Получаем дату присвоения текущего статуса из последнего лога изменения статуса
+		const lastStatusChangeLog = await prisma.orderLog.findFirst({
+			where: {
+				orderId: order.id,
+				action: "status_change",
+			},
+			select: {
+				createdAt: true,
+			},
+			orderBy: {
+				createdAt: "desc",
+			},
+		});
+
+		const statusChangeDate = lastStatusChangeLog?.createdAt || null;
+
+		const orderWithStatusDate = {
+			...order,
+			statusChangeDate,
+		};
+
 		const response: OrderResponse = {
-			order,
+			order: orderWithStatusDate,
 		};
 
 		return NextResponse.json(response);

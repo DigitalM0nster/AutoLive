@@ -159,9 +159,20 @@ export default function StatusNewSection({ isActive, formData, setFormData, orde
 		return `+7(${formattedNumber.slice(1, 4)})${formattedNumber.slice(4, 7)}-${formattedNumber.slice(7, 9)}-${formattedNumber.slice(9, 11)}`;
 	};
 
+	const [isExpanded, setIsExpanded] = useState(isActive);
+
+	// Синхронизируем состояние развернутости с активным статусом
+	useEffect(() => {
+		setIsExpanded(isActive);
+	}, [isActive]);
+
+	const toggleExpand = () => {
+		setIsExpanded(!isExpanded);
+	};
+
 	return (
-		<div className={`statusBlock borderBlock ${isActive ? "active" : ""}`}>
-			<div className={`statusHeader`}>
+		<div className={`statusBlock borderBlock ${isExpanded ? "active" : ""}`}>
+			<div className={`statusHeader`} onClick={toggleExpand}>
 				<h3>1. Новый</h3>
 			</div>
 			<div className={`statusFields`}>

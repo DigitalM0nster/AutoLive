@@ -333,6 +333,28 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 		return `${day}.${month}.${year}`;
 	};
 
+	// Функция для получения текста статуса
+	const getStatusText = (status: OrderStatus | string) => {
+		switch (status) {
+			case "created":
+				return "1. Новый";
+			case "confirmed":
+				return "2. Подтверждённый";
+			case "booked":
+				return "3. Забронирован";
+			case "ready":
+				return "4. Готов к выдаче";
+			case "paid":
+				return "5. Оплачен";
+			case "completed":
+				return "6. Выполнен";
+			case "returned":
+				return "7. Возврат";
+			default:
+				return status || "Не указан";
+		}
+	};
+
 	const selectedDepartmentIdValue = formData.departmentId ? parseInt(formData.departmentId, 10) : null;
 	const currentDepartment =
 		selectedDepartmentIdValue !== null
@@ -881,6 +903,30 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 			<div className={`formContainer`}>
 				<div className={`formHeader`}>
 					<h2>{isCreating ? "Создание заказа" : isViewMode ? `Просмотр заказа #${orderData?.id}` : `Заказ #${orderData?.id}`}</h2>
+					{!isCreating && orderData && (
+						<div className={`orderInfoFields`}>
+							<div className={`infoField`}>
+								<span className={`infoLabel`}>Дата оформления заказа:</span>
+								<span className={`infoValue`}>{formatDate(orderData.createdAt)}</span>
+							</div>
+							<div className={`infoField`}>
+								<span className={`infoLabel`}>Текущий статус:</span>
+								<span className={`infoValue`}>{getStatusText(currentStatus || orderData.status)}</span>
+							</div>
+							<div className={`infoField`}>
+								<span className={`infoLabel`}>Дата присвоения текущего статуса:</span>
+								<span className={`infoValue`}>{formatDate(orderData.statusChangeDate) || "Не указана"}</span>
+							</div>
+							<div className={`infoField`}>
+								<span className={`infoLabel`}>Дата доставки клиенту:</span>
+								<span className={`infoValue`}>{formatDate(orderData.finalDeliveryDate) || "Не указана"}</span>
+							</div>
+							<div className={`infoField`}>
+								<span className={`infoLabel`}>Номер связанного ТО:</span>
+								<span className={`infoValue`}>—</span>
+							</div>
+						</div>
+					)}
 				</div>
 
 				{isEditMode && (

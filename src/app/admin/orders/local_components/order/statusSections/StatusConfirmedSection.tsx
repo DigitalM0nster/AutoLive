@@ -305,9 +305,20 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 		setOrderItems((prev) => prev.map((item) => (item.product_sku === productSku ? { ...item, [field]: value } : item)));
 	};
 
+	const [isExpanded, setIsExpanded] = useState(isActive);
+
+	// Синхронизируем состояние развернутости с активным статусом
+	useEffect(() => {
+		setIsExpanded(isActive);
+	}, [isActive]);
+
+	const toggleExpand = () => {
+		setIsExpanded(!isExpanded);
+	};
+
 	return (
-		<div className={`statusBlock borderBlock ${isActive ? "active" : ""}`}>
-			<div className={`statusHeader`}>
+		<div className={`statusBlock borderBlock ${isExpanded ? "active" : ""}`}>
+			<div className={`statusHeader`} onClick={toggleExpand}>
 				<h3>2. Подтверждённый</h3>
 			</div>
 			<div className={`statusFields`}>

@@ -443,6 +443,7 @@ export type Order = {
 	confirmationDate?: string | Date | null;
 	finalDeliveryDate?: string | Date | null;
 	assignedAt?: string | Date | null;
+	statusChangeDate?: string | Date | null; // Дата присвоения текущего статуса
 	managerId?: number | null;
 	departmentId?: number | null;
 	clientId?: number | null;

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import DatePickerField from "@/components/ui/datePicker/DatePickerField";
 import datePickerFieldStyles from "@/components/ui/datePicker/DatePickerField.module.scss";
 import { OrderFormState } from "@/lib/types";
@@ -13,9 +13,20 @@ type StatusPaidSectionProps = {
 };
 
 const StatusPaidSection: React.FC<StatusPaidSectionProps> = ({ isActive, formData, setFormData, canEdit, fieldErrors, clearFieldError }) => {
+	const [isExpanded, setIsExpanded] = useState(isActive);
+
+	// Синхронизируем состояние развернутости с активным статусом
+	useEffect(() => {
+		setIsExpanded(isActive);
+	}, [isActive]);
+
+	const toggleExpand = () => {
+		setIsExpanded(!isExpanded);
+	};
+
 	return (
-		<div className={`statusBlock borderBlock ${isActive ? "active" : ""}`}>
-			<div className={`statusHeader`}>
+		<div className={`statusBlock borderBlock ${isExpanded ? "active" : ""}`}>
+			<div className={`statusHeader`} onClick={toggleExpand}>
 				<h3>5. Оплачен</h3>
 			</div>
 			<div className={`statusFields`}>
