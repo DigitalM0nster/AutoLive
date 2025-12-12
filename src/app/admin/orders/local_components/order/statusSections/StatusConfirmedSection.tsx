@@ -74,6 +74,7 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 	const managerBlurTimeout = useRef<NodeJS.Timeout | null>(null);
 	const [isClientSearchFocused, setIsClientSearchFocused] = useState(false);
 	const [isManagerSearchFocused, setIsManagerSearchFocused] = useState(false);
+	const [collapsedItems, setCollapsedItems] = useState<Set<string>>(new Set());
 
 	useEffect(() => {
 		return () => {
@@ -295,6 +296,30 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 		}
 
 		setOrderItems((prev) => prev.filter((item) => item.product_sku !== sku));
+	};
+
+	// Функция для переключения видимости товара (скрыть/показать)
+	const toggleItemVisibility = (sku: string, e?: React.MouseEvent) => {
+		// Если событие передано, предотвращаем переключение, если кликнули на ссылку или кнопку (кроме кнопки expandButton)
+		if (e) {
+			const target = e.target as HTMLElement;
+			// Если кликнули на кнопку expandButton, разрешаем переключение
+			if (target.closest(".expandButton")) {
+				// Разрешаем переключение для кнопки раскрытия
+			} else if (target.tagName === "A" || (target.tagName === "BUTTON" && !target.closest(".expandButton")) || target.closest("a")) {
+				return;
+			}
+		}
+
+		setCollapsedItems((prev) => {
+			const newSet = new Set(prev);
+			if (newSet.has(sku)) {
+				newSet.delete(sku);
+			} else {
+				newSet.add(sku);
+			}
+			return newSet;
+		});
 	};
 
 	const handleQuantityChange = (sku: string, quantity: number) => {
@@ -525,129 +550,141 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 					<div className={`formField`}>
 						<label>Список товаров</label>
 						<div className={`orderItemsList${canEdit ? " editable" : " readonly"}`}>
-							{orderItems.map((item, index) => (
-								<div key={index} className={`orderItem borderBlock${canEdit ? " editable" : " readonly"}`}>
-									<div className="formField">
-										<div className="formFieldTitle">Данные товара</div>
-										<div className="itemInfo">
-											<span className="itemTitle">
-												{item.productId ? (
-													<Link href={`/admin/product-management/products/${item.productId}`} className="itemLink" target="_blank">
-														{item.product_title}
-													</Link>
-												) : (
-													item.product_title
-												)}
-											</span>
-											<div className="itemInfoFields">
-												<div className="infoField">
-													<span className="infoLabel">Артикул:</span>
-													<div className="text">{item.product_sku}</div>
+							{orderItems.map((item, index) => {
+								const isExpanded = collapsedItems.has(item.product_sku);
+								return (
+									<div key={index} className={`orderItem borderBlock${canEdit ? " editable" : " readonly"}${isExpanded ? " active" : ""}`}>
+										<span className="itemTitle" onClick={(e) => toggleItemVisibility(item.product_sku, e)}>
+											{item.productId ? (
+												<Link href={`/admin/product-management/products/${item.productId}`} className="itemLink" target="_blank">
+													{item.product_title}
+												</Link>
+											) : (
+												item.product_title
+											)}
+											<div className="buttonsBlock">
+												<button
+													type="button"
+													onClick={(e) => {
+														e.stopPropagation();
+														toggleItemVisibility(item.product_sku);
+													}}
+													className={`expandButton ${isExpanded ? "active" : ""}`}
+												>
+													{isExpanded ? "Свернуть" : "Развернуть"}
+												</button>
+											</div>
+										</span>
+										<div className="itemInfoBlock">
+											<div className="formField formFieldGroup">
+												<div className="formField">
+													<div className="formFieldTitle">Данные о товаре</div>
+													<div className="formFieldInfo">
+														<div className="itemInfoFields">
+															<div className="infoField">
+																<span className="infoLabel">Артикул:</span>
+																<div className="text">{item.product_sku}</div>
+															</div>
+															<div className="infoField">
+																<span className="infoLabel">Бренд:</span>
+																<div className="text">{item.product_brand}</div>
+															</div>
+															<div className="infoField">
+																<span className="infoLabel">Отдел:</span>
+																<div className="text">
+																	<Link href={`/admin/departments/${item.department.id}`} className="itemLink" target="_blank">
+																		{item.department.name}
+																	</Link>
+																</div>
+															</div>
+														</div>
+													</div>
 												</div>
-												<div className="infoField">
-													<span className="infoLabel">Бренд:</span>
-													<div className="text">{item.product_brand}</div>
-												</div>
-												<div className="infoField">
-													<span className="infoLabel">Отдел:</span>
-													<div className="text">
-														<Link href={`/admin/departments/${item.department.id}`} className="itemLink" target="_blank">
-															{item.department.name}
-														</Link>
+												<div className="formField">
+													<div className="formFieldTitle">Товар для автомобиля</div>
+													<div className="formFieldInfo column">
+														<input
+															type="text"
+															value={item.carModel || ""}
+															onChange={(e) => handleProductFieldChange(item.product_sku, "carModel", e.target.value)}
+															placeholder="Модель автомобиля"
+															className="textInput"
+															disabled={!canEdit}
+														/>
+														<input
+															type="text"
+															value={item.vinCode || ""}
+															onChange={(e) => handleProductFieldChange(item.product_sku, "vinCode", e.target.value)}
+															placeholder="VIN-код"
+															className="textInput"
+															disabled={!canEdit}
+														/>
 													</div>
 												</div>
 											</div>
-										</div>
-									</div>
 
-									<div className="itemFields">
-										<div className="formRow">
-											<div className="formField">
-												<label>Название автомобиля</label>
-												<input
-													type="text"
-													value={item.carModel || ""}
-													onChange={(e) => handleProductFieldChange(item.product_sku, "carModel", e.target.value)}
-													placeholder="Модель автомобиля"
-													className="textInput"
-													disabled={!canEdit}
-												/>
-											</div>
-											<div className="formField">
-												<label>VIN-код автомобиля</label>
-												<input
-													type="text"
-													value={item.vinCode || ""}
-													onChange={(e) => handleProductFieldChange(item.product_sku, "vinCode", e.target.value)}
-													placeholder="VIN-код"
-													className="textInput"
-													disabled={!canEdit}
-												/>
-											</div>
-										</div>
-
-										<div className="formRow">
-											<div className="formField">
-												<label>Количество</label>
-												<div className="quantityControls">
-													<button
-														type="button"
-														onClick={() => handleQuantityChange(item.product_sku, item.quantity - 1)}
-														className="quantityButton"
-														disabled={!canEdit}
-													>
-														-
-													</button>
-													<input
-														type="number"
-														value={item.quantity}
-														onChange={(e) => handleQuantityChange(item.product_sku, parseInt(e.target.value) || 0)}
-														min="1"
-														className="quantityInput"
-														disabled={!canEdit}
-													/>
-													<button
-														type="button"
-														onClick={() => handleQuantityChange(item.product_sku, item.quantity + 1)}
-														className="quantityButton"
-														disabled={!canEdit}
-													>
-														+
-													</button>
+											<div className="formField formFieldGroup">
+												<div className="formField">
+													<div className="formFieldTitle">Количество</div>
+													<div className="quantityControls">
+														<button
+															type="button"
+															onClick={() => handleQuantityChange(item.product_sku, item.quantity - 1)}
+															className="quantityButton"
+															disabled={!canEdit}
+														>
+															-
+														</button>
+														<input
+															type="number"
+															value={item.quantity}
+															onChange={(e) => handleQuantityChange(item.product_sku, parseInt(e.target.value) || 0)}
+															min="1"
+															className="quantityInput"
+															disabled={!canEdit}
+														/>
+														<button
+															type="button"
+															onClick={() => handleQuantityChange(item.product_sku, item.quantity + 1)}
+															className="quantityButton"
+															disabled={!canEdit}
+														>
+															+
+														</button>
+													</div>
 												</div>
-											</div>
-										</div>
-
-										<div className="formRow">
-											<div className="formField">
-												<label>Цена за ед.</label>
-												<input type="text" value={`${item.product_price} ₽`} disabled className="priceInput" />
+												<div className="formField">
+													<label>Цена за ед.</label>
+													<input type="text" value={`${item.product_price} ₽`} disabled className="priceInput" />
+												</div>
 											</div>
 											<div className="formField">
 												<label>Сумма</label>
 												<input type="text" value={`${(item.product_price * item.quantity).toLocaleString()} ₽`} disabled className="totalInput" />
 											</div>
-										</div>
 
-										<div className="formRow">
-											<div className="formField">
-												<DatePickerField
-													label="Дата поставки поставщиком"
-													value={item.supplierDeliveryDate || ""}
-													onChange={(date) => {
-														handleProductFieldChange(item.product_sku, "supplierDeliveryDate", date || "");
-														clearFieldError("supplierDeliveryDate");
-													}}
-													onFocus={() => clearFieldError("supplierDeliveryDate")}
-													placeholder="Выберите дату поставки"
-													className={fieldErrors.has("supplierDeliveryDate") ? `${datePickerFieldStyles.error}` : ""}
-													disabled={!canEdit}
-												/>
+											<div className="itemFields">
+												<div className="formRow">
+													<div className="formField">
+														<DatePickerField
+															label="Дата поставки поставщиком"
+															value={item.supplierDeliveryDate || ""}
+															onChange={(date) => {
+																handleProductFieldChange(item.product_sku, "supplierDeliveryDate", date || "");
+																clearFieldError("supplierDeliveryDate");
+															}}
+															onFocus={() => clearFieldError("supplierDeliveryDate")}
+															placeholder="Выберите дату поставки"
+															className={fieldErrors.has("supplierDeliveryDate") ? `${datePickerFieldStyles.error}` : ""}
+															disabled={!canEdit}
+														/>
+													</div>
+												</div>
 											</div>
 										</div>
 									</div>
-								</div>
-							))}
+								);
+							})}
 						</div>
 					</div>
 				)}

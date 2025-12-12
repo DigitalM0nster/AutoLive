@@ -83,8 +83,39 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 
 	const isAdminOrSuperadmin = userRole === "superadmin" || userRole === "admin";
 	const isManager = userRole === "manager";
-	const isEditMode = isAdminOrSuperadmin || isManager;
-	const isViewMode = !isEditMode;
+
+	// Проверяем, является ли менеджер ответственным за заказ
+	// Используем useMemo для пересчета при изменении зависимостей
+	const isManagerResponsible = useMemo(() => {
+		if (!isManager) return false;
+
+		// При создании нового заказа менеджер может редактировать
+		if (isCreating) return true;
+
+		// Менеджер является выбранным ответственным
+		if (selectedManager?.id === user?.id) return true;
+
+		// Менеджер является ответственным в данных заказа
+		if (orderData?.managerId === user?.id) return true;
+
+		return false;
+	}, [isManager, isCreating, selectedManager?.id, user?.id, orderData?.managerId]);
+
+	// Проверяем, имеет ли пользователь доступ к просмотру заказа
+	// Если заказ загружен (orderData существует), значит у пользователя есть доступ к нему
+	// (API уже проверил права доступа при загрузке)
+	// Админы и суперадмины имеют доступ всегда
+	const hasAccessToOrder = useMemo(() => {
+		if (isCreating) return true; // При создании всегда есть доступ
+		if (isAdminOrSuperadmin) return true; // Админы и суперадмины всегда имеют доступ
+		// Если заказ загружен, значит у пользователя есть доступ (API уже проверил)
+		return !!orderData;
+	}, [isCreating, isAdminOrSuperadmin, orderData]);
+
+	// Менеджер может редактировать только если он ответственный за заказ (или создает новый)
+	// Админы и суперадмины могут редактировать всегда
+	const isEditMode = isAdminOrSuperadmin || isManagerResponsible;
+	const isViewMode = !isEditMode && hasAccessToOrder; // Режим просмотра только если есть доступ, но нет прав на редактирование
 
 	// Функция для определения доступных статусов для менеджера
 	const getAvailableStatuses = (currentStatus: string) => {
@@ -93,8 +124,8 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 			return ["created", "confirmed", "booked", "ready", "paid", "completed", "returned"];
 		}
 
-		if (isManager) {
-			// Менеджеры могут только повышать статус или оставлять текущий
+		if (isManager && isManagerResponsible) {
+			// Менеджеры могут только повышать статус или оставлять текущий (только если они ответственные)
 			const statusOrder = ["created", "confirmed", "booked", "ready", "paid", "completed", "returned"];
 			const currentIndex = statusOrder.indexOf(currentStatus);
 			if (currentIndex === -1) return ["created"];
@@ -108,6 +139,11 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 
 	// Функция для определения, можно ли редактировать поле статуса
 	const canEditStatusField = (statusName: string) => {
+		// Если менеджер не является ответственным за заказ, он не может редактировать
+		if (isManager && !isManagerResponsible) {
+			return false;
+		}
+
 		const statusOrder = ["created", "confirmed", "booked", "ready", "paid", "completed", "returned"];
 		const currentIndex = statusOrder.indexOf(currentStatus);
 		const fieldIndex = statusOrder.indexOf(statusName);
@@ -124,7 +160,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 
 		// Менеджеру доступен только текущий статус "Новый" пока заказ в статусе новый.
 		// После перехода вперёд — редактирование текущего и прошлых статусов запрещено.
-		if (isManager) {
+		if (isManager && isManagerResponsible) {
 			if (initialStatus === "created") {
 				if (statusName === "created") {
 					return currentStatus === "created";
@@ -661,6 +697,88 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 		};
 	};
 
+	// Функция для "забрать заказ" - назначить текущего пользователя ответственным
+	const handleTakeOrder = async () => {
+		if (!user || !orderId) {
+			showErrorToast("Ошибка: пользователь не авторизован или заказ не найден");
+			return;
+		}
+
+		// Проверяем условия для возможности взять заказ
+		const currentManager = selectedManager || orderData?.manager;
+		const hasManager = currentManager && currentManager.id;
+
+		if (hasManager) {
+			showErrorToast("У заказа уже есть ответственный");
+			return;
+		}
+
+		const orderDepartmentId = orderData?.departmentId || (formData.departmentId ? parseInt(formData.departmentId, 10) : null);
+		const userDepartmentId = user.departmentId;
+
+		// Проверяем: у заказа нет отдела ИЛИ отдел заказа соответствует отделу пользователя
+		// Если заказ загружен и менеджер имеет к нему доступ, значит API уже проверил права доступа
+		// Но для безопасности проверяем еще раз на клиенте
+		if (isManager && orderDepartmentId && userDepartmentId && orderDepartmentId !== userDepartmentId) {
+			showErrorToast("Вы не можете взять заказ из другого отдела");
+			return;
+		}
+
+		// Проверяем роль пользователя
+		if (!isManager && !isAdminOrSuperadmin) {
+			showErrorToast("Только менеджеры и администраторы могут брать заказы");
+			return;
+		}
+
+		try {
+			setIsSaving(true);
+
+			// Отправляем запрос на обновление заказа
+			const response = await fetch(`/api/orders/${orderId}`, {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				credentials: "include",
+				body: JSON.stringify({
+					managerId: user.id,
+				}),
+			});
+
+			if (!response.ok) {
+				const errorData = await response.json();
+				showErrorToast(errorData.error || "Ошибка при назначении ответственного");
+				return;
+			}
+
+			const updatedOrder = await response.json();
+			setOrderData(updatedOrder.order);
+			setSelectedManager({
+				id: user.id,
+				first_name: user.first_name,
+				last_name: user.last_name,
+				middle_name: user.middle_name || "",
+				phone: user.phone || "",
+				role: user.role,
+				department: user.department ?? undefined,
+				departmentId: user.departmentId ?? null,
+				status: user.status || "",
+				orders: [],
+			});
+			setFormData((prev) => ({
+				...prev,
+				managerId: user.id.toString(),
+			}));
+
+			showSuccessToast("Заказ успешно взят в работу");
+		} catch (error) {
+			console.error("Ошибка при взятии заказа:", error);
+			showErrorToast("Ошибка при взятии заказа");
+		} finally {
+			setIsSaving(false);
+		}
+	};
+
 	// Сохранение заказа
 	const handleSave = async () => {
 		try {
@@ -972,11 +1090,12 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 											<div className={`infoField`}>
 												<span className={`infoLabel`}>Текущий статус:</span>
 												<div className={`statusWithDate`}>
-													{isEditMode ? (
+													{isEditMode || isViewMode ? (
 														<select
 															value={currentStatus || orderData?.status || "created"}
 															onChange={(e) => setCurrentStatus(e.target.value as OrderStatus)}
 															className={`statusSelect`}
+															disabled={!isEditMode}
 														>
 															{getAvailableStatuses(currentStatus || orderData?.status || "created").map((status) => (
 																<option key={status} value={status}>
@@ -1049,6 +1168,32 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 												);
 											})()}
 										</span>
+										{(() => {
+											// Проверяем условия для отображения кнопки "забрать заказ"
+											const currentManager = selectedManager || orderData?.manager;
+											// Проверяем наличие ответственного: либо в selectedManager, либо в orderData.manager, либо в orderData.managerId
+											const hasManager = (currentManager && currentManager.id) || (orderData?.managerId !== null && orderData?.managerId !== undefined);
+
+											// Кнопка показывается если:
+											// 1. У заказа нет ответственного
+											// 2. Заказ загружен (orderData существует) - это означает, что API уже проверил права доступа
+											//    Если заказ загружен и менеджер имеет к нему доступ, значит либо заказ свободный, либо заказ его отдела
+											// 3. Пользователь менеджер или админ
+											// 4. Не в режиме создания заказа
+											// 5. Заказ существует
+											const canTakeOrder =
+												!hasManager && // У заказа нет ответственного
+												!!orderData && // Заказ загружен (API уже проверил права доступа)
+												(isManager || isAdminOrSuperadmin) && // Пользователь менеджер или админ
+												!isCreating && // Не в режиме создания
+												!!orderId; // Заказ существует
+
+											return canTakeOrder ? (
+												<button type="button" onClick={handleTakeOrder} className="takeOrderButton" disabled={isSaving}>
+													{isSaving ? "Обработка..." : "Забрать заказ"}
+												</button>
+											) : null;
+										})()}
 									</div>
 								</div>
 							</div>
@@ -1056,7 +1201,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 					)}
 				</div>
 
-				{isEditMode && (
+				{(isEditMode || isViewMode) && (
 					<div className={`formFields`}>
 						{/* Блоки статусов заказа */}
 						{/* 1. Новый - Контактные данные лида (если клиент не выбран) */}
@@ -1069,7 +1214,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 							orderTotal={orderTotal}
 							fieldErrors={fieldErrors}
 							clearFieldError={clearFieldError}
-							canEdit={createdStatusEditable}
+							canEdit={isEditMode ? createdStatusEditable : false}
 							statusDate={statusDates.created}
 						/>
 
@@ -1085,7 +1230,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 							currentDepartment={currentDepartment}
 							fieldErrors={fieldErrors}
 							clearFieldError={clearFieldError}
-							canEdit={confirmedStatusEditable}
+							canEdit={isEditMode ? confirmedStatusEditable : false}
 							userRole={userRole}
 							user={user}
 							departments={departments}
@@ -1102,7 +1247,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 							isActive={currentStatus === "booked"}
 							formData={formData}
 							setFormData={setFormData}
-							canEdit={bookedStatusEditable}
+							canEdit={isEditMode ? bookedStatusEditable : false}
 							fieldErrors={fieldErrors}
 							clearFieldError={clearFieldError}
 							statusDate={statusDates.booked}
@@ -1113,7 +1258,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 							isActive={currentStatus === "ready"}
 							formData={formData}
 							setFormData={setFormData}
-							canEdit={readyStatusEditable}
+							canEdit={isEditMode ? readyStatusEditable : false}
 							fieldErrors={fieldErrors}
 							clearFieldError={clearFieldError}
 							statusDate={statusDates.ready}
@@ -1124,7 +1269,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 							isActive={currentStatus === "paid"}
 							formData={formData}
 							setFormData={setFormData}
-							canEdit={paidStatusEditable}
+							canEdit={isEditMode ? paidStatusEditable : false}
 							fieldErrors={fieldErrors}
 							clearFieldError={clearFieldError}
 							statusDate={statusDates.paid}
@@ -1135,7 +1280,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 							isActive={currentStatus === "completed"}
 							formData={formData}
 							setFormData={setFormData}
-							canEdit={completedStatusEditable}
+							canEdit={isEditMode ? completedStatusEditable : false}
 							fieldErrors={fieldErrors}
 							clearFieldError={clearFieldError}
 							statusDate={statusDates.completed}
@@ -1146,7 +1291,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 							isActive={currentStatus === "returned"}
 							formData={formData}
 							setFormData={setFormData}
-							canEdit={returnedStatusEditable}
+							canEdit={isEditMode ? returnedStatusEditable : false}
 							fieldErrors={fieldErrors}
 							clearFieldError={clearFieldError}
 							statusDate={statusDates.returned}
@@ -1158,52 +1303,23 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 							<div className={`commentsContainer`}>
 								{comments.map((comment, index) => (
 									<div key={index} className={`commentItem`}>
-										<input type="text" value={comment} onChange={(e) => editComment(index, e.target.value)} placeholder="Комментарий" />
-										<button type="button" onClick={() => deleteComment(index)} className={`removeButton`}>
-											Удалить
-										</button>
+										<input type="text" value={comment} onChange={(e) => editComment(index, e.target.value)} placeholder="Комментарий" disabled={!isEditMode} />
+										{isEditMode && (
+											<button type="button" onClick={() => deleteComment(index)} className={`removeButton`}>
+												Удалить
+											</button>
+										)}
 									</div>
 								))}
 
-								<div className={`addCommentContainer`}>
-									<input type="text" value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Добавить комментарий" />
-									<button type="button" onClick={addComment} className={`addButton`}>
-										Добавить
-									</button>
-								</div>
-							</div>
-						</div>
-					</div>
-				)}
-
-				{!isEditMode && isViewMode && (
-					<div className={`viewModeContainer`}>
-						<div className={`productInfoCard`}>
-							<div className={`productDetailsSection`}>
-								<div className={`productInfoRow`}>
-									<span className={`infoLabel`}>ID:</span>
-									<span className={`infoValue`}>#{orderData?.id}</span>
-								</div>
-								<div className={`productInfoRow`}>
-									<span className={`infoLabel`}>Статус:</span>
-									<span className={`infoValue`}>{orderData?.status}</span>
-								</div>
-								<div className={`productInfoRow`}>
-									<span className={`infoLabel`}>Клиент:</span>
-									<span className={`infoValue`}>{orderData?.client ? `${orderData.client.first_name} ${orderData.client.last_name}` : "Не указан"}</span>
-								</div>
-								<div className={`productInfoRow`}>
-									<span className={`infoLabel`}>Менеджер:</span>
-									<span className={`infoValue`}>{orderData?.manager ? `${orderData.manager.first_name} ${orderData.manager.last_name}` : "Не назначен"}</span>
-								</div>
-								<div className={`productInfoRow`}>
-									<span className={`infoLabel`}>Отдел:</span>
-									<span className={`infoValue`}>{orderData?.department?.name || "Не указан"}</span>
-								</div>
-								<div className={`productInfoRow`}>
-									<span className={`infoLabel`}>Создан:</span>
-									<span className={`infoValue`}>{new Date(orderData?.createdAt || "").toLocaleDateString("ru-RU")}</span>
-								</div>
+								{isEditMode && (
+									<div className={`addCommentContainer`}>
+										<input type="text" value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Добавить комментарий" />
+										<button type="button" onClick={addComment} className={`addButton`}>
+											Добавить
+										</button>
+									</div>
+								)}
 							</div>
 						</div>
 					</div>
@@ -1211,7 +1327,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 
 				{!isEditMode && !isViewMode && (
 					<div className={`noEditMessage`}>
-						<p>У вас нет прав для редактирования заказов. Обратитесь к администратору.</p>
+						<p>У вас нет доступа к этому заказу или прав для его просмотра. Обратитесь к администратору.</p>
 					</div>
 				)}
 			</div>

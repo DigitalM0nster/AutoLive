@@ -167,6 +167,7 @@ export default function AllOrdersTable() {
 				}
 
 				const controller = new AbortController();
+				// Таймаут 15 секунд - даём достаточно времени на выполнение запросов с учётом возможных ошибок соединения
 				const timeout = setTimeout(() => controller.abort(), 15000);
 				const response = await fetch(`/api/orders?${params}`, { signal: controller.signal });
 				clearTimeout(timeout);
@@ -186,8 +187,17 @@ export default function AllOrdersTable() {
 
 				setOrders(data.orders || []);
 				setTotal(data.total || 0);
-			} catch (err) {
-				console.error("Ошибка загрузки заказов:", err);
+			} catch (err: any) {
+				// Обрабатываем ошибку прерывания запроса
+				if (err.name === "AbortError") {
+					console.error("Запрос прерван по таймауту");
+					setOrders([]);
+					setTotal(0);
+				} else {
+					console.error("Ошибка загрузки заказов:", err);
+					setOrders([]);
+					setTotal(0);
+				}
 			} finally {
 				setLoading(false);
 			}

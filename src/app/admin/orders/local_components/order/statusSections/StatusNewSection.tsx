@@ -33,6 +33,8 @@ export default function StatusNewSection({
 	const [searchResults, setSearchResults] = useState<ProductListItem[]>([]);
 	const [isSearching, setIsSearching] = useState(false);
 	const [isSearchFocused, setIsSearchFocused] = useState(false);
+	const [showProductSearch, setShowProductSearch] = useState(false);
+	const [collapsedItems, setCollapsedItems] = useState<Set<string>>(new Set());
 	const blurTimeout = useRef<NodeJS.Timeout | null>(null);
 
 	useEffect(() => {
@@ -109,6 +111,7 @@ export default function StatusNewSection({
 		setProductSearch("");
 		setSearchResults([]);
 		setIsSearchFocused(false);
+		setShowProductSearch(false);
 		if (blurTimeout.current) {
 			clearTimeout(blurTimeout.current);
 		}
@@ -141,6 +144,30 @@ export default function StatusNewSection({
 		}
 
 		setOrderItems((prev) => prev.map((item) => (item.product_sku === productSku ? { ...item, [field]: value } : item)));
+	};
+
+	// Функция для переключения видимости товара (скрыть/показать)
+	const toggleItemVisibility = (sku: string, e?: React.MouseEvent) => {
+		// Если событие передано, предотвращаем переключение, если кликнули на ссылку или кнопку (кроме кнопки expandButton)
+		if (e) {
+			const target = e.target as HTMLElement;
+			// Если кликнули на кнопку expandButton, разрешаем переключение
+			if (target.closest(".expandButton")) {
+				// Разрешаем переключение для кнопки раскрытия
+			} else if (target.tagName === "A" || (target.tagName === "BUTTON" && !target.closest(".expandButton")) || target.closest("a")) {
+				return;
+			}
+		}
+
+		setCollapsedItems((prev) => {
+			const newSet = new Set(prev);
+			if (newSet.has(sku)) {
+				newSet.delete(sku);
+			} else {
+				newSet.add(sku);
+			}
+			return newSet;
+		});
 	};
 
 	const handleBlur = () => {
@@ -235,167 +262,227 @@ export default function StatusNewSection({
 				{/* Список товаров в заказе */}
 				<div className={`formField`}>
 					<div>Товары в заказе ({orderItems.length})</div>
-					<div className={`searchContainer`}>
-						<input
-							id="productSearch"
-							type="text"
-							value={productSearch}
-							onChange={(e) => {
-								setProductSearch(e.target.value);
-								handleProductSearch(e.target.value);
-								clearFieldError("productSearch");
-							}}
-							onFocus={() => {
-								setIsSearchFocused(true);
-								if (blurTimeout.current) {
-									clearTimeout(blurTimeout.current);
-								}
-								clearFieldError("productSearch");
-							}}
-							onBlur={handleBlur}
-							placeholder="Поиск товаров по названию, артикулу или бренду"
-							className={`${fieldErrors.has("productSearch") ? "error" : ""} ${(isSearchFocused && productSearch.length >= 2) || isSearching ? "activeSearch" : ""}`}
-							disabled={!canEdit}
-						/>
-						{isSearchFocused && isSearching && productSearch && (
-							<div className="searchResults loading">
-								<Loading />
-							</div>
-						)}
-
-						{isSearchFocused && !isSearching && productSearch && (
-							<div className="searchResults">
-								{searchResults.length > 0 ? (
-									searchResults.map((product) => {
-										if (!product.department) {
-											return null; // Товар без отдела пропускаем, такого быть не должно, но на всякий случай защищаемся.
-										}
-
-										return (
-											<div key={product.id} className={`searchResultItem`} onMouseDown={() => handleProductSelect(product)}>
-												<div className="productInfo">
-													<span className="productTitle">{product.title}</span>
-													<span className="additionalInfoBorderBlock">Артикул: {product.sku}</span>
-													<span className="additionalInfoBorderBlock">Бренд: {product.brand}</span>
-													<span className="additionalInfoBorderBlock">
-														Закупочная стоимость: {product.supplierPrice ? `${product.supplierPrice.toLocaleString()} ₽` : "—"}
-													</span>
-													<span className="additionalInfoBorderBlock">Стоимость для клиента: {product.price.toLocaleString()} ₽</span>
-													<span className="additionalInfoBorderBlock">Отдел: {product.department.name}</span>
+					<div className={`orderItemsList${canEdit ? "" : " readonly"}`}>
+						{orderItems.map((item, index) => {
+							const isExpanded = collapsedItems.has(item.product_sku);
+							return (
+								<div key={index} className={`orderItem borderBlock${canEdit ? "" : " readonly"}${isExpanded ? " active" : ""}`}>
+									<span className="itemTitle" onClick={(e) => toggleItemVisibility(item.product_sku, e)}>
+										{item.productId ? (
+											<Link href={`/admin/product-management/products/${item.productId}`} className="itemLink" target="_blank">
+												{item.product_title}
+											</Link>
+										) : (
+											item.product_title
+										)}
+										<div className="buttonsBlock">
+											<button
+												type="button"
+												onClick={(e) => {
+													e.stopPropagation();
+													toggleItemVisibility(item.product_sku);
+												}}
+												className={`expandButton ${isExpanded ? "active" : ""}`}
+											>
+												{isExpanded ? "Свернуть" : "Развернуть"}
+											</button>
+											<button
+												type="button"
+												onClick={(e) => {
+													e.stopPropagation();
+													handleRemoveProduct(item.product_sku);
+												}}
+												className="removeButton"
+												disabled={!canEdit}
+											>
+												Удалить товар из заказа ×
+											</button>
+										</div>
+									</span>
+									<div className="itemInfoBlock">
+										<div className="formField formFieldGroup">
+											<div className="formField">
+												<div className="formFieldTitle">Данные о товаре</div>
+												<div className="formFieldInfo">
+													<div className="itemInfoFields">
+														<div className="infoField">
+															<span className="infoLabel">Артикул:</span>
+															<div className="text">{item.product_sku}</div>
+														</div>
+														<div className="infoField">
+															<span className="infoLabel">Бренд:</span>
+															<div className="text">{item.product_brand}</div>
+														</div>
+														<div className="infoField">
+															<span className="infoLabel">Отдел:</span>
+															<div className="text">
+																<Link href={`/admin/departments/${item.department.id}`} className="itemLink" target="_blank">
+																	{item.department.name}
+																</Link>
+															</div>
+														</div>
+													</div>
 												</div>
 											</div>
-										);
-									})
-								) : (
-									<div className={`searchResultItem`}>Нет результатов</div>
-								)}
-							</div>
-						)}
-					</div>
-					<div className={`orderItemsList${canEdit ? "" : " readonly"}`}>
-						{orderItems.map((item, index) => (
-							<div key={index} className={`orderItem borderBlock${canEdit ? "" : " readonly"}`}>
-								<div className="itemHeader">
-									<div className="itemInfo">
-										<span className="itemTitle">
-											{item.productId ? (
-												<Link href={`/admin/product-management/products/${item.productId}`} className="itemLink" target="_blank">
-													{item.product_title}
-												</Link>
-											) : (
-												item.product_title
-											)}
-										</span>
-										<span className="itemSku">Артикул: {item.product_sku}</span>
-										<span className="itemBrand">Бренд: {item.product_brand}</span>
-										<span className="itemDepartment">
-											<Link href={`/admin/departments/${item.department.id}`} className="itemLink" target="_blank">
-												{item.department.name}
-											</Link>
-										</span>
-									</div>
-								</div>
-
-								<div className="itemFields">
-									<div className="formRow">
-										<div className="formField">
-											<label>Название автомобиля</label>
-											<input
-												type="text"
-												value={item.carModel || ""}
-												onChange={(e) => handleProductFieldChange(item.product_sku, "carModel", e.target.value)}
-												placeholder="Модель автомобиля"
-												className="textInput"
-												disabled={!canEdit}
-											/>
-										</div>
-									</div>
-									<div className="formRow">
-										<div className="formField">
-											<label>VIN-код автомобиля</label>
-											<input
-												type="text"
-												value={item.vinCode || ""}
-												onChange={(e) => handleProductFieldChange(item.product_sku, "vinCode", e.target.value)}
-												placeholder="VIN-код"
-												className="textInput"
-												disabled={!canEdit}
-											/>
-										</div>
-									</div>
-
-									<div className="formRow">
-										<div className="formField">
-											<label>Количество</label>
-											<div className="quantityControls">
-												<button
-													type="button"
-													onClick={() => handleQuantityChange(item.product_sku, item.quantity - 1)}
-													className="quantityButton"
-													disabled={!canEdit}
-												>
-													-
-												</button>
+											<div className="formField">
 												<input
-													type="number"
-													value={item.quantity}
-													onChange={(e) => handleQuantityChange(item.product_sku, parseInt(e.target.value) || 0)}
-													min="1"
-													className="quantityInput"
+													type="text"
+													value={item.carModel || ""}
+													onChange={(e) => handleProductFieldChange(item.product_sku, "carModel", e.target.value)}
+													placeholder="Модель автомобиля"
+													className="textInput"
 													disabled={!canEdit}
 												/>
-												<button
-													type="button"
-													onClick={() => handleQuantityChange(item.product_sku, item.quantity + 1)}
-													className="quantityButton"
+												<input
+													type="text"
+													value={item.vinCode || ""}
+													onChange={(e) => handleProductFieldChange(item.product_sku, "vinCode", e.target.value)}
+													placeholder="VIN-код"
+													className="textInput"
 													disabled={!canEdit}
-												>
-													+
-												</button>
+												/>
 											</div>
 										</div>
-									</div>
 
-									<div className="formRow">
-										<div className="formField">
-											<label>Цена за ед.</label>
-											<input type="text" value={`${item.product_price} ₽`} disabled className="priceInput" />
+										<div className="formField formFieldGroup">
+											<div className="formField">
+												<div className="formFieldTitle">Количество</div>
+												<div className="quantityControls">
+													<button
+														type="button"
+														onClick={() => handleQuantityChange(item.product_sku, item.quantity - 1)}
+														className="quantityButton"
+														disabled={!canEdit}
+													>
+														-
+													</button>
+													<input
+														type="number"
+														value={item.quantity}
+														onChange={(e) => handleQuantityChange(item.product_sku, parseInt(e.target.value) || 0)}
+														min="1"
+														className="quantityInput"
+														disabled={!canEdit}
+													/>
+													<button
+														type="button"
+														onClick={() => handleQuantityChange(item.product_sku, item.quantity + 1)}
+														className="quantityButton"
+														disabled={!canEdit}
+													>
+														+
+													</button>
+												</div>
+											</div>
+
+											<div className="formField">
+												<label>Цена за ед.</label>
+												<input type="text" value={`${item.product_price} ₽`} disabled className="priceInput" />
+											</div>
 										</div>
-									</div>
-									<div className="formRow">
 										<div className="formField">
 											<label>Сумма</label>
 											<input type="text" value={`${(item.product_price * item.quantity).toLocaleString()} ₽`} disabled className="totalInput" />
 										</div>
 									</div>
 								</div>
-
-								<button type="button" onClick={() => handleRemoveProduct(item.product_sku)} className="removeButton" disabled={!canEdit}>
-									Удалить товар из заказа ×
+							);
+						})}
+					</div>
+					{!showProductSearch && (
+						<button
+							type="button"
+							onClick={() => {
+								if (canEdit) {
+									setShowProductSearch(true);
+								}
+							}}
+							className="addProductButton"
+							disabled={!canEdit}
+						>
+							Добавить товар
+						</button>
+					)}
+					{showProductSearch && (
+						<div className={`searchContainer`}>
+							<div className="searchHeader">
+								<span>Поиск товаров</span>
+								<button
+									type="button"
+									onClick={() => {
+										setShowProductSearch(false);
+										setProductSearch("");
+										setSearchResults([]);
+										setIsSearchFocused(false);
+										if (blurTimeout.current) {
+											clearTimeout(blurTimeout.current);
+										}
+									}}
+									className="closeSearchButton"
+								>
+									×
 								</button>
 							</div>
-						))}
-					</div>
+							<input
+								id="productSearch"
+								type="text"
+								value={productSearch}
+								onChange={(e) => {
+									setProductSearch(e.target.value);
+									handleProductSearch(e.target.value);
+									clearFieldError("productSearch");
+								}}
+								onFocus={() => {
+									setIsSearchFocused(true);
+									if (blurTimeout.current) {
+										clearTimeout(blurTimeout.current);
+									}
+									clearFieldError("productSearch");
+								}}
+								onBlur={handleBlur}
+								placeholder="Поиск товаров по названию, артикулу или бренду"
+								className={`${fieldErrors.has("productSearch") ? "error" : ""} ${
+									(isSearchFocused && productSearch.length >= 2) || isSearching ? "activeSearch" : ""
+								} searchInput`}
+								disabled={!canEdit}
+								autoFocus
+							/>
+							{isSearchFocused && isSearching && productSearch && (
+								<div className="searchResults loading">
+									<Loading />
+								</div>
+							)}
+
+							{isSearchFocused && !isSearching && productSearch && (
+								<div className="searchResults">
+									{searchResults.length > 0 ? (
+										searchResults.map((product) => {
+											if (!product.department) {
+												return null; // Товар без отдела пропускаем, такого быть не должно, но на всякий случай защищаемся.
+											}
+
+											return (
+												<div key={product.id} className={`searchResultItem`} onMouseDown={() => handleProductSelect(product)}>
+													<div className="productInfo">
+														<span className="productTitle">{product.title}</span>
+														<span className="additionalInfoBorderBlock">Артикул: {product.sku}</span>
+														<span className="additionalInfoBorderBlock">Бренд: {product.brand}</span>
+														<span className="additionalInfoBorderBlock">
+															Закупочная стоимость: {product.supplierPrice ? `${product.supplierPrice.toLocaleString()} ₽` : "—"}
+														</span>
+														<span className="additionalInfoBorderBlock">Стоимость для клиента: {product.price.toLocaleString()} ₽</span>
+														<span className="additionalInfoBorderBlock">Отдел: {product.department.name}</span>
+													</div>
+												</div>
+											);
+										})
+									) : (
+										<div className={`searchResultItem`}>Нет результатов</div>
+									)}
+								</div>
+							)}
+						</div>
+					)}
 				</div>
 				<div className="formField">
 					{/* Общая сумма заказа */}

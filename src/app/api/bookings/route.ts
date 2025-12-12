@@ -1,9 +1,7 @@
 // src/app/api/bookings/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { CreateBookingRequest, BookingResponse, BookingFilter } from "@/lib/types";
-
-const prisma = new PrismaClient();
 
 // GET /api/bookings - Получить список записей
 export async function GET(request: NextRequest) {

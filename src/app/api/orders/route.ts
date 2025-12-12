@@ -28,16 +28,19 @@ async function getOrdersHandler(req: NextRequest, { user, scope }: { user: any; 
 		const deliveryDateTo = searchParams.get("deliveryDateTo");
 
 		// Получаем полную информацию о пользователе из базы данных
-		const fullUser = await prisma.user.findUnique({
-			where: { id: user.id },
-			include: {
-				department: {
-					select: {
-						id: true,
-						name: true,
+		// Обёртываем в withDbRetry для обработки ошибок соединения
+		const fullUser = await withDbRetry(async () => {
+			return await prisma.user.findUnique({
+				where: { id: user.id },
+				include: {
+					department: {
+						select: {
+							id: true,
+							name: true,
+						},
 					},
 				},
-			},
+			});
 		});
 
 		if (!fullUser) {
@@ -114,52 +117,61 @@ async function getOrdersHandler(req: NextRequest, { user, scope }: { user: any; 
 			}
 		}
 
-		// Получаем заказы с пагинацией (с ретраями)
-		const [orders, total] = await withDbRetry(async () => {
-			// Если есть фильтр по дате присвоения статуса, сначала находим ID заказов по логам
-			let orderIdsByStatusDate: number[] | null = null;
+		// Получаем заказы с пагинацией
+		// Middleware автоматически обрабатывает ошибки соединения, поэтому не нужен withDbRetry
+		// Это ускоряет запросы, так как не делаем лишние попытки
+
+		// Если есть фильтр по дате присвоения статуса, сначала находим ID заказов по логам
+		let orderIdsByStatusDate: number[] | null = null;
+		if (statusDateFrom || statusDateTo) {
+			const statusDateWhere: any = {
+				action: "status_change",
+			};
 			if (statusDateFrom || statusDateTo) {
-				const statusDateWhere: any = {
-					action: "status_change",
-				};
-				if (statusDateFrom || statusDateTo) {
-					statusDateWhere.createdAt = {};
-					if (statusDateFrom) {
-						statusDateWhere.createdAt.gte = new Date(statusDateFrom);
-					}
-					if (statusDateTo) {
-						statusDateWhere.createdAt.lte = new Date(statusDateTo);
-					}
+				statusDateWhere.createdAt = {};
+				if (statusDateFrom) {
+					statusDateWhere.createdAt.gte = new Date(statusDateFrom);
 				}
-
-				const statusChangeLogs = await prisma.orderLog.findMany({
-					where: statusDateWhere,
-					select: {
-						orderId: true,
-					},
-					distinct: ["orderId"],
-				});
-
-				orderIdsByStatusDate = statusChangeLogs.map((log) => log.orderId);
-
-				// Если нет заказов с изменением статуса в указанном диапазоне, возвращаем пустой список
-				if (orderIdsByStatusDate.length === 0) {
-					const emptyList: any[] = [];
-					return [emptyList, 0] as const;
-				}
-
-				// Добавляем фильтр по ID заказов к основному условию
-				if (!whereClause.id) {
-					whereClause.id = { in: orderIdsByStatusDate };
-				} else {
-					// Если уже есть фильтр по ID (маловероятно), объединяем через AND
-					const existingIdFilter = whereClause.id;
-					delete whereClause.id;
-					whereClause.AND = [{ id: existingIdFilter }, { id: { in: orderIdsByStatusDate } }];
+				if (statusDateTo) {
+					statusDateWhere.createdAt.lte = new Date(statusDateTo);
 				}
 			}
 
-			const list = await prisma.order.findMany({
+			const statusChangeLogs = await prisma.orderLog.findMany({
+				where: statusDateWhere,
+				select: {
+					orderId: true,
+				},
+				distinct: ["orderId"],
+			});
+
+			orderIdsByStatusDate = statusChangeLogs.map((log) => log.orderId);
+
+			// Если нет заказов с изменением статуса в указанном диапазоне, возвращаем пустой список
+			if (orderIdsByStatusDate.length === 0) {
+				return NextResponse.json({
+					orders: [],
+					total: 0,
+					page,
+					limit,
+					totalPages: 0,
+				});
+			}
+
+			// Добавляем фильтр по ID заказов к основному условию
+			if (!whereClause.id) {
+				whereClause.id = { in: orderIdsByStatusDate };
+			} else {
+				// Если уже есть фильтр по ID (маловероятно), объединяем через AND
+				const existingIdFilter = whereClause.id;
+				delete whereClause.id;
+				whereClause.AND = [{ id: existingIdFilter }, { id: { in: orderIdsByStatusDate } }];
+			}
+		}
+
+		// Выполняем запросы параллельно для ускорения
+		const [list, cnt] = await Promise.all([
+			prisma.order.findMany({
 				where: whereClause,
 				include: {
 					manager: {
@@ -173,44 +185,44 @@ async function getOrdersHandler(req: NextRequest, { user, scope }: { user: any; 
 				orderBy: { createdAt: "desc" },
 				skip,
 				take: limit,
-			});
-			const cnt = await prisma.order.count({ where: whereClause });
+			}),
+			prisma.order.count({ where: whereClause }),
+		]);
 
-			// Получаем даты последнего изменения статуса для каждого заказа
-			const orderIds = list.map((o) => o.id);
-			const lastStatusChangeLogs = await prisma.orderLog.findMany({
-				where: {
-					orderId: { in: orderIds },
-					action: "status_change",
-				},
-				select: {
-					orderId: true,
-					createdAt: true,
-				},
-				orderBy: {
-					createdAt: "desc",
-				},
-			});
-
-			// Создаём Map для быстрого поиска последней даты изменения статуса
-			const statusChangeMap = new Map<number, Date>();
-			lastStatusChangeLogs.forEach((log) => {
-				if (!statusChangeMap.has(log.orderId)) {
-					statusChangeMap.set(log.orderId, log.createdAt);
-				}
-			});
-
-			// Добавляем дату последнего изменения статуса к каждому заказу
-			const ordersWithStatusDate = list.map((order) => {
-				const statusChangeDate = statusChangeMap.get(order.id) || null;
-				return {
-					...order,
-					statusChangeDate,
-				};
-			});
-
-			return [ordersWithStatusDate, cnt] as const;
+		// Получаем даты последнего изменения статуса для каждого заказа
+		const orderIds = list.map((o) => o.id);
+		const lastStatusChangeLogs = await prisma.orderLog.findMany({
+			where: {
+				orderId: { in: orderIds },
+				action: "status_change",
+			},
+			select: {
+				orderId: true,
+				createdAt: true,
+			},
+			orderBy: {
+				createdAt: "desc",
+			},
 		});
+
+		// Создаём Map для быстрого поиска последней даты изменения статуса
+		const statusChangeMap = new Map<number, Date>();
+		lastStatusChangeLogs.forEach((log) => {
+			if (!statusChangeMap.has(log.orderId)) {
+				statusChangeMap.set(log.orderId, log.createdAt);
+			}
+		});
+
+		// Добавляем дату последнего изменения статуса к каждому заказу
+		const orders = list.map((order) => {
+			const statusChangeDate = statusChangeMap.get(order.id) || null;
+			return {
+				...order,
+				statusChangeDate,
+			};
+		});
+
+		const total = cnt;
 
 		const totalPages = Math.ceil(total / limit);
 
@@ -222,8 +234,32 @@ async function getOrdersHandler(req: NextRequest, { user, scope }: { user: any; 
 		};
 
 		return NextResponse.json(response);
-	} catch (error) {
+	} catch (error: any) {
 		console.error("Error fetching orders:", error);
+
+		// Если это ошибка соединения с БД, возвращаем пустой список вместо ошибки
+		// Это позволяет пользователю видеть интерфейс, даже если БД временно недоступна
+		const errorCode = error?.code || error?.meta?.code || "";
+		const message = String(error?.message || "").toLowerCase();
+
+		const isConnectionError =
+			errorCode === "P1017" ||
+			errorCode === "P2024" ||
+			message.includes("server has closed the connection") ||
+			message.includes("удаленный хост принудительно разорвал") ||
+			message.includes("connection pool");
+
+		if (isConnectionError) {
+			// Возвращаем пустой список при ошибке соединения
+			// Пользователь может попробовать обновить страницу позже
+			return NextResponse.json({
+				orders: [],
+				total: 0,
+				page: 1,
+				totalPages: 0,
+			});
+		}
+
 		return NextResponse.json({ error: "Internal server error" }, { status: 500 });
 	}
 }

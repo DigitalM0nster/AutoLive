@@ -2611,9 +2611,37 @@ span.oldName:after {
 }
 .productComponent .formField,
 .orderComponent .formField {
+  display: flex;
+  gap: 5px;
   padding: 20px;
   border-radius: 10px;
   border: 1px solid var(--grey-color);
+}
+.productComponent .formField.formFieldGroup,
+.orderComponent .formField.formFieldGroup {
+  display: flex;
+  flex-direction: row;
+  gap: 30px;
+  padding: 0px;
+}
+.productComponent .formField.formFieldGroup .formField,
+.orderComponent .formField.formFieldGroup .formField {
+  border: none;
+  border-radius: none;
+}
+.productComponent .formField.formFieldGroup .formField:nth-child(1),
+.orderComponent .formField.formFieldGroup .formField:nth-child(1) {
+  width: -moz-fit-content;
+  width: fit-content;
+}
+.productComponent .formField.formFieldGroup .formField:nth-child(2),
+.orderComponent .formField.formFieldGroup .formField:nth-child(2) {
+  min-width: 50%;
+}
+.productComponent .formField.column,
+.orderComponent .formField.column {
+  flex-direction: column;
+  gap: 5px;
 }
 .productComponent .formField .formFieldTitle,
 .productComponent .formField label,
@@ -2625,6 +2653,22 @@ span.oldName:after {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   line-height: 1.4;
+}
+.productComponent .formField .formFieldInfo,
+.orderComponent .formField .formFieldInfo {
+  display: flex;
+  gap: 5px;
+}
+.productComponent .formField .formFieldInfo.column,
+.orderComponent .formField .formFieldInfo.column {
+  flex-direction: column;
+}
+.productComponent .formField .formFieldInfo .itemInfoFields,
+.orderComponent .formField .formFieldInfo .itemInfoFields {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 5px;
 }
 .productComponent .formField .selectedClient,
 .orderComponent .formField .selectedClient {
@@ -2647,9 +2691,33 @@ span.oldName:after {
   width: fit-content;
   padding: 12px 16px;
   background: var(--light-grey-color);
+  position: relative;
   border: 1px solid var(--light-grey2-color);
   border-radius: 8px;
   transition: all 0.2s ease;
+}
+.productComponent .infoField .takeOrderButton,
+.orderComponent .infoField .takeOrderButton {
+  margin-top: 8px;
+  padding: 6px 12px;
+  background: var(--blue-color);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s ease;
+  align-self: flex-start;
+}
+.productComponent .infoField .takeOrderButton:hover:not(:disabled),
+.orderComponent .infoField .takeOrderButton:hover:not(:disabled) {
+  background: var(--blue-color);
+  opacity: 0.9;
+}
+.productComponent .infoField .takeOrderButton:disabled,
+.orderComponent .infoField .takeOrderButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 .productComponent .infoField:hover,
 .orderComponent .infoField:hover {
@@ -3172,12 +3240,9 @@ span.oldName:after {
 .orderComponent .orderItemsList.readonly .orderItem .itemFields {
   display: none;
 }
-.productComponent .orderItemsList.readonly .orderItem .removeButton,
-.orderComponent .orderItemsList.readonly .orderItem .removeButton {
-  display: none;
-}
-.productComponent .orderItemsList.readonly .orderItem .quantityControls,
-.orderComponent .orderItemsList.readonly .orderItem .quantityControls {
+.productComponent .orderItemsList.readonly .orderItem .quantityControls .quantityButton,
+.orderComponent .orderItemsList.readonly .orderItem .quantityControls .quantityButton {
+  pointer-events: none;
   display: none;
 }
 .productComponent .orderItemsList.editable .orderItem,
@@ -3189,24 +3254,6 @@ span.oldName:after {
 .orderComponent .orderItemsList.editable .orderItem .itemHeader .removeButton {
   display: none;
 }
-.productComponent .orderItemsList.editable .orderItem .quantityControls,
-.orderComponent .orderItemsList.editable .orderItem .quantityControls {
-  display: none;
-}
-.productComponent .orderItemsList .itemInfo,
-.orderComponent .orderItemsList .itemInfo {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  font-size: 15px;
-}
-.productComponent .orderItemsList .itemInfo .itemInfoFields,
-.orderComponent .orderItemsList .itemInfo .itemInfoFields {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 5px;
-}
 .productComponent .orderItem,
 .orderComponent .orderItem {
   position: relative;
@@ -3214,17 +3261,115 @@ span.oldName:after {
   flex-direction: column;
   gap: 10px;
 }
+.productComponent .orderItem:before,
+.orderComponent .orderItem:before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 10px;
+  height: 100%;
+  background: rgb(168, 212, 255);
+  border: none;
+  border-radius: 10px 0px 0px 10px;
+  z-index: 2;
+}
+.productComponent .orderItem:not(.active) .itemInfoBlock,
+.orderComponent .orderItem:not(.active) .itemInfoBlock {
+  display: none;
+}
+.productComponent .orderItem .itemTitle,
+.orderComponent .orderItem .itemTitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 16px;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+  text-transform: uppercase;
+  width: 100%;
+  cursor: pointer;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
+  transition: opacity 0.2s ease;
+}
+.productComponent .orderItem .itemTitle:hover,
+.orderComponent .orderItem .itemTitle:hover {
+  opacity: 0.8;
+}
+.productComponent .orderItem .itemTitle a:visited,
+.orderComponent .orderItem .itemTitle a:visited {
+  color: inherit;
+}
 .productComponent .orderItem .itemFields,
 .orderComponent .orderItem .itemFields {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
+.productComponent .orderItem .buttonsBlock,
+.orderComponent .orderItem .buttonsBlock {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
 .productComponent .orderItem .removeButton,
 .orderComponent .orderItem .removeButton {
   position: absolute;
   right: 20px;
-  top: 20px;
+  top: -22px;
+  min-width: -moz-max-content;
+  min-width: max-content;
+  padding: 0px;
+  background: transparent;
+  box-shadow: none;
+  color: red;
+  text-decoration: underline;
+}
+.productComponent .orderItem .removeButton:disabled,
+.orderComponent .orderItem .removeButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.productComponent .orderItem .expandButton,
+.orderComponent .orderItem .expandButton {
+  padding: 0;
+  color: var(--text-color);
+  background: transparent;
+  text-decoration: underline;
+  border: none;
+  box-shadow: none;
+}
+.productComponent .orderItem .expandButton.active:hover:after,
+.orderComponent .orderItem .expandButton.active:hover:after {
+  transform: translate(0px, -2px) rotate(180deg);
+}
+.productComponent .orderItem .expandButton.active:after,
+.orderComponent .orderItem .expandButton.active:after {
+  transform: translate(0px, 0px) rotate(180deg);
+}
+.productComponent .orderItem .expandButton:hover,
+.orderComponent .orderItem .expandButton:hover {
+  transform: translate(0px, 0px);
+}
+.productComponent .orderItem .expandButton:hover:after,
+.orderComponent .orderItem .expandButton:hover:after {
+  transform: translate(0px, 2px);
+}
+.productComponent .orderItem .expandButton:after,
+.orderComponent .orderItem .expandButton:after {
+  content: "";
+  display: flex;
+  position: relative;
+  margin: 0px 0px 0px 5px;
+  width: 0px;
+  height: 0px;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 4px solid var(--text-color);
+  transform: translate(0px, 0px) rotate(0deg);
+  transition: 0.15s;
 }
 .productComponent .orderItem .quantityControls,
 .orderComponent .orderItem .quantityControls {
@@ -3232,9 +3377,69 @@ span.oldName:after {
   align-items: center;
   gap: 10px;
 }
+.productComponent .orderItem .itemInfoBlock,
+.orderComponent .orderItem .itemInfoBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.productComponent .addProductButton,
+.orderComponent .addProductButton {
+  padding: 8px 16px;
+  background: var(--blue-color);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-top: 10px;
+  transition: all 0.2s ease;
+}
+.productComponent .addProductButton:hover:not(:disabled),
+.orderComponent .addProductButton:hover:not(:disabled) {
+  background: var(--blue-color);
+  opacity: 0.9;
+}
+.productComponent .addProductButton:disabled,
+.orderComponent .addProductButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 .productComponent .searchContainer,
 .orderComponent .searchContainer {
   position: relative;
+  margin-top: 10px;
+}
+.productComponent .searchContainer .searchHeader,
+.orderComponent .searchContainer .searchHeader {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.productComponent .searchContainer .searchHeader span,
+.orderComponent .searchContainer .searchHeader span {
+  font-size: 14px;
+  font-weight: 500;
+}
+.productComponent .searchContainer .closeSearchButton,
+.orderComponent .searchContainer .closeSearchButton {
+  padding: 4px 8px;
+  background: transparent;
+  border: 1px solid var(--grey-color);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--text-color);
+  transition: all 0.2s ease;
+}
+.productComponent .searchContainer .closeSearchButton:hover,
+.orderComponent .searchContainer .closeSearchButton:hover {
+  background: var(--light-grey-color);
+  border-color: var(--red-color);
+  color: var(--red-color);
 }
 .productComponent .searchContainer input,
 .orderComponent .searchContainer input {

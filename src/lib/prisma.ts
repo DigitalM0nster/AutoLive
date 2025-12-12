@@ -7,46 +7,131 @@ const globalForPrisma = globalThis as unknown as {
 	prisma: PrismaClient | undefined;
 };
 
-// Создаем экземпляр Prisma Client с оптимизированными настройками для Neon PostgreSQL
+// Функция для проверки, является ли ошибка ошибкой разорванного соединения
+// Это нужно для автоматического переподключения при проблемах с БД
+function isConnectionError(error: any): boolean {
+	if (!error) return false;
+
+	const code = error?.code || error?.meta?.code || "";
+	const message = String(error?.message || "").toLowerCase();
+	const errorString = String(error || "").toLowerCase();
+
+	// Коды ошибок Prisma, связанные с соединением:
+	// P1017 - Server has closed the connection
+	// P1001 - Can't reach database server
+	// P1008 - Operations timed out
+	// P1013 - The provided database string is invalid
+	// P2024 - Timed out fetching a new connection from the connection pool (НЕ обрабатываем в middleware)
+	const connectionErrorCodes = ["P1017", "P1001", "P1008", "P1013"];
+
+	// Текстовые признаки ошибок соединения
+	const connectionErrorMessages = [
+		"server has closed the connection",
+		"connection reset",
+		"connection refused",
+		"can't reach database",
+		"operations timed out",
+		"удаленный хост принудительно разорвал",
+		"connection terminated",
+		"broken pipe",
+		"invalid", // Ошибки типа "Invalid `prisma.order.findUnique()` invocation"
+		"server has closed",
+		"timed out fetching a new connection", // Ошибка таймаута пула соединений
+		"connection pool", // Ошибки связанные с пулом соединений
+	];
+
+	// Проверяем код ошибки
+	if (connectionErrorCodes.includes(code)) {
+		return true;
+	}
+
+	// Проверяем сообщение об ошибке и строковое представление ошибки
+	const fullErrorText = message + " " + errorString;
+	return connectionErrorMessages.some((msg) => fullErrorText.includes(msg));
+}
+
+// Создаем экземпляр Prisma Client с базовыми настройками
+// Используем простую конфигурацию без дополнительных параметров в URL
+// Это гарантирует стабильную работу
 export const prisma =
 	globalForPrisma.prisma ??
 	new PrismaClient({
-		log: ["error"], // Убираем лишние логи для уменьшения нагрузки
+		// Отключаем логирование ошибок, чтобы не засорять консоль
+		// Ошибки всё равно обрабатываются через middleware и withDbRetry
+		log: [],
 		errorFormat: "pretty",
-		// Настройки для оптимизации подключений к Neon PostgreSQL
-		// Можно легко изменить connection_limit при росте нагрузки:
-		// 1-10 пользователей: connection_limit=1
-		// 50-100 пользователей: connection_limit=2
-		// 100+ пользователей: connection_limit=3
-		datasources: {
-			db: {
-				// Для локальной разработки на Windows/Neon: pgbouncer=true, sslmode=require,
-				// минимальный connection_limit для стабильности, увеличенные таймауты
-				url: (process.env.DB_URL || "") + "?pgbouncer=true&sslmode=require&connection_limit=1&pool_timeout=120&connect_timeout=120",
-			},
-		},
-		// Дополнительные настройки для стабильности
-		transactionOptions: {
-			maxWait: 10000, // Максимальное время ожидания транзакции
-			timeout: 30000, // Таймаут транзакции
-		},
 	});
+
+// Добавляем упрощённый middleware для обработки только ошибки P1017 (разрыв соединения)
+// НЕ обрабатываем P2024 (таймаут пула), чтобы не создавать каскадные проблемы
+// Middleware добавляется только один раз, чтобы избежать дублирования
+const globalForMiddleware = globalThis as unknown as {
+	prismaMiddlewareAdded: boolean | undefined;
+};
+
+if (!globalForMiddleware.prismaMiddlewareAdded) {
+	globalForMiddleware.prismaMiddlewareAdded = true;
+
+	prisma.$use(async (params, next) => {
+		// Делаем до 2 попыток повтора (всего 3 запроса) для надёжности
+		// Если соединение разорвано, делаем несколько быстрых попыток
+		const maxRetries = 2;
+		let lastError: any;
+
+		for (let attempt = 0; attempt <= maxRetries; attempt++) {
+			try {
+				return await next(params);
+			} catch (error: any) {
+				lastError = error;
+				const errorCode = error?.code || error?.meta?.code || "";
+				const message = String(error?.message || "").toLowerCase();
+
+				// Обрабатываем ТОЛЬКО ошибку P1017 (Server has closed the connection)
+				// НЕ обрабатываем P2024 (таймаут пула) - это создаёт каскадные проблемы
+				const isConnectionReset =
+					errorCode === "P1017" || message.includes("server has closed the connection") || message.includes("удаленный хост принудительно разорвал");
+
+				if (isConnectionReset && errorCode !== "P2024" && attempt < maxRetries) {
+					// Увеличиваем задержку с каждой попыткой: 100ms, 200ms
+					const delay = 100 * (attempt + 1);
+					await new Promise((resolve) => setTimeout(resolve, delay));
+					continue; // Пробуем запрос ещё раз
+				}
+
+				// Для всех остальных ошибок сразу пробрасываем
+				throw error;
+			}
+		}
+
+		// Если все попытки исчерпаны, пробрасываем последнюю ошибку
+		throw lastError;
+	});
+}
 
 // В development режиме сохраняем экземпляр глобально
 // Это предотвращает создание множественных подключений при hot reload
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
 // Graceful shutdown для предотвращения утечек соединений
-process.on("beforeExit", async () => {
-	await prisma.$disconnect();
-});
+// Добавляем обработчики событий только один раз, чтобы избежать утечек памяти
+const globalForHandlers = globalThis as unknown as {
+	prismaHandlersAdded: boolean | undefined;
+};
 
-process.on("SIGINT", async () => {
-	await prisma.$disconnect();
-	process.exit(0);
-});
+if (!globalForHandlers.prismaHandlersAdded) {
+	globalForHandlers.prismaHandlersAdded = true;
 
-process.on("SIGTERM", async () => {
-	await prisma.$disconnect();
-	process.exit(0);
-});
+	process.on("beforeExit", async () => {
+		await prisma.$disconnect();
+	});
+
+	process.on("SIGINT", async () => {
+		await prisma.$disconnect();
+		process.exit(0);
+	});
+
+	process.on("SIGTERM", async () => {
+		await prisma.$disconnect();
+		process.exit(0);
+	});
+}
