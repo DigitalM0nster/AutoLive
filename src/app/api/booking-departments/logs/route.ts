@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withPermission } from "@/middleware/permissionMiddleware";
-import { BookingDepartmentLogResponse } from "@/lib/types";
+import { BookingDepartmentLogResponse, BookingDepartmentLog } from "@/lib/types";
 
 // Получение логов всех адресов (отделов для записей)
 async function getBookingDepartmentLogsHandler(req: NextRequest, { user, scope }: { user: any; scope: "all" | "department" | "own" }) {
@@ -74,8 +74,19 @@ async function getBookingDepartmentLogsHandler(req: NextRequest, { user, scope }
 
 		const totalPages = Math.ceil(total / limit);
 
+		// Преобразуем логи в нужный тип (Prisma возвращает JsonValue для snapshots)
+		const typedLogs: BookingDepartmentLog[] = logs.map((log) => ({
+			id: log.id,
+			createdAt: log.createdAt,
+			action: log.action,
+			message: log.message,
+			bookingDepartmentId: log.bookingDepartmentId,
+			adminSnapshot: log.adminSnapshot as any,
+			bookingDepartmentSnapshot: log.bookingDepartmentSnapshot as any,
+		}));
+
 		const response: BookingDepartmentLogResponse = {
-			data: logs,
+			data: typedLogs,
 			total,
 			page,
 			totalPages,
