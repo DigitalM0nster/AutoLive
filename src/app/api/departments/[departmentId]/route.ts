@@ -583,10 +583,17 @@ export const DELETE = withPermission(
 				const productIds = department.products.map((p) => p.id);
 
 				try {
+					// Удаляем записи ServiceKitItemAnalog, которые ссылаются на товары отдела как аналоги
+					await prisma.serviceKitItemAnalog.deleteMany({
+						where: {
+							analogProductId: { in: productIds },
+						},
+					});
+
 					// Удаляем записи ServiceKitItem, которые ссылаются на товары отдела
 					const deletedServiceKitItems = await prisma.serviceKitItem.deleteMany({
 						where: {
-							OR: [{ product_id: { in: productIds } }, { analog_product_id: { in: productIds } }],
+							product_id: { in: productIds },
 						},
 					});
 

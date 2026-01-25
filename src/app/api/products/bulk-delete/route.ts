@@ -135,9 +135,17 @@ export const POST = withPermission(
 					},
 				});
 
+				// Удаляем записи ServiceKitItemAnalog, которые ссылаются на товар как аналог
+				await prisma.serviceKitItemAnalog.deleteMany({
+					where: {
+						analogProductId: singleProduct.id,
+					},
+				});
+
+				// Удаляем записи ServiceKitItem, которые ссылаются на товар
 				await prisma.serviceKitItem.deleteMany({
 					where: {
-						OR: [{ product_id: singleProduct.id }, { analog_product_id: singleProduct.id }],
+						product_id: singleProduct.id,
 					},
 				});
 
@@ -180,11 +188,20 @@ export const POST = withPermission(
 					})
 				);
 
+				// удаляем связи аналогов в комплектах
+				await chunkedDeleteMany(numericIds, (chunk) =>
+					prisma.serviceKitItemAnalog.deleteMany({
+						where: {
+							analogProductId: { in: chunk },
+						},
+					})
+				);
+
 				// удаляем связи комплектов
 				await chunkedDeleteMany(numericIds, (chunk) =>
 					prisma.serviceKitItem.deleteMany({
 						where: {
-							OR: [{ product_id: { in: chunk } }, { analog_product_id: { in: chunk } }],
+							product_id: { in: chunk },
 						},
 					})
 				);

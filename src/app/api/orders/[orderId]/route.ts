@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withPermission } from "@/middleware/permissionMiddleware";
-import { OrderResponse, UpdateOrderRequest } from "@/lib/types";
+import { OrderResponse, UpdateOrderRequest, Order } from "@/lib/types";
 
 // Получение конкретного заказа
 async function getOrderHandler(req: NextRequest, { user, scope, params }: { user: any; scope: "all" | "department" | "own"; params: { orderId: string } }) {
@@ -114,7 +114,9 @@ async function getOrderHandler(req: NextRequest, { user, scope, params }: { user
 						name: true,
 						address: true,
 						phones: true,
-						email: true,
+						emails: true,
+						createdAt: true,
+						updatedAt: true,
 					},
 				},
 				technicalService: {
@@ -125,6 +127,8 @@ async function getOrderHandler(req: NextRequest, { user, scope, params }: { user
 						responsibleUser: {
 							select: { id: true, first_name: true, last_name: true, role: true },
 						},
+						createdAt: true,
+						updatedAt: true,
 					},
 				},
 			},
@@ -153,7 +157,7 @@ async function getOrderHandler(req: NextRequest, { user, scope, params }: { user
 		const orderWithStatusDate = {
 			...order,
 			statusChangeDate,
-		};
+		} as Order;
 
 		const response: OrderResponse = {
 			order: orderWithStatusDate,
@@ -455,15 +459,17 @@ async function updateOrderHandler(req: NextRequest, { user, scope, params }: { u
 					},
 					orderItems: true,
 					booking: { select: { id: true, scheduledDate: true, scheduledTime: true, status: true, contactPhone: true } },
-					bookingDepartment: { select: { id: true, name: true, address: true, phones: true, emails: true } },
-					technicalService: {
-						select: {
-							id: true,
-							number: true,
-							responsibleUserId: true,
-							responsibleUser: { select: { id: true, first_name: true, last_name: true, role: true } },
-						},
+					bookingDepartment: { select: { id: true, name: true, address: true, phones: true, emails: true, createdAt: true, updatedAt: true } },
+				technicalService: {
+					select: {
+						id: true,
+						number: true,
+						responsibleUserId: true,
+						responsibleUser: { select: { id: true, first_name: true, last_name: true, role: true } },
+						createdAt: true,
+						updatedAt: true,
 					},
+				},
 				},
 			});
 
@@ -519,7 +525,7 @@ async function updateOrderHandler(req: NextRequest, { user, scope, params }: { u
 		});
 
 		const response: OrderResponse = {
-			order: updatedOrder,
+			order: updatedOrder as Order,
 		};
 
 		return NextResponse.json(response);

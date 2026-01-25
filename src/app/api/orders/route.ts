@@ -198,7 +198,7 @@ async function getOrdersHandler(req: NextRequest, { user, scope }: { user: any; 
 								name: true,
 								address: true,
 								phones: true,
-								email: true,
+								emails: true,
 								createdAt: true,
 								updatedAt: true,
 							},
