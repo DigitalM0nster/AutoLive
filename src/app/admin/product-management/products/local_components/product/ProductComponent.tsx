@@ -10,6 +10,7 @@ import { showSuccessToast, showErrorToast } from "@/components/ui/toast/ToastPro
 import Loading from "@/components/ui/loading/Loading";
 import ConfirmPopup from "@/components/ui/confirmPopup/ConfirmPopup";
 import ImageUpload from "@/components/ui/imageUpload/ImageUpload";
+import FixedActionButtons from "@/components/ui/fixedActionButtons/FixedActionButtons";
 import Skeleton from "./Skeleton";
 
 type ProductPageProps = {
@@ -1083,16 +1084,7 @@ export default function ProductComponent({ productId, isCreating = false, userRo
 			)}
 
 			{/* Фиксированные кнопки для изменений */}
-			{canEdit && hasChanges && (
-				<div className={`fixedButtons`}>
-					<button onClick={handleCancel} className={`secondaryButton`} disabled={isSaving}>
-						Отменить
-					</button>
-					<button onClick={handleSave} className={`primaryButton`} disabled={isSaving}>
-						{isSaving ? "Сохранение..." : "Сохранить"}
-					</button>
-				</div>
-			)}
+			{canEdit && hasChanges && <FixedActionButtons onCancel={handleCancel} onSave={handleSave} isSaving={isSaving} saveText="Сохранить" />}
 		</div>
 	);
 }

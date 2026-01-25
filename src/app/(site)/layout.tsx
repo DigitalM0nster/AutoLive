@@ -9,6 +9,7 @@ import { Metadata } from "next";
 import React from "react";
 import GlobalLoadingProvider from "@/components/ui/loading/GlobalLoadingProvider";
 import GlobalLoadingOverlay from "@/components/ui/loading/GlobalLoadingOverlay";
+import ToastProvider from "@/components/ui/toast/ToastProvider";
 
 export const metadata: Metadata = {
 	title: `Главная | ${CONFIG.STORE_NAME} ${CONFIG.CITY}`,
@@ -21,6 +22,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
 		<html lang="ru">
 			<body>
 				<GlobalLoadingProvider>
+					<ToastProvider />
 					<Header />
 					{children}
 					<Footer />

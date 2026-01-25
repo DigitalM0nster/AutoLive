@@ -26,6 +26,7 @@ async function getOrdersHandler(req: NextRequest, { user, scope }: { user: any; 
 		const statusDateTo = searchParams.get("statusDateTo");
 		const deliveryDateFrom = searchParams.get("deliveryDateFrom");
 		const deliveryDateTo = searchParams.get("deliveryDateTo");
+		const idSearch = searchParams.get("idSearch"); // Поиск по ID заказа
 
 		// Получаем полную информацию о пользователе из базы данных
 		// Обёртываем в withDbRetry для обработки ошибок соединения
@@ -70,17 +71,9 @@ async function getOrdersHandler(req: NextRequest, { user, scope }: { user: any; 
 				],
 			};
 		} else if (scope === "own") {
-			// Менеджер видит:
-			// 1. Заказы без назначенного менеджера (свободные)
-			// 2. Заказы, которые он сам выполняет
-			whereClause = {
-				OR: [
-					// Свободные заказы
-					{ managerId: null },
-					// Заказы, которые менеджер сам выполняет
-					{ managerId: fullUser.id },
-				],
-			};
+			// Менеджер видит все заказы (только просмотр, редактирование ограничено)
+			// Никаких ограничений для просмотра - менеджер может видеть все заказы
+			// Ограничения на редактирование применяются в API обновления заказа
 		}
 
 		// Добавляем дополнительные фильтры
@@ -95,6 +88,13 @@ async function getOrdersHandler(req: NextRequest, { user, scope }: { user: any; 
 		}
 		if (clientId) {
 			whereClause.clientId = parseInt(clientId);
+		}
+		// Поиск по ID заказа
+		if (idSearch) {
+			const orderId = parseInt(idSearch);
+			if (!isNaN(orderId)) {
+				whereClause.id = orderId;
+			}
 		}
 		// Фильтр по дате создания заказа
 		if (dateFrom || dateTo) {
@@ -170,39 +170,77 @@ async function getOrdersHandler(req: NextRequest, { user, scope }: { user: any; 
 		}
 
 		// Выполняем запросы параллельно для ускорения
-		const [list, cnt] = await Promise.all([
-			prisma.order.findMany({
-				where: whereClause,
-				include: {
-					manager: {
-						select: { id: true, first_name: true, last_name: true, role: true, department: { select: { id: true, name: true } } },
+		// Обёрнуто в withDbRetry для обработки ошибок соединения с Neon
+		const [list, cnt] = await withDbRetry(async () => {
+			return await Promise.all([
+				prisma.order.findMany({
+					where: whereClause,
+					include: {
+						manager: {
+							select: { id: true, first_name: true, last_name: true, role: true, department: { select: { id: true, name: true } } },
+						},
+						department: { select: { id: true, name: true } },
+						client: { select: { id: true, first_name: true, last_name: true, phone: true } },
+						creator: { select: { id: true, first_name: true, last_name: true, role: true, department: { select: { id: true, name: true } } } },
+						orderItems: true,
+						booking: {
+							select: {
+								id: true,
+								scheduledDate: true,
+								scheduledTime: true,
+								status: true,
+								contactPhone: true,
+							},
+						},
+						bookingDepartment: {
+							select: {
+								id: true,
+								name: true,
+								address: true,
+								phones: true,
+								email: true,
+								createdAt: true,
+								updatedAt: true,
+							},
+						},
+						technicalService: {
+							select: {
+								id: true,
+								number: true,
+								responsibleUserId: true,
+								createdAt: true,
+								updatedAt: true,
+								responsibleUser: {
+									select: { id: true, first_name: true, last_name: true, role: true },
+								},
+							},
+						},
 					},
-					department: { select: { id: true, name: true } },
-					client: { select: { id: true, first_name: true, last_name: true, phone: true } },
-					creator: { select: { id: true, first_name: true, last_name: true, role: true, department: { select: { id: true, name: true } } } },
-					orderItems: true,
-				},
-				orderBy: { createdAt: "desc" },
-				skip,
-				take: limit,
-			}),
-			prisma.order.count({ where: whereClause }),
-		]);
+					orderBy: { createdAt: "desc" },
+					skip,
+					take: limit,
+				}),
+				prisma.order.count({ where: whereClause }),
+			]);
+		});
 
 		// Получаем даты последнего изменения статуса для каждого заказа
+		// Обёрнуто в withDbRetry для обработки ошибок соединения с Neon
 		const orderIds = list.map((o) => o.id);
-		const lastStatusChangeLogs = await prisma.orderLog.findMany({
-			where: {
-				orderId: { in: orderIds },
-				action: "status_change",
-			},
-			select: {
-				orderId: true,
-				createdAt: true,
-			},
-			orderBy: {
-				createdAt: "desc",
-			},
+		const lastStatusChangeLogs = await withDbRetry(async () => {
+			return await prisma.orderLog.findMany({
+				where: {
+					orderId: { in: orderIds },
+					action: "status_change",
+				},
+				select: {
+					orderId: true,
+					createdAt: true,
+				},
+				orderBy: {
+					createdAt: "desc",
+				},
+			});
 		});
 
 		// Создаём Map для быстрого поиска последней даты изменения статуса
@@ -472,6 +510,8 @@ async function createOrderHandler(req: NextRequest, { user, scope }: { user: any
 			createdBy: fullUser.id,
 			finalDeliveryDate,
 			confirmationDate,
+			bookingId: body.bookingId ?? null, // Связь с заявкой
+			bookingDepartmentId: body.bookingDepartmentId ?? null, // Адрес доставки
 			// Поле assignedAt остается null для свободных заказов
 		};
 
@@ -537,6 +577,9 @@ async function createOrderHandler(req: NextRequest, { user, scope }: { user: any
 					product_brand: item.product_brand,
 					product_image: item.product_image || null,
 					quantity: item.quantity,
+					supplierDeliveryDate: item.supplierDeliveryDate ? new Date(item.supplierDeliveryDate) : null,
+					carModel: item.carModel || null,
+					vinCode: item.vinCode || null,
 				})),
 			});
 

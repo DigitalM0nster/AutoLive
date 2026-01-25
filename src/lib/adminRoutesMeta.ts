@@ -1,6 +1,6 @@
 // src/lib/adminRoutesMeta.ts
 
-import { Building2, LucideIcon, Users, ShoppingCart, Wrench, FileText, Package, ClipboardList, ListOrdered } from "lucide-react";
+import { Building2, LucideIcon, Users, ShoppingCart, Wrench, FileText, Package, ClipboardList, ListOrdered, MapPin } from "lucide-react";
 
 export type AdminRouteMeta = {
 	label: string;
@@ -13,12 +13,12 @@ export const adminRoutesMeta: Record<string, AdminRouteMeta> = {
 	departments: {
 		label: "Отделы",
 		icon: Building2,
-		bg: "blue",
+		bg: "green",
 	},
 	users: {
 		label: "Пользователи",
 		icon: Users,
-		bg: "blue",
+		bg: "green",
 	},
 	categories: {
 		label: "Категории",
@@ -29,22 +29,28 @@ export const adminRoutesMeta: Record<string, AdminRouteMeta> = {
 		label: "Управление товарами",
 		icon: Package,
 		description: "Товары, Комплекты ТО",
-		bg: "green",
+		bg: "blue",
 	},
 	bookings: {
 		label: "Записи",
 		icon: ClipboardList,
-		bg: "green",
+		bg: "purple",
+	},
+	"booking-departments": {
+		label: "Адреса для записей",
+		icon: MapPin,
+		bg: "purple",
+		description: "Отделы с адресами для записей",
 	},
 	orders: {
 		label: "Заказы",
 		icon: ShoppingCart,
-		bg: "green",
+		bg: "blue",
 	},
 	content: {
 		label: "Контент сайта",
 		icon: FileText,
-		bg: "orange",
+		bg: "red",
 	},
 
 	profile: { label: "Редактирование профиля" },

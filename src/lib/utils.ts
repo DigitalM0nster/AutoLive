@@ -18,11 +18,12 @@ export function formatDate(date: Date): string {
 /**
  * Универсальный ретрай-обёртка для кратковременных ошибок БД
  * Обрабатывает различные типы ошибок соединения с базой данных
+ * Оптимизировано для работы с медленным соединением Neon
  * @param fn Асинхронная функция с DB-запросами
- * @param attempts Кол-во попыток
- * @param baseDelayMs Базовая задержка (экспоненциально растёт)
+ * @param attempts Кол-во попыток (увеличено для Neon)
+ * @param baseDelayMs Базовая задержка (экспоненциально растёт, увеличена для Neon)
  */
-export async function withDbRetry<T>(fn: () => Promise<T>, attempts = 3, baseDelayMs = 300): Promise<T> {
+export async function withDbRetry<T>(fn: () => Promise<T>, attempts = 5, baseDelayMs = 500): Promise<T> {
 	for (let i = 0; i < attempts; i++) {
 		try {
 			return await fn();

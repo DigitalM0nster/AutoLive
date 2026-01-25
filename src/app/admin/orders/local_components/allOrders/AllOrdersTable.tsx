@@ -167,8 +167,9 @@ export default function AllOrdersTable() {
 				}
 
 				const controller = new AbortController();
-				// Таймаут 15 секунд - даём достаточно времени на выполнение запросов с учётом возможных ошибок соединения
-				const timeout = setTimeout(() => controller.abort(), 15000);
+				// Таймаут 30 секунд - увеличено для медленного соединения Neon
+				// Даём достаточно времени на выполнение запросов с учётом возможных ошибок соединения
+				const timeout = setTimeout(() => controller.abort(), 30000);
 				const response = await fetch(`/api/orders?${params}`, { signal: controller.signal });
 				clearTimeout(timeout);
 				if (!response.ok) {

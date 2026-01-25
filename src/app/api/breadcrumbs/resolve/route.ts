@@ -57,6 +57,22 @@ export async function GET(request: Request) {
 						labels[seg] = `Заказ #${seg}`;
 					}
 				}
+
+				// Обработка записей (bookings)
+				if (prev === "bookings") {
+					const booking = await prisma.booking.findUnique({ where: { id: Number(seg) } });
+					if (booking) {
+						labels[seg] = `Запись #${seg}`;
+					}
+				}
+
+				// Обработка комплектов ТО (kits)
+				if (prev === "kits") {
+					const kit = await prisma.serviceKit.findUnique({ where: { id: Number(seg) } });
+					if (kit) {
+						labels[seg] = kit.title;
+					}
+				}
 			}
 		}
 

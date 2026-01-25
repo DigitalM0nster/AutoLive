@@ -22,7 +22,9 @@ export type Permission =
 	| "view_products_logs"
 	| "view_users_logs"
 	| "manage_users_logs"
-	| "delete_users";
+	| "delete_users"
+	| "view_bookings"
+	| "manage_bookings";
 
 export type Scope = "all" | "department" | "own";
 
@@ -52,6 +54,8 @@ export const ROLE_PERMISSIONS: Record<Role, RolePermission[]> = {
 		{ permission: "view_products", scope: "all" },
 		{ permission: "edit_products", scope: "all" },
 		{ permission: "edit_categories", scope: "all" },
+		{ permission: "view_bookings", scope: "all" },
+		{ permission: "manage_bookings", scope: "all" },
 		{ permission: "access_all", scope: "all" },
 	],
 	admin: [
@@ -64,13 +68,15 @@ export const ROLE_PERMISSIONS: Record<Role, RolePermission[]> = {
 		{ permission: "manage_departments", scope: "department" },
 		{ permission: "manage_managers", scope: "department" },
 		{ permission: "view_products", scope: "department" },
-		{ permission: "view_orders", scope: "department" },
+		{ permission: "view_orders", scope: "all" },
 		{ permission: "create_orders", scope: "department" },
 		{ permission: "manage_orders", scope: "department" },
 		{ permission: "assign_orders", scope: "department" },
-		{ permission: "view_orders_logs", scope: "department" },
+		{ permission: "view_orders_logs", scope: "all" },
 		{ permission: "edit_products", scope: "department" },
 		{ permission: "edit_categories", scope: "department" },
+		{ permission: "view_bookings", scope: "all" },
+		{ permission: "manage_bookings", scope: "all" },
 	],
 	manager: [
 		{ permission: "view_products", scope: "department" },
@@ -78,10 +84,11 @@ export const ROLE_PERMISSIONS: Record<Role, RolePermission[]> = {
 		{ permission: "view_users_logs", scope: "all" }, // Менеджеры могут просматривать логи всех пользователей
 		{ permission: "view_departments_logs", scope: "all" }, // Менеджеры могут просматривать логи всех отделов
 		{ permission: "create_orders", scope: "own" },
-		{ permission: "view_orders", scope: "own" },
-		{ permission: "manage_orders", scope: "own" },
+		{ permission: "view_orders", scope: "all" }, // Менеджеры могут просматривать все заказы (только просмотр)
+		{ permission: "manage_orders", scope: "own" }, // Менеджеры могут редактировать только свои заказы
 		{ permission: "assign_orders", scope: "own" },
-		{ permission: "view_orders_logs", scope: "own" },
+		{ permission: "view_orders_logs", scope: "all" }, // Менеджеры могут просматривать логи всех заказов
+		{ permission: "view_bookings", scope: "all" },
 	],
 	client: [],
 };

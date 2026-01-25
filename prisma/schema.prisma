@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
     provider = "postgresql"
-    url      = env("DB_URL")
 }
 
 model User {
@@ -20,12 +19,13 @@ model User {
     departmentId Int?       @map("department_id")
 
     // Связи
-    department      Department? @relation("DepartmentUsers", fields: [departmentId], references: [id])
-    managerOrders   Order[]     @relation("ManagerOrders")
-    clientOrders    Order[]     @relation("ClientOrders")
-    createdOrders   Order[]     @relation("CreatedOrders")
-    clientBookings  Booking[]   @relation("ClientBookings")
-    managerBookings Booking[]   @relation("ManagerBookings")
+    department                   Department?        @relation("DepartmentUsers", fields: [departmentId], references: [id])
+    managerOrders                Order[]            @relation("ManagerOrders")
+    clientOrders                 Order[]            @relation("ClientOrders")
+    createdOrders                Order[]            @relation("CreatedOrders")
+    clientBookings               Booking[]          @relation("ClientBookings")
+    managerBookings              Booking[]          @relation("ManagerBookings")
+    technicalServicesResponsible TechnicalService[] @relation("TechnicalServiceResponsible")
 
     @@map("user")
 }
@@ -61,13 +61,13 @@ model Product {
     departmentId  Int      @map("department_id")
 
     // Связи
-    category            Category?            @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-    department          Department           @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+    category            Category?              @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+    department          Department             @relation(fields: [departmentId], references: [id], onDelete: Cascade)
     productFilterValues ProductFilterValue[]
-    analogsFrom         ProductAnalog[]      @relation("ProductToAnalog")
-    analogsTo           ProductAnalog[]      @relation("AnalogToProduct")
-    serviceKitItems     ServiceKitItem[]     @relation("KitItemProduct")
-    analogInKits        ServiceKitItem[]     @relation("KitItemAnalog")
+    analogsFrom         ProductAnalog[]        @relation("ProductToAnalog")
+    analogsTo           ProductAnalog[]        @relation("AnalogToProduct")
+    serviceKitItems     ServiceKitItem[]       @relation("KitItemProduct")
+    analogInKitItems    ServiceKitItemAnalog[] @relation("KitItemAnalog")
 
     @@index([title])
     @@index([sku])
@@ -134,47 +134,116 @@ model ServiceKit {
     image       String?  @map("image") @db.VarChar(255)
     price       Float    @map("price")
     createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+    updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
 
     // Связи
-    kitItems ServiceKitItem[]
+    kitItems       ServiceKitItem[]
+    serviceKitLogs ServiceKitLog[]
 
     @@map("service_kit")
 }
 
-model Order {
-    id                Int         @id @default(autoincrement()) @map("id")
-    comments          String[]    @map("comments")
-    status            OrderStatus @default(created) @map("status")
-    createdAt         DateTime    @default(now()) @map("created_at") @db.Timestamp(0)
-    updatedAt         DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
-    confirmationDate  DateTime?   @map("confirmation_date") @db.Timestamp(0)
-    finalDeliveryDate DateTime?   @map("final_delivery_date") @db.Timestamp(0)
-    assignedAt        DateTime?   @map("assigned_at") @db.Timestamp(0) // Когда заказ был взят в работу
-    managerId         Int?        @map("manager_id") // Опциональное поле - может быть null для свободных заказов
-    departmentId      Int?        @map("department_id") // Опциональное поле - для заказов от пользователей может быть null
-    clientId          Int?        @map("client_id") // Опциональное поле - для заказов созданных админом может быть null
-    createdBy         Int?        @map("created_by") // Кто создал заказ (админ/менеджер/пользователь). Для публичной заявки может быть null
+model ServiceKitItem {
+    id         Int @id @default(autoincrement()) @map("id")
+    kit_id     Int @map("kit_id")
+    product_id Int @map("product_id")
 
     // Связи
-    manager    User?       @relation("ManagerOrders", fields: [managerId], references: [id])
-    department Department? @relation(fields: [departmentId], references: [id])
-    client     User?       @relation("ClientOrders", fields: [clientId], references: [id])
-    creator    User?       @relation("CreatedOrders", fields: [createdBy], references: [id])
-    orderItems OrderItem[]
-    orderLogs  OrderLog[]
+    kit     ServiceKit             @relation(fields: [kit_id], references: [id], onDelete: Cascade)
+    product Product                @relation("KitItemProduct", fields: [product_id], references: [id], onDelete: Cascade)
+    analogs ServiceKitItemAnalog[]
+
+    @@map("service_kit_item")
+}
+
+// Промежуточная таблица для хранения нескольких аналогов для каждого элемента комплекта
+model ServiceKitItemAnalog {
+    id               Int @id @default(autoincrement()) @map("id")
+    serviceKitItemId Int @map("service_kit_item_id")
+    analogProductId  Int @map("analog_product_id")
+
+    // Связи
+    serviceKitItem ServiceKitItem @relation(fields: [serviceKitItemId], references: [id], onDelete: Cascade)
+    analogProduct  Product        @relation("KitItemAnalog", fields: [analogProductId], references: [id], onDelete: Cascade)
+
+    @@unique([serviceKitItemId, analogProductId], map: "service_kit_item_analog_unique")
+    @@map("service_kit_item_analog")
+}
+
+model ServiceKitLog {
+    id           Int      @id @default(autoincrement()) @map("id")
+    createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+    action       String   @db.VarChar(255) // "create", "update", "delete"
+    message      String?  @db.Text
+    serviceKitId Int      @map("service_kit_id")
+
+    // 📸 Снимки данных (без дублирования ID)
+    adminSnapshot      Json? // Админ который сделал действие
+    serviceKitSnapshot Json? // Снапшот комплекта ТО
+
+    // Связи
+    serviceKit ServiceKit @relation(fields: [serviceKitId], references: [id], onDelete: Cascade)
+
+    @@map("service_kit_log")
+}
+
+model Order {
+    id                  Int         @id @default(autoincrement()) @map("id")
+    comments            String[]    @map("comments")
+    status              OrderStatus @default(created) @map("status")
+    createdAt           DateTime    @default(now()) @map("created_at") @db.Timestamp(0)
+    updatedAt           DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
+    confirmationDate    DateTime?   @map("confirmation_date") @db.Timestamp(0)
+    finalDeliveryDate   DateTime?   @map("final_delivery_date") @db.Timestamp(0)
+    assignedAt          DateTime?   @map("assigned_at") @db.Timestamp(0) // Когда заказ был взят в работу
+    managerId           Int?        @map("manager_id") // Опциональное поле - может быть null для свободных заказов
+    departmentId        Int?        @map("department_id") // Опциональное поле - для заказов от пользователей может быть null
+    clientId            Int?        @map("client_id") // Опциональное поле - для заказов созданных админом может быть null
+    createdBy           Int?        @map("created_by") // Кто создал заказ (админ/менеджер/пользователь). Для публичной заявки может быть null
+    bookingId           Int?        @unique @map("booking_id") // Связь с заявкой (опционально, один-к-одному)
+    bookingDepartmentId Int?        @map("booking_department_id") // Адрес доставки (опционально)
+
+    // Связи
+    manager           User?              @relation("ManagerOrders", fields: [managerId], references: [id])
+    department        Department?        @relation(fields: [departmentId], references: [id])
+    client            User?              @relation("ClientOrders", fields: [clientId], references: [id])
+    creator           User?              @relation("CreatedOrders", fields: [createdBy], references: [id])
+    booking           Booking?           @relation("OrderBooking", fields: [bookingId], references: [id])
+    bookingDepartment BookingDepartment? @relation("OrderBookingDepartment", fields: [bookingDepartmentId], references: [id])
+    technicalService  TechnicalService?  @relation("OrderTO")
+    orderItems        OrderItem[]
+    orderLogs         OrderLog[]
 
     @@map("order")
 }
 
+// Связанное ТО (техническое обслуживание): номер, ответственный; один заказ — одно ТО
+model TechnicalService {
+    id                Int      @id @default(autoincrement()) @map("id")
+    number            String   @map("number") @db.VarChar(255) // Номер ТО
+    orderId           Int?     @unique @map("order_id") // Связь с заказом (один-к-одному)
+    responsibleUserId Int?     @map("responsible_user_id") // Ответственный за ТО
+    createdAt         DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+    updatedAt         DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
+
+    order           Order? @relation("OrderTO", fields: [orderId], references: [id], onDelete: Cascade)
+    responsibleUser User?  @relation("TechnicalServiceResponsible", fields: [responsibleUserId], references: [id], onDelete: SetNull)
+
+    @@map("technical_service")
+}
+
 model OrderItem {
-    id            Int     @id @default(autoincrement()) @map("id")
-    orderId       Int     @map("order_id")
-    product_sku   String  @db.VarChar(255)
-    product_title String  @db.VarChar(255)
-    product_price Float
-    product_brand String  @db.VarChar(255)
-    product_image String? @db.VarChar(255)
-    quantity      Int     @default(1)
+    id                   Int       @id @default(autoincrement()) @map("id")
+    orderId              Int       @map("order_id")
+    product_sku          String    @db.VarChar(255)
+    product_title        String    @db.VarChar(255)
+    product_price        Float
+    product_brand        String    @db.VarChar(255)
+    product_image        String?   @db.VarChar(255)
+    quantity             Int       @default(1)
+    supplierDeliveryDate DateTime? @map("supplier_delivery_date") @db.Timestamp(0) // Дата поставки поставщиком
+    carModel             String?   @map("car_model") @db.VarChar(255) // Название автомобиля
+    vinCode              String?   @map("vin_code") @db.VarChar(255) // VIN-код автомобиля
 
     // Связи
     order Order @relation(fields: [orderId], references: [id])
@@ -225,20 +294,6 @@ model MarkupRule {
     category   Category?   @relation(fields: [categoryId], references: [id])
 
     @@map("markup_rule")
-}
-
-model ServiceKitItem {
-    id                Int  @id @default(autoincrement()) @map("id")
-    kit_id            Int  @map("kit_id")
-    product_id        Int  @map("product_id")
-    analog_product_id Int? @map("analog_product_id")
-
-    // Связи
-    kit           ServiceKit @relation(fields: [kit_id], references: [id])
-    product       Product    @relation("KitItemProduct", fields: [product_id], references: [id], onDelete: Cascade)
-    analogProduct Product?   @relation("KitItemAnalog", fields: [analog_product_id], references: [id], onDelete: SetNull)
-
-    @@map("service_kit_item")
 }
 
 model bulk_action_log {
@@ -440,20 +495,60 @@ enum FilterType {
     boolean
 }
 
-model Booking {
-    id            Int           @id @default(autoincrement()) @map("id")
-    scheduledDate DateTime      @map("scheduled_date") @db.Date
-    scheduledTime String        @map("scheduled_time") @db.VarChar(10) // Формат: "14:30"
-    clientId      Int?          @map("client_id") // Опциональное поле - для незарегистрированных клиентов
-    managerId     Int           @map("manager_id") // Обязательное поле - кто отвечает за запись
-    status        BookingStatus @default(scheduled) @map("status")
-    notes         String?       @map("notes") @db.Text // Примечания, тип услуги и т.д.
-    createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamp(0)
-    updatedAt     DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
+model BookingDepartment {
+    id        Int      @id @default(autoincrement()) @map("id")
+    name      String?  @map("name") @db.VarChar(255) // Название отдела для записей (опционально)
+    address   String   @map("address") @db.Text // Адрес отдела (обязательно)
+    phones    String[] @map("phones") // Массив телефонов (может быть пустым или содержать до 100 телефонов)
+    emails    String[] @map("emails") // Массив почт (может быть пустым или содержать несколько почт)
+    createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+    updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
 
     // Связи
-    client  User? @relation("ClientBookings", fields: [clientId], references: [id])
-    manager User  @relation("ManagerBookings", fields: [managerId], references: [id])
+    bookings              Booking[]
+    orders                Order[]                @relation("OrderBookingDepartment")
+    bookingDepartmentLogs BookingDepartmentLog[]
+
+    @@map("booking_department")
+}
+
+model BookingDepartmentLog {
+    id                  Int      @id @default(autoincrement()) @map("id")
+    createdAt           DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+    action              String   @db.VarChar(255) // "create", "update", "delete"
+    message             String?  @db.Text
+    bookingDepartmentId Int      @map("booking_department_id")
+
+    // 📸 Снимки данных (без дублирования ID)
+    adminSnapshot             Json? // Админ который сделал действие
+    bookingDepartmentSnapshot Json? // Снапшот отдела
+
+    // Связи
+    bookingDepartment BookingDepartment @relation(fields: [bookingDepartmentId], references: [id], onDelete: Cascade)
+
+    @@map("booking_department_log")
+}
+
+model Booking {
+    id                  Int           @id @default(autoincrement()) @map("id")
+    scheduledDate       DateTime      @map("scheduled_date") @db.Date
+    scheduledTime       String        @map("scheduled_time") @db.VarChar(10) // Формат: "14:30"
+    contactPhone        String        @map("contact_phone") @db.VarChar(255) // Обязательное поле - телефон для связи
+    clientId            Int?          @map("client_id") // Опциональное поле - для незарегистрированных клиентов
+    managerId           Int?          @map("manager_id") // Опциональное поле - менеджер назначается позже
+    bookingDepartmentId Int           @map("booking_department_id") // Обязательное поле - отдел для записи
+    orderId             Int?          @map("order_id") // Связь с заказом (опционально)
+    status              BookingStatus @default(scheduled) @map("status")
+    notes               String?       @map("notes") @db.Text // Примечания, тип услуги и т.д.
+    createdAt           DateTime      @default(now()) @map("created_at") @db.Timestamp(0)
+    updatedAt           DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
+
+    // Связи
+    client            User?             @relation("ClientBookings", fields: [clientId], references: [id])
+    manager           User?             @relation("ManagerBookings", fields: [managerId], references: [id])
+    bookingDepartment BookingDepartment @relation(fields: [bookingDepartmentId], references: [id])
+    order             Order?            @relation("OrderBooking")
+    bookingLogs       BookingLog[]
 
     @@map("booking")
 }
@@ -474,4 +569,23 @@ enum BookingStatus {
     completed // Выполнена
     cancelled // Отменена
     no_show // Не явился
+}
+
+model BookingLog {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+    action    String   @db.VarChar(255) // "create", "update", "assign", "status_change", "cancel"
+    message   String?  @db.Text
+    bookingId Int      @map("booking_id")
+
+    // 📸 Снимки данных (без дублирования ID)
+    adminSnapshot      Json? // Админ который сделал действие
+    bookingSnapshot    Json? // Снапшот записи
+    managerSnapshot    Json? // Снапшот менеджера (если назначение/снятие)
+    departmentSnapshot Json? // Снапшот отдела
+
+    // Связи
+    booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+    @@map("booking_log")
 }

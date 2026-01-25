@@ -47,14 +47,9 @@ async function getOrderHandler(req: NextRequest, { user, scope, params }: { user
 				],
 			};
 		} else if (scope === "own") {
-			// Менеджер видит свободные заказы и свои
-			whereClause = {
-				id: orderId,
-				OR: [
-					{ managerId: null }, // Свободные заказы
-					{ managerId: fullUser.id }, // Свои заказы
-				],
-			};
+			// Менеджер видит все заказы (только просмотр, редактирование ограничено)
+			// Никаких ограничений для просмотра - менеджер может видеть все заказы
+			whereClause = { id: orderId };
 		}
 
 		// Получаем заказ с проверкой доступа
@@ -104,6 +99,34 @@ async function getOrderHandler(req: NextRequest, { user, scope, params }: { user
 					},
 				},
 				orderItems: true,
+				booking: {
+					select: {
+						id: true,
+						scheduledDate: true,
+						scheduledTime: true,
+						status: true,
+						contactPhone: true,
+					},
+				},
+				bookingDepartment: {
+					select: {
+						id: true,
+						name: true,
+						address: true,
+						phones: true,
+						email: true,
+					},
+				},
+				technicalService: {
+					select: {
+						id: true,
+						number: true,
+						responsibleUserId: true,
+						responsibleUser: {
+							select: { id: true, first_name: true, last_name: true, role: true },
+						},
+					},
+				},
 			},
 		});
 
@@ -346,6 +369,43 @@ async function updateOrderHandler(req: NextRequest, { user, scope, params }: { u
 				updateData.finalDeliveryDate = finalDeliveryDateValue;
 			}
 
+			// Обновляем связь с заявкой
+			if (body.bookingId !== undefined) {
+				updateData.bookingId = body.bookingId;
+			}
+
+			// Обновляем адрес доставки
+			if (body.bookingDepartmentId !== undefined) {
+				updateData.bookingDepartmentId = body.bookingDepartmentId;
+			}
+
+			// Обновляем товары заказа, если они были переданы
+			// Сначала удаляем все старые товары, затем создаем новые
+			if (body.orderItems !== undefined) {
+				// Удаляем все старые позиции заказа
+				await tx.orderItem.deleteMany({
+					where: { orderId: orderId },
+				});
+
+				// Создаем новые позиции заказа с обновленными данными
+				if (body.orderItems.length > 0) {
+					await tx.orderItem.createMany({
+						data: body.orderItems.map((item) => ({
+							orderId: orderId,
+							product_sku: item.product_sku,
+							product_title: item.product_title,
+							product_price: item.product_price,
+							product_brand: item.product_brand,
+							product_image: item.product_image || null,
+							quantity: item.quantity,
+							supplierDeliveryDate: item.supplierDeliveryDate ? new Date(item.supplierDeliveryDate) : null,
+							carModel: item.carModel || null,
+							vinCode: item.vinCode || null,
+						})),
+					});
+				}
+			}
+
 			// Обновляем заказ
 			const order = await tx.order.update({
 				where: { id: orderId },
@@ -394,6 +454,16 @@ async function updateOrderHandler(req: NextRequest, { user, scope, params }: { u
 						},
 					},
 					orderItems: true,
+					booking: { select: { id: true, scheduledDate: true, scheduledTime: true, status: true, contactPhone: true } },
+					bookingDepartment: { select: { id: true, name: true, address: true, phones: true, email: true } },
+					technicalService: {
+						select: {
+							id: true,
+							number: true,
+							responsibleUserId: true,
+							responsibleUser: { select: { id: true, first_name: true, last_name: true, role: true } },
+						},
+					},
 				},
 			});
 

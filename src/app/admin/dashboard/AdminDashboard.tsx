@@ -37,37 +37,57 @@ export default function AdminDashboard({ user }: Props) {
 			isMounted = false;
 		};
 	}, []);
-	const sections: Section[] = ["departments", "users", "categories", "product-management", "bookings", "orders", "content"]
-		.map((key): Section | null => {
-			const meta = adminRoutesMeta[key];
-			if (!meta || !meta.icon || !meta.bg) return null;
-			return {
-				href: `/admin/${key}`,
-				label: meta.label,
-				description: meta.description,
-				icon: meta.icon,
-				bg: meta.bg,
-			};
-		})
-		// Функция type guard позволяет TypeScript понять, что null значений уже нет
-		.filter((section): section is Section => section !== null);
+	// Группируем секции по цветам для отображения по строкам
+	const sectionsByColor: Record<string, Section[]> = {
+		green: [],
+		blue: [],
+		purple: [],
+		red: [],
+	};
+
+	// Собираем все секции и группируем их по цветам
+	// Порядок в массиве определяет порядок отображения карточек в каждой строке
+	["departments", "users", "orders", "product-management", "categories", "bookings", "booking-departments", "content"].forEach((key) => {
+		const meta = adminRoutesMeta[key];
+		if (!meta || !meta.icon || !meta.bg) return;
+		const section: Section = {
+			href: `/admin/${key}`,
+			label: meta.label,
+			description: meta.description,
+			icon: meta.icon,
+			bg: meta.bg,
+		};
+		if (sectionsByColor[meta.bg]) {
+			sectionsByColor[meta.bg].push(section);
+		}
+	});
+
+	// Определяем порядок строк
+	const rows = [
+		{ color: "green", sections: sectionsByColor.green },
+		{ color: "blue", sections: sectionsByColor.blue },
+		{ color: "purple", sections: sectionsByColor.purple },
+		{ color: "red", sections: sectionsByColor.red },
+	];
 
 	return (
 		<div className="screenContent">
-			<div className="cardsList">
-				{sections.map(({ href, label, icon: Icon, bg, description }) => (
-					<Link key={href} href={href} className={`cardItem`}>
-						<div className={`cardIcon ${bg}`}>
-							<Icon />
-						</div>
-						<h3 className="cardTitle">{label}</h3>
-						<p className="cardButton">{description ? description : `Перейти в раздел “${label}”`}</p>
-						{href === "/admin/orders" && ordersCounts && ordersCounts.unassignedCount + ordersCounts.departmentCount > 0 && (
-							<div className="cardNewOrdersNumber">{ordersCounts.unassignedCount + ordersCounts.departmentCount}</div>
-						)}
-					</Link>
-				))}
-			</div>
+			{rows.map((row, rowIndex) => (
+				<div key={rowIndex} className="cardsList">
+					{row.sections.map(({ href, label, icon: Icon, bg, description }) => (
+						<Link key={href} href={href} className={`cardItem`}>
+							<div className={`cardIcon ${bg}`}>
+								<Icon />
+							</div>
+							<h3 className="cardTitle">{label}</h3>
+							<p className="cardButton">{description ? description : `Перейти в раздел “${label}”`}</p>
+							{href === "/admin/orders" && ordersCounts && ordersCounts.unassignedCount + ordersCounts.departmentCount > 0 && (
+								<div className="cardNewOrdersNumber">{ordersCounts.unassignedCount + ordersCounts.departmentCount}</div>
+							)}
+						</Link>
+					))}
+				</div>
+			))}
 		</div>
 	);
 }

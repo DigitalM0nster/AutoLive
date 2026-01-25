@@ -152,8 +152,8 @@ a.button {
 	flex-direction: column;
 	align-items: center;
 	justify-content: flex-start;
-	min-height: calc(100dvh - var(--header-height) - var(--content-padding));
-	padding: calc(var(--header-height) + var(--content-padding)) 0px 0px 0px;
+	min-height: calc(100vh - var(--header-height) - var(--content-padding) - var(--content-padding));
+	padding: calc(var(--header-height) + var(--content-padding)) 0px var(--content-padding) 0px;
 }
 
 .screenContent {
@@ -161,6 +161,7 @@ a.button {
 	position: relative;
 	flex-direction: column;
 	justify-content: flex-start;
+	gap: 30px;
 	width: 100%;
 	height: 100%;
 	max-width: var(--maxContentWidth);
@@ -386,6 +387,14 @@ a.button {
 
 			&.orange {
 				background: linear-gradient(135deg, rgb(239, 68, 68), rgb(239, 35, 68));
+			}
+
+			&.purple {
+				background: linear-gradient(135deg, rgb(147, 51, 234), rgb(126, 34, 206));
+			}
+
+			&.red {
+				background: linear-gradient(135deg, rgb(220, 38, 38), rgb(185, 28, 28));
 			}
 
 			&.pink {
@@ -1241,6 +1250,10 @@ table,
 				&.imageCell {
 					width: 130px;
 					text-align: center;
+				}
+
+				.textBlock {
+					padding: 10px 0px;
 				}
 
 				.departmentLink,
@@ -2490,7 +2503,8 @@ span {
 
 // Стили для компонента товара и заказа
 .productComponent,
-.orderComponent {
+.orderComponent,
+.bookingComponent {
 	.formContainer {
 		background: white;
 		border-radius: 12px;
@@ -3310,7 +3324,7 @@ span {
 	.orderItemsList {
 		display: flex;
 		flex-direction: column;
-		gap: 10px;
+		gap: 30px;
 
 		&.readonly {
 			.orderItem {

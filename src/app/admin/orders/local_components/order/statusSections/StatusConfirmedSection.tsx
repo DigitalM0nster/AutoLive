@@ -27,6 +27,11 @@ type StatusConfirmedSectionProps = {
 	orderData: Order | null;
 	currentStatus: string;
 	statusDate?: string | null;
+	selectedBooking: { id: number; scheduledDate: string | Date; scheduledTime: string; status: string; contactPhone: string } | null;
+	setSelectedBooking: React.Dispatch<React.SetStateAction<{ id: number; scheduledDate: string | Date; scheduledTime: string; status: string; contactPhone: string } | null>>;
+	selectedBookingDepartment: { id: number; name: string | null; address: string; phones: string[]; email: string | null } | null;
+	setSelectedBookingDepartment: React.Dispatch<React.SetStateAction<{ id: number; name: string | null; address: string; phones: string[]; email: string | null } | null>>;
+	bookingDepartments: { id: number; name: string | null; address: string; phones: string[]; email: string | null }[];
 };
 
 const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
@@ -50,6 +55,11 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 	orderData,
 	currentStatus,
 	statusDate,
+	selectedBooking,
+	setSelectedBooking,
+	selectedBookingDepartment,
+	setSelectedBookingDepartment,
+	bookingDepartments,
 }) => {
 	const formatDate = (value?: string | Date | null) => {
 		if (!value) return "";
@@ -72,14 +82,20 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 
 	const clientBlurTimeout = useRef<NodeJS.Timeout | null>(null);
 	const managerBlurTimeout = useRef<NodeJS.Timeout | null>(null);
+	const bookingBlurTimeout = useRef<NodeJS.Timeout | null>(null);
 	const [isClientSearchFocused, setIsClientSearchFocused] = useState(false);
 	const [isManagerSearchFocused, setIsManagerSearchFocused] = useState(false);
+	const [isBookingSearchFocused, setIsBookingSearchFocused] = useState(false);
+	const [bookingSearch, setBookingSearch] = useState("");
+	const [bookingSearchResults, setBookingSearchResults] = useState<{ id: number; scheduledDate: string | Date; scheduledTime: string; status: string; contactPhone: string }[]>([]);
+	const [isSearchingBookings, setIsSearchingBookings] = useState(false);
 	const [collapsedItems, setCollapsedItems] = useState<Set<string>>(new Set());
 
 	useEffect(() => {
 		return () => {
 			if (clientBlurTimeout.current) clearTimeout(clientBlurTimeout.current);
 			if (managerBlurTimeout.current) clearTimeout(managerBlurTimeout.current);
+			if (bookingBlurTimeout.current) clearTimeout(bookingBlurTimeout.current);
 		};
 	}, []);
 
@@ -288,6 +304,88 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 			setClientSearchResults([]);
 		}
 		clearFieldError("clientSearch");
+	};
+
+	// Поиск заявок
+	const handleBookingSearch = async (query: string) => {
+		// Поиск по ID заявки
+		const bookingId = parseInt(query);
+		if (isNaN(bookingId)) {
+			setBookingSearchResults([]);
+			return;
+		}
+
+		try {
+			setIsSearchingBookings(true);
+			const response = await fetch(`/api/bookings?idSearch=${bookingId}&limit=10`, {
+				credentials: "include",
+			});
+
+			if (response.ok) {
+				const data = await response.json();
+				if (data.bookings && data.bookings.length > 0) {
+					setBookingSearchResults(
+						data.bookings.map((b: any) => ({
+							id: b.id,
+							scheduledDate: b.scheduledDate,
+							scheduledTime: b.scheduledTime,
+							status: b.status,
+							contactPhone: b.contactPhone,
+						}))
+					);
+				} else {
+					setBookingSearchResults([]);
+				}
+			}
+		} catch (error) {
+			console.error("Ошибка поиска заявок:", error);
+		} finally {
+			setIsSearchingBookings(false);
+		}
+	};
+
+	const handleBookingSelect = (booking: { id: number; scheduledDate: string | Date; scheduledTime: string; status: string; contactPhone: string }) => {
+		if (!canEdit) {
+			return;
+		}
+
+		setSelectedBooking(booking);
+		setBookingSearch("");
+		setBookingSearchResults([]);
+		setIsBookingSearchFocused(false);
+	};
+
+	const handleBookingBlur = () => {
+		if (bookingBlurTimeout.current) clearTimeout(bookingBlurTimeout.current);
+		bookingBlurTimeout.current = setTimeout(() => setIsBookingSearchFocused(false), 120);
+	};
+
+	const handleBookingManualInput = (value: string) => {
+		if (!canEdit) {
+			return;
+		}
+
+		setBookingSearch(value);
+		if (value.trim() !== "") {
+			handleBookingSearch(value);
+		} else {
+			setBookingSearchResults([]);
+		}
+		clearFieldError("bookingSearch");
+	};
+
+	const handleBookingDepartmentSelect = (departmentId: string) => {
+		if (!canEdit) {
+			return;
+		}
+
+		const department = bookingDepartments.find((d) => d.id.toString() === departmentId);
+		if (department) {
+			setSelectedBookingDepartment(department);
+		} else {
+			setSelectedBookingDepartment(null);
+		}
+		clearFieldError("bookingDepartmentId");
 	};
 
 	const handleRemoveProduct = (sku: string) => {
@@ -724,6 +822,109 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 								? "Будет установлена после сохранения"
 								: "Не указана"}
 						</div>
+					</div>
+				</div>
+
+				{/* Поле для выбора заявки */}
+				<div className="formRow">
+					<div className={`formField`}>
+						<label htmlFor="bookingSearch">Заявка</label>
+						<div className={`selectedClient`}>
+							<span>
+								{selectedBooking ? (
+									<Link href={`/admin/bookings/${selectedBooking.id}`} className="itemLink" target="_blank">
+										Заявка #{selectedBooking.id} - {typeof selectedBooking.scheduledDate === "string" ? new Date(selectedBooking.scheduledDate).toLocaleDateString("ru-RU") : selectedBooking.scheduledDate.toLocaleDateString("ru-RU")} {selectedBooking.scheduledTime}
+									</Link>
+								) : (
+									"Не указана"
+								)}
+							</span>
+							{selectedBooking && canEdit && (
+								<button
+									type="button"
+									onClick={() => {
+										setSelectedBooking(null);
+										setBookingSearch("");
+										clearFieldError("bookingSearch");
+									}}
+									className={`removeButton`}
+								>
+									Убрать заявку ×
+								</button>
+							)}
+						</div>
+						{!selectedBooking && (
+							<div className={`searchContainer`}>
+								<input
+									id="bookingSearch"
+									type="text"
+									value={bookingSearch}
+									onChange={(e) => handleBookingManualInput(e.target.value)}
+									onFocus={() => {
+										if (bookingBlurTimeout.current) clearTimeout(bookingBlurTimeout.current);
+										setIsBookingSearchFocused(true);
+										clearFieldError("bookingSearch");
+									}}
+									onBlur={handleBookingBlur}
+									placeholder="Поиск заявки по ID"
+									className={`${fieldErrors.has("bookingSearch") ? "error" : ""} ${isBookingSearchFocused && bookingSearch.length > 0 ? "activeSearch" : ""}`}
+									disabled={!canEdit}
+								/>
+								{isBookingSearchFocused && isSearchingBookings && bookingSearch && (
+									<div className="searchResults loading">
+										<Loading />
+									</div>
+								)}
+
+								{isBookingSearchFocused && bookingSearch && !isSearchingBookings && (
+									<div className="searchResults">
+										{bookingSearchResults.length > 0 ? (
+											bookingSearchResults.map((booking) => (
+												<div key={booking.id} className={`searchResultItem`} onMouseDown={() => handleBookingSelect(booking)}>
+													Заявка #{booking.id} - {typeof booking.scheduledDate === "string" ? new Date(booking.scheduledDate).toLocaleDateString("ru-RU") : booking.scheduledDate.toLocaleDateString("ru-RU")} {booking.scheduledTime}
+												</div>
+											))
+										) : (
+											<div className={`searchResultItem`}>Нет результатов</div>
+										)}
+									</div>
+								)}
+							</div>
+						)}
+					</div>
+				</div>
+
+				{/* Поле для выбора адреса */}
+				<div className="formRow">
+					<div className={`formField`}>
+						<label htmlFor="bookingDepartmentId">Адрес доставки</label>
+						<div className={`selectedClient`}>
+							<span>
+								{selectedBookingDepartment ? (
+									<>
+										{selectedBookingDepartment.name || "Адрес"} - {selectedBookingDepartment.address}
+									</>
+								) : (
+									"Не указан"
+								)}
+							</span>
+						</div>
+						<select
+							id="bookingDepartmentId"
+							name="bookingDepartmentId"
+							value={selectedBookingDepartment?.id.toString() || ""}
+							onChange={(e) => handleBookingDepartmentSelect(e.target.value)}
+							onFocus={() => clearFieldError("bookingDepartmentId")}
+							className={fieldErrors.has("bookingDepartmentId") ? "error" : ""}
+							disabled={!canEdit}
+						>
+							<option value="">— Не выбран —</option>
+							{bookingDepartments.map((dept) => (
+								<option key={dept.id} value={dept.id}>
+									{dept.name || "Адрес"} - {dept.address}
+								</option>
+							))}
+						</select>
 					</div>
 				</div>
 			</div>

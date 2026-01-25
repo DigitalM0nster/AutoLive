@@ -1,14 +1,15 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import FiltersBlock from "@/components/ui/filtersBlock/FiltersBlock";
 import Pagination from "@/components/ui/pagination/Pagination";
 import CustomSelect from "@/components/ui/customSelect/CustomSelect";
 import DateRangePicker from "@/components/ui/dateRangePicker/DateRangePicker";
-import { Booking, BookingResponse, BookingStatus, ActiveFilter } from "@/lib/types";
+import { Booking, BookingResponse, BookingStatus, ActiveFilter, BookingDepartment } from "@/lib/types";
 import Link from "next/link";
 import Loading from "@/components/ui/loading/Loading";
 import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/store/authStore";
 
 // Компонент для поиска ответственного
 const ManagerSearchField = React.memo(
@@ -50,6 +51,20 @@ const IdSearchField = React.memo(({ idSearch, onSearchChange, onClearSearch }: {
 ));
 IdSearchField.displayName = "IdSearchField";
 
+// Компонент для поиска по телефону
+const PhoneSearchField = React.memo(
+	({ phoneSearch, onSearchChange, onClearSearch }: { phoneSearch: string; onSearchChange: (value: string) => void; onClearSearch: () => void }) => (
+		<div className="searchFilterHeader">
+			Телефон:
+			<div className="searchInput">
+				<input type="text" value={phoneSearch} onChange={(e) => onSearchChange(e.target.value)} placeholder="Введите телефон" />
+				<div onClick={onClearSearch} className="clearSearchButton"></div>
+			</div>
+		</div>
+	)
+);
+PhoneSearchField.displayName = "PhoneSearchField";
+
 export default function AllBookingsTable() {
 	const router = useRouter();
 	const [bookings, setBookings] = useState<Booking[]>([]);
@@ -61,6 +76,7 @@ export default function AllBookingsTable() {
 	// Состояние для поиска
 	const [managerSearch, setManagerSearch] = useState("");
 	const [clientSearch, setClientSearch] = useState("");
+	const [phoneSearch, setPhoneSearch] = useState("");
 	const [departmentFilter, setDepartmentFilter] = useState<"all" | string>("all");
 	const [idSearch, setIdSearch] = useState("");
 
@@ -75,9 +91,18 @@ export default function AllBookingsTable() {
 	// Состояние для активных блоков (разворачивающаяся информация)
 	const [activeBlocks, setActiveBlocks] = useState<{ [key: string]: boolean }>({});
 
+
+	// Получаем информацию о текущем пользователе
+	const { user } = useAuthStore();
+
+	// Функция для проверки прав на управление записями
+	const canManageBookings = () => {
+		return user?.role === "superadmin" || user?.role === "admin";
+	};
+
 	// Данные для селектов
 	const [managers, setManagers] = useState<{ id: number; first_name: string | null; last_name: string | null; middle_name: string | null }[]>([]);
-	const [departments, setDepartments] = useState<{ id: number; name: string }[]>([]);
+	const [bookingDepartments, setBookingDepartments] = useState<BookingDepartment[]>([]);
 	const [clients, setClients] = useState<{ id: number; first_name: string | null; last_name: string | null; middle_name: string | null }[]>([]);
 
 	const limit = 20;
@@ -110,13 +135,13 @@ export default function AllBookingsTable() {
 		})),
 	];
 
-	// Опции для отделов
-	const departmentOptions = [
-		{ value: "all", label: "Все отделы" },
-		{ value: "none", label: "Без отдела" },
-		...departments.map((dept) => ({
+	// Опции для адресов
+	const bookingDepartmentOptions = [
+		{ value: "all", label: "Все адреса" },
+		{ value: "none", label: "Без адреса" },
+		...bookingDepartments.map((dept) => ({
 			value: dept.id.toString(),
-			label: dept.name,
+			label: dept.name || `Адрес #${dept.id}`,
 		})),
 	];
 
@@ -129,51 +154,53 @@ export default function AllBookingsTable() {
 		})),
 	];
 
+	// Функция для загрузки записей
+	const fetchBookings = useCallback(async () => {
+		setLoading(true);
+		try {
+			const params = new URLSearchParams({
+				page: page.toString(),
+				limit: limit.toString(),
+			});
+
+			if (statusFilter !== "all") params.append("status", statusFilter);
+
+			// Добавляем фильтр по дате
+			if (dateFilter.from) params.append("dateFrom", dateFilter.from);
+			if (dateFilter.to) params.append("dateTo", dateFilter.to);
+
+			if (managerSearch) params.append("managerSearch", managerSearch);
+			if (clientSearch) params.append("clientSearch", clientSearch);
+			if (phoneSearch) params.append("phoneSearch", phoneSearch);
+			if (departmentFilter !== "all") params.append("bookingDepartmentId", departmentFilter === "none" ? "null" : departmentFilter);
+			if (idSearch) params.append("idSearch", idSearch);
+
+			if (sortBy && sortOrder) {
+				params.append("sortBy", sortBy);
+				params.append("sortOrder", sortOrder);
+			}
+
+			const response = await fetch(`/api/bookings?${params}`);
+			const data: BookingResponse = await response.json();
+
+			if (data.error) {
+				console.error("Ошибка загрузки записей:", data.error);
+				return;
+			}
+
+			setBookings(data.bookings || []);
+			setTotal(data.total || 0);
+		} catch (err) {
+			console.error("Ошибка загрузки записей:", err);
+		} finally {
+			setLoading(false);
+		}
+	}, [page, statusFilter, dateFilter, sortBy, sortOrder, managerSearch, clientSearch, phoneSearch, departmentFilter, idSearch]);
+
 	// Загрузка записей
 	useEffect(() => {
-		const fetchBookings = async () => {
-			setLoading(true);
-			try {
-				const params = new URLSearchParams({
-					page: page.toString(),
-					limit: limit.toString(),
-				});
-
-				if (statusFilter !== "all") params.append("status", statusFilter);
-
-				// Добавляем фильтр по дате
-				if (dateFilter.from) params.append("dateFrom", dateFilter.from);
-				if (dateFilter.to) params.append("dateTo", dateFilter.to);
-
-				if (managerSearch) params.append("managerSearch", managerSearch);
-				if (clientSearch) params.append("clientSearch", clientSearch);
-				if (departmentFilter !== "all") params.append("departmentId", departmentFilter === "none" ? "null" : departmentFilter);
-				if (idSearch) params.append("idSearch", idSearch);
-
-				if (sortBy && sortOrder) {
-					params.append("sortBy", sortBy);
-					params.append("sortOrder", sortOrder);
-				}
-
-				const response = await fetch(`/api/bookings?${params}`);
-				const data: BookingResponse = await response.json();
-
-				if (data.error) {
-					console.error("Ошибка загрузки записей:", data.error);
-					return;
-				}
-
-				setBookings(data.bookings || []);
-				setTotal(data.total || 0);
-			} catch (err) {
-				console.error("Ошибка загрузки записей:", err);
-			} finally {
-				setLoading(false);
-			}
-		};
-
 		fetchBookings();
-	}, [page, statusFilter, dateFilter, sortBy, sortOrder, managerSearch, clientSearch, departmentFilter, idSearch]);
+	}, [fetchBookings]);
 
 	// Загрузка данных для селектов
 	useEffect(() => {
@@ -186,11 +213,11 @@ export default function AllBookingsTable() {
 					setManagers(managersData.users);
 				}
 
-				// Загружаем отделы
-				const departmentsResponse = await fetch("/api/departments");
-				const departmentsData = await departmentsResponse.json();
-				if (departmentsData.departments) {
-					setDepartments(departmentsData.departments);
+				// Загружаем адреса (отделы для записей)
+				const bookingDepartmentsResponse = await fetch("/api/booking-departments");
+				const bookingDepartmentsData = await bookingDepartmentsResponse.json();
+				if (Array.isArray(bookingDepartmentsData)) {
+					setBookingDepartments(bookingDepartmentsData);
 				}
 
 				// Загружаем клиентов (пользователи с ролью client)
@@ -223,6 +250,16 @@ export default function AllBookingsTable() {
 
 	const handleClientSearchChange = (value: string) => {
 		setClientSearch(value);
+		setPage(1);
+	};
+
+	const handlePhoneSearchChange = (value: string) => {
+		setPhoneSearch(value);
+		setPage(1);
+	};
+
+	const handleClearPhoneSearch = () => {
+		setPhoneSearch("");
 		setPage(1);
 	};
 
@@ -282,32 +319,48 @@ export default function AllBookingsTable() {
 		return (
 			<div className="fullInfoBlock">
 				<div className={`clickInfoBlock ${activeBlocks[managerKey] ? "active" : ""}`} onClick={() => toggleActiveBlock(managerKey)}>
-					{getUserName(booking.manager)}
+					{booking.manager ? getUserName(booking.manager) : "Не назначен"}
 				</div>
 				<div className={`openingBlock ${activeBlocks[managerKey] ? "active" : ""}`}>
-					<div className="infoField">
-						<span className="title">ID:</span>
-						<span className="value">{booking.manager.id}</span>
-					</div>
-					<div className="infoField">
-						<span className="title">Роль:</span>
-						<span className="value">{booking.manager.role || "—"}</span>
-					</div>
-					<div className="infoField">
-						<span className="title">Отдел:</span>
-						<span className="value">{booking.manager.department?.name || "—"}</span>
-					</div>
-					<div className="infoField">
-						<span className="title">Профиль:</span>
-						<span className="value">
-							<a href={`/admin/users/${booking.manager.id}`} className="itemLink">
-								Перейти к профилю
-							</a>
-						</span>
-					</div>
+					{booking.manager ? (
+						<>
+							<div className="infoField">
+								<span className="title">ID:</span>
+								<span className="value">{booking.manager.id}</span>
+							</div>
+							<div className="infoField">
+								<span className="title">Роль:</span>
+								<span className="value">{booking.manager.role || "—"}</span>
+							</div>
+							<div className="infoField">
+								<span className="title">Отдел:</span>
+								<span className="value">{booking.manager.department?.name || "—"}</span>
+							</div>
+						</>
+					) : (
+						<div className="infoField">
+							<span className="value">Менеджер не назначен</span>
+						</div>
+					)}
+					{booking.manager && (
+						<div className="infoField">
+							<span className="title">Профиль:</span>
+							<span className="value">
+								<a href={`/admin/users/${booking.manager.id}`} className="itemLink">
+									Перейти к профилю
+								</a>
+							</span>
+						</div>
+					)}
 				</div>
 			</div>
 		);
+	};
+
+	// Функция для получения телефона для связи
+	const getContactPhone = (booking: Booking): string => {
+		// Используем поле contactPhone из базы данных
+		return booking.contactPhone || "—";
 	};
 
 	// Функция для рендеринга блока клиента
@@ -352,40 +405,18 @@ export default function AllBookingsTable() {
 
 	// Функция для рендеринга блока действий
 	const renderActionsBlock = (booking: Booking) => {
-		const actionsKey = `actions_${booking.id}`;
-
 		return (
-			<div className="fullInfoBlock">
-				<div className={`clickInfoBlock ${activeBlocks[actionsKey] ? "active" : ""}`} onClick={() => toggleActiveBlock(actionsKey)}>
-					Запись #{booking.id}
-				</div>
-				<div className={`openingBlock ${activeBlocks[actionsKey] ? "active" : ""}`}>
-					<div className="infoField">
-						<span className="title">Дата:</span>
-						<span className="value">{formatDateFromString(booking.scheduledDate.toString())}</span>
-					</div>
-					<div className="infoField">
-						<span className="title">Время:</span>
-						<span className="value">{booking.scheduledTime}</span>
-					</div>
-					<div className="infoField">
-						<span className="title">Статус:</span>
-						<span className="value">
-							<span className={`statusBadge ${getStatusColor(booking.status)}`}>{getStatusText(booking.status)}</span>
-						</span>
-					</div>
-					<div className="infoField">
-						<span className="title">Просмотр:</span>
-						<span className="value">
-							<button className="viewButton" onClick={() => router.push(`/admin/bookings/${booking.id}`)}>
-								Открыть запись
-							</button>
-						</span>
-					</div>
-				</div>
+			<div className="actionButtons">
+				<button className="button edit" onClick={() => router.push(`/admin/bookings/${booking.id}`)}>
+				✏️ Редактировать
+				</button>
+				<button className="button logs" onClick={() => router.push(`/admin/bookings/${booking.id}/logs`)}>
+				📋 Посмотреть логи
+				</button>
 			</div>
 		);
 	};
+
 
 	// Функция для сброса всех фильтров
 	const resetFilters = () => {
@@ -396,6 +427,7 @@ export default function AllBookingsTable() {
 		setSortOrder(null);
 		setManagerSearch("");
 		setClientSearch("");
+		setPhoneSearch("");
 		setDepartmentFilter("all");
 		setIdSearch("");
 		setActiveBlocks({});
@@ -438,12 +470,20 @@ export default function AllBookingsTable() {
 			});
 		}
 
+		if (phoneSearch && phoneSearch.trim() !== "") {
+			filters.push({
+				key: "phoneSearch",
+				label: "Телефон",
+				value: phoneSearch,
+			});
+		}
+
 		if (departmentFilter && departmentFilter !== "all") {
-			const department = departments.find((dept) => dept.id.toString() === departmentFilter);
+			const bookingDepartment = bookingDepartments.find((dept) => dept.id.toString() === departmentFilter);
 			filters.push({
 				key: "departmentFilter",
-				label: "Отдел",
-				value: department?.name || "Неизвестный отдел",
+				label: "Адрес",
+				value: bookingDepartment?.name || `Адрес #${departmentFilter}`,
 			});
 		}
 
@@ -555,10 +595,10 @@ export default function AllBookingsTable() {
 							</th>
 							<th className="tableHeaderCell">
 								<CustomSelect
-									options={departmentOptions}
+									options={bookingDepartmentOptions}
 									value={departmentFilter}
 									onChange={handleDepartmentFilterChange}
-									placeholder="Выберите отдел"
+									placeholder="Выберите адрес"
 									className="departmentSelect"
 								/>
 							</th>
@@ -568,20 +608,30 @@ export default function AllBookingsTable() {
 							<th className="tableHeaderCell">
 								<ClientSearchField clientSearch={clientSearch} onSearchChange={handleClientSearchChange} onClearSearch={handleClearClientSearch} />
 							</th>
+							<th className="tableHeaderCell">
+								<PhoneSearchField phoneSearch={phoneSearch} onSearchChange={handlePhoneSearchChange} onClearSearch={handleClearPhoneSearch} />
+							</th>
 							<th className="tableHeaderCell">Действия</th>
 						</tr>
 					</thead>
 					<tbody className="tableBody">
 						{loading ? (
 							<tr>
-								<td colSpan={7} className="loadingCell">
+								<td colSpan={8} className="loadingCell">
 									<Loading />
 								</td>
 							</tr>
 						) : bookings.length === 0 ? (
 							<tr>
-								<td colSpan={7} className="emptyCell">
-									{statusFilter !== "all" || dateFilter.from || dateFilter.to || managerSearch || clientSearch || departmentFilter !== "all" || idSearch
+								<td colSpan={8} className="emptyCell">
+									{statusFilter !== "all" ||
+									dateFilter.from ||
+									dateFilter.to ||
+									managerSearch ||
+									clientSearch ||
+									phoneSearch ||
+									departmentFilter !== "all" ||
+									idSearch
 										? "Записи не найдены"
 										: "Нет записей"}
 								</td>
@@ -590,15 +640,24 @@ export default function AllBookingsTable() {
 							bookings.map((booking) => (
 								<tr key={booking.id} className="tableRow">
 									<td className="tableCell">
-										{formatDate(booking.scheduledDate)} {booking.scheduledTime}
+										<div className="textBlock">
+											{formatDate(booking.scheduledDate)} {booking.scheduledTime}
+										</div>
 									</td>
-									<td className="tableCell idCell">{booking.id}</td>
+									<td className="tableCell idCell">
+										<div className="textBlock">{booking.id}</div>
+									</td>
 									<td className="tableCell">
-										<span className={`statusBadge ${getStatusColor(booking.status)}`}>{getStatusText(booking.status)}</span>
+										<div className={`statusBadge textBlock ${getStatusColor(booking.status)}`}>{getStatusText(booking.status)}</div>
 									</td>
-									<td className="tableCell">{booking.manager.department?.name || "—"}</td>
+									<td className="tableCell">
+										<div className="textBlock">{booking.bookingDepartment?.name || "—"}</div>
+									</td>
 									<td className="tableCell">{renderManagerBlock(booking)}</td>
 									<td className="tableCell">{renderClientBlock(booking)}</td>
+									<td className="tableCell">
+										<div className="textBlock">{getContactPhone(booking)}</div>
+									</td>
 									<td className="tableCell">{renderActionsBlock(booking)}</td>
 								</tr>
 							))

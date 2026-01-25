@@ -69,6 +69,25 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 	const [departments, setDepartments] = useState<DepartmentForLog[]>([]);
 
 	const [selectedManager, setSelectedManager] = useState<User | null>(null);
+
+	// Состояние для заявки и адреса
+	const [selectedBooking, setSelectedBooking] = useState<{ id: number; scheduledDate: string | Date; scheduledTime: string; status: string; contactPhone: string } | null>(null);
+	const [selectedBookingDepartment, setSelectedBookingDepartment] = useState<{ id: number; name: string | null; address: string; phones: string[]; email: string | null } | null>(null);
+	const [bookingDepartments, setBookingDepartments] = useState<{ id: number; name: string | null; address: string; phones: string[]; email: string | null }[]>([]);
+
+	// Состояние для формы ТО (добавить/редактировать): менеджеры и выше могут менять
+	const [toFormOpen, setToFormOpen] = useState<false | "add" | "edit">(false);
+	const [toFormNumber, setToFormNumber] = useState("");
+	const [toFormResponsibleId, setToFormResponsibleId] = useState("");
+	const [toResponsibleUsers, setToResponsibleUsers] = useState<{ id: number; first_name: string | null; last_name: string | null }[]>([]);
+	const [isToSaving, setIsToSaving] = useState(false);
+	// Состояние для поиска менеджера ТО
+	const [selectedToResponsible, setSelectedToResponsible] = useState<User | null>(null);
+	const [toResponsibleSearch, setToResponsibleSearch] = useState("");
+	const [toResponsibleSearchResults, setToResponsibleSearchResults] = useState<User[]>([]);
+	const [isSearchingToResponsible, setIsSearchingToResponsible] = useState(false);
+	const [isToResponsibleSearchFocused, setIsToResponsibleSearchFocused] = useState(false);
+	const toResponsibleBlurTimeout = useRef<NodeJS.Timeout | null>(null);
 	// Состояние для дат присвоения статусов
 	const [statusDates, setStatusDates] = useState<Record<OrderStatus, string | null>>({
 		created: null,
@@ -183,6 +202,13 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 
 		return false;
 	};
+
+	// Очистка timeout при размонтировании
+	useEffect(() => {
+		return () => {
+			if (toResponsibleBlurTimeout.current) clearTimeout(toResponsibleBlurTimeout.current);
+		};
+	}, []);
 
 	// Проверка прав доступа при создании
 	useEffect(() => {
@@ -315,6 +341,9 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 				setComments(order.comments || []);
 				setSelectedClient(order.client || null);
 				setSelectedManager(order.manager || null);
+				// Заполняем заявку и адрес
+				setSelectedBooking(order.booking || null);
+				setSelectedBookingDepartment(order.bookingDepartment || null);
 
 				// Загружаем логи заказа для получения дат присвоения статусов
 				try {
@@ -389,6 +418,42 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 		fetchDepartments();
 	}, []);
 
+	// Загрузка адресов (BookingDepartment)
+	useEffect(() => {
+		const fetchBookingDepartments = async () => {
+			try {
+				const response = await fetch("/api/booking-departments", {
+					credentials: "include",
+				});
+				if (response.ok) {
+					const data = await response.json();
+					setBookingDepartments(Array.isArray(data) ? data : []);
+				}
+			} catch (err) {
+				console.error("Ошибка загрузки адресов:", err);
+			}
+		};
+
+		fetchBookingDepartments();
+	}, []);
+
+	// Загрузка списка ответственных для ТО (менеджеры, админы, суперадмины) при открытии формы
+	useEffect(() => {
+		if (!toFormOpen || toResponsibleUsers.length > 0) return;
+		const load = async () => {
+			try {
+				const r = await fetch("/api/users?role=manager&role=admin&role=superadmin&limit=200&allUsers=true", { credentials: "include" });
+				if (r.ok) {
+					const d = await r.json();
+					setToResponsibleUsers(d.users || []);
+				}
+			} catch (e) {
+				console.error("Ошибка загрузки списка для ТО:", e);
+			}
+		};
+		load();
+	}, [toFormOpen, toResponsibleUsers.length]);
+
 	// Устанавливаем отдел пользователя при создании заказа
 	useEffect(() => {
 		if (isCreating && user?.departmentId) {
@@ -444,6 +509,162 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 				return "7. Возврат";
 			default:
 				return status || "Не указан";
+		}
+	};
+
+	// Перезагрузка заказа после изменений ТО
+	const refetchOrder = async () => {
+		if (!orderId || isCreating) return;
+		try {
+			const res = await fetch(`/api/orders/${orderId}`, { credentials: "include" });
+			if (res.ok) {
+				const d = await res.json();
+				setOrderData(d.order || null);
+			}
+		} catch (e) {
+			console.error("Ошибка перезагрузки заказа:", e);
+		}
+	};
+
+	// Поиск менеджера для ТО
+	const handleToResponsibleSearch = async (query: string) => {
+		if (query.length < 2) {
+			setToResponsibleSearchResults([]);
+			return;
+		}
+
+		try {
+			setIsSearchingToResponsible(true);
+			const response = await fetch(`/api/users?search=${encodeURIComponent(query)}&role=manager&role=admin&role=superadmin&limit=10&allUsers=true`, {
+				credentials: "include",
+			});
+
+			if (response.ok) {
+				const data = await response.json();
+				setToResponsibleSearchResults(data.users || []);
+			}
+		} catch (error) {
+			console.error("Ошибка поиска менеджеров для ТО:", error);
+		} finally {
+			setIsSearchingToResponsible(false);
+		}
+	};
+
+	const handleToResponsibleSelect = (manager: User) => {
+		setSelectedToResponsible(manager);
+		setToFormResponsibleId(manager.id.toString());
+		setToResponsibleSearch("");
+		setToResponsibleSearchResults([]);
+		setIsToResponsibleSearchFocused(false);
+	};
+
+	const handleToResponsibleBlur = () => {
+		if (toResponsibleBlurTimeout.current) clearTimeout(toResponsibleBlurTimeout.current);
+		toResponsibleBlurTimeout.current = setTimeout(() => setIsToResponsibleSearchFocused(false), 120);
+	};
+
+	const handleToResponsibleManualInput = (value: string) => {
+		setToResponsibleSearch(value);
+		if (value.length >= 2) {
+			handleToResponsibleSearch(value);
+		} else {
+			setToResponsibleSearchResults([]);
+		}
+	};
+
+	const handleToResponsibleClear = () => {
+		setSelectedToResponsible(null);
+		setToFormResponsibleId("");
+		setToResponsibleSearch("");
+		setToResponsibleSearchResults([]);
+	};
+
+	// ТО: открыть форму добавления
+	const openToAdd = () => {
+		setToFormNumber("");
+		setToFormResponsibleId("");
+		setSelectedToResponsible(null);
+		setToResponsibleSearch("");
+		setToResponsibleSearchResults([]);
+		setToFormOpen("add");
+	};
+
+	// ТО: открыть форму редактирования
+	const openToEdit = () => {
+		const to = orderData?.technicalService;
+		setToFormNumber(to?.number ?? "");
+		const responsibleId = to?.responsibleUserId?.toString() ?? "";
+		setToFormResponsibleId(responsibleId);
+		// Если есть ответственный в данных заказа, устанавливаем его
+		if (to?.responsibleUser) {
+			setSelectedToResponsible(to.responsibleUser as User);
+		} else {
+			setSelectedToResponsible(null);
+		}
+		setToResponsibleSearch("");
+		setToResponsibleSearchResults([]);
+		setToFormOpen("edit");
+	};
+
+	// ТО: сохранить (создать или обновить)
+	const saveToForm = async () => {
+		if (!orderId || isCreating) return;
+		const num = toFormNumber.trim();
+		if (!num) {
+			showErrorToast("Введите номер ТО");
+			return;
+		}
+		setIsToSaving(true);
+		try {
+			const url = `/api/orders/${orderId}/technical-service`;
+			const body = { number: num, responsibleUserId: toFormResponsibleId ? parseInt(toFormResponsibleId, 10) : null };
+			if (toFormOpen === "add") {
+				const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(body) });
+				if (!res.ok) {
+					const err = await res.json().catch(() => ({}));
+					throw new Error(err?.error || "Ошибка создания ТО");
+				}
+				showSuccessToast("ТО добавлено");
+			} else {
+				const res = await fetch(url, { method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(body) });
+				if (!res.ok) {
+					const err = await res.json().catch(() => ({}));
+					throw new Error(err?.error || "Ошибка обновления ТО");
+				}
+				showSuccessToast("ТО обновлено");
+			}
+			setToFormOpen(false);
+			await refetchOrder();
+		} catch (e) {
+			showErrorToast(e instanceof Error ? e.message : "Ошибка");
+		} finally {
+			setIsToSaving(false);
+		}
+	};
+
+	// ТО: отмена формы
+	const cancelToForm = () => {
+		setToFormOpen(false);
+		setSelectedToResponsible(null);
+		setToResponsibleSearch("");
+		setToResponsibleSearchResults([]);
+	};
+
+	// ТО: удалить
+	const deleteTo = async () => {
+		if (!orderId || isCreating) return;
+		if (!window.confirm("Удалить связанное ТО?")) return;
+		setIsToSaving(true);
+		try {
+			const res = await fetch(`/api/orders/${orderId}/technical-service`, { method: "DELETE", credentials: "include" });
+			if (!res.ok) throw new Error("Ошибка удаления ТО");
+			showSuccessToast("ТО удалено");
+			setToFormOpen(false);
+			await refetchOrder();
+		} catch (e) {
+			showErrorToast(e instanceof Error ? e.message : "Ошибка");
+		} finally {
+			setIsToSaving(false);
 		}
 	};
 
@@ -1041,6 +1262,9 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 						setCurrentStatus(data.order.status as OrderStatus);
 						setInitialStatus(data.order.status as OrderStatus);
 					}
+					// Обновляем заявку и адрес
+					setSelectedBooking(data.order.booking || null);
+					setSelectedBookingDepartment(data.order.bookingDepartment || null);
 					initialSnapshotRef.current = null;
 					setHasChanges(false);
 				} else {
@@ -1127,8 +1351,103 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 											</div>
 											<div className={`infoField`}>
 												<span className={`infoLabel`}>Номер связанного ТО:</span>
-												<span className={`infoValue`}>—</span>
+												<span className={`infoValue`}>
+													{orderData.technicalService ? (
+														<>
+															<button 
+																type="button" 
+																onClick={openToEdit} 
+																className="itemLink" 
+																style={{ background: "none", border: "none", padding: 0, cursor: "pointer", textDecoration: "underline" }}
+																disabled={isToSaving}
+															>
+																{orderData.technicalService.number}
+															</button>
+															{orderData.technicalService.responsibleUser && (
+																<>
+																	{" · "}
+																	<Link href={`/admin/users/${orderData.technicalService.responsibleUser.id}`} className="itemLink" target="_blank">
+																		{[orderData.technicalService.responsibleUser.first_name, orderData.technicalService.responsibleUser.last_name].filter(Boolean).join(" ") || "—"}
+																	</Link>
+																</>
+															)}
+														</>
+													) : (
+														<>
+															{(isManager || isAdminOrSuperadmin) && (
+																<button type="button" onClick={openToAdd} className="takeOrderButton" disabled={isToSaving}>
+																	Связать с ТО
+																</button>
+															)}
+														</>
+													)}
+												</span>
 											</div>
+											{toFormOpen && (
+												<div className={`infoField`} style={{ flexDirection: "column", alignItems: "flex-start", gap: 8, marginTop: 4 }}>
+													<input
+														type="text"
+														value={toFormNumber}
+														onChange={(e) => setToFormNumber(e.target.value)}
+														placeholder="Номер ТО"
+														className="formInput"
+													/>
+													<div style={{ width: "100%", position: "relative" }}>
+														{selectedToResponsible ? (
+															<div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+																<Link href={`/admin/users/${selectedToResponsible.id}`} className="itemLink" target="_blank">
+																	{selectedToResponsible.first_name} {selectedToResponsible.last_name} ({selectedToResponsible.phone})
+																</Link>
+																<button type="button" onClick={handleToResponsibleClear} style={{ fontSize: "12px", padding: "4px 8px" }}>
+																	Убрать ×
+																</button>
+															</div>
+														) : (
+															<div className={`searchContainer`}>
+																<input
+																	type="text"
+																	value={toResponsibleSearch}
+																	onChange={(e) => handleToResponsibleManualInput(e.target.value)}
+																	onFocus={() => {
+																		if (toResponsibleBlurTimeout.current) clearTimeout(toResponsibleBlurTimeout.current);
+																		setIsToResponsibleSearchFocused(true);
+																	}}
+																	onBlur={handleToResponsibleBlur}
+																	placeholder="Поиск менеджера по имени, ID или телефону"
+																	className={`formInput ${isToResponsibleSearchFocused && toResponsibleSearch.length >= 2 ? "activeSearch" : ""}`}
+																	style={{ width: "100%" }}
+																/>
+																{isToResponsibleSearchFocused && isSearchingToResponsible && toResponsibleSearch && (
+																	<div className="searchResults loading" style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 1000 }}>
+																		<Loading />
+																	</div>
+																)}
+																{isToResponsibleSearchFocused && toResponsibleSearch && !isSearchingToResponsible && (
+																	<div className="searchResults" style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 1000 }}>
+																		{toResponsibleSearchResults.length > 0 ? (
+																			toResponsibleSearchResults.map((manager) => (
+																				<div key={manager.id} className={`searchResultItem`} onMouseDown={() => handleToResponsibleSelect(manager)}>
+																					{manager.first_name} {manager.last_name} - {manager.phone}
+																				</div>
+																			))
+																		) : (
+																			<div className={`searchResultItem`}>Нет результатов</div>
+																		)}
+																	</div>
+																)}
+															</div>
+														)}
+													</div>
+													<div style={{ display: "flex", gap: 8 }}>
+														<button type="button" onClick={saveToForm} className="takeOrderButton" disabled={isToSaving || !toFormNumber.trim()}>
+															{isToSaving ? "Сохранение…" : "Сохранить"}
+														</button>
+														<button type="button" onClick={cancelToForm} disabled={isToSaving}>
+															Отмена
+														</button>
+													</div>
+												</div>
+											)}
 										</>
 									)}
 								</div>
@@ -1240,6 +1559,11 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 							orderData={orderData}
 							currentStatus={currentStatus}
 							statusDate={statusDates.confirmed}
+							selectedBooking={selectedBooking}
+							setSelectedBooking={setSelectedBooking}
+							selectedBookingDepartment={selectedBookingDepartment}
+							setSelectedBookingDepartment={setSelectedBookingDepartment}
+							bookingDepartments={bookingDepartments}
 						/>
 
 						{/* 3. Забронирован - Забронирован до */}

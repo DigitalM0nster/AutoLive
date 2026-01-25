@@ -321,17 +321,67 @@ export type ProductLogResponse = {
 	error?: string;
 };
 
+// Типы для комплектов ТО
+export type ServiceKitItemAnalog = {
+	id: number;
+	serviceKitItemId: number;
+	analogProductId: number;
+	analogProduct?: Product;
+};
+
+export type ServiceKitItem = {
+	id: number;
+	kitId: number;
+	productId: number;
+	product?: Product;
+	analogs: ServiceKitItemAnalog[];
+};
+
 export type ServiceKit = {
 	id: number;
 	title: string;
-	name: string; // Добавляем поле name для совместимости
+	name: string; // Для совместимости с фронтендом
 	image?: string;
 	description?: string;
 	price?: number;
+	createdAt?: string | Date;
+	updatedAt?: string | Date;
+	// Детальная информация об элементах комплекта
+	kitItems?: ServiceKitItem[];
+	// Упрощенная структура для фронтенда (совместимость)
 	parts?: {
-		name: string; // Обновляем поле title на name для совместимости
-		analogs: string[] | Product[]; // Обновляем тип для совместимости
+		name: string;
+		analogs: string[] | Product[];
 	}[];
+};
+
+// Типы для логов комплектов ТО
+export type ServiceKitLogAction = "create" | "update" | "delete";
+
+export type ServiceKitSnapshotForLog = {
+	id: number;
+	title: string;
+	description: string | null;
+	image: string | null;
+	price: number;
+};
+
+export type ServiceKitLog = {
+	id: number;
+	createdAt: string | Date;
+	action: ServiceKitLogAction | string;
+	message?: string | null;
+	serviceKitId: number;
+	adminSnapshot?: AdminSnapshotForBookingLog | null;
+	serviceKitSnapshot?: ServiceKitSnapshotForLog | null;
+};
+
+export type ServiceKitLogResponse = {
+	data: ServiceKitLog[];
+	total: number;
+	page: number;
+	totalPages: number;
+	error?: string;
 };
 
 export type Promotion = {
@@ -447,6 +497,8 @@ export type Order = {
 	managerId?: number | null;
 	departmentId?: number | null;
 	clientId?: number | null;
+	bookingId?: number | null; // Связь с заявкой
+	bookingDepartmentId?: number | null; // Адрес доставки
 	createdBy?: number | null;
 	// Связи
 	manager?: {
@@ -470,7 +522,32 @@ export type Order = {
 		role: string;
 		department?: DepartmentForLog | null;
 	} | null;
+	booking?: {
+		id: number;
+		scheduledDate: string | Date;
+		scheduledTime: string;
+		status: BookingStatus;
+		contactPhone: string;
+	} | null;
+	bookingDepartment?: BookingDepartment | null;
+	technicalService?: TechnicalService | null;
 	orderItems: OrderItem[];
+};
+
+// Связанное ТО (техническое обслуживание): номер, ответственный
+export type TechnicalService = {
+	id: number;
+	number: string;
+	orderId?: number | null;
+	responsibleUserId?: number | null;
+	createdAt: string | Date;
+	updatedAt: string | Date;
+	responsibleUser?: {
+		id: number;
+		first_name: string | null;
+		last_name: string | null;
+		role: string;
+	} | null;
 };
 
 export type OrderItem = {
@@ -520,6 +597,8 @@ export type CreateOrderRequest = {
 	clientId?: number; // Для заказов от пользователей
 	managerId?: number; // Ответственный менеджер
 	departmentId?: number; // Для заказов созданных админом (только для суперадмина)
+	bookingId?: number | null; // Связь с заявкой
+	bookingDepartmentId?: number | null; // Адрес доставки
 	orderItems: {
 		product_sku: string;
 		product_title: string;
@@ -557,6 +636,19 @@ export type UpdateOrderRequest = {
 	managerId?: number | null; // Назначение/снятие менеджера
 	departmentId?: number | null;
 	finalDeliveryDate?: string | null;
+	bookingId?: number | null; // Связь с заявкой
+	bookingDepartmentId?: number | null; // Адрес доставки
+	orderItems?: {
+		product_sku: string;
+		product_title: string;
+		product_price: number;
+		product_brand: string;
+		product_image?: string | null;
+		quantity: number;
+		supplierDeliveryDate?: string; // Дата поставки поставщиком
+		carModel?: string; // Название автомобиля
+		vinCode?: string; // VIN-код автомобиля
+	}[];
 };
 
 // Тип для ответа API заказов
@@ -608,12 +700,26 @@ export type OrderFilter = {
 
 export type BookingStatus = "scheduled" | "confirmed" | "completed" | "cancelled" | "no_show";
 
+// Тип для отдела записей (BookingDepartment)
+export type BookingDepartment = {
+	id: number;
+	name?: string | null; // Название отдела для записей (опционально, описание)
+	address: string; // Адрес отдела (обязательно)
+	phones: string[]; // Массив телефонов (может быть пустым или содержать до 100 телефонов)
+	emails: string[]; // Массив почт (может быть пустым или содержать несколько почт)
+	createdAt: string | Date;
+	updatedAt: string | Date;
+};
+
 export type Booking = {
 	id: number;
+	orderId?: number | null; // Связь с заказом
 	scheduledDate: string | Date; // Дата записи
 	scheduledTime: string; // Время в формате "14:30"
+	contactPhone: string; // Телефон для связи (обязательное поле)
 	clientId?: number | null; // Опционально - для незарегистрированных клиентов
-	managerId: number; // Обязательно - кто отвечает за запись
+	managerId?: number | null; // Опционально - менеджер назначается позже
+	bookingDepartmentId: number; // Обязательно - отдел для записи
 	status: BookingStatus;
 	notes?: string | null; // Примечания, тип услуги и т.д.
 	createdAt: string | Date;
@@ -625,40 +731,48 @@ export type Booking = {
 		last_name: string | null;
 		phone: string;
 	} | null;
-	manager: {
+	manager?: {
 		id: number;
 		first_name: string | null;
 		last_name: string | null;
 		role: string;
 		department?: DepartmentForLog | null;
-	};
+	} | null;
+	bookingDepartment: BookingDepartment;
+	order?: {
+		id: number;
+		status: OrderStatus;
+		createdAt: string | Date;
+	} | null;
 };
 
 // Тип для создания записи
 export type CreateBookingRequest = {
 	scheduledDate: string; // Дата в формате "2024-12-25"
 	scheduledTime: string; // Время в формате "14:30"
+	contactPhone: string; // Телефон для связи (обязательное поле)
 	clientId?: number | null; // ID зарегистрированного клиента
-	managerId: number; // ID менеджера
+	managerId?: number | null; // ID менеджера (опционально)
+	bookingDepartmentId: number; // ID отдела для записей (обязательно)
+	orderId?: number | null; // Связь с заказом
 	notes?: string; // Примечания
 	// Для незарегистрированных клиентов
 	clientName?: string; // Имя клиента
-	clientPhone?: string; // Телефон клиента
-	clientEmail?: string; // Email клиента (опционально)
 };
 
 // Тип для обновления записи
 export type UpdateBookingRequest = {
 	scheduledDate?: string;
 	scheduledTime?: string;
+	contactPhone?: string; // Телефон для связи
 	clientId?: number | null;
-	managerId?: number;
+	managerId?: number | null;
+	bookingDepartmentId?: number;
+	orderId?: number | null; // Связь с заказом
 	status?: BookingStatus;
 	notes?: string;
 	// Для незарегистрированных клиентов
 	clientName?: string;
-	clientPhone?: string;
-	clientEmail?: string;
 };
 
 // Тип для ответа API записей
@@ -680,4 +794,94 @@ export type BookingFilter = {
 	dateTo?: string;
 	timeFrom?: string; // Время от
 	timeTo?: string; // Время до
+};
+
+// Тип для снапшота менеджера в логах записей
+export type ManagerSnapshotForBookingLog = {
+	id: number;
+	first_name: string | null;
+	last_name: string | null;
+	role: string;
+	department: {
+		id: number;
+		name: string;
+	} | null;
+};
+
+// Тип для снапшота админа в логах записей
+export type AdminSnapshotForBookingLog = {
+	id: number;
+	first_name: string | null;
+	last_name: string | null;
+	role: string;
+	department: {
+		id: number;
+		name: string;
+	} | null;
+};
+
+// Тип для снапшота отдела записей в логах
+export type BookingDepartmentSnapshotForLog = {
+	id: number;
+	name: string | null;
+	address: string;
+	phones: string[];
+	emails: string[];
+};
+
+// Тип для снапшота записи в логах
+export type BookingSnapshotForLog = {
+	id: number;
+	scheduledDate: Date | string;
+	scheduledTime: string;
+	contactPhone: string;
+	status: string;
+	managerId: number | null;
+	clientId: number | null;
+	bookingDepartmentId: number;
+	notes: string | null;
+};
+
+// Типы для логов записей
+export type BookingLogAction = "create" | "update" | "assign" | "status_change" | "cancel" | "unassign";
+
+export type BookingLog = {
+	id: number;
+	createdAt: string | Date;
+	action: BookingLogAction | string;
+	message?: string | null;
+	bookingId: number;
+	adminSnapshot?: AdminSnapshotForBookingLog | null;
+	bookingSnapshot?: BookingSnapshotForLog | null;
+	managerSnapshot?: ManagerSnapshotForBookingLog | null;
+	departmentSnapshot?: BookingDepartmentSnapshotForLog | null;
+};
+
+export type BookingLogResponse = {
+	data: BookingLog[];
+	total: number;
+	page: number;
+	totalPages: number;
+	error?: string;
+};
+
+// Типы для логов отделов записей (адресов)
+export type BookingDepartmentLogAction = "create" | "update" | "delete";
+
+export type BookingDepartmentLog = {
+	id: number;
+	createdAt: string | Date;
+	action: BookingDepartmentLogAction | string;
+	message?: string | null;
+	bookingDepartmentId: number;
+	adminSnapshot?: AdminSnapshotForBookingLog | null;
+	bookingDepartmentSnapshot?: BookingDepartmentSnapshotForLog | null;
+};
+
+export type BookingDepartmentLogResponse = {
+	data: BookingDepartmentLog[];
+	total: number;
+	page: number;
+	totalPages: number;
+	error?: string;
 };

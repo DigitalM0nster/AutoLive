@@ -1,11 +1,25 @@
-"use client";
+// src/app/admin/product-management/kits/page.tsx
+import AllServiceKitsTable from "./local_components/allServiceKits/AllServiceKitsTable";
+import styles from "../products/local_components/styles.module.scss";
+import Link from "next/link";
 
-// src/app/admin/products/kits/page.tsx
-export default function KitsPage() {
+const KitsPage = () => {
 	return (
-		<div className="px-6 py-10 w-full max-w-7xl mx-auto mb-auto">
-			<h1 className="text-2xl font-bold mb-4">Комплекты ТО</h1>
-			<p className="text-gray-600">Здесь будут отображаться комплекты ТО и возможность их редактировать или создавать.</p>
+		<div className={`screenContent ${styles.screenContent}`}>
+			<div className={`tableContainer`}>
+				<div className={`tabsContainer ${styles.tabsContainer}`}>
+					<Link href="/admin/product-management/kits/" className={`tabButton active`}>
+						Список комплектов ТО
+					</Link>
+					<Link href="/admin/product-management/kits/logs" className={`tabButton`}>
+						История изменений
+					</Link>
+				</div>
+
+				<AllServiceKitsTable />
+			</div>
 		</div>
 	);
-}
+};
+
+export default KitsPage;
