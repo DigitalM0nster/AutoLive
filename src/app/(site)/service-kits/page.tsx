@@ -1,6 +1,9 @@
 // src\app\service-kits\page.tsx
 
 import styles from "./styles.module.scss";
+
+// Не статически генерируем при build — страница запрашивает API при каждом запросе (для Vercel и локального build)
+export const dynamic = "force-dynamic";
 import NavigationMenu from "@/components/user/navigationMenu/NavigationMenu";
 import Link from "next/link";
 import CONFIG from "@/lib/config";

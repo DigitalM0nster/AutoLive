@@ -1,6 +1,9 @@
 // src\app\categories\page.tsx
 
 import { Suspense } from "react";
+
+// Не статически генерируем при build — метаданные и контент запрашивают API (для Vercel и локального build)
+export const dynamic = "force-dynamic";
 import NavigationMenu from "@/components/user/navigationMenu/NavigationMenu";
 import styles from "./styles.module.scss";
 import CONFIG from "@/lib/config";

@@ -3,7 +3,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withPermission } from "@/middleware/permissionMiddleware";
-import { ServiceKitLogResponse } from "@/lib/types";
+import { ServiceKitLogResponse, ServiceKitLog } from "@/lib/types";
 
 // GET /api/service-kits/logs - Получить логи всех комплектов ТО
 async function getServiceKitLogsHandler(req: NextRequest, { user, scope }: { user: any; scope: "all" | "department" | "own" }) {
@@ -83,8 +83,19 @@ async function getServiceKitLogsHandler(req: NextRequest, { user, scope }: { use
 
 		const totalPages = Math.ceil(total / limit);
 
+		// Преобразуем логи в нужный тип (Prisma возвращает JsonValue для snapshots)
+		const typedLogs: ServiceKitLog[] = logs.map((log) => ({
+			id: log.id,
+			createdAt: log.createdAt,
+			action: log.action,
+			message: log.message,
+			serviceKitId: log.serviceKitId,
+			adminSnapshot: log.adminSnapshot as any,
+			serviceKitSnapshot: log.serviceKitSnapshot as any,
+		}));
+
 		const response: ServiceKitLogResponse = {
-			data: logs,
+			data: typedLogs,
 			total,
 			page,
 			totalPages,

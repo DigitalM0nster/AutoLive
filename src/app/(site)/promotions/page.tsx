@@ -4,6 +4,9 @@ import styles from "./styles.module.scss";
 import CONFIG from "@/lib/config";
 import type { Promotion } from "@/lib/types";
 
+// Не статически генерируем при build — страница запрашивает API при каждом запросе (для Vercel и локального build)
+export const dynamic = "force-dynamic";
+
 export const metadata = {
 	title: `Скидки и акции в ${CONFIG.STORE_NAME} | ${CONFIG.CITY}`,
 	description: `Актуальные скидки на автозапчасти и техническое обслуживание в ${CONFIG.STORE_NAME} (${CONFIG.CITY}). Успейте воспользоваться выгодными предложениями на ${CONFIG.DOMAIN}.`,

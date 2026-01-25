@@ -60,8 +60,8 @@ async function getServiceKitHandler(req: NextRequest, { user, params }: { user: 
 			return NextResponse.json({ error: "Комплект не найден" }, { status: 404 });
 		}
 
-		// Форматируем данные для фронтенда
-		const formattedKit: ServiceKit = {
+		// Форматируем данные для фронтенда (упрощённая структура product/analogProduct)
+		const formattedKit = {
 			id: kit.id,
 			title: kit.title,
 			name: kit.title,
@@ -82,7 +82,7 @@ async function getServiceKitHandler(req: NextRequest, { user, params }: { user: 
 					analogProduct: analog.analogProduct,
 				})),
 			})),
-		};
+		} as ServiceKit;
 
 		return NextResponse.json(formattedKit);
 	} catch (error) {
@@ -294,8 +294,8 @@ async function updateServiceKitHandler(req: NextRequest, { user, params }: { use
 			return NextResponse.json({ error: "Ошибка при обновлении комплекта" }, { status: 500 });
 		}
 
-		// Форматируем данные для фронтенда
-		const formattedKit: ServiceKit = {
+		// Форматируем данные для фронтенда (упрощённая структура product/analogProduct)
+		const formattedKit = {
 			id: updatedKit.id,
 			title: updatedKit.title,
 			name: updatedKit.title,
@@ -316,7 +316,7 @@ async function updateServiceKitHandler(req: NextRequest, { user, params }: { use
 					analogProduct: analog.analogProduct,
 				})),
 			})),
-		};
+		} as ServiceKit;
 
 		return NextResponse.json(formattedKit);
 	} catch (error: any) {

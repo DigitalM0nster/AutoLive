@@ -63,8 +63,8 @@ async function getServiceKitsHandler(req: NextRequest, { user }: { user: any }) 
 
 		const totalPages = Math.ceil(total / limit);
 
-		// Форматируем данные для фронтенда
-		const formattedKits: ServiceKit[] = kits.map((kit) => ({
+		// Форматируем данные для фронтенда (упрощённая структура product/analogProduct)
+		const formattedKits = kits.map((kit) => ({
 			id: kit.id,
 			title: kit.title,
 			name: kit.title, // Для совместимости
@@ -85,7 +85,7 @@ async function getServiceKitsHandler(req: NextRequest, { user }: { user: any }) 
 					analogProduct: analog.analogProduct,
 				})),
 			})),
-		}));
+		})) as ServiceKit[];
 
 		return NextResponse.json({
 			kits: formattedKits,
@@ -263,8 +263,8 @@ async function createServiceKitHandler(req: NextRequest, { user }: { user: any }
 			return NextResponse.json({ error: "Ошибка при создании комплекта" }, { status: 500 });
 		}
 
-		// Форматируем данные для фронтенда
-		const formattedKit: ServiceKit = {
+		// Форматируем данные для фронтенда (упрощённая структура product/analogProduct)
+		const formattedKit = {
 			id: serviceKit.id,
 			title: serviceKit.title,
 			name: serviceKit.title,
@@ -285,7 +285,7 @@ async function createServiceKitHandler(req: NextRequest, { user }: { user: any }
 					analogProduct: analog.analogProduct,
 				})),
 			})),
-		};
+		} as ServiceKit;
 
 		return NextResponse.json(formattedKit, { status: 201 });
 	} catch (error: any) {
