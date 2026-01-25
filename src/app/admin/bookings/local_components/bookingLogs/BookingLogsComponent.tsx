@@ -162,32 +162,30 @@ export default function BookingLogsComponent({ bookingId }: BookingLogsComponent
 				cancel: "Отмена",
 			};
 			filters.push({
-				label: `Действие: ${actionLabels[actionFilter] || actionFilter}`,
-				onRemove: () => handleActionFilterChange(null),
+				key: "action",
+				label: "Действие",
+				value: actionLabels[actionFilter] || actionFilter,
 			});
 		}
 
 		if (isDateFiltered && (startDate || endDate)) {
 			filters.push({
-				label: `Дата: ${startDate ? formatDateFromString(startDate) : "..."} — ${endDate ? formatDateFromString(endDate) : "..."}`,
-				onRemove: () => {
-					setStartDate("");
-					setEndDate("");
-					setIsDateFiltered(false);
-					setPage(1);
-				},
+				key: "date",
+				label: "Дата",
+				value: `${startDate ? formatDateFromString(startDate) : "дд.мм.гггг"} — ${endDate ? formatDateFromString(endDate) : "дд.мм.гггг"}`,
 			});
 		}
 
-		if (adminSearch) {
+		if (adminSearch && adminSearch.trim() !== "") {
 			filters.push({
-				label: `Администратор: ${adminSearch}`,
-				onRemove: handleClearAdminSearch,
+				key: "adminSearch",
+				label: "Кем выполнено",
+				value: adminSearch,
 			});
 		}
 
 		return filters;
-	}, [actionFilter, isDateFiltered, startDate, endDate, adminSearch, formatDateFromString, handleActionFilterChange, handleClearAdminSearch]);
+	}, [actionFilter, isDateFiltered, startDate, endDate, adminSearch, formatDateFromString]);
 
 	// Обработчик сброса всех фильтров
 	const resetAllFilters = useCallback(() => {
