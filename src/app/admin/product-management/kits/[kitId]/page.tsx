@@ -2,7 +2,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import jwt from "jsonwebtoken";
-import ServiceKitComponent from "../../local_components/serviceKit/ServiceKitComponent";
+import ServiceKitComponent from "../local_components/serviceKit/ServiceKitComponent";
 
 type PageParams = {
 	params: Promise<{
