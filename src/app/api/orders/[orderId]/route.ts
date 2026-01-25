@@ -455,7 +455,7 @@ async function updateOrderHandler(req: NextRequest, { user, scope, params }: { u
 					},
 					orderItems: true,
 					booking: { select: { id: true, scheduledDate: true, scheduledTime: true, status: true, contactPhone: true } },
-					bookingDepartment: { select: { id: true, name: true, address: true, phones: true, email: true } },
+					bookingDepartment: { select: { id: true, name: true, address: true, phones: true, emails: true } },
 					technicalService: {
 						select: {
 							id: true,
