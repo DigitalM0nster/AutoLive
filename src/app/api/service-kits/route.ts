@@ -223,6 +223,20 @@ async function createServiceKitHandler(req: NextRequest, { user }: { user: any }
 				},
 			});
 
+			// Также логируем в общую таблицу ChangeLog для универсальности
+			await tx.changeLog.create({
+				data: {
+					entityType: "service_kit",
+					message: `Комплект ТО "${newKit.title}" создан`,
+					entityId: newKit.id,
+					adminId: fullUser.id,
+					departmentId: fullUser.departmentId,
+					snapshotBefore: null, // При создании нет данных "до"
+					snapshotAfter: serviceKitSnapshot as any,
+					adminSnapshot: adminSnapshot as any,
+				},
+			});
+
 			// Получаем полный комплект с элементами и аналогами
 			return await tx.serviceKit.findUnique({
 				where: { id: newKit.id },

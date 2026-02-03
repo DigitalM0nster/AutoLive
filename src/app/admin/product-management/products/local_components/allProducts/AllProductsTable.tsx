@@ -11,6 +11,7 @@ import Link from "next/link";
 import Loading from "@/components/ui/loading/Loading";
 import { useAuthStore } from "@/store/authStore";
 import ImageUpload from "@/components/ui/imageUpload/ImageUpload";
+import { showSuccessToast, showErrorToast, showWarningToast } from "@/components/ui/toast/ToastProvider";
 
 export default function AllProductsTable() {
 	const { user } = useAuthStore();
@@ -350,7 +351,7 @@ export default function AllProductsTable() {
 			const sitePrice = parseFloat(editForm.price);
 
 			if (supplierPrice !== null && supplierPrice > sitePrice) {
-				alert("Цена поставщика не может быть больше цены на сайте!");
+				showWarningToast("Цена поставщика не может быть больше цены на сайте!");
 				return;
 			}
 
@@ -561,11 +562,11 @@ export default function AllProductsTable() {
 			if (data.products && Array.isArray(data.products)) {
 				const allIds = data.products.map((p: ProductListItem) => p.id);
 				setSelectedProducts(allIds);
-				alert(`Выделено ${allIds.length} товаров по активным фильтрам`);
+				showSuccessToast(`Выделено ${allIds.length} товаров по активным фильтрам`);
 			}
 		} catch (error) {
 			console.error("Ошибка при выделении всех товаров по фильтрам:", error);
-			alert("Ошибка при выделении товаров");
+			showErrorToast("Ошибка при выделении товаров");
 		} finally {
 			setIsLoadingBulkOperation(false);
 		}
@@ -594,17 +595,17 @@ export default function AllProductsTable() {
 			});
 
 			if (response.ok) {
-				alert(`Успешно удалено ${selectedProducts.length} товаров`);
+				showSuccessToast(`Успешно удалено ${selectedProducts.length} товаров`);
 				clearSelection();
 				// Перезагружаем данные
 				window.location.reload();
 			} else {
 				const errorData = await response.json();
-				alert(`Ошибка при удалении: ${errorData.error || "Неизвестная ошибка"}`);
+				showErrorToast(`Ошибка при удалении: ${errorData.error || "Неизвестная ошибка"}`);
 			}
 		} catch (error) {
 			console.error("Ошибка при массовом удалении:", error);
-			alert("Ошибка при удалении товаров");
+			showErrorToast("Ошибка при удалении товаров");
 		} finally {
 			setIsLoadingBulkOperation(false);
 		}
@@ -635,14 +636,14 @@ export default function AllProductsTable() {
 				a.click();
 				window.URL.revokeObjectURL(url);
 				document.body.removeChild(a);
-				alert(`Экспортировано ${selectedProducts.length} товаров`);
+				showSuccessToast(`Экспортировано ${selectedProducts.length} товаров`);
 			} else {
 				const errorData = await response.json();
-				alert(`Ошибка при экспорте: ${errorData.message || "Неизвестная ошибка"}`);
+				showErrorToast(`Ошибка при экспорте: ${errorData.message || "Неизвестная ошибка"}`);
 			}
 		} catch (error) {
 			console.error("Ошибка при экспорте:", error);
-			alert("Ошибка при экспорте товаров");
+			showErrorToast("Ошибка при экспорте товаров");
 		} finally {
 			setIsLoadingBulkOperation(false);
 		}

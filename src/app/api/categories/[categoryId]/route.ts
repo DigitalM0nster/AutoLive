@@ -17,6 +17,47 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 			return NextResponse.json({ error: "Название категории обязательно" }, { status: 400 });
 		}
 
+		// Получаем токен из cookies для определения пользователя
+		const token = request.cookies.get("authToken")?.value;
+		if (!token) {
+			return NextResponse.json({ error: "Нет токена авторизации" }, { status: 401 });
+		}
+
+		// Декодируем токен для получения информации о пользователе
+		let user: any;
+		try {
+			const jwt = await import("jsonwebtoken");
+			user = jwt.verify(token, process.env.JWT_SECRET!);
+		} catch (e) {
+			return NextResponse.json({ error: "Невалидный токен" }, { status: 401 });
+		}
+
+		// Получаем полную информацию о пользователе
+		const fullUser = await prisma.user.findUnique({
+			where: { id: user.id },
+			include: {
+				department: {
+					select: {
+						id: true,
+						name: true,
+					},
+				},
+			},
+		});
+
+		if (!fullUser) {
+			return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });
+		}
+
+		// Получаем категорию ДО изменений для логирования
+		const categoryBefore = await prisma.category.findUnique({
+			where: { id: categoryId },
+		});
+
+		if (!categoryBefore) {
+			return NextResponse.json({ error: "Категория не найдена" }, { status: 404 });
+		}
+
 		// Подготавливаем данные для обновления категории
 		const updateData: any = {
 			title: title.trim(),
@@ -111,6 +152,38 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 				}
 			}
 
+			// Также логируем в общую таблицу ChangeLog для универсальности
+			await tx.changeLog.create({
+				data: {
+					entityType: "category",
+					message: `Категория "${category.title}" обновлена`,
+					entityId: categoryId,
+					adminId: fullUser.id,
+					departmentId: fullUser.departmentId,
+					snapshotBefore: {
+						id: categoryBefore.id,
+						title: categoryBefore.title,
+						order: categoryBefore.order,
+						image: categoryBefore.image,
+					} as any,
+					snapshotAfter: {
+						id: category.id,
+						title: category.title,
+						order: category.order,
+						image: category.image,
+					} as any,
+					adminSnapshot: {
+						id: fullUser.id,
+						first_name: fullUser.first_name,
+						last_name: fullUser.last_name,
+						middle_name: fullUser.middle_name,
+						phone: fullUser.phone,
+						role: fullUser.role,
+						department: fullUser.department,
+					} as any,
+				},
+			});
+
 			return category;
 		});
 
@@ -138,6 +211,38 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 		const { categoryId: id } = await params; // Ожидаем params перед использованием
 		const categoryId = Number(id);
 
+		// Получаем токен из cookies для определения пользователя
+		const token = request.cookies.get("authToken")?.value;
+		if (!token) {
+			return NextResponse.json({ error: "Нет токена авторизации" }, { status: 401 });
+		}
+
+		// Декодируем токен для получения информации о пользователе
+		let user: any;
+		try {
+			const jwt = await import("jsonwebtoken");
+			user = jwt.verify(token, process.env.JWT_SECRET!);
+		} catch (e) {
+			return NextResponse.json({ error: "Невалидный токен" }, { status: 401 });
+		}
+
+		// Получаем полную информацию о пользователе
+		const fullUser = await prisma.user.findUnique({
+			where: { id: user.id },
+			include: {
+				department: {
+					select: {
+						id: true,
+						name: true,
+					},
+				},
+			},
+		});
+
+		if (!fullUser) {
+			return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });
+		}
+
 		// Получаем информацию о том, что будет удалено
 		const category = await prisma.category.findUnique({
 			where: { id: categoryId },
@@ -155,9 +260,40 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 			return NextResponse.json({ error: "Категория не найдена" }, { status: 404 });
 		}
 
-		// Удаляем категорию (каскадно удалятся все связанные данные)
-		await prisma.category.delete({
-			where: { id: categoryId },
+		// Удаляем категорию в транзакции, создавая логи ДО удаления
+		await prisma.$transaction(async (tx) => {
+			// Логируем удаление категории в ChangeLog ДО удаления
+			await tx.changeLog.create({
+				data: {
+					entityType: "category",
+					message: `Категория "${category.title}" удалена. Удалено товаров: ${category._count.products}, Отделов освобождено: ${category._count.allowedDepartments}`,
+					entityId: categoryId,
+					adminId: fullUser.id,
+					departmentId: fullUser.departmentId,
+					snapshotBefore: {
+						id: category.id,
+						title: category.title,
+						image: category.image,
+						productsCount: category._count.products,
+						allowedDepartmentsCount: category._count.allowedDepartments,
+					} as any,
+					snapshotAfter: null,
+					adminSnapshot: {
+						id: fullUser.id,
+						first_name: fullUser.first_name,
+						last_name: fullUser.last_name,
+						middle_name: fullUser.middle_name,
+						phone: fullUser.phone,
+						role: fullUser.role,
+						department: fullUser.department,
+					} as any,
+				},
+			});
+
+			// Удаляем категорию (каскадно удалятся все связанные данные, логи уже созданы)
+			await tx.category.delete({
+				where: { id: categoryId },
+			});
 		});
 
 		return NextResponse.json({

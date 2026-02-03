@@ -122,6 +122,20 @@ export const POST = withPermission(
 					},
 				});
 
+				// Также логируем в общую таблицу ChangeLog для универсальности
+				await tx.changeLog.create({
+					data: {
+						entityType: "booking_department",
+						message: `Адрес отдела записи "${newBookingDepartment.name || "Без названия"}" создан`,
+						entityId: newBookingDepartment.id,
+						adminId: fullUser.id,
+						departmentId: fullUser.departmentId,
+						snapshotBefore: null, // При создании нет данных "до"
+						snapshotAfter: bookingDepartmentSnapshot as any,
+						adminSnapshot: adminSnapshot as any,
+					},
+				});
+
 				return newBookingDepartment;
 			});
 

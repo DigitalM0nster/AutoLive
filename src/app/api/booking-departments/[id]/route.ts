@@ -5,6 +5,7 @@ import { withPermission } from "@/middleware/permissionMiddleware";
 import { NextRequest, NextResponse } from "next/server";
 import { withDbRetry } from "@/lib/utils";
 import { AdminSnapshotForBookingLog, BookingDepartmentSnapshotForLog } from "@/lib/types";
+import { logBookingDepartmentChangeCrossLogging } from "@/lib/crossLogging";
 
 // GET /api/booking-departments/[id] - Получить адрес для записей по ID
 export const GET = withPermission(
@@ -77,7 +78,7 @@ export const PUT = withPermission(
 				return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });
 			}
 
-			// Проверяем, что адрес существует
+			// Проверяем, что адрес существует и сохраняем старый адрес для логирования
 			const existingDepartment = await prisma.bookingDepartment.findUnique({
 				where: { id },
 			});
@@ -85,6 +86,9 @@ export const PUT = withPermission(
 			if (!existingDepartment) {
 				return NextResponse.json({ error: "Адрес не найден" }, { status: 404 });
 			}
+
+			// Сохраняем старый адрес для перекрёстного логирования
+			const oldAddress = existingDepartment.address;
 
 			// Валидация - address обязателен (если передан)
 			if (address !== undefined && !address) {
@@ -150,19 +154,80 @@ export const PUT = withPermission(
 					emails: updatedDepartment.emails,
 				};
 
+				// Формируем детальное сообщение об изменениях
+				let message = "Адрес обновлен";
+				const changes: string[] = [];
+				if (name !== undefined && name !== existingDepartment.name) {
+					changes.push(`название: '${existingDepartment.name || "нет"}' → '${name || "нет"}'`);
+				}
+				if (address !== undefined && address !== oldAddress) {
+					changes.push(`адрес: '${oldAddress}' → '${address}'`);
+				}
+				if (phones !== undefined && JSON.stringify(phones) !== JSON.stringify(existingDepartment.phones)) {
+					changes.push("телефоны");
+				}
+				if (emails !== undefined && JSON.stringify(emails) !== JSON.stringify(existingDepartment.emails)) {
+					changes.push("почты");
+				}
+				if (changes.length > 0) {
+					message = `Адрес обновлен: ${changes.join(", ")}`;
+				}
+
 				// Создаем лог обновления адреса
 				await tx.bookingDepartmentLog.create({
 					data: {
 						action: "update",
-						message: `Адрес обновлен`,
+						message,
 						bookingDepartmentId: updatedDepartment.id,
 						adminSnapshot,
 						bookingDepartmentSnapshot,
 					},
 				});
 
+				// Также логируем в общую таблицу ChangeLog для универсальности
+				await tx.changeLog.create({
+					data: {
+						entityType: "booking_department",
+						message,
+						entityId: updatedDepartment.id,
+						adminId: fullUser.id,
+						departmentId: fullUser.departmentId,
+						snapshotBefore: {
+							id: existingDepartment.id,
+							name: existingDepartment.name,
+							address: oldAddress,
+							phones: existingDepartment.phones,
+							emails: existingDepartment.emails,
+						} as any,
+						snapshotAfter: bookingDepartmentSnapshot as any,
+						adminSnapshot: adminSnapshot as any,
+					},
+				});
+
 				return updatedDepartment;
 			});
+
+			// Выполняем перекрёстное логирование после транзакции
+			// Проверяем, изменился ли адрес
+			if (address !== undefined && address !== oldAddress) {
+				await logBookingDepartmentChangeCrossLogging(
+					id,
+					oldAddress,
+					address,
+					{
+						id: fullUser.id,
+						first_name: fullUser.first_name,
+						last_name: fullUser.last_name,
+						role: fullUser.role,
+						department: fullUser.department
+							? {
+									id: fullUser.department.id,
+									name: fullUser.department.name,
+							  }
+							: null,
+					}
+				);
+			}
 
 			return NextResponse.json(bookingDepartment);
 		} catch (error) {
@@ -228,7 +293,7 @@ export const DELETE = withPermission(
 				);
 			}
 
-			// Удаляем адрес в транзакции
+			// Удаляем адрес в транзакции, создавая логи ДО удаления
 			await prisma.$transaction(async (tx) => {
 				// Подготавливаем снапшоты
 				const adminSnapshot: AdminSnapshotForBookingLog = {
@@ -252,18 +317,32 @@ export const DELETE = withPermission(
 					emails: existingDepartment.emails,
 				};
 
-				// Создаем лог удаления адреса (перед удалением)
+				// Создаем лог удаления адреса ДО удаления (чтобы он не удалился из-за Cascade)
 				await tx.bookingDepartmentLog.create({
 					data: {
 						action: "delete",
 						message: `Адрес удален`,
-						bookingDepartmentId: existingDepartment.id,
+						bookingDepartmentId: existingDepartment.id, // Создаём лог ДО удаления, поэтому bookingDepartmentId ещё существует
 						adminSnapshot,
 						bookingDepartmentSnapshot,
 					},
 				});
 
-				// Удаляем адрес (логи удалятся автоматически из-за onDelete: Cascade)
+				// Также логируем в общую таблицу ChangeLog для универсальности
+				await tx.changeLog.create({
+					data: {
+						entityType: "booking_department", // Используем "booking_department" как тип сущности
+						message: `Адрес отдела записи "${existingDepartment.name || "Без названия"}" удален`,
+						entityId: existingDepartment.id,
+						adminId: fullUser.id,
+						departmentId: fullUser.departmentId,
+						snapshotBefore: bookingDepartmentSnapshot as any,
+						snapshotAfter: null,
+						adminSnapshot: adminSnapshot as any,
+					},
+				});
+
+				// Удаляем адрес (логи уже созданы)
 				await tx.bookingDepartment.delete({
 					where: { id },
 				});

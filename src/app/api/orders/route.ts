@@ -583,6 +583,19 @@ async function createOrderHandler(req: NextRequest, { user, scope }: { user: any
 				})),
 			});
 
+			// Получаем полный снапшот заказа для логирования
+			const orderSnapshotForLog = {
+				id: newOrder.id,
+				status: newOrder.status,
+				managerId: newOrder.managerId,
+				departmentId: newOrder.departmentId,
+				clientId: newOrder.clientId,
+				confirmationDate: (newOrder as any).confirmationDate ?? null,
+				finalDeliveryDate: (newOrder as any).finalDeliveryDate ?? null,
+				bookingId: (newOrder as any).bookingId ?? null,
+				bookingDepartmentId: (newOrder as any).bookingDepartmentId ?? null,
+			};
+
 			// Создаем лог создания заказа
 			await tx.orderLog.create({
 				data: {
@@ -601,15 +614,7 @@ async function createOrderHandler(req: NextRequest, { user, scope }: { user: any
 							  }
 							: null,
 					},
-					orderSnapshot: {
-						id: newOrder.id,
-						status: newOrder.status,
-						managerId: newOrder.managerId,
-						departmentId: newOrder.departmentId,
-						clientId: newOrder.clientId,
-						confirmationDate: (newOrder as any).confirmationDate ?? null,
-						finalDeliveryDate: (newOrder as any).finalDeliveryDate ?? null,
-					},
+					orderSnapshot: orderSnapshotForLog,
 				},
 			});
 
@@ -631,15 +636,39 @@ async function createOrderHandler(req: NextRequest, { user, scope }: { user: any
 							  }
 							: null,
 					},
-					orderSnapshot: {
-						id: newOrder.id,
-						status: newOrder.status,
-						managerId: newOrder.managerId,
-						departmentId: newOrder.departmentId,
-						clientId: newOrder.clientId,
-						confirmationDate: (newOrder as any).confirmationDate ?? null,
-						finalDeliveryDate: (newOrder as any).finalDeliveryDate ?? null,
-					},
+					orderSnapshot: orderSnapshotForLog,
+				},
+			});
+
+			// Также логируем в общую таблицу ChangeLog для универсальности
+			await tx.changeLog.create({
+				data: {
+					entityType: "order",
+					message: `Заказ создан`,
+					entityId: newOrder.id,
+					adminId: fullUser.id,
+					departmentId: fullUser.departmentId,
+					snapshotBefore: null, // При создании нет данных "до"
+					snapshotAfter: {
+						...orderSnapshotForLog,
+						orderItems: newOrder.orderItems,
+						manager: newOrder.manager,
+						department: newOrder.department,
+						client: newOrder.client,
+						creator: newOrder.creator,
+					} as any,
+					adminSnapshot: {
+						id: fullUser.id,
+						first_name: fullUser.first_name,
+						last_name: fullUser.last_name,
+						role: fullUser.role,
+						department: fullUser.department
+							? {
+									id: fullUser.department.id,
+									name: fullUser.department.name,
+							  }
+							: null,
+					} as any,
 				},
 			});
 

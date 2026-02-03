@@ -11,6 +11,7 @@ import {
 	BookingSnapshotForLog,
 } from "@/lib/types";
 import { withDbRetry } from "@/lib/utils";
+import { logBookingChangeCrossLogging, logBookingDeleteCrossLogging, getFullBookingSnapshot } from "@/lib/crossLogging";
 
 // GET /api/bookings/[id] - Получить запись по ID
 async function getBookingHandler(req: NextRequest, { user, scope, params }: { user: any; scope: any; params: { id: string } }) {
@@ -208,6 +209,9 @@ async function updateBookingHandler(req: NextRequest, { user, scope, params }: {
 		if (body.clientName !== undefined) {
 			guestClientName = body.clientName || undefined;
 		}
+
+		// Сохраняем снапшот записи ДО изменений для перекрёстного логирования
+		const bookingSnapshotBefore = await getFullBookingSnapshot(id);
 
 		// Обновляем запись в транзакции
 		// Обёрнуто в withDbRetry для обработки ошибок соединения с Neon
@@ -443,9 +447,72 @@ async function updateBookingHandler(req: NextRequest, { user, scope, params }: {
 					data: logData,
 				});
 
+				// Также логируем в общую таблицу ChangeLog для универсальности
+				await tx.changeLog.create({
+					data: {
+						entityType: "booking",
+						message,
+						entityId: booking.id,
+						adminId: fullUser.id,
+						departmentId: fullUser.departmentId,
+						snapshotBefore: bookingSnapshotBefore as any, // Снапшот до изменений
+						snapshotAfter: {
+							...bookingSnapshot,
+							bookingDepartment: departmentSnapshot,
+							manager: managerSnapshot || null,
+						} as any,
+						adminSnapshot: adminSnapshot as any,
+					},
+				});
+
 				return booking;
 			});
 		});
+
+		// Получаем снапшот записи ПОСЛЕ изменений для перекрёстного логирования
+		const bookingSnapshotAfter = await getFullBookingSnapshot(id);
+
+		// Выполняем перекрёстное логирование (после транзакции)
+		if (bookingSnapshotBefore && bookingSnapshotAfter) {
+			await logBookingChangeCrossLogging(
+				id,
+				bookingSnapshotBefore,
+				bookingSnapshotAfter,
+				{
+					id: fullUser.id,
+					first_name: fullUser.first_name,
+					last_name: fullUser.last_name,
+					role: fullUser.role,
+					department: fullUser.department
+						? {
+								id: fullUser.department.id,
+								name: fullUser.department.name,
+						  }
+						: null,
+				},
+				{
+					id: bookingDepartment.id,
+					name: bookingDepartment.name,
+					address: bookingDepartment.address,
+					phones: bookingDepartment.phones,
+					emails: bookingDepartment.emails,
+				},
+				updatedBooking.manager
+					? {
+							id: updatedBooking.manager.id,
+							first_name: updatedBooking.manager.first_name,
+							last_name: updatedBooking.manager.last_name,
+							role: updatedBooking.manager.role,
+							department: updatedBooking.manager.department
+								? {
+										id: updatedBooking.manager.department.id,
+										name: updatedBooking.manager.department.name,
+								  }
+								: null,
+					  }
+					: undefined
+			);
+		}
 
 		const response: BookingResponse = {
 			booking: updatedBooking,
@@ -467,25 +534,116 @@ async function deleteBookingHandler(req: NextRequest, { user, scope, params }: {
 			return NextResponse.json({ error: "Некорректный ID записи" }, { status: 400 });
 		}
 
-		// Проверяем, что запись существует
-		// Обёрнуто в withDbRetry для обработки ошибок соединения с Neon
-		const existingBooking = await withDbRetry(async () => {
-			return await prisma.booking.findUnique({
-				where: { id },
+		// Получаем полную информацию о пользователе из базы данных
+		const fullUser = await withDbRetry(async () => {
+			return await prisma.user.findUnique({
+				where: { id: user.id },
+				include: {
+					department: {
+						select: {
+							id: true,
+							name: true,
+						},
+					},
+				},
 			});
 		});
 
-		if (!existingBooking) {
+		if (!fullUser) {
+			return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });
+		}
+
+		// Получаем полный снапшот записи ДО удаления для перекрёстного логирования
+		const deletedBookingSnapshot = await getFullBookingSnapshot(id);
+
+		if (!deletedBookingSnapshot) {
 			return NextResponse.json({ error: "Запись не найдена" }, { status: 404 });
 		}
 
-		// Удаляем запись
+		// Получаем снапшот отдела для перекрёстного логирования
+		const departmentSnapshot = deletedBookingSnapshot.bookingDepartment
+			? {
+					id: deletedBookingSnapshot.bookingDepartment.id,
+					name: deletedBookingSnapshot.bookingDepartment.name,
+					address: deletedBookingSnapshot.bookingDepartment.address,
+					phones: deletedBookingSnapshot.bookingDepartment.phones,
+					emails: deletedBookingSnapshot.bookingDepartment.emails,
+			  }
+			: null;
+
+		// Подготавливаем снапшот администратора
+		const adminSnapshot: AdminSnapshotForBookingLog = {
+			id: fullUser.id,
+			first_name: fullUser.first_name,
+			last_name: fullUser.last_name,
+			role: fullUser.role,
+			department: fullUser.department
+				? {
+						id: fullUser.department.id,
+						name: fullUser.department.name,
+				  }
+				: null,
+		};
+
+		// Удаляем запись в транзакции, создавая логи ДО удаления
 		// Обёрнуто в withDbRetry для обработки ошибок соединения с Neon
 		await withDbRetry(async () => {
-			return await prisma.booking.delete({
-				where: { id },
+			return await prisma.$transaction(async (tx) => {
+				// Создаём лог удаления записи ДО удаления (чтобы он не удалился из-за Cascade)
+				const deleteMessage = `Запись удалена.${deletedBookingSnapshot.orderId ? ` Была связана с заказом ID: ${deletedBookingSnapshot.orderId}` : ""}${departmentSnapshot ? ` Адрес отдела: '${departmentSnapshot.address}'` : ""}`;
+
+				await tx.bookingLog.create({
+					data: {
+						action: "delete",
+						message: deleteMessage,
+						bookingId: id, // Создаём лог ДО удаления, поэтому bookingId ещё существует
+						adminSnapshot,
+						bookingSnapshot: {
+							id: deletedBookingSnapshot.id,
+							scheduledDate: deletedBookingSnapshot.scheduledDate,
+							scheduledTime: deletedBookingSnapshot.scheduledTime,
+							contactPhone: deletedBookingSnapshot.contactPhone,
+							status: deletedBookingSnapshot.status,
+							managerId: deletedBookingSnapshot.managerId,
+							clientId: deletedBookingSnapshot.clientId,
+							bookingDepartmentId: deletedBookingSnapshot.bookingDepartmentId,
+							notes: deletedBookingSnapshot.notes,
+						},
+						departmentSnapshot: departmentSnapshot || undefined,
+					},
+				});
+
+				// Также логируем в общую таблицу ChangeLog для универсальности
+				// Это гарантирует, что лог останется даже если BookingLog удалится
+				await tx.changeLog.create({
+					data: {
+						entityType: "booking", // Используем "booking" как тип сущности
+						message: deleteMessage,
+						entityId: id,
+						adminId: fullUser.id,
+						departmentId: fullUser.departmentId,
+						snapshotBefore: deletedBookingSnapshot as any, // Полный снапшот удалённой записи
+						snapshotAfter: null, // После удаления нет данных
+						adminSnapshot: adminSnapshot as any,
+					},
+				});
+
+				// Теперь удаляем запись (логи уже созданы)
+				await tx.booking.delete({
+					where: { id },
+				});
 			});
 		});
+
+		// Выполняем перекрёстное логирование удаления записи (после транзакции)
+		if (departmentSnapshot) {
+			await logBookingDeleteCrossLogging(
+				id,
+				deletedBookingSnapshot,
+				adminSnapshot,
+				departmentSnapshot
+			);
+		}
 
 		return NextResponse.json({ message: "Запись успешно удалена" }, { status: 200 });
 	} catch (error) {

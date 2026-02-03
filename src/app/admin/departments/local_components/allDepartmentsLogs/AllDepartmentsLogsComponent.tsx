@@ -10,6 +10,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useState, useCallback, useMemo } from "react";
 import React from "react";
 import AllDepartmentsLogsTable from "./AllDepartmentsLogsTable";
+import { showSuccessToast, showErrorToast } from "@/components/ui/toast/ToastProvider";
 
 // Отдельный компонент для поля поиска администратора
 const AdminSearchField = React.memo(
@@ -141,10 +142,10 @@ export default function AllDepartmentsLogsComponent() {
 
 			// Обновляем список логов после очистки
 			setPage(1);
-			alert("Логи отделов успешно очищены");
+			showSuccessToast("Логи отделов успешно очищены");
 		} catch (error) {
 			console.error("Ошибка при очистке логов:", error);
-			alert("Не удалось очистить логи отделов");
+			showErrorToast("Не удалось очистить логи отделов");
 		} finally {
 			setClearingLogs(false);
 		}

@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { withPermission } from "@/middleware/permissionMiddleware";
 import jwt from "jsonwebtoken";
 import { FilterValueForLog, FilterValueFromRequest, FilterRequest } from "@/lib/types";
+import { Prisma } from "@prisma/client";
 
 // ✅ GET — получение товара с проверкой прав доступа
 export async function GET(req: NextRequest, context: { params: Promise<{ productId: string }> }) {
@@ -441,24 +442,111 @@ export const DELETE = withPermission(
 				return NextResponse.json({ error: "Недостаточно прав для удаления этого товара" }, { status: 403 });
 			}
 
-			// Удаляем связанные записи фильтров товара
-			await prisma.productFilterValue.deleteMany({
-				where: { productId: productId },
+			// Получаем полную информацию о пользователе для логирования
+			const fullUser = await prisma.user.findUnique({
+				where: { id: user.id },
+				include: {
+					department: {
+						select: {
+							id: true,
+							name: true,
+						},
+					},
+				},
 			});
 
-			// Удаляем товар
-			await prisma.product.delete({
-				where: { id: productId },
-			});
+			if (!fullUser) {
+				return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });
+			}
 
-			// Логируем удаление
-			const { logProductChange } = await import("@/lib/universalLogging");
-			await logProductChange({
-				entityId: productId,
-				adminId: user.id,
-				message: "Удаление товара",
-				beforeData: existing,
-				afterData: null,
+			// Удаляем товар в транзакции, создавая логи ДО удаления
+			await prisma.$transaction(async (tx) => {
+				// Создаём лог удаления товара ДО удаления (чтобы он не удалился из-за Cascade, если есть)
+				await tx.product_log.create({
+					data: {
+						action: "delete",
+						message: `Товар "${existing.title}" удален`,
+						userId: fullUser.id,
+						productId: productId, // Создаём лог ДО удаления, поэтому productId ещё существует
+						userSnapshot: {
+							id: fullUser.id,
+							first_name: fullUser.first_name,
+							last_name: fullUser.last_name,
+							middle_name: fullUser.middle_name,
+							phone: fullUser.phone,
+							role: fullUser.role,
+							department: fullUser.department
+								? {
+										id: fullUser.department.id,
+										name: fullUser.department.name,
+								  }
+								: null,
+						},
+						departmentSnapshot: existing.department
+							? {
+									id: existing.department.id,
+									name: existing.department.name,
+							  }
+							: undefined,
+						snapshotBefore: JSON.stringify({
+							id: existing.id,
+							title: existing.title,
+							sku: existing.sku,
+							brand: existing.brand,
+							price: existing.price,
+							supplierPrice: existing.supplierPrice,
+							description: existing.description,
+							image: existing.image,
+							department: existing.department,
+							category: existing.category,
+							productFilterValues: existing.productFilterValues,
+						}),
+						snapshotAfter: null,
+					},
+				});
+
+				// Также логируем в общую таблицу ChangeLog для универсальности
+				await tx.changeLog.create({
+					data: {
+						entityType: "product",
+						message: `Товар "${existing.title}" удален`,
+						entityId: productId,
+						adminId: fullUser.id,
+						departmentId: fullUser.departmentId,
+						snapshotBefore: {
+							id: existing.id,
+							title: existing.title,
+							sku: existing.sku,
+							brand: existing.brand,
+							price: existing.price,
+							supplierPrice: existing.supplierPrice,
+							description: existing.description,
+							image: existing.image,
+							department: existing.department,
+							category: existing.category,
+						} as any,
+						snapshotAfter: Prisma.JsonNull,
+						adminSnapshot: {
+							id: fullUser.id,
+							first_name: fullUser.first_name,
+							last_name: fullUser.last_name,
+							middle_name: fullUser.middle_name,
+							phone: fullUser.phone,
+							role: fullUser.role,
+							department: fullUser.department,
+						} as any,
+					},
+				});
+
+				// Удаляем связанные записи фильтров товара
+				await tx.productFilterValue.deleteMany({
+					where: { productId: productId },
+				});
+
+				// Удаляем товар (логи уже созданы)
+				await tx.product.delete({
+					where: { id: productId },
+				});
 			});
 
 			return NextResponse.json({ success: true });

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withPermission } from "@/middleware/permissionMiddleware";
 import { OrderResponse, UpdateOrderRequest, Order } from "@/lib/types";
+import { getFullOrderSnapshot } from "@/lib/crossLogging";
 
 // Получение конкретного заказа
 async function getOrderHandler(req: NextRequest, { user, scope, params }: { user: any; scope: "all" | "department" | "own"; params: { orderId: string } }) {
@@ -335,6 +336,9 @@ async function updateOrderHandler(req: NextRequest, { user, scope, params }: { u
 			}
 		}
 
+		// Сохраняем снапшот заказа ДО изменений для улучшенного логирования
+		const orderSnapshotBefore = await getFullOrderSnapshot(orderId);
+
 		// Обновляем заказ в транзакции
 		const updatedOrder = await prisma.$transaction(async (tx) => {
 			// Подготавливаем данные для обновления
@@ -473,7 +477,7 @@ async function updateOrderHandler(req: NextRequest, { user, scope, params }: { u
 				},
 			});
 
-			// Создаем лог изменения
+			// Создаем лог изменения с улучшенными снапшотами
 			let action = "update";
 			let message = "Заказ обновлен";
 
@@ -492,6 +496,49 @@ async function updateOrderHandler(req: NextRequest, { user, scope, params }: { u
 				}
 			}
 
+			// Получаем полный снапшот заказа ПОСЛЕ изменений
+			const orderSnapshotAfter = {
+				id: order.id,
+				status: order.status,
+				managerId: order.managerId,
+				departmentId: order.departmentId,
+				clientId: order.clientId,
+				confirmationDate: (order as any).confirmationDate ?? null,
+				finalDeliveryDate: (order as any).finalDeliveryDate ?? null,
+				bookingId: order.bookingId,
+				bookingDepartmentId: (order as any).bookingDepartmentId ?? null,
+			};
+
+			// Подготавливаем снапшот менеджера (если назначен)
+			let managerSnapshot = null;
+			if (order.manager) {
+				managerSnapshot = {
+					id: order.manager.id,
+					first_name: order.manager.first_name,
+					last_name: order.manager.last_name,
+					role: order.manager.role,
+					department: order.manager.department
+						? {
+								id: order.manager.department.id,
+								name: order.manager.department.name,
+						  }
+						: null,
+				};
+			}
+
+			// Подготавливаем снапшот отдела доставки (если есть)
+			let departmentSnapshot = null;
+			if (order.bookingDepartment) {
+				departmentSnapshot = {
+					id: order.bookingDepartment.id,
+					name: order.bookingDepartment.name,
+					address: order.bookingDepartment.address,
+					phones: order.bookingDepartment.phones,
+					emails: order.bookingDepartment.emails,
+				};
+			}
+
+			// Создаём лог с полными снапшотами
 			await tx.orderLog.create({
 				data: {
 					action,
@@ -509,15 +556,43 @@ async function updateOrderHandler(req: NextRequest, { user, scope, params }: { u
 							  }
 							: null,
 					},
-					orderSnapshot: {
-						id: order.id,
-						status: order.status,
-						managerId: order.managerId,
-						departmentId: order.departmentId,
-						clientId: order.clientId,
-						confirmationDate: (order as any).confirmationDate ?? null,
-						finalDeliveryDate: (order as any).finalDeliveryDate ?? null,
-					},
+					orderSnapshot: orderSnapshotAfter,
+					managerSnapshot: managerSnapshot,
+					departmentSnapshot: departmentSnapshot,
+				},
+			});
+
+			// Также логируем в общую таблицу ChangeLog для универсальности
+			await tx.changeLog.create({
+				data: {
+					entityType: "order",
+					message,
+					entityId: orderId,
+					adminId: fullUser.id,
+					departmentId: fullUser.departmentId,
+					snapshotBefore: orderSnapshotBefore as any, // Снапшот до изменений
+					snapshotAfter: {
+						...orderSnapshotAfter,
+						orderItems: order.orderItems,
+						manager: order.manager,
+						department: order.department,
+						client: order.client,
+						creator: order.creator,
+						booking: order.booking,
+						bookingDepartment: order.bookingDepartment,
+					} as any,
+					adminSnapshot: {
+						id: fullUser.id,
+						first_name: fullUser.first_name,
+						last_name: fullUser.last_name,
+						role: fullUser.role,
+						department: fullUser.department
+							? {
+									id: fullUser.department.id,
+									name: fullUser.department.name,
+							  }
+							: null,
+					} as any,
 				},
 			});
 

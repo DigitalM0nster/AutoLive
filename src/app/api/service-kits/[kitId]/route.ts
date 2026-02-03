@@ -243,6 +243,11 @@ async function updateServiceKitHandler(req: NextRequest, { user, params }: { use
 				price: kit.price,
 			};
 
+			// Получаем снапшот комплекта ДО изменений для логирования
+			const kitBefore = await tx.serviceKit.findUnique({
+				where: { id: kitIdNumber },
+			});
+
 			// Создаем лог обновления комплекта
 			await tx.serviceKitLog.create({
 				data: {
@@ -251,6 +256,28 @@ async function updateServiceKitHandler(req: NextRequest, { user, params }: { use
 					serviceKitId: kit.id,
 					adminSnapshot,
 					serviceKitSnapshot,
+				},
+			});
+
+			// Также логируем в общую таблицу ChangeLog для универсальности
+			await tx.changeLog.create({
+				data: {
+					entityType: "service_kit",
+					message: `Комплект ТО "${kit.title}" обновлен`,
+					entityId: kit.id,
+					adminId: fullUser.id,
+					departmentId: fullUser.departmentId,
+					snapshotBefore: kitBefore
+						? {
+								id: kitBefore.id,
+								title: kitBefore.title,
+								description: kitBefore.description,
+								image: kitBefore.image,
+								price: kitBefore.price,
+						  }
+						: null,
+					snapshotAfter: serviceKitSnapshot as any,
+					adminSnapshot: adminSnapshot as any,
 				},
 			});
 
@@ -385,18 +412,32 @@ async function deleteServiceKitHandler(req: NextRequest, { user, params }: { use
 				price: existingKit.price,
 			};
 
-			// Создаем лог удаления комплекта
+			// Создаем лог удаления комплекта ДО удаления
 			await tx.serviceKitLog.create({
 				data: {
 					action: "delete",
 					message: `Комплект ТО удален`,
-					serviceKitId: existingKit.id,
+					serviceKitId: existingKit.id, // Создаём лог ДО удаления, поэтому serviceKitId ещё существует
 					adminSnapshot,
 					serviceKitSnapshot,
 				},
 			});
 
-			// Удаляем комплект (каскадное удаление элементов и аналогов произойдет автоматически)
+			// Также логируем в общую таблицу ChangeLog для универсальности
+			await tx.changeLog.create({
+				data: {
+					entityType: "service_kit", // Используем "service_kit" как тип сущности
+					message: `Комплект ТО "${existingKit.title}" удален`,
+					entityId: existingKit.id,
+					adminId: fullUser.id,
+					departmentId: fullUser.departmentId,
+					snapshotBefore: serviceKitSnapshot as any,
+					snapshotAfter: null,
+					adminSnapshot: adminSnapshot as any,
+				},
+			});
+
+			// Удаляем комплект (каскадное удаление элементов и аналогов произойдет автоматически, логи уже созданы)
 			await tx.serviceKit.delete({
 				where: { id: kitIdNumber },
 			});

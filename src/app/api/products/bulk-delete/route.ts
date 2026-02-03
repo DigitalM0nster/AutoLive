@@ -85,136 +85,104 @@ export const POST = withPermission(
 			if (numericIds.length === 1) {
 				const singleProduct = productsToDelete[0];
 
-				// Создаем обычный лог удаления
-				await prisma.product_log.create({
-					data: {
-						action: "delete",
-						message: `Товар "${singleProduct.title}" удален`,
-						userId: user.id,
-						productId: singleProduct.id,
-						userSnapshot: userData,
-						departmentSnapshot: singleProduct.department
-							? {
-									id: singleProduct.department.id,
-									name: singleProduct.department.name,
-							  }
-							: undefined,
-						snapshotBefore: JSON.stringify({
-							id: singleProduct.id,
-							title: singleProduct.title,
-							sku: singleProduct.sku,
-							brand: singleProduct.brand,
-							price: singleProduct.price,
-							supplierPrice: singleProduct.supplierPrice,
-							description: singleProduct.description,
-							department: singleProduct.department
+				// Удаляем товар в транзакции, создавая логи ДО удаления
+				await prisma.$transaction(async (tx) => {
+					// Создаём лог удаления товара ДО удаления
+					await tx.product_log.create({
+						data: {
+							action: "delete",
+							message: `Товар "${singleProduct.title}" удален`,
+							userId: user.id,
+							productId: singleProduct.id, // Создаём лог ДО удаления, поэтому productId ещё существует
+							userSnapshot: userData,
+							departmentSnapshot: singleProduct.department
 								? {
 										id: singleProduct.department.id,
 										name: singleProduct.department.name,
 								  }
 								: undefined,
-							category: singleProduct.category
-								? {
-										id: singleProduct.category.id,
-										title: singleProduct.category.title,
-								  }
-								: undefined,
-						}),
-						snapshotAfter: null,
-					},
-				});
+							snapshotBefore: JSON.stringify({
+								id: singleProduct.id,
+								title: singleProduct.title,
+								sku: singleProduct.sku,
+								brand: singleProduct.brand,
+								price: singleProduct.price,
+								supplierPrice: singleProduct.supplierPrice,
+								description: singleProduct.description,
+								department: singleProduct.department
+									? {
+											id: singleProduct.department.id,
+											name: singleProduct.department.name,
+									  }
+									: undefined,
+								category: singleProduct.category
+									? {
+											id: singleProduct.category.id,
+											title: singleProduct.category.title,
+									  }
+									: undefined,
+							}),
+							snapshotAfter: null,
+						},
+					});
 
-				// Удаляем связи и сам товар
-				await prisma.productFilterValue.deleteMany({
-					where: { productId: singleProduct.id },
-				});
+					// Также логируем в общую таблицу ChangeLog для универсальности
+					await tx.changeLog.create({
+						data: {
+							entityType: "product",
+							message: `Товар "${singleProduct.title}" удален`,
+							entityId: singleProduct.id,
+							adminId: user.id,
+							departmentId: userData.department?.id || null,
+							snapshotBefore: {
+								id: singleProduct.id,
+								title: singleProduct.title,
+								sku: singleProduct.sku,
+								brand: singleProduct.brand,
+								price: singleProduct.price,
+								supplierPrice: singleProduct.supplierPrice,
+								description: singleProduct.description,
+								department: singleProduct.department,
+								category: singleProduct.category,
+							} as any,
+							snapshotAfter: null,
+							adminSnapshot: userData as any,
+						},
+					});
 
-				await prisma.productAnalog.deleteMany({
-					where: {
-						OR: [{ productId: singleProduct.id }, { analogId: singleProduct.id }],
-					},
-				});
+					// Удаляем связи и сам товар (логи уже созданы)
+					await tx.productFilterValue.deleteMany({
+						where: { productId: singleProduct.id },
+					});
 
-				// Удаляем записи ServiceKitItemAnalog, которые ссылаются на товар как аналог
-				await prisma.serviceKitItemAnalog.deleteMany({
-					where: {
-						analogProductId: singleProduct.id,
-					},
-				});
+					await tx.productAnalog.deleteMany({
+						where: {
+							OR: [{ productId: singleProduct.id }, { analogId: singleProduct.id }],
+						},
+					});
 
-				// Удаляем записи ServiceKitItem, которые ссылаются на товар
-				await prisma.serviceKitItem.deleteMany({
-					where: {
-						product_id: singleProduct.id,
-					},
-				});
+					// Удаляем записи ServiceKitItemAnalog, которые ссылаются на товар как аналог
+					await tx.serviceKitItemAnalog.deleteMany({
+						where: {
+							analogProductId: singleProduct.id,
+						},
+					});
 
-				await prisma.product.delete({
-					where: { id: singleProduct.id },
+					// Удаляем записи ServiceKitItem, которые ссылаются на товар
+					await tx.serviceKitItem.deleteMany({
+						where: {
+							product_id: singleProduct.id,
+						},
+					});
+
+					await tx.product.delete({
+						where: { id: singleProduct.id },
+					});
 				});
 			} else {
-				// Для массового удаления создаем лог в bulk_action_log
+				// Для массового удаления создаем лог в bulk_action_log и ChangeLog ДО удаления
 
-				// обнуляем ссылки на удаляемые продукты
-				await chunkedDeleteMany(numericIds, (chunk) =>
-					prisma.product_log.updateMany({
-						where: { productId: { in: chunk } },
-						data: { productId: null },
-					})
-				);
-
-				// удаляем связи фильтров
-				await chunkedDeleteMany(numericIds, (chunk) =>
-					prisma.productFilterValue.deleteMany({
-						where: { productId: { in: chunk } },
-					})
-				);
-
-				// чистим "висячие" значения фильтров
-				await prisma.filterValue.deleteMany({
-					where: {
-						productFilterValues: {
-							none: {},
-						},
-					},
-				});
-
-				// удаляем связи аналогов
-				await chunkedDeleteMany(numericIds, (chunk) =>
-					prisma.productAnalog.deleteMany({
-						where: {
-							OR: [{ productId: { in: chunk } }, { analogId: { in: chunk } }],
-						},
-					})
-				);
-
-				// удаляем связи аналогов в комплектах
-				await chunkedDeleteMany(numericIds, (chunk) =>
-					prisma.serviceKitItemAnalog.deleteMany({
-						where: {
-							analogProductId: { in: chunk },
-						},
-					})
-				);
-
-				// удаляем связи комплектов
-				await chunkedDeleteMany(numericIds, (chunk) =>
-					prisma.serviceKitItem.deleteMany({
-						where: {
-							product_id: { in: chunk },
-						},
-					})
-				);
-
-				// удаляем сами товары
-				await chunkedDeleteMany(numericIds, (chunk) =>
-					prisma.product.deleteMany({
-						where: { id: { in: chunk } },
-					})
-				);
-
-				// логируем массовое удаление
-				// собираем все уникальные отделы из удаленных товаров
+				// Собираем все уникальные отделы из удаленных товаров
 				const departmentsMap = new Map<number, { id: number; name: string }>();
 				productsToDelete.forEach((product) => {
 					if (product.department) {
@@ -227,7 +195,7 @@ export const POST = withPermission(
 
 				const departmentsSnapshot = Array.from(departmentsMap.values());
 
-				// группировка по отделам для сообщения
+				// Группировка по отделам для сообщения
 				const byDepartment = new Map<number | null, number>();
 				for (const product of productsToDelete) {
 					const deptId = product.departmentId ?? null;
@@ -243,28 +211,19 @@ export const POST = withPermission(
 					})
 					.join(", ");
 
-				await prisma.bulk_action_log.create({
-					data: {
-						action: "delete",
-						message: `Удалено ${productsToDelete.length} товаров: ${detailsPerDept}`,
-						count: productsToDelete.length,
-						user_snapshot: userData,
-						departments_snapshot: departmentsSnapshot,
-						products_snapshot: productsToDelete.map((p) => ({
-							id: p.id,
-							title: p.title,
-							sku: p.sku,
-							brand: p.brand,
-							price: p.price,
-							supplierPrice: p.supplierPrice,
-							department: p.department ? { id: p.department.id, name: p.department.name } : undefined,
-							category: p.category ? { title: p.category.title } : undefined,
-						})),
-						// Временные поля для совместимости
-						user_id: user.id,
-						department_id: user.departmentId ?? null,
-						snapshots: JSON.stringify(
-							productsToDelete.map((p) => ({
+				const bulkMessage = `Удалено ${productsToDelete.length} товаров: ${detailsPerDept}`;
+
+				// Удаляем товары в транзакции, создавая логи ДО удаления
+				await prisma.$transaction(async (tx) => {
+					// Создаём лог массового удаления ДО удаления товаров
+					await tx.bulk_action_log.create({
+						data: {
+							action: "delete",
+							message: bulkMessage,
+							count: productsToDelete.length,
+							user_snapshot: userData,
+							departments_snapshot: departmentsSnapshot,
+							products_snapshot: productsToDelete.map((p) => ({
 								id: p.id,
 								title: p.title,
 								sku: p.sku,
@@ -273,9 +232,108 @@ export const POST = withPermission(
 								supplierPrice: p.supplierPrice,
 								department: p.department ? { id: p.department.id, name: p.department.name } : undefined,
 								category: p.category ? { title: p.category.title } : undefined,
-							}))
-						),
-					},
+							})),
+							// Временные поля для совместимости
+							user_id: user.id,
+							department_id: user.departmentId ?? null,
+							snapshots: JSON.stringify(
+								productsToDelete.map((p) => ({
+									id: p.id,
+									title: p.title,
+									sku: p.sku,
+									brand: p.brand,
+									price: p.price,
+									supplierPrice: p.supplierPrice,
+									department: p.department ? { id: p.department.id, name: p.department.name } : undefined,
+									category: p.category ? { title: p.category.title } : undefined,
+								}))
+							),
+						},
+					});
+
+					// Также логируем в общую таблицу ChangeLog для каждого товара
+					for (const product of productsToDelete) {
+						await tx.changeLog.create({
+							data: {
+								entityType: "product",
+								message: `Товар "${product.title}" удален (массовое удаление)`,
+								entityId: product.id,
+								adminId: user.id,
+								departmentId: userData.department?.id || null,
+								snapshotBefore: {
+									id: product.id,
+									title: product.title,
+									sku: product.sku,
+									brand: product.brand,
+									price: product.price,
+									supplierPrice: product.supplierPrice,
+									description: product.description,
+									department: product.department,
+									category: product.category,
+								} as any,
+								snapshotAfter: null,
+								adminSnapshot: userData as any,
+							},
+						});
+					}
+
+					// Обнуляем ссылки на удаляемые продукты в логах
+					await chunkedDeleteMany(numericIds, (chunk) =>
+						tx.product_log.updateMany({
+							where: { productId: { in: chunk } },
+							data: { productId: null },
+						})
+					);
+
+					// Удаляем связи фильтров
+					await chunkedDeleteMany(numericIds, (chunk) =>
+						tx.productFilterValue.deleteMany({
+							where: { productId: { in: chunk } },
+						})
+					);
+
+					// Чистим "висячие" значения фильтров
+					await tx.filterValue.deleteMany({
+						where: {
+							productFilterValues: {
+								none: {},
+							},
+						},
+					});
+
+					// Удаляем связи аналогов
+					await chunkedDeleteMany(numericIds, (chunk) =>
+						tx.productAnalog.deleteMany({
+							where: {
+								OR: [{ productId: { in: chunk } }, { analogId: { in: chunk } }],
+							},
+						})
+					);
+
+					// Удаляем связи аналогов в комплектах
+					await chunkedDeleteMany(numericIds, (chunk) =>
+						tx.serviceKitItemAnalog.deleteMany({
+							where: {
+								analogProductId: { in: chunk },
+							},
+						})
+					);
+
+					// Удаляем связи комплектов
+					await chunkedDeleteMany(numericIds, (chunk) =>
+						tx.serviceKitItem.deleteMany({
+							where: {
+								product_id: { in: chunk },
+							},
+						})
+					);
+
+					// Удаляем сами товары (логи уже созданы)
+					await chunkedDeleteMany(numericIds, (chunk) =>
+						tx.product.deleteMany({
+							where: { id: { in: chunk } },
+						})
+					);
 				});
 			}
 

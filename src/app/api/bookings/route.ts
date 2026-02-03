@@ -477,6 +477,24 @@ async function createBookingHandler(req: NextRequest, { user }: { user: any }) {
 						data: statusLogData,
 					});
 
+					// Также логируем в общую таблицу ChangeLog для универсальности
+					await tx.changeLog.create({
+						data: {
+							entityType: "booking",
+							message: `Запись создана`,
+							entityId: newBooking.id,
+							adminId: fullUser.id,
+							departmentId: fullUser.departmentId,
+							snapshotBefore: null, // При создании нет данных "до"
+							snapshotAfter: {
+								...bookingSnapshot,
+								bookingDepartment: departmentSnapshot,
+								manager: managerSnapshot || null,
+							} as any,
+							adminSnapshot: adminSnapshot as any,
+						},
+					});
+
 					return newBooking;
 				} catch (txError: any) {
 					console.error("Ошибка в транзакции создания записи:", txError);

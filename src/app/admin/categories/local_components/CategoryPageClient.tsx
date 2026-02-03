@@ -456,7 +456,7 @@ export default function CategoryPageClient({ initialData, isCreateMode = false }
 				// Показываем дополнительную информацию о том, что было удалено
 				if (result.deletedProducts > 0 || result.deletedDepartments > 0) {
 					setTimeout(() => {
-						alert(`Дополнительная информация:\nУдалено товаров: ${result.deletedProducts}\nОтделов освобождено от категории: ${result.deletedDepartments}`);
+						showSuccessToast(`Дополнительная информация: Удалено товаров: ${result.deletedProducts}, Отделов освобождено от категории: ${result.deletedDepartments}`);
 					}, 1000);
 				}
 

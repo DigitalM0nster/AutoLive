@@ -8,6 +8,7 @@ import styles from "./styles.module.scss";
 import PhoneInput from "./PhoneInput";
 import CodeConfirmation from "./CodeConfirmation";
 import UserDataForm from "./UserDataForm";
+import { showSuccessToast } from "@/components/ui/toast/ToastProvider";
 
 export default function RegisterContent() {
 	const router = useRouter();
@@ -122,7 +123,7 @@ export default function RegisterContent() {
 			if (response.ok) {
 				localStorage.removeItem("phone");
 				localStorage.removeItem("isCodeSent");
-				alert("Регистрация успешна!");
+				showSuccessToast("Регистрация успешна!");
 				router.push("/");
 			} else {
 				setCodeError(data.error || "Ошибка регистрации, попробуйте снова");

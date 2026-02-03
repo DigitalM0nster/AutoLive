@@ -10,6 +10,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import React from "react";
 import AllProductsLogsTable from "./AllProductsLogsTable";
+import { showSuccessToast, showErrorToast } from "@/components/ui/toast/ToastProvider";
 
 // Отдельный компонент для поля поиска администратора
 const AdminSearchField = React.memo(
@@ -174,16 +175,16 @@ export default function AllProductsLogsComponent() {
 
 			// Показываем детальную информацию об удалении
 			if (result.details) {
-				alert(
-					`Логи продуктов успешно очищены!\n\nУдалено:\n- Обычных логов: ${result.details.productLogs}\n- Массовых операций: ${result.details.bulkLogs}\n- Всего: ${result.deletedCount}`
+				showSuccessToast(
+					`Логи продуктов успешно очищены! Удалено: Обычных логов: ${result.details.productLogs}, Массовых операций: ${result.details.bulkLogs}, Всего: ${result.deletedCount}`
 				);
 			} else {
-				alert(`Логи продуктов успешно очищены!\n\nУдалено: ${result.deletedCount} логов`);
+				showSuccessToast(`Логи продуктов успешно очищены! Удалено: ${result.deletedCount} логов`);
 			}
 		} catch (error) {
 			console.error("Ошибка при очистке логов:", error);
 			const errorMessage = error instanceof Error ? error.message : "Неизвестная ошибка";
-			alert(`Не удалось очистить логи продуктов: ${errorMessage}`);
+			showErrorToast(`Не удалось очистить логи продуктов: ${errorMessage}`);
 		} finally {
 			setClearingLogs(false);
 		}

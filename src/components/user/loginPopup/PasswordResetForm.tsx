@@ -3,6 +3,7 @@
 import { useState } from "react";
 import styles from "./styles.module.scss";
 import PhoneInput from "@/components/ui/phoneInput/PhoneInput";
+import { showSuccessToast } from "@/components/ui/toast/ToastProvider";
 
 interface PasswordResetFormProps {
 	onReset: (phone: string) => Promise<{ newPassword?: string }>;
@@ -26,8 +27,8 @@ export default function PasswordResetForm({ onReset, switchToLogin }: PasswordRe
 		try {
 			const response = await onReset(phone);
 			if (response.newPassword) {
-				// Временно показываем пароль через alert
-				alert(`Ваш новый пароль: ${response.newPassword}`);
+				// Показываем пароль через toast
+				showSuccessToast(`Ваш новый пароль: ${response.newPassword}`);
 				setResetSuccessMessage(`Новый пароль отправлен на номер: ${formattedPhone}.`);
 			}
 		} catch (error: any) {

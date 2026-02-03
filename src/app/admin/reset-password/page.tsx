@@ -4,6 +4,7 @@
 
 import { useState, ChangeEvent } from "react";
 import Link from "next/link";
+import { showSuccessToast } from "@/components/ui/toast/ToastProvider";
 
 export default function AdminResetPasswordPage() {
 	const [phone, setPhone] = useState("");
@@ -38,9 +39,9 @@ export default function AdminResetPasswordPage() {
 				setError(data.error || "Ошибка сервера, попробуйте позже");
 			} else {
 				console.log(data);
-				// Показываем новый пароль в alert для тестирования
+				// Показываем новый пароль через toast
 				if (data.newPassword) {
-					alert(`Новый пароль: ${data.newPassword}`);
+					showSuccessToast(`Новый пароль: ${data.newPassword}`);
 				}
 				setResetMessage(`Пароль успешно сброшен для номера: ${phone}`);
 			}

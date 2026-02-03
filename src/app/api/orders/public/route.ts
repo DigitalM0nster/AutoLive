@@ -59,10 +59,18 @@ export async function POST(req: NextRequest) {
 
 		// Создаём заказ и позиции в транзакции
 		const order = await prisma.$transaction(async (tx) => {
+			// Формируем структурированные комментарии с данными незарегистрированного клиента
+			// Используем формат, аналогичный бронированиям, для единообразия
+			const guestInfoComments: string[] = [];
+			guestInfoComments.push("--- Данные незарегистрированного клиента ---");
+			guestInfoComments.push(`Имя: ${rawName}`);
+			guestInfoComments.push(`Телефон: ${normalizedPhone}`);
+			guestInfoComments.push("---");
+
 			const newOrder = await tx.order.create({
 				data: {
-					// Сохраняем контактные данные лида в комментариях заказа
-					comments: [`contact_name: ${rawName}`, `contact_phone: ${normalizedPhone}`],
+					// Сохраняем контактные данные лида в структурированном виде в комментариях заказа
+					comments: guestInfoComments,
 					status: "created",
 					clientId: null, // клиент не привязан — только контакты
 					managerId: null,

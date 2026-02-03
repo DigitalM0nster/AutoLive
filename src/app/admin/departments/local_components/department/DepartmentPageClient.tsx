@@ -108,7 +108,7 @@ export default function DepartmentPageClient({ initialData, isCreateMode = false
 				// Показываем дополнительную информацию о том, что было удалено
 				if (result.deletedProducts > 0 || result.deletedUsers > 0) {
 					setTimeout(() => {
-						alert(`Дополнительная информация:\nУдалено товаров: ${result.deletedProducts}\nПользователей освобождено от отдела: ${result.deletedUsers}`);
+						showSuccessToast(`Дополнительная информация: Удалено товаров: ${result.deletedProducts}, Пользователей освобождено от отдела: ${result.deletedUsers}`);
 					}, 1000);
 				}
 
