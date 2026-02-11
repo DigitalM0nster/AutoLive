@@ -9,7 +9,12 @@ export default function CategoriesDashboardPage() {
 		<div className={`screenContent ${styles.screenContent}`}>
 			<div className={`tableContainer ${styles.tableContainer}`}>
 				<div className={`tabsContainer ${styles.tabsContainer}`}>
-					<div className="tabTitle">Список категорий</div>
+					<Link href="/admin/categories" className="tabButton active">
+						Список категорий
+					</Link>
+					<Link href="/admin/categories/logs" className="tabButton">
+						Логи категорий
+					</Link>
 				</div>
 
 				<AllCategoriesTable />

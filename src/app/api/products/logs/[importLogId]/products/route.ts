@@ -55,8 +55,8 @@ export const GET = withPermission(
 			let formattedLogs = logs.map((log) => {
 				const userSnapshot = log.userSnapshot as any;
 				let departmentSnapshot = log.departmentSnapshot as any;
-				const snapshotBefore = log.snapshotBefore ? JSON.parse(log.snapshotBefore) : null;
-				const snapshotAfter = log.snapshotAfter ? JSON.parse(log.snapshotAfter) : null;
+				const snapshotBefore = (log.productSnapshotBefore as any) ?? null;
+				const snapshotAfter = (log.productSnapshotAfter as any) ?? null;
 
 				// Если departmentSnapshot пустой, заполняем его из снапшотов
 				if (!departmentSnapshot || !departmentSnapshot.id) {

@@ -9,6 +9,7 @@ import type { User, ActiveFilter } from "@/lib/types";
 import Link from "next/link";
 import Loading from "@/components/ui/loading/Loading";
 import { useAuthStore } from "@/store/authStore";
+import ScrollableTableWrapper from "@/components/ui/scrollableTableWrapper/ScrollableTableWrapper";
 
 export default function AllUsersTable() {
 	const { user } = useAuthStore();
@@ -219,138 +220,140 @@ export default function AllUsersTable() {
 			/>
 
 			<div className={styles.tableContainer}>
-				<table className={styles.table}>
-					<thead className={styles.tableHeader}>
-						<tr>
-							<th
-								className={`${styles.tableHeaderCell} idCell sortableHeader ${sortBy === "id" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
-								onClick={() => {
-									if (sortBy !== "id") {
-										setSortBy("id");
-										setSortOrder("asc");
-										setPage(1);
-									} else if (sortOrder === "asc") {
-										setSortOrder("desc");
-										setPage(1);
-									} else {
-										setSortBy(null);
-										setSortOrder(null);
-										setPage(1);
-									}
-								}}
-							>
-								ID
-							</th>
-							<th
-								className={`${styles.tableHeaderCell} sortableHeader ${sortBy === "fullName" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
-								onClick={() => {
-									if (sortBy !== "fullName") {
-										setSortBy("fullName");
-										setSortOrder("asc");
-									} else if (sortOrder === "asc") {
-										setSortOrder("desc");
-									} else {
-										setSortBy(null);
-										setSortOrder(null);
-									}
-								}}
-							>
-								ФИО
-							</th>
-							<th
-								className={`${styles.tableHeaderCell} sortableHeader ${sortBy === "phone" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
-								onClick={() => {
-									if (sortBy !== "phone") {
-										setSortBy("phone");
-										setSortOrder("asc");
-										setPage(1);
-									} else if (sortOrder === "asc") {
-										setSortOrder("desc");
-										setPage(1);
-									} else {
-										setSortBy(null);
-										setSortOrder(null);
-										setPage(1);
-									}
-								}}
-							>
-								Телефон
-							</th>
-							<th className={styles.tableHeaderCell}>
-								<CustomSelect options={roleOptions} value={roleFilter} onChange={handleRoleChange} placeholder="Выберите роль" className={styles.roleSelect} />
-							</th>
-							<th className={styles.tableHeaderCell}>
-								<CustomSelect
-									options={departmentOptions}
-									value={departmentFilter === "all" ? "all" : departmentFilter === "none" ? "none" : departmentFilter.toString()}
-									onChange={handleDepartmentChange}
-									placeholder="Выберите отдел"
-									className={styles.departmentSelect}
-								/>
-							</th>
-							<th className={styles.tableHeaderCell}>
-								<CustomSelect
-									options={statusOptions}
-									value={statusFilter}
-									onChange={handleStatusChange}
-									placeholder="Выберите статус"
-									className={styles.statusSelect}
-								/>
-							</th>
-							<th className={styles.tableHeaderCell}>Действия</th>
-						</tr>
-					</thead>
-					<tbody className={styles.tableBody}>
-						{loading ? (
+				<ScrollableTableWrapper>
+					<table className={styles.table}>
+						<thead className={styles.tableHeader}>
 							<tr>
-								<td colSpan={7} className={styles.loadingCell}>
-									<Loading />
-								</td>
+								<th
+									className={`${styles.tableHeaderCell} idCell sortableHeader ${sortBy === "id" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
+									onClick={() => {
+										if (sortBy !== "id") {
+											setSortBy("id");
+											setSortOrder("asc");
+											setPage(1);
+										} else if (sortOrder === "asc") {
+											setSortOrder("desc");
+											setPage(1);
+										} else {
+											setSortBy(null);
+											setSortOrder(null);
+											setPage(1);
+										}
+									}}
+								>
+									ID
+								</th>
+								<th
+									className={`${styles.tableHeaderCell} sortableHeader ${sortBy === "fullName" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
+									onClick={() => {
+										if (sortBy !== "fullName") {
+											setSortBy("fullName");
+											setSortOrder("asc");
+										} else if (sortOrder === "asc") {
+											setSortOrder("desc");
+										} else {
+											setSortBy(null);
+											setSortOrder(null);
+										}
+									}}
+								>
+									ФИО
+								</th>
+								<th
+									className={`${styles.tableHeaderCell} sortableHeader ${sortBy === "phone" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
+									onClick={() => {
+										if (sortBy !== "phone") {
+											setSortBy("phone");
+											setSortOrder("asc");
+											setPage(1);
+										} else if (sortOrder === "asc") {
+											setSortOrder("desc");
+											setPage(1);
+										} else {
+											setSortBy(null);
+											setSortOrder(null);
+											setPage(1);
+										}
+									}}
+								>
+									Телефон
+								</th>
+								<th className={styles.tableHeaderCell}>
+									<CustomSelect options={roleOptions} value={roleFilter} onChange={handleRoleChange} placeholder="Выберите роль" className={styles.roleSelect} />
+								</th>
+								<th className={styles.tableHeaderCell}>
+									<CustomSelect
+										options={departmentOptions}
+										value={departmentFilter === "all" ? "all" : departmentFilter === "none" ? "none" : departmentFilter.toString()}
+										onChange={handleDepartmentChange}
+										placeholder="Выберите отдел"
+										className={styles.departmentSelect}
+									/>
+								</th>
+								<th className={styles.tableHeaderCell}>
+									<CustomSelect
+										options={statusOptions}
+										value={statusFilter}
+										onChange={handleStatusChange}
+										placeholder="Выберите статус"
+										className={styles.statusSelect}
+									/>
+								</th>
+								<th className={styles.tableHeaderCell}>Действия</th>
 							</tr>
-						) : users.length === 0 ? (
-							<tr>
-								<td colSpan={7} className={styles.emptyCell}>
-									Нет пользователей
-								</td>
-							</tr>
-						) : (
-							users.map((u) => {
-								return (
-									<tr key={u.id} className={styles.tableRow}>
-										<td className={`idCell ${styles.tableCell}`}>{u.id}</td>
-										<td className={styles.tableCell}>
-											<a href={`/admin/users/${u.id}`} className="itemLink">
-												{`${u.last_name ?? ""} ${u.first_name ?? ""} ${u.middle_name ?? ""}`.trim() || "—"}
-											</a>
-										</td>
-										<td className={styles.tableCell}>{u.phone}</td>
-										<td className={`${styles.tableCell} ${styles.capitalize}`}>{roleTitle(u.role)}</td>
-										<td className={styles.tableCell}>
-											{u.department ? (
-												<a href={`/admin/departments/${u.department.id}`} className={styles.departmentLink}>
-													{u.department.name}
+						</thead>
+						<tbody className={styles.tableBody}>
+							{loading ? (
+								<tr>
+									<td colSpan={7} className={styles.loadingCell}>
+										<Loading />
+									</td>
+								</tr>
+							) : users.length === 0 ? (
+								<tr>
+									<td colSpan={7} className={styles.emptyCell}>
+										Нет пользователей
+									</td>
+								</tr>
+							) : (
+								users.map((u) => {
+									return (
+										<tr key={u.id} className={styles.tableRow}>
+											<td className={`idCell ${styles.tableCell}`}>{u.id}</td>
+											<td className={styles.tableCell}>
+												<a href={`/admin/users/${u.id}`} className="itemLink">
+													{`${u.last_name ?? ""} ${u.first_name ?? ""} ${u.middle_name ?? ""}`.trim() || "—"}
 												</a>
-											) : (
-												"—"
-											)}
-										</td>
-										<td className={styles.tableCell}>{statusTitle(u.status)}</td>
-										<td className={styles.tableCell}>
-											<div className={styles.actionsButtons}>
-												<Link href={`/admin/users/${u.id}`} className={`button ${styles.viewUserButton}`} title="Посмотреть пользователя">
-													👁️ Просмотр
-												</Link>
-												<Link href={`/admin/users/${u.id}/logs`} className={`button ${styles.viewLogsButton}`} title="Посмотреть логи пользователя">
-													📋 Логи
-												</Link>
-											</div>
-										</td>
-									</tr>
-								);
-							})
-						)}
-					</tbody>
-				</table>
+											</td>
+											<td className={styles.tableCell}>{u.phone}</td>
+											<td className={`${styles.tableCell} ${styles.capitalize}`}>{roleTitle(u.role)}</td>
+											<td className={styles.tableCell}>
+												{u.department ? (
+													<a href={`/admin/departments/${u.department.id}`} className={styles.departmentLink}>
+														{u.department.name}
+													</a>
+												) : (
+													"—"
+												)}
+											</td>
+											<td className={styles.tableCell}>{statusTitle(u.status)}</td>
+											<td className={styles.tableCell}>
+												<div className={styles.actionsButtons}>
+													<Link href={`/admin/users/${u.id}`} className={`button ${styles.viewUserButton}`} title="Посмотреть пользователя">
+														👁️ Просмотр
+													</Link>
+													<Link href={`/admin/users/${u.id}/logs`} className={`button ${styles.viewLogsButton}`} title="Посмотреть логи пользователя">
+														📋 Логи
+													</Link>
+												</div>
+											</td>
+										</tr>
+									);
+								})
+							)}
+						</tbody>
+					</table>
+				</ScrollableTableWrapper>
 				<Link href="/admin/users/create" className={`createButton`}>
 					+ Создать пользователя
 				</Link>

@@ -10,6 +10,7 @@ import Link from "next/link";
 import Loading from "@/components/ui/loading/Loading";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
+import ScrollableTableWrapper from "@/components/ui/scrollableTableWrapper/ScrollableTableWrapper";
 
 // Компонент для поиска ответственного
 const ManagerSearchField = React.memo(
@@ -21,7 +22,7 @@ const ManagerSearchField = React.memo(
 				<div onClick={onClearSearch} className="clearSearchButton"></div>
 			</div>
 		</div>
-	)
+	),
 );
 ManagerSearchField.displayName = "ManagerSearchField";
 
@@ -35,7 +36,7 @@ const ClientSearchField = React.memo(
 				<div onClick={onClearSearch} className="clearSearchButton"></div>
 			</div>
 		</div>
-	)
+	),
 );
 ClientSearchField.displayName = "ClientSearchField";
 
@@ -61,7 +62,7 @@ const PhoneSearchField = React.memo(
 				<div onClick={onClearSearch} className="clearSearchButton"></div>
 			</div>
 		</div>
-	)
+	),
 );
 PhoneSearchField.displayName = "PhoneSearchField";
 
@@ -90,7 +91,6 @@ export default function AllBookingsTable() {
 
 	// Состояние для активных блоков (разворачивающаяся информация)
 	const [activeBlocks, setActiveBlocks] = useState<{ [key: string]: boolean }>({});
-
 
 	// Получаем информацию о текущем пользователе
 	const { user } = useAuthStore();
@@ -408,15 +408,14 @@ export default function AllBookingsTable() {
 		return (
 			<div className="actionButtons">
 				<button className="button edit" onClick={() => router.push(`/admin/bookings/${booking.id}`)}>
-				✏️ Редактировать
+					✏️ Редактировать
 				</button>
 				<button className="button logs" onClick={() => router.push(`/admin/bookings/${booking.id}/logs`)}>
-				📋 Посмотреть логи
+					📋 Посмотреть логи
 				</button>
 			</div>
 		);
 	};
-
 
 	// Функция для сброса всех фильтров
 	const resetFilters = () => {
@@ -574,96 +573,104 @@ export default function AllBookingsTable() {
 			<FiltersBlock activeFilters={getActiveFilters()} onResetFilters={resetFilters} />
 
 			<div className="tableContainer">
-				<table className="table">
-					<thead className="tableHeader">
-						<tr>
-							<th className="tableHeaderCell">
-								<div className="dateFilterHeader">
-									Дата записи
-									<div className={`dateFilter ${dateFilter.from || dateFilter.to ? "active" : ""}`} onClick={() => setShowDateFilter(!showDateFilter)}>
-										{dateFilter.from ? formatDateFromString(dateFilter.from) : "дд.мм.гггг"} —{" "}
-										{dateFilter.to ? formatDateFromString(dateFilter.to) : "дд.мм.гггг"}
-									</div>
-									<DateRangePicker isOpen={showDateFilter} onClose={() => setShowDateFilter(false)} onDateRangeChange={handleDateRangeChange} />
-								</div>
-							</th>
-							<th className="tableHeaderCell">
-								<IdSearchField idSearch={idSearch} onSearchChange={handleIdSearchChange} onClearSearch={handleClearIdSearch} />
-							</th>
-							<th className="tableHeaderCell">
-								<CustomSelect options={statusOptions} value={statusFilter} onChange={handleStatusChange} placeholder="Выберите статус" className="statusSelect" />
-							</th>
-							<th className="tableHeaderCell">
-								<CustomSelect
-									options={bookingDepartmentOptions}
-									value={departmentFilter}
-									onChange={handleDepartmentFilterChange}
-									placeholder="Выберите адрес"
-									className="departmentSelect"
-								/>
-							</th>
-							<th className="tableHeaderCell">
-								<ManagerSearchField managerSearch={managerSearch} onSearchChange={handleManagerSearchChange} onClearSearch={handleClearManagerSearch} />
-							</th>
-							<th className="tableHeaderCell">
-								<ClientSearchField clientSearch={clientSearch} onSearchChange={handleClientSearchChange} onClearSearch={handleClearClientSearch} />
-							</th>
-							<th className="tableHeaderCell">
-								<PhoneSearchField phoneSearch={phoneSearch} onSearchChange={handlePhoneSearchChange} onClearSearch={handleClearPhoneSearch} />
-							</th>
-							<th className="tableHeaderCell">Действия</th>
-						</tr>
-					</thead>
-					<tbody className="tableBody">
-						{loading ? (
+				<ScrollableTableWrapper>
+					<table className="table">
+						<thead className="tableHeader">
 							<tr>
-								<td colSpan={8} className="loadingCell">
-									<Loading />
-								</td>
-							</tr>
-						) : bookings.length === 0 ? (
-							<tr>
-								<td colSpan={8} className="emptyCell">
-									{statusFilter !== "all" ||
-									dateFilter.from ||
-									dateFilter.to ||
-									managerSearch ||
-									clientSearch ||
-									phoneSearch ||
-									departmentFilter !== "all" ||
-									idSearch
-										? "Записи не найдены"
-										: "Нет записей"}
-								</td>
-							</tr>
-						) : (
-							bookings.map((booking) => (
-								<tr key={booking.id} className="tableRow">
-									<td className="tableCell">
-										<div className="textBlock">
-											{formatDate(booking.scheduledDate)} {booking.scheduledTime}
+								<th className="tableHeaderCell">
+									<div className="dateFilterHeader">
+										Дата записи
+										<div className={`dateFilter ${dateFilter.from || dateFilter.to ? "active" : ""}`} onClick={() => setShowDateFilter(!showDateFilter)}>
+											{dateFilter.from ? formatDateFromString(dateFilter.from) : "дд.мм.гггг"} —{" "}
+											{dateFilter.to ? formatDateFromString(dateFilter.to) : "дд.мм.гггг"}
 										</div>
+										<DateRangePicker isOpen={showDateFilter} onClose={() => setShowDateFilter(false)} onDateRangeChange={handleDateRangeChange} />
+									</div>
+								</th>
+								<th className="tableHeaderCell">
+									<IdSearchField idSearch={idSearch} onSearchChange={handleIdSearchChange} onClearSearch={handleClearIdSearch} />
+								</th>
+								<th className="tableHeaderCell">
+									<CustomSelect
+										options={statusOptions}
+										value={statusFilter}
+										onChange={handleStatusChange}
+										placeholder="Выберите статус"
+										className="statusSelect"
+									/>
+								</th>
+								<th className="tableHeaderCell">
+									<CustomSelect
+										options={bookingDepartmentOptions}
+										value={departmentFilter}
+										onChange={handleDepartmentFilterChange}
+										placeholder="Выберите адрес"
+										className="departmentSelect"
+									/>
+								</th>
+								<th className="tableHeaderCell">
+									<ManagerSearchField managerSearch={managerSearch} onSearchChange={handleManagerSearchChange} onClearSearch={handleClearManagerSearch} />
+								</th>
+								<th className="tableHeaderCell">
+									<ClientSearchField clientSearch={clientSearch} onSearchChange={handleClientSearchChange} onClearSearch={handleClearClientSearch} />
+								</th>
+								<th className="tableHeaderCell">
+									<PhoneSearchField phoneSearch={phoneSearch} onSearchChange={handlePhoneSearchChange} onClearSearch={handleClearPhoneSearch} />
+								</th>
+								<th className="tableHeaderCell">Действия</th>
+							</tr>
+						</thead>
+						<tbody className="tableBody">
+							{loading ? (
+								<tr>
+									<td colSpan={8} className="loadingCell">
+										<Loading />
 									</td>
-									<td className="tableCell idCell">
-										<div className="textBlock">{booking.id}</div>
-									</td>
-									<td className="tableCell">
-										<div className={`statusBadge textBlock ${getStatusColor(booking.status)}`}>{getStatusText(booking.status)}</div>
-									</td>
-									<td className="tableCell">
-										<div className="textBlock">{booking.bookingDepartment?.name || "—"}</div>
-									</td>
-									<td className="tableCell">{renderManagerBlock(booking)}</td>
-									<td className="tableCell">{renderClientBlock(booking)}</td>
-									<td className="tableCell">
-										<div className="textBlock">{getContactPhone(booking)}</div>
-									</td>
-									<td className="tableCell">{renderActionsBlock(booking)}</td>
 								</tr>
-							))
-						)}
-					</tbody>
-				</table>
+							) : bookings.length === 0 ? (
+								<tr>
+									<td colSpan={8} className="emptyCell">
+										{statusFilter !== "all" ||
+										dateFilter.from ||
+										dateFilter.to ||
+										managerSearch ||
+										clientSearch ||
+										phoneSearch ||
+										departmentFilter !== "all" ||
+										idSearch
+											? "Записи не найдены"
+											: "Нет записей"}
+									</td>
+								</tr>
+							) : (
+								bookings.map((booking) => (
+									<tr key={booking.id} className="tableRow">
+										<td className="tableCell">
+											<div className="textBlock">
+												{formatDate(booking.scheduledDate)} {booking.scheduledTime}
+											</div>
+										</td>
+										<td className="tableCell idCell">
+											<div className="textBlock">{booking.id}</div>
+										</td>
+										<td className="tableCell">
+											<div className={`statusBadge textBlock ${getStatusColor(booking.status)}`}>{getStatusText(booking.status)}</div>
+										</td>
+										<td className="tableCell">
+											<div className="textBlock">{booking.bookingDepartment?.name || "—"}</div>
+										</td>
+										<td className="tableCell">{renderManagerBlock(booking)}</td>
+										<td className="tableCell">{renderClientBlock(booking)}</td>
+										<td className="tableCell">
+											<div className="textBlock">{getContactPhone(booking)}</div>
+										</td>
+										<td className="tableCell">{renderActionsBlock(booking)}</td>
+									</tr>
+								))
+							)}
+						</tbody>
+					</table>
+				</ScrollableTableWrapper>
 				<Link href="/admin/bookings/create" className="createButton">
 					+ Создать запись
 				</Link>

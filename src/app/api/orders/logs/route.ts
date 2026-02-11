@@ -16,8 +16,9 @@ async function getOrderLogsHandler(req: NextRequest, { user, scope }: { user: an
 		// Параметры фильтрации
 		const action = searchParams.get("action");
 		const orderId = searchParams.get("orderId");
-		const dateFrom = searchParams.get("dateFrom");
-		const dateTo = searchParams.get("dateTo");
+		const dateFrom = searchParams.get("dateFrom") || searchParams.get("startDate");
+		const dateTo = searchParams.get("dateTo") || searchParams.get("endDate");
+		const adminSearch = searchParams.get("adminSearch")?.trim() || "";
 
 		// Получаем полную информацию о пользователе из базы данных
 		const fullUser = await prisma.user.findUnique({
@@ -108,13 +109,29 @@ async function getOrderLogsHandler(req: NextRequest, { user, scope }: { user: an
 			}),
 		]);
 
-		const totalPages = Math.ceil(total / limit);
+		// Фильтр по администратору (поиск по ФИО или телефону из adminSnapshot)
+		let filteredLogs = logs;
+		if (adminSearch) {
+			const search = adminSearch.toLowerCase();
+			filteredLogs = logs.filter((log) => {
+				const admin = log.adminSnapshot;
+				if (!admin || typeof admin !== "object") return false;
+				const fio = [admin.last_name, admin.first_name, admin.middle_name].filter(Boolean).join(" ").toLowerCase();
+				const phone = (admin.phone || "").toLowerCase();
+				return fio.includes(search) || phone.includes(search);
+			});
+		}
+
+		// Пересчитываем total и totalPages после фильтрации по админу
+		const filteredTotal = adminSearch ? filteredLogs.length : total;
+		const filteredTotalPages = Math.ceil(filteredTotal / limit);
+		const paginatedLogs = adminSearch ? filteredLogs.slice(skip, skip + limit) : filteredLogs;
 
 		const response: OrderLogResponse = {
-			data: logs,
-			total,
+			data: paginatedLogs,
+			total: filteredTotal,
 			page,
-			totalPages,
+			totalPages: filteredTotalPages,
 		};
 
 		return NextResponse.json(response);

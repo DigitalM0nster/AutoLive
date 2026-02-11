@@ -370,8 +370,9 @@ export async function logChange(options: UniversalLogOptions) {
 			}
 		}
 
-		// Для создания сущности snapshotAfter берем из переданных данных
-		if (!snapshotAfter && options.entityId && !options.afterData) {
+		// Для удаления snapshotAfter не заполняем (оставляем null). Для создания/обновления — подставляем из БД при необходимости
+		const isDeleteAction = Array.isArray(options.actions) && options.actions.includes("delete");
+		if (!snapshotAfter && options.entityId && !options.afterData && !isDeleteAction) {
 			if (options.entityType === "user") {
 				snapshotAfter = await getFullUserData(options.entityId);
 			} else if (options.entityType === "department") {
@@ -433,12 +434,8 @@ export async function logChange(options: UniversalLogOptions) {
 						id: departmentId,
 						name: departmentId ? options.afterData?.department?.name || options.beforeData?.department?.name || "Отдел не найден" : null,
 					},
-					// Временные поля для совместимости
-					userId: adminData.id,
-					departmentId: departmentId,
-					productId: options.entityId,
-					snapshotBefore: snapshotBefore ? JSON.stringify(snapshotBefore) : null,
-					snapshotAfter: snapshotAfter ? JSON.stringify(snapshotAfter) : null,
+					productSnapshotBefore: snapshotBefore ?? undefined,
+					productSnapshotAfter: snapshotAfter ?? undefined,
 				},
 			});
 		}

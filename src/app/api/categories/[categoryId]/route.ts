@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { uploadFile, validateFile } from "@/lib/simpleFileUpload";
+import { withDbRetry } from "@/lib/utils";
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ categoryId: string }> }) {
 	try {
@@ -226,42 +227,47 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 			return NextResponse.json({ error: "Невалидный токен" }, { status: 401 });
 		}
 
-		// Получаем полную информацию о пользователе
-		const fullUser = await prisma.user.findUnique({
-			where: { id: user.id },
-			include: {
-				department: {
-					select: {
-						id: true,
-						name: true,
+		// Получаем полную информацию о пользователе (withDbRetry — повтор при обрыве соединения Neon)
+		const fullUser = await withDbRetry(() =>
+			prisma.user.findUnique({
+				where: { id: user.id },
+				include: {
+					department: {
+						select: {
+							id: true,
+							name: true,
+						},
 					},
 				},
-			},
-		});
+			}),
+		);
 
 		if (!fullUser) {
 			return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });
 		}
 
-		// Получаем информацию о том, что будет удалено
-		const category = await prisma.category.findUnique({
-			where: { id: categoryId },
-			include: {
-				_count: {
-					select: {
-						products: true,
-						allowedDepartments: true,
+		// Получаем информацию о том, что будет удалено (withDbRetry — повтор при обрыве соединения)
+		const category = await withDbRetry(() =>
+			prisma.category.findUnique({
+				where: { id: categoryId },
+				include: {
+					_count: {
+						select: {
+							products: true,
+							allowedDepartments: true,
+						},
 					},
 				},
-			},
-		});
+			}),
+		);
 
 		if (!category) {
 			return NextResponse.json({ error: "Категория не найдена" }, { status: 404 });
 		}
 
-		// Удаляем категорию в транзакции, создавая логи ДО удаления
-		await prisma.$transaction(async (tx) => {
+		// Удаляем категорию в транзакции (withDbRetry — повтор при обрыве соединения)
+		await withDbRetry(async () =>
+			prisma.$transaction(async (tx) => {
 			// Логируем удаление категории в ChangeLog ДО удаления
 			await tx.changeLog.create({
 				data: {
@@ -290,11 +296,24 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 				},
 			});
 
-			// Удаляем категорию (каскадно удалятся все связанные данные, логи уже созданы)
+			// Связанные с категорией фильтры не имеют onDelete в БД — удаляем их вручную до удаления категории
+			// Порядок: ProductFilterValue → FilterValue → Filter (из-за внешних ключей)
+			await tx.productFilterValue.deleteMany({
+				where: { filterValue: { filter: { categoryId } } },
+			});
+			await tx.filterValue.deleteMany({
+				where: { filter: { categoryId } },
+			});
+			await tx.filter.deleteMany({
+				where: { categoryId },
+			});
+
+			// Удаляем категорию (остальные связи обрабатываются каскадом или уже удалены)
 			await tx.category.delete({
 				where: { id: categoryId },
 			});
-		});
+			}),
+		);
 
 		return NextResponse.json({
 			message: "Категория успешно удалена",

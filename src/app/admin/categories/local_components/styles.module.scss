@@ -1,3 +1,9 @@
+.tableHeaderCell {
+	&:last-child {
+		text-align: left;
+	}
+}
+
 .sectionsContent {
 	display: flex;
 	flex-direction: column;

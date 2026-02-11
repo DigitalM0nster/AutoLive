@@ -14,6 +14,7 @@ import { useAuthStore } from "@/store/authStore";
 import Loading from "@/components/ui/loading/Loading";
 import { Trash2 } from "lucide-react";
 import SortableTableRow from "./SortableTableRow";
+import ScrollableTableWrapper from "@/components/ui/scrollableTableWrapper/ScrollableTableWrapper";
 
 // Тип для категории
 type Category = {
@@ -66,7 +67,7 @@ export default function AllCategoriesTable() {
 					? data.map((cat: any) => ({
 							...cat,
 							order: cat.order || 0,
-					  }))
+						}))
 					: [];
 				setCategories(categoriesWithOrder);
 			} catch (e) {
@@ -213,7 +214,7 @@ export default function AllCategoriesTable() {
 					prevCategories.map((cat) => {
 						const newOrder = newCategories.find((newCat) => newCat.id === cat.id);
 						return newOrder ? { ...cat, order: newOrder.order } : cat;
-					})
+					}),
 				);
 				showSuccessToast("Порядок категорий успешно обновлен");
 			} else {
@@ -251,150 +252,154 @@ export default function AllCategoriesTable() {
 					{canUseDragAndDrop ? (
 						<DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
 							<SortableContext items={processedCategories.map((cat) => cat.id)} strategy={verticalListSortingStrategy}>
-								<table className={styles.table}>
-									<thead className={styles.tableHeader}>
-										<tr>
-											<th className={`dragCell `}></th>
-											<th className={`idCell `}>ID</th>
-											<th className={`imageCell`}>Изображение</th>
-											<th
-												className={`sortableHeader ${sortBy === "title" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
-												onClick={() => {
-													if (sortBy !== "title") {
-														setSortBy("title");
-														setSortOrder("asc");
-													} else if (sortOrder === "asc") {
-														setSortOrder("desc");
-													} else {
-														setSortBy(null);
-														setSortOrder(null);
-													}
-												}}
-											>
-												Название категории
-											</th>
-											<th
-												className={`${styles.tableHeaderCell} sortableHeader ${sortBy === "filtersCount" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
-												onClick={() => {
-													if (sortBy !== "filtersCount") {
-														setSortBy("filtersCount");
-														setSortOrder("asc");
-													} else if (sortOrder === "asc") {
-														setSortOrder("desc");
-													} else {
-														setSortBy(null);
-														setSortOrder(null);
-													}
-												}}
-											>
-												Количество фильтров
-											</th>
-											<th className={styles.tableHeaderCell}>Действия</th>
-										</tr>
-									</thead>
-									<tbody className={styles.tableBody}>
-										{loading ? (
+								<ScrollableTableWrapper>
+									<table className={styles.table}>
+										<thead className={styles.tableHeader}>
 											<tr>
-												<td colSpan={6} className={styles.loadingCell}>
-													<Loading />
-												</td>
+												<th className={`dragCell `}></th>
+												<th className={`idCell `}>ID</th>
+												<th className={`imageCell`}>Изображение</th>
+												<th
+													className={`sortableHeader ${sortBy === "title" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
+													onClick={() => {
+														if (sortBy !== "title") {
+															setSortBy("title");
+															setSortOrder("asc");
+														} else if (sortOrder === "asc") {
+															setSortOrder("desc");
+														} else {
+															setSortBy(null);
+															setSortOrder(null);
+														}
+													}}
+												>
+													Название категории
+												</th>
+												<th
+													className={`${styles.tableHeaderCell} sortableHeader ${sortBy === "filtersCount" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
+													onClick={() => {
+														if (sortBy !== "filtersCount") {
+															setSortBy("filtersCount");
+															setSortOrder("asc");
+														} else if (sortOrder === "asc") {
+															setSortOrder("desc");
+														} else {
+															setSortBy(null);
+															setSortOrder(null);
+														}
+													}}
+												>
+													Количество фильтров
+												</th>
+												<th className={styles.tableHeaderCell}>Действия</th>
 											</tr>
-										) : processedCategories.length === 0 ? (
-											<tr>
-												<td colSpan={6} className={styles.emptyCell}>
-													{search ? "Категории не найдены" : "Нет категорий"}
-												</td>
-											</tr>
-										) : (
-											processedCategories.map((cat) => (
-												<SortableTableRow
-													key={cat.id}
-													id={cat.id}
-													title={cat.title}
-													image={cat.image}
-													filtersCount={cat.filtersCount}
-													onDeleteRequest={requestDelete}
-													canDelete={canDeleteCategories()}
-													canDrag={true} // Передаем флаг что можно перетаскивать
-												/>
-											))
-										)}
-									</tbody>
-								</table>
+										</thead>
+										<tbody className={styles.tableBody}>
+											{loading ? (
+												<tr>
+													<td colSpan={6} className={styles.loadingCell}>
+														<Loading />
+													</td>
+												</tr>
+											) : processedCategories.length === 0 ? (
+												<tr>
+													<td colSpan={6} className={styles.emptyCell}>
+														{search ? "Категории не найдены" : "Нет категорий"}
+													</td>
+												</tr>
+											) : (
+												processedCategories.map((cat) => (
+													<SortableTableRow
+														key={cat.id}
+														id={cat.id}
+														title={cat.title}
+														image={cat.image}
+														filtersCount={cat.filtersCount}
+														onDeleteRequest={requestDelete}
+														canDelete={canDeleteCategories()}
+														canDrag={true} // Передаем флаг что можно перетаскивать
+													/>
+												))
+											)}
+										</tbody>
+									</table>
+								</ScrollableTableWrapper>
 							</SortableContext>
 						</DndContext>
 					) : (
 						// Обычная таблица без drag and drop
-						<table className={styles.table}>
-							<thead className={styles.tableHeader}>
-								<tr>
-									<th className={`dragCell `}></th>
-									<th className={`idCell `}>ID</th>
-									<th className={`imageCell`}>Изображение</th>
-									<th
-										className={`sortableHeader ${sortBy === "title" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
-										onClick={() => {
-											if (sortBy !== "title") {
-												setSortBy("title");
-												setSortOrder("asc");
-											} else if (sortOrder === "asc") {
-												setSortOrder("desc");
-											} else {
-												setSortBy(null);
-												setSortOrder(null);
-											}
-										}}
-									>
-										Название категории
-									</th>
-									<th
-										className={`${styles.tableHeaderCell} sortableHeader ${sortBy === "filtersCount" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
-										onClick={() => {
-											if (sortBy !== "filtersCount") {
-												setSortBy("filtersCount");
-												setSortOrder("asc");
-											} else if (sortOrder === "asc") {
-												setSortOrder("desc");
-											} else {
-												setSortBy(null);
-												setSortOrder(null);
-											}
-										}}
-									>
-										Количество фильтров
-									</th>
-									<th className={styles.tableHeaderCell}>Действия</th>
-								</tr>
-							</thead>
-							<tbody className={styles.tableBody}>
-								{loading ? (
+						<ScrollableTableWrapper>
+							<table className={styles.table}>
+								<thead className={styles.tableHeader}>
 									<tr>
-										<td colSpan={6} className={styles.loadingCell}>
-											<Loading />
-										</td>
+										<th className={`dragCell `}></th>
+										<th className={`idCell `}>ID</th>
+										<th className={`imageCell`}>Изображение</th>
+										<th
+											className={`sortableHeader ${sortBy === "title" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
+											onClick={() => {
+												if (sortBy !== "title") {
+													setSortBy("title");
+													setSortOrder("asc");
+												} else if (sortOrder === "asc") {
+													setSortOrder("desc");
+												} else {
+													setSortBy(null);
+													setSortOrder(null);
+												}
+											}}
+										>
+											Название категории
+										</th>
+										<th
+											className={`${styles.tableHeaderCell} sortableHeader ${sortBy === "filtersCount" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
+											onClick={() => {
+												if (sortBy !== "filtersCount") {
+													setSortBy("filtersCount");
+													setSortOrder("asc");
+												} else if (sortOrder === "asc") {
+													setSortOrder("desc");
+												} else {
+													setSortBy(null);
+													setSortOrder(null);
+												}
+											}}
+										>
+											Количество фильтров
+										</th>
+										<th className={styles.tableHeaderCell}>Действия</th>
 									</tr>
-								) : processedCategories.length === 0 ? (
-									<tr>
-										<td colSpan={6} className={styles.emptyCell}>
-											{search ? "Категории не найдены" : "Нет категорий"}
-										</td>
-									</tr>
-								) : (
-									processedCategories.map((cat) => (
-										<SortableTableRow
-											key={cat.id}
-											id={cat.id}
-											title={cat.title}
-											image={cat.image}
-											filtersCount={cat.filtersCount}
-											onDeleteRequest={requestDelete}
-											canDelete={canDeleteCategories()}
-											canDrag={false} // Передаем флаг что нельзя перетаскивать
-										/>
-									))
-								)}
-							</tbody>
-						</table>
+								</thead>
+								<tbody className={styles.tableBody}>
+									{loading ? (
+										<tr>
+											<td colSpan={6} className={styles.loadingCell}>
+												<Loading />
+											</td>
+										</tr>
+									) : processedCategories.length === 0 ? (
+										<tr>
+											<td colSpan={6} className={styles.emptyCell}>
+												{search ? "Категории не найдены" : "Нет категорий"}
+											</td>
+										</tr>
+									) : (
+										processedCategories.map((cat) => (
+											<SortableTableRow
+												key={cat.id}
+												id={cat.id}
+												title={cat.title}
+												image={cat.image}
+												filtersCount={cat.filtersCount}
+												onDeleteRequest={requestDelete}
+												canDelete={canDeleteCategories()}
+												canDrag={false} // Передаем флаг что нельзя перетаскивать
+											/>
+										))
+									)}
+								</tbody>
+							</table>
+						</ScrollableTableWrapper>
 					)}
 					{/* Показываем кнопку создания только суперадмину */}
 					{canDeleteCategories() && (

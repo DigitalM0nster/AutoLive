@@ -21,7 +21,7 @@ const ManagerSearchField = React.memo(
 				<div onClick={onClearSearch} className="clearSearchButton"></div>
 			</div>
 		</div>
-	)
+	),
 );
 ManagerSearchField.displayName = "ManagerSearchField";
 
@@ -35,7 +35,7 @@ const ClientSearchField = React.memo(
 				<div onClick={onClearSearch} className="clearSearchButton"></div>
 			</div>
 		</div>
-	)
+	),
 );
 ClientSearchField.displayName = "ClientSearchField";
 

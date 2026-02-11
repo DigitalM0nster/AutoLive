@@ -96,10 +96,12 @@ export const GET = withPermission(
 					determinedActions = actions;
 				}
 
+				// Для удаления targetUser берём из snapshotBefore (пользователя уже нет в БД)
+				const targetUserSnapshot = snapshotAfter ?? (determinedActions.includes("delete") && snapshotBefore ? snapshotBefore : null);
 				return {
 					id: log.id,
 					createdAt: log.createdAt,
-					actions: determinedActions, // Используем определенные действия
+					actions: determinedActions,
 					message: log.message,
 					admin: adminSnapshot
 						? {
@@ -112,16 +114,16 @@ export const GET = withPermission(
 								department: adminSnapshot.department,
 						  }
 						: null,
-					targetUser: snapshotAfter
+					targetUser: targetUserSnapshot
 						? {
-								id: snapshotAfter.id,
-								first_name: snapshotAfter.first_name,
-								last_name: snapshotAfter.last_name,
-								middle_name: snapshotAfter.middle_name,
-								phone: snapshotAfter.phone,
-								role: snapshotAfter.role,
-								department: snapshotAfter.department,
-								orders: snapshotAfter.orders,
+								id: targetUserSnapshot.id,
+								first_name: targetUserSnapshot.first_name,
+								last_name: targetUserSnapshot.last_name,
+								middle_name: targetUserSnapshot.middle_name,
+								phone: targetUserSnapshot.phone,
+								role: targetUserSnapshot.role,
+								department: targetUserSnapshot.department,
+								orders: targetUserSnapshot.orders,
 						  }
 						: null,
 					snapshotBefore,

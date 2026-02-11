@@ -16,8 +16,9 @@ async function getBookingDepartmentLogsHandler(req: NextRequest, { user, scope }
 		// Параметры фильтрации
 		const action = searchParams.get("action");
 		const bookingDepartmentId = searchParams.get("bookingDepartmentId");
-		const dateFrom = searchParams.get("dateFrom");
-		const dateTo = searchParams.get("dateTo");
+		const dateFrom = searchParams.get("dateFrom") || searchParams.get("startDate");
+		const dateTo = searchParams.get("dateTo") || searchParams.get("endDate");
+		const adminSearch = searchParams.get("adminSearch")?.trim() || "";
 
 		// Получаем полную информацию о пользователе из базы данных
 		const fullUser = await prisma.user.findUnique({
@@ -75,7 +76,7 @@ async function getBookingDepartmentLogsHandler(req: NextRequest, { user, scope }
 		const totalPages = Math.ceil(total / limit);
 
 		// Преобразуем логи в нужный тип (Prisma возвращает JsonValue для snapshots)
-		const typedLogs: BookingDepartmentLog[] = logs.map((log) => ({
+		let typedLogs: BookingDepartmentLog[] = logs.map((log) => ({
 			id: log.id,
 			createdAt: log.createdAt,
 			action: log.action,
@@ -84,6 +85,33 @@ async function getBookingDepartmentLogsHandler(req: NextRequest, { user, scope }
 			adminSnapshot: log.adminSnapshot as any,
 			bookingDepartmentSnapshot: log.bookingDepartmentSnapshot as any,
 		}));
+
+		// Фильтрация по поиску администратора (применяется после получения данных, т.к. adminSnapshot - JSON)
+		if (adminSearch) {
+			const search = adminSearch.toLowerCase();
+			typedLogs = typedLogs.filter((log) => {
+				const a = log.adminSnapshot;
+				if (!a || typeof a !== "object") return false;
+				const fio = [a.last_name, a.first_name].filter(Boolean).join(" ").toLowerCase();
+				return fio.includes(search);
+			});
+			// Пересчитываем total после фильтрации
+			const filteredTotal = typedLogs.length;
+			const filteredTotalPages = Math.ceil(filteredTotal / limit);
+			// Применяем пагинацию к отфильтрованным результатам
+			const startIndex = skip;
+			const endIndex = startIndex + limit;
+			typedLogs = typedLogs.slice(startIndex, endIndex);
+
+			const response: BookingDepartmentLogResponse = {
+				data: typedLogs,
+				total: filteredTotal,
+				page,
+				totalPages: filteredTotalPages,
+			};
+
+			return NextResponse.json(response);
+		}
 
 		const response: BookingDepartmentLogResponse = {
 			data: typedLogs,

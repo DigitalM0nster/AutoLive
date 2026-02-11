@@ -45,8 +45,13 @@ export async function withDbRetry<T>(fn: () => Promise<T>, attempts = 5, baseDel
 				"удаленный хост принудительно разорвал",
 				"connection terminated",
 				"broken pipe",
-				"timed out fetching a new connection", // Ошибка таймаута пула соединений
-				"connection pool", // Ошибки связанные с пулом соединений
+				"timed out fetching a new connection",
+				"connection pool",
+				"timeout exceeded when trying to connect",
+				"timeout exceeded",
+				"read timeout", // pg/Neon: "query read timeout"
+				"connection error", // Prisma: "Client has encountered a connection error and is not queryable"
+				"not queryable",
 			];
 
 			// Проверяем, является ли это ошибкой соединения
@@ -57,11 +62,17 @@ export async function withDbRetry<T>(fn: () => Promise<T>, attempts = 5, baseDel
 				throw err;
 			}
 
-			// Для ошибки P2024 (таймаут пула соединений) используем большую задержку
-			// Это даёт время освободить соединения в пуле
-			const isPoolTimeout = code === "P2024";
-			const actualBaseDelay = isPoolTimeout ? 2000 : baseDelayMs; // Для P2024 начинаем с 2 секунд
-			const delay = actualBaseDelay * Math.pow(2, i); // Экспоненциальная задержка
+			// Для таймаутов и обрывов — пауза перед повтором (умеренная: 2 сек база, макс 8 сек между попытками)
+			const isTimeout =
+				code === "P2024" ||
+				msg.includes("timeout exceeded") ||
+				msg.includes("timed out") ||
+				msg.includes("read timeout");
+			const isConnectionDead =
+				msg.includes("connection terminated") || msg.includes("not queryable") || msg.includes("connection error");
+			const actualBaseDelay = isTimeout || isConnectionDead ? 2000 : baseDelayMs; // 2 сек для таймаутов и обрывов
+			const rawDelay = actualBaseDelay * Math.pow(2, i);
+			const delay = Math.min(rawDelay, 8000); // не более 8 сек за раз, чтобы создание не тянулось минутами
 
 			// Ждём перед следующей попыткой
 			await new Promise((r) => setTimeout(r, delay));

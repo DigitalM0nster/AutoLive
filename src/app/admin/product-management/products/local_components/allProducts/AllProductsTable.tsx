@@ -12,6 +12,7 @@ import Loading from "@/components/ui/loading/Loading";
 import { useAuthStore } from "@/store/authStore";
 import ImageUpload from "@/components/ui/imageUpload/ImageUpload";
 import { showSuccessToast, showErrorToast, showWarningToast } from "@/components/ui/toast/ToastProvider";
+import ScrollableTableWrapper from "@/components/ui/scrollableTableWrapper/ScrollableTableWrapper";
 
 export default function AllProductsTable() {
 	const { user } = useAuthStore();
@@ -699,14 +700,14 @@ export default function AllProductsTable() {
 					sortBy === "id"
 						? "ID"
 						: sortBy === "title"
-						? "Название"
-						: sortBy === "sku"
-						? "SKU"
-						: sortBy === "price"
-						? "Цена"
-						: sortBy === "supplierPrice"
-						? "Цена поставщика"
-						: "Дата создания"
+							? "Название"
+							: sortBy === "sku"
+								? "SKU"
+								: sortBy === "price"
+									? "Цена"
+									: sortBy === "supplierPrice"
+										? "Цена поставщика"
+										: "Дата создания"
 				} ${sortOrder === "asc" ? "↑" : "↓"}`,
 			});
 		}
@@ -778,367 +779,369 @@ export default function AllProductsTable() {
 			</FiltersBlock>
 
 			<div className={styles.tableContainer}>
-				<table>
-					<thead className={`centerTableHeader`}>
-						<tr>
-							<th className={`${styles.tableHeaderCell} selectCell`}>
-								<input type="checkbox" checked={isSelectAll} onChange={toggleSelectAll} title="Выделить все товары на странице" />
-							</th>
-							<th
-								className={`${styles.tableHeaderCell} idCell sortableHeader ${sortBy === "id" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
-								onClick={() => {
-									if (sortBy !== "id") {
-										setSortBy("id");
-										setSortOrder("asc");
-										setPage(1);
-									} else if (sortOrder === "asc") {
-										setSortOrder("desc");
-										setPage(1);
-									} else {
-										setSortBy(null);
-										setSortOrder(null);
-										setPage(1);
-									}
-								}}
-							>
-								ID
-							</th>
-							<th
-								className={`${styles.tableHeaderCell} sortableHeader ${sortBy === "title" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
-								onClick={() => {
-									if (sortBy !== "title") {
-										setSortBy("title");
-										setSortOrder("asc");
-										setPage(1);
-									} else if (sortOrder === "asc") {
-										setSortOrder("desc");
-										setPage(1);
-									} else {
-										setSortBy(null);
-										setSortOrder(null);
-										setPage(1);
-									}
-								}}
-							>
-								Название
-							</th>
-							<th
-								className={`${styles.tableHeaderCell} sortableHeader ${sortBy === "sku" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
-								onClick={() => {
-									if (sortBy !== "sku") {
-										setSortBy("sku");
-										setSortOrder("asc");
-										setPage(1);
-									} else if (sortOrder === "asc") {
-										setSortOrder("desc");
-										setPage(1);
-									} else {
-										setSortBy(null);
-										setSortOrder(null);
-										setPage(1);
-									}
-								}}
-							>
-								SKU
-							</th>
-							<th
-								className={`${styles.tableHeaderCell} sortableHeader ${sortBy === "price" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
-								onClick={() => {
-									if (sortBy !== "price") {
-										setSortBy("price");
-										setSortOrder("asc");
-										setPage(1);
-									} else if (sortOrder === "asc") {
-										setSortOrder("desc");
-										setPage(1);
-									} else {
-										setSortBy(null);
-										setSortOrder(null);
-										setPage(1);
-									}
-								}}
-							>
-								Цена на сайте
-							</th>
-							<th
-								className={`${styles.tableHeaderCell} sortableHeader ${sortBy === "supplierPrice" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
-								onClick={() => {
-									if (sortBy !== "supplierPrice") {
-										setSortBy("supplierPrice");
-										setSortOrder("asc");
-										setPage(1);
-									} else if (sortOrder === "asc") {
-										setSortOrder("desc");
-										setPage(1);
-									} else {
-										setSortBy(null);
-										setSortOrder(null);
-										setPage(1);
-									}
-								}}
-							>
-								Цена поставщика
-							</th>
-							<th className={styles.tableHeaderCell}>Изображение</th>
-							<th className={styles.tableHeaderCell}>Описание</th>
-							<th className={styles.tableHeaderCell}>
-								<CustomSelect
-									options={categoryOptions}
-									value={categoryFilter === "all" ? "all" : categoryFilter.toString()}
-									onChange={handleCategoryChange}
-									placeholder="Выберите категорию"
-									className={styles.categorySelect}
-									showSearch={true}
-									searchPlaceholder="Поиск по категории..."
-								/>
-							</th>
-							<th className={styles.tableHeaderCell}>
-								<CustomSelect
-									options={departmentOptions}
-									value={departmentFilter === "all" ? "all" : departmentFilter === "none" ? "none" : departmentFilter.toString()}
-									onChange={handleDepartmentChange}
-									placeholder="Выберите отдел"
-									className={styles.departmentSelect}
-									showSearch={true}
-									searchPlaceholder="Поиск по отделу..."
-								/>
-							</th>
-							<th className={styles.tableHeaderCell}>
-								<CustomSelect
-									options={brandOptions}
-									value={brandFilter}
-									onChange={handleBrandChange}
-									placeholder="Выберите бренд"
-									className={styles.brandSelect}
-									showSearch={true}
-									searchPlaceholder="Поиск по бренду..."
-								/>
-							</th>
-							<th className={styles.tableHeaderCell}>Действия</th>
-						</tr>
-					</thead>
-					<tbody className={styles.tableBody}>
-						{loading ? (
+				<ScrollableTableWrapper>
+					<table>
+						<thead className={`centerTableHeader`}>
 							<tr>
-								<td colSpan={12} className={styles.loadingCell}>
-									<Loading />
-								</td>
+								<th className={`${styles.tableHeaderCell} selectCell`}>
+									<input type="checkbox" checked={isSelectAll} onChange={toggleSelectAll} title="Выделить все товары на странице" />
+								</th>
+								<th
+									className={`${styles.tableHeaderCell} idCell sortableHeader ${sortBy === "id" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
+									onClick={() => {
+										if (sortBy !== "id") {
+											setSortBy("id");
+											setSortOrder("asc");
+											setPage(1);
+										} else if (sortOrder === "asc") {
+											setSortOrder("desc");
+											setPage(1);
+										} else {
+											setSortBy(null);
+											setSortOrder(null);
+											setPage(1);
+										}
+									}}
+								>
+									ID
+								</th>
+								<th
+									className={`${styles.tableHeaderCell} sortableHeader ${sortBy === "title" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
+									onClick={() => {
+										if (sortBy !== "title") {
+											setSortBy("title");
+											setSortOrder("asc");
+											setPage(1);
+										} else if (sortOrder === "asc") {
+											setSortOrder("desc");
+											setPage(1);
+										} else {
+											setSortBy(null);
+											setSortOrder(null);
+											setPage(1);
+										}
+									}}
+								>
+									Название
+								</th>
+								<th
+									className={`${styles.tableHeaderCell} sortableHeader ${sortBy === "sku" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
+									onClick={() => {
+										if (sortBy !== "sku") {
+											setSortBy("sku");
+											setSortOrder("asc");
+											setPage(1);
+										} else if (sortOrder === "asc") {
+											setSortOrder("desc");
+											setPage(1);
+										} else {
+											setSortBy(null);
+											setSortOrder(null);
+											setPage(1);
+										}
+									}}
+								>
+									SKU
+								</th>
+								<th
+									className={`${styles.tableHeaderCell} sortableHeader ${sortBy === "price" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
+									onClick={() => {
+										if (sortBy !== "price") {
+											setSortBy("price");
+											setSortOrder("asc");
+											setPage(1);
+										} else if (sortOrder === "asc") {
+											setSortOrder("desc");
+											setPage(1);
+										} else {
+											setSortBy(null);
+											setSortOrder(null);
+											setPage(1);
+										}
+									}}
+								>
+									Цена на сайте
+								</th>
+								<th
+									className={`${styles.tableHeaderCell} sortableHeader ${sortBy === "supplierPrice" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
+									onClick={() => {
+										if (sortBy !== "supplierPrice") {
+											setSortBy("supplierPrice");
+											setSortOrder("asc");
+											setPage(1);
+										} else if (sortOrder === "asc") {
+											setSortOrder("desc");
+											setPage(1);
+										} else {
+											setSortBy(null);
+											setSortOrder(null);
+											setPage(1);
+										}
+									}}
+								>
+									Цена поставщика
+								</th>
+								<th className={styles.tableHeaderCell}>Изображение</th>
+								<th className={styles.tableHeaderCell}>Описание</th>
+								<th className={styles.tableHeaderCell}>
+									<CustomSelect
+										options={categoryOptions}
+										value={categoryFilter === "all" ? "all" : categoryFilter.toString()}
+										onChange={handleCategoryChange}
+										placeholder="Выберите категорию"
+										className={styles.categorySelect}
+										showSearch={true}
+										searchPlaceholder="Поиск по категории..."
+									/>
+								</th>
+								<th className={styles.tableHeaderCell}>
+									<CustomSelect
+										options={departmentOptions}
+										value={departmentFilter === "all" ? "all" : departmentFilter === "none" ? "none" : departmentFilter.toString()}
+										onChange={handleDepartmentChange}
+										placeholder="Выберите отдел"
+										className={styles.departmentSelect}
+										showSearch={true}
+										searchPlaceholder="Поиск по отделу..."
+									/>
+								</th>
+								<th className={styles.tableHeaderCell}>
+									<CustomSelect
+										options={brandOptions}
+										value={brandFilter}
+										onChange={handleBrandChange}
+										placeholder="Выберите бренд"
+										className={styles.brandSelect}
+										showSearch={true}
+										searchPlaceholder="Поиск по бренду..."
+									/>
+								</th>
+								<th className={styles.tableHeaderCell}>Действия</th>
 							</tr>
-						) : products.length === 0 ? (
-							<tr>
-								<td colSpan={12} className={styles.emptyCell}>
-									Нет товаров
-								</td>
-							</tr>
-						) : (
-							products.map((product) => {
-								const isEditing = editingProduct === product.id;
+						</thead>
+						<tbody className={styles.tableBody}>
+							{loading ? (
+								<tr>
+									<td colSpan={12} className={styles.loadingCell}>
+										<Loading />
+									</td>
+								</tr>
+							) : products.length === 0 ? (
+								<tr>
+									<td colSpan={12} className={styles.emptyCell}>
+										Нет товаров
+									</td>
+								</tr>
+							) : (
+								products.map((product) => {
+									const isEditing = editingProduct === product.id;
 
-								return (
-									<tr key={product.id}>
-										<td className={`selectCell`}>
-											<input
-												type="checkbox"
-												checked={selectedProducts.includes(product.id)}
-												onChange={() => toggleProductSelection(product.id)}
-												title="Выделить товар"
-											/>
-										</td>
-										<td className={`idCell`}>{product.id}</td>
-										<td>
-											{isEditing ? (
-												<input type="text" value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} />
-											) : (
-												<Link href={`/admin/product-management/products/${product.id}`} className={`itemLink`}>
-													{product.title || "—"}
-												</Link>
-											)}
-										</td>
-										<td>
-											{isEditing ? (
-												<input type="text" value={editForm.sku} onChange={(e) => setEditForm({ ...editForm, sku: e.target.value })} />
-											) : (
-												product.sku
-											)}
-										</td>
-										<td>
-											{isEditing ? (
-												<input type="number" value={editForm.price} onChange={(e) => setEditForm({ ...editForm, price: e.target.value })} step="0.01" />
-											) : (
-												`${product.price} ₽`
-											)}
-										</td>
-										<td>
-											{isEditing ? (
+									return (
+										<tr key={product.id}>
+											<td className={`selectCell`}>
 												<input
-													type="number"
-													value={editForm.supplierPrice}
-													onChange={(e) => setEditForm({ ...editForm, supplierPrice: e.target.value })}
-													step="0.01"
+													type="checkbox"
+													checked={selectedProducts.includes(product.id)}
+													onChange={() => toggleProductSelection(product.id)}
+													title="Выделить товар"
 												/>
-											) : product.supplierPrice ? (
-												`${product.supplierPrice} ₽`
-											) : (
-												"—"
-											)}
-										</td>
-										<td>
-											{isEditing ? (
-												<div className={styles.imageEditCell}>
-													<ImageUpload
-														imageUrl={product.image || ""}
-														onImageChange={(file) => {
-															// Сохраняем файл в состояние для последующего сохранения
-															setImageFile(file);
-															// Сбрасываем флаг удаления при выборе нового файла
-															setImageToDelete(false);
-														}}
-														onImageRemove={() => {
-															setImageFile(null);
-															// Устанавливаем флаг удаления
-															setImageToDelete(true);
-														}}
-														disabled={false}
+											</td>
+											<td className={`idCell`}>{product.id}</td>
+											<td>
+												{isEditing ? (
+													<input type="text" value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} />
+												) : (
+													<Link href={`/admin/product-management/products/${product.id}`} className={`itemLink`}>
+														{product.title || "—"}
+													</Link>
+												)}
+											</td>
+											<td>
+												{isEditing ? (
+													<input type="text" value={editForm.sku} onChange={(e) => setEditForm({ ...editForm, sku: e.target.value })} />
+												) : (
+													product.sku
+												)}
+											</td>
+											<td>
+												{isEditing ? (
+													<input type="number" value={editForm.price} onChange={(e) => setEditForm({ ...editForm, price: e.target.value })} step="0.01" />
+												) : (
+													`${product.price} ₽`
+												)}
+											</td>
+											<td>
+												{isEditing ? (
+													<input
+														type="number"
+														value={editForm.supplierPrice}
+														onChange={(e) => setEditForm({ ...editForm, supplierPrice: e.target.value })}
+														step="0.01"
 													/>
-												</div>
-											) : product.image ? (
-												<div className="imageBlock">
-													<img src={product.image} alt={product.title} className={`image`} />
-												</div>
-											) : (
-												<div className={`imageBlock`}>
-													<div className="noImage">Нет изображения</div>
-												</div>
-											)}
-										</td>
-										<td>
-											{isEditing ? (
-												<textarea
-													value={editForm.description}
-													onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-													rows={3}
-													placeholder="Описание товара..."
-												/>
-											) : (
-												<div className={`description`}>
-													{product.description ? (
-														<>
-															<div className={`descriptionPreview`}>
-																{product.description.length > 50 ? `${product.description.substring(0, 50)}...` : product.description}
-															</div>
-															{product.description.length > 50 && (
-																<button onClick={() => toggleDescription(product.id)} className={styles.showMoreButton}>
-																	{showDescription === product.id ? "Скрыть" : "Показать"}
-																</button>
-															)}
-															{showDescription === product.id && <div className={styles.fullDescription}>{product.description}</div>}
-														</>
-													) : (
-														"—"
-													)}
-												</div>
-											)}
-										</td>
-										<td>
-											{isEditing ? (
-												<select
-													value={editForm.categoryId}
-													onChange={(e) => setEditForm({ ...editForm, categoryId: e.target.value })}
-													className={styles.categorySelect}
-												>
-													<option value="">Без категории</option>
-													{availableCategories.length > 0 ? (
-														availableCategories.map((category) => (
-															<option key={category.id} value={category.id.toString()}>
-																{category.title}
+												) : product.supplierPrice ? (
+													`${product.supplierPrice} ₽`
+												) : (
+													"—"
+												)}
+											</td>
+											<td>
+												{isEditing ? (
+													<div className={styles.imageEditCell}>
+														<ImageUpload
+															imageUrl={product.image || ""}
+															onImageChange={(file) => {
+																// Сохраняем файл в состояние для последующего сохранения
+																setImageFile(file);
+																// Сбрасываем флаг удаления при выборе нового файла
+																setImageToDelete(false);
+															}}
+															onImageRemove={() => {
+																setImageFile(null);
+																// Устанавливаем флаг удаления
+																setImageToDelete(true);
+															}}
+															disabled={false}
+														/>
+													</div>
+												) : product.image ? (
+													<div className="imageBlock">
+														<img src={product.image} alt={product.title} className={`image`} />
+													</div>
+												) : (
+													<div className={`imageBlock`}>
+														<div className="noImage">Нет изображения</div>
+													</div>
+												)}
+											</td>
+											<td>
+												{isEditing ? (
+													<textarea
+														value={editForm.description}
+														onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+														rows={3}
+														placeholder="Описание товара..."
+													/>
+												) : (
+													<div className={`description`}>
+														{product.description ? (
+															<>
+																<div className={`descriptionPreview`}>
+																	{product.description.length > 50 ? `${product.description.substring(0, 50)}...` : product.description}
+																</div>
+																{product.description.length > 50 && (
+																	<button onClick={() => toggleDescription(product.id)} className={styles.showMoreButton}>
+																		{showDescription === product.id ? "Скрыть" : "Показать"}
+																	</button>
+																)}
+																{showDescription === product.id && <div className={styles.fullDescription}>{product.description}</div>}
+															</>
+														) : (
+															"—"
+														)}
+													</div>
+												)}
+											</td>
+											<td>
+												{isEditing ? (
+													<select
+														value={editForm.categoryId}
+														onChange={(e) => setEditForm({ ...editForm, categoryId: e.target.value })}
+														className={styles.categorySelect}
+													>
+														<option value="">Без категории</option>
+														{availableCategories.length > 0 ? (
+															availableCategories.map((category) => (
+																<option key={category.id} value={category.id.toString()}>
+																	{category.title}
+																</option>
+															))
+														) : (
+															<option value="" disabled>
+																Нет доступных категорий для этого отдела
 															</option>
-														))
-													) : (
-														<option value="" disabled>
-															Нет доступных категорий для этого отдела
-														</option>
-													)}
-												</select>
-											) : product.category ? (
-												<Link href={`/admin/categories/${product.category.id}`}>{product.category.title}</Link>
-											) : (
-												"—"
-											)}
-										</td>
-										<td>
-											{isEditing ? (
-												<select
-													value={editForm.departmentId}
-													onChange={async (e) => {
-														const newDepartmentId = e.target.value;
-														setEditForm({ ...editForm, departmentId: newDepartmentId, categoryId: "" });
+														)}
+													</select>
+												) : product.category ? (
+													<Link href={`/admin/categories/${product.category.id}`}>{product.category.title}</Link>
+												) : (
+													"—"
+												)}
+											</td>
+											<td>
+												{isEditing ? (
+													<select
+														value={editForm.departmentId}
+														onChange={async (e) => {
+															const newDepartmentId = e.target.value;
+															setEditForm({ ...editForm, departmentId: newDepartmentId, categoryId: "" });
 
-														// Загружаем категории для нового отдела
-														if (newDepartmentId) {
-															try {
-																const response = await fetch(`/api/categories?departmentId=${newDepartmentId}`);
-																if (response.ok) {
-																	const departmentCategories = await response.json();
-																	setAvailableCategories(departmentCategories);
+															// Загружаем категории для нового отдела
+															if (newDepartmentId) {
+																try {
+																	const response = await fetch(`/api/categories?departmentId=${newDepartmentId}`);
+																	if (response.ok) {
+																		const departmentCategories = await response.json();
+																		setAvailableCategories(departmentCategories);
+																	}
+																} catch (error) {
+																	console.error("Ошибка при загрузке категорий отдела:", error);
+																	setAvailableCategories([]);
 																}
-															} catch (error) {
-																console.error("Ошибка при загрузке категорий отдела:", error);
+															} else {
 																setAvailableCategories([]);
 															}
-														} else {
-															setAvailableCategories([]);
-														}
-													}}
-													className={styles.departmentSelect}
-												>
-													{departments.map((dept) => (
-														<option key={dept.id} value={dept.id.toString()}>
-															{dept.name}
-														</option>
-													))}
-												</select>
-											) : product.department ? (
-												<Link href={`/admin/departments/${product.department.id}`}>{product.department.name}</Link>
-											) : (
-												"—"
-											)}
-										</td>
-										<td>
-											{isEditing ? (
-												<input type="text" value={editForm.brand} onChange={(e) => setEditForm({ ...editForm, brand: e.target.value })} />
-											) : (
-												product.brand
-											)}
-										</td>
-										<td>
-											{isEditing ? (
-												<div className={styles.editActions}>
-													<button onClick={() => saveProduct(product.id)} title="Сохранить">
-														💾
-													</button>
-													<button onClick={cancelEditing} title="Отменить">
-														❌
-													</button>
-												</div>
-											) : (
-												<div className={`actionButtons`}>
-													{["admin", "superadmin"].includes(user?.role || "") && (
-														<div className={`button edit`} onClick={() => startEditing(product)}>
-															✏️ Редактировать
-														</div>
-													)}
-													<Link href={`/admin/product-management/products/${product.id}/logs`} title="Логи" className={`button logs`}>
-														📋 Посмотреть логи
-													</Link>
-												</div>
-											)}
-										</td>
-									</tr>
-								);
-							})
-						)}
-					</tbody>
-				</table>
+														}}
+														className={styles.departmentSelect}
+													>
+														{departments.map((dept) => (
+															<option key={dept.id} value={dept.id.toString()}>
+																{dept.name}
+															</option>
+														))}
+													</select>
+												) : product.department ? (
+													<Link href={`/admin/departments/${product.department.id}`}>{product.department.name}</Link>
+												) : (
+													"—"
+												)}
+											</td>
+											<td>
+												{isEditing ? (
+													<input type="text" value={editForm.brand} onChange={(e) => setEditForm({ ...editForm, brand: e.target.value })} />
+												) : (
+													product.brand
+												)}
+											</td>
+											<td>
+												{isEditing ? (
+													<div className={styles.editActions}>
+														<button onClick={() => saveProduct(product.id)} title="Сохранить">
+															💾
+														</button>
+														<button onClick={cancelEditing} title="Отменить">
+															❌
+														</button>
+													</div>
+												) : (
+													<div className={`actionButtons`}>
+														{["admin", "superadmin"].includes(user?.role || "") && (
+															<div className={`button edit`} onClick={() => startEditing(product)}>
+																✏️ Редактировать
+															</div>
+														)}
+														<Link href={`/admin/product-management/products/${product.id}/logs`} title="Логи" className={`button logs`}>
+															📋 Посмотреть логи
+														</Link>
+													</div>
+												)}
+											</td>
+										</tr>
+									);
+								})
+							)}
+						</tbody>
+					</table>
+				</ScrollableTableWrapper>
 				<Link href="/admin/product-management/products/create" className={`createButton`}>
 					+ Создать товар
 				</Link>

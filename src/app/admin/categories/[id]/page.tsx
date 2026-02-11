@@ -1,7 +1,9 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import CategoryPageClient from "../local_components/CategoryPageClient";
 import { Category, CategoryFilter } from "@/lib/types";
+import { withDbRetry } from "@/lib/utils";
 
 type PageParams = {
 	params: Promise<{
@@ -12,29 +14,30 @@ type PageParams = {
 export default async function CategoryPage({ params }: PageParams) {
 	const { id } = await params;
 
-	// Получаем данные категории
-	const category = await prisma.category.findUnique({
-		where: { id: Number(id) },
-		include: {
-			Filter: {
-				include: {
-					values: true,
+	// Получаем данные категории и все фильтры в withDbRetry — при обрыве соединения (Neon) запрос повторяется
+	const [category, allFilters] = await withDbRetry(async () => {
+		const cat = await prisma.category.findUnique({
+			where: { id: Number(id) },
+			include: {
+				Filter: {
+					include: {
+						values: true,
+					},
 				},
 			},
-		},
+		});
+		const filters = await prisma.filter.findMany({
+			orderBy: { title: "asc" },
+			include: {
+				values: true,
+			},
+		});
+		return [cat, filters] as const;
 	});
 
 	if (!category) {
 		return notFound();
 	}
-
-	// Получаем все фильтры для выбора
-	const allFilters = await prisma.filter.findMany({
-		orderBy: { title: "asc" },
-		include: {
-			values: true,
-		},
-	});
 
 	// Подготавливаем данные для клиентского компонента
 	const categoryData: Category = {
@@ -64,5 +67,21 @@ export default async function CategoryPage({ params }: PageParams) {
 		filters: categoryData.filters, // Передаем только фильтры, которые уже привязаны к категории
 	};
 
-	return <CategoryPageClient initialData={initialData} />;
+	return (
+		<div className="screenContent">
+			<div className="tableContainer">
+				<div className="tabsContainer">
+					<Link href={`/admin/categories/${id}`} className="tabButton active">
+						Редактирование категории
+					</Link>
+					<Link href={`/admin/categories/${id}/logs`} className="tabButton">
+						История изменений
+					</Link>
+				</div>
+				<div className="tableContent">
+					<CategoryPageClient initialData={initialData} />
+				</div>
+			</div>
+		</div>
+	);
 }

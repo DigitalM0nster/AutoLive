@@ -44,9 +44,12 @@ export const GET = withPermission(
 			const limit = parseInt(searchParams.get("limit") || "10", 10);
 			const skip = (page - 1) * limit;
 
-			// Строим условия фильтрации для логов конкретного продукта
+			// Строим условия фильтрации для логов конкретного продукта (по id в Json-снапшотах)
 			const where: any = {
-				productId: productId, // Фильтруем по конкретному продукту
+				OR: [
+					{ productSnapshotBefore: { path: ["id"], equals: productId } },
+					{ productSnapshotAfter: { path: ["id"], equals: productId } },
+				],
 			};
 
 			// Фильтр по действию
@@ -78,11 +81,10 @@ export const GET = withPermission(
 
 			// Преобразуем логи в нужный формат
 			const formattedLogs = logs.map((log) => {
-				// Парсим JSON данные из снимков
 				const userSnapshot = log.userSnapshot as any;
 				const departmentSnapshot = log.departmentSnapshot as any;
-				const snapshotBefore = log.snapshotBefore ? JSON.parse(log.snapshotBefore) : null;
-				const snapshotAfter = log.snapshotAfter ? JSON.parse(log.snapshotAfter) : null;
+				const snapshotBefore = (log.productSnapshotBefore as any) ?? null;
+				const snapshotAfter = (log.productSnapshotAfter as any) ?? null;
 
 				return {
 					id: log.id,

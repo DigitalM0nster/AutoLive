@@ -45,7 +45,7 @@ export default function AllServiceKitsLogsTable({
 
 		try {
 			const params = new URLSearchParams();
-			userIds.forEach((id) => params.append("userIds", id.toString()));
+			params.set("userIds", userIds.join(","));
 
 			const response = await fetch(`/api/users/check-existence?${params.toString()}`, {
 				method: "GET",

@@ -14,6 +14,12 @@ async function getOrderLogsHandler(req: NextRequest, { user, scope }: { user: an
 		const limit = parseInt(searchParams.get("limit") || "20");
 		const skip = (page - 1) * limit;
 
+		// Параметры фильтрации
+		const action = searchParams.get("action");
+		const startDate = searchParams.get("startDate");
+		const endDate = searchParams.get("endDate");
+		const adminSearch = searchParams.get("adminSearch")?.trim() || "";
+
 		if (isNaN(orderId)) {
 			return NextResponse.json({ error: "Invalid order ID" }, { status: 400 });
 		}
@@ -72,12 +78,25 @@ async function getOrderLogsHandler(req: NextRequest, { user, scope }: { user: an
 			return NextResponse.json({ error: "Order not found or access denied" }, { status: 404 });
 		}
 
+		// Условия фильтрации
+		const whereClause: any = { orderId: orderId };
+		if (action) {
+			whereClause.action = action;
+		}
+		if (startDate || endDate) {
+			whereClause.createdAt = {};
+			if (startDate) {
+				whereClause.createdAt.gte = new Date(startDate);
+			}
+			if (endDate) {
+				whereClause.createdAt.lte = new Date(endDate + "T23:59:59.999Z");
+			}
+		}
+
 		// Получаем логи заказа с пагинацией
 		const [logs, total] = await Promise.all([
 			prisma.orderLog.findMany({
-				where: {
-					orderId: orderId,
-				},
+				where: whereClause,
 				orderBy: {
 					createdAt: "desc",
 				},
@@ -85,19 +104,33 @@ async function getOrderLogsHandler(req: NextRequest, { user, scope }: { user: an
 				take: limit,
 			}),
 			prisma.orderLog.count({
-				where: {
-					orderId: orderId,
-				},
+				where: whereClause,
 			}),
 		]);
 
-		const totalPages = Math.ceil(total / limit);
+		// Фильтр по администратору (поиск по ФИО или телефону из adminSnapshot)
+		let filteredLogs = logs;
+		if (adminSearch) {
+			const search = adminSearch.toLowerCase();
+			filteredLogs = logs.filter((log) => {
+				const admin = log.adminSnapshot;
+				if (!admin || typeof admin !== "object") return false;
+				const fio = [admin.last_name, admin.first_name, admin.middle_name].filter(Boolean).join(" ").toLowerCase();
+				const phone = (admin.phone || "").toLowerCase();
+				return fio.includes(search) || phone.includes(search);
+			});
+		}
+
+		// Пересчитываем total и totalPages после фильтрации по админу
+		const filteredTotal = adminSearch ? filteredLogs.length : total;
+		const filteredTotalPages = Math.ceil(filteredTotal / limit);
+		const paginatedLogs = adminSearch ? filteredLogs.slice(skip, skip + limit) : filteredLogs;
 
 		const response: OrderLogResponse = {
-			data: logs,
-			total,
+			data: paginatedLogs,
+			total: filteredTotal,
 			page,
-			totalPages,
+			totalPages: filteredTotalPages,
 		};
 
 		return NextResponse.json(response);

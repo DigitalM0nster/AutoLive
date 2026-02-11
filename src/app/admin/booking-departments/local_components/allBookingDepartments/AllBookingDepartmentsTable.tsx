@@ -10,6 +10,7 @@ import { showSuccessToast, showErrorToast } from "@/components/ui/toast/ToastPro
 import { useAuthStore } from "@/store/authStore";
 import Loading from "@/components/ui/loading/Loading";
 import { useRouter } from "next/navigation";
+import ScrollableTableWrapper from "@/components/ui/scrollableTableWrapper/ScrollableTableWrapper";
 
 export default function AllBookingDepartmentsTable() {
 	const [bookingDepartments, setBookingDepartments] = useState<BookingDepartment[]>([]);
@@ -109,7 +110,7 @@ export default function AllBookingDepartmentsTable() {
 				(dept.name && dept.name.toLowerCase().includes(searchLower)) ||
 				(dept.address && dept.address.toLowerCase().includes(searchLower)) ||
 				(dept.phones && dept.phones.some((phone) => phone.toLowerCase().includes(searchLower))) ||
-				(dept.emails && dept.emails.some((email) => email.toLowerCase().includes(searchLower)))
+				(dept.emails && dept.emails.some((email) => email.toLowerCase().includes(searchLower))),
 		);
 	};
 
@@ -167,115 +168,117 @@ export default function AllBookingDepartmentsTable() {
 				/>
 
 				<div className={styles.tableContainer}>
-					<table className={styles.table}>
-						<thead className={styles.tableHeader}>
-							<tr>
-								<th
-									className={`${styles.tableHeaderCell} idCell sortableHeader ${sortBy === "id" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
-									onClick={() => {
-										if (sortBy !== "id") {
-											setSortBy("id");
-											setSortOrder("asc");
-										} else if (sortOrder === "asc") {
-											setSortOrder("desc");
-										} else {
-											setSortBy(null);
-											setSortOrder(null);
-										}
-									}}
-								>
-									ID
-								</th>
-								<th
-									className={`${styles.tableHeaderCell} sortableHeader ${sortBy === "name" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
-									onClick={() => {
-										if (sortBy !== "name") {
-											setSortBy("name");
-											setSortOrder("asc");
-										} else if (sortOrder === "asc") {
-											setSortOrder("desc");
-										} else {
-											setSortBy(null);
-											setSortOrder(null);
-										}
-									}}
-								>
-									Название
-								</th>
-								<th className={styles.tableHeaderCell}>Адрес</th>
-								<th className={styles.tableHeaderCell}>Телефон</th>
-								<th className={styles.tableHeaderCell}>Почты</th>
-								{canManageBookingDepartments() && <th className={styles.tableHeaderCell}>Действия</th>}
-							</tr>
-						</thead>
-						<tbody className={styles.tableBody}>
-							{loading ? (
+					<ScrollableTableWrapper>
+						<table className={styles.table}>
+							<thead className={styles.tableHeader}>
 								<tr>
-									<td colSpan={canManageBookingDepartments() ? 6 : 5} className={styles.loadingCell}>
-										<Loading />
-									</td>
+									<th
+										className={`${styles.tableHeaderCell} idCell sortableHeader ${sortBy === "id" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
+										onClick={() => {
+											if (sortBy !== "id") {
+												setSortBy("id");
+												setSortOrder("asc");
+											} else if (sortOrder === "asc") {
+												setSortOrder("desc");
+											} else {
+												setSortBy(null);
+												setSortOrder(null);
+											}
+										}}
+									>
+										ID
+									</th>
+									<th
+										className={`${styles.tableHeaderCell} sortableHeader ${sortBy === "name" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
+										onClick={() => {
+											if (sortBy !== "name") {
+												setSortBy("name");
+												setSortOrder("asc");
+											} else if (sortOrder === "asc") {
+												setSortOrder("desc");
+											} else {
+												setSortBy(null);
+												setSortOrder(null);
+											}
+										}}
+									>
+										Название
+									</th>
+									<th className={styles.tableHeaderCell}>Адрес</th>
+									<th className={styles.tableHeaderCell}>Телефон</th>
+									<th className={styles.tableHeaderCell}>Почты</th>
+									{canManageBookingDepartments() && <th className={styles.tableHeaderCell}>Действия</th>}
 								</tr>
-							) : processedDepartments.length === 0 ? (
-								<tr>
-									<td colSpan={canManageBookingDepartments() ? 6 : 5} className={styles.emptyCell}>
-										{search ? "Адреса не найдены" : "Нет адресов"}
-									</td>
-								</tr>
-							) : (
-								processedDepartments.map((dept) => (
-									<tr key={dept.id} className={styles.tableRow}>
-										<td className={`${styles.tableCell} idCell`}>{dept.id}</td>
-										<td className={styles.tableCell}>
-											<Link href={`/admin/booking-departments/${dept.id}/edit`} className={styles.departmentLink}>
-												{dept.name || "—"}
-											</Link>
+							</thead>
+							<tbody className={styles.tableBody}>
+								{loading ? (
+									<tr>
+										<td colSpan={canManageBookingDepartments() ? 6 : 5} className={styles.loadingCell}>
+											<Loading />
 										</td>
-										<td className={styles.tableCell}>{dept.address}</td>
-										<td className={styles.tableCell}>
-											{dept.phones && dept.phones.length > 0 ? (
-												<div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-													{dept.phones.map((phone, index) => (
-														<span key={index}>{phone}</span>
-													))}
-												</div>
-											) : (
-												"—"
-											)}
-										</td>
-										<td className={styles.tableCell}>
-											{dept.emails && dept.emails.length > 0 ? (
-												<div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-													{dept.emails.map((email, index) => (
-														<span key={index}>{email}</span>
-													))}
-												</div>
-											) : (
-												"—"
-											)}
-										</td>
-										{canManageBookingDepartments() && (
-											<td className={styles.tableCell}>
-												<div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-													<button className="button" style={{ padding: "5px 15px", fontSize: "12px" }} onClick={() => handleEdit(dept.id)}>
-														Редактировать
-													</button>
-													<button
-														className="removeButton"
-														onClick={() => {
-															setDepartmentToDelete(dept);
-															setShowDeleteModal(true);
-														}}
-													>
-														Удалить
-													</button>
-												</div>
-											</td>
-										)}
 									</tr>
-								))
-							)}
-						</tbody>
-					</table>
+								) : processedDepartments.length === 0 ? (
+									<tr>
+										<td colSpan={canManageBookingDepartments() ? 6 : 5} className={styles.emptyCell}>
+											{search ? "Адреса не найдены" : "Нет адресов"}
+										</td>
+									</tr>
+								) : (
+									processedDepartments.map((dept) => (
+										<tr key={dept.id} className={styles.tableRow}>
+											<td className={`${styles.tableCell} idCell`}>{dept.id}</td>
+											<td className={styles.tableCell}>
+												<Link href={`/admin/booking-departments/${dept.id}/edit`} className={styles.departmentLink}>
+													{dept.name || "—"}
+												</Link>
+											</td>
+											<td className={styles.tableCell}>{dept.address}</td>
+											<td className={styles.tableCell}>
+												{dept.phones && dept.phones.length > 0 ? (
+													<div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+														{dept.phones.map((phone, index) => (
+															<span key={index}>{phone}</span>
+														))}
+													</div>
+												) : (
+													"—"
+												)}
+											</td>
+											<td className={styles.tableCell}>
+												{dept.emails && dept.emails.length > 0 ? (
+													<div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+														{dept.emails.map((email, index) => (
+															<span key={index}>{email}</span>
+														))}
+													</div>
+												) : (
+													"—"
+												)}
+											</td>
+											{canManageBookingDepartments() && (
+												<td className={styles.tableCell}>
+													<div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+														<button className="button" style={{ padding: "5px 15px", fontSize: "12px" }} onClick={() => handleEdit(dept.id)}>
+															Редактировать
+														</button>
+														<button
+															className="removeButton"
+															onClick={() => {
+																setDepartmentToDelete(dept);
+																setShowDeleteModal(true);
+															}}
+														>
+															Удалить
+														</button>
+													</div>
+												</td>
+											)}
+										</tr>
+									))
+								)}
+							</tbody>
+						</table>
+					</ScrollableTableWrapper>
 					{/* Показываем кнопку создания только админам и суперадминам */}
 					{canManageBookingDepartments() && (
 						<Link href="/admin/booking-departments/create" className={`createButton`}>

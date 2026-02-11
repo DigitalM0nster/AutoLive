@@ -11,14 +11,16 @@ export const GET = withPermission(
 	async (req: NextRequest, { user }: ExtendedRequestContext) => {
 		try {
 			const { searchParams } = new URL(req.url);
-			const productIds = searchParams.getAll("productIds");
+			const productIdsParam = searchParams.get("productIds");
 
-			if (productIds.length === 0) {
+			if (!productIdsParam) {
 				return NextResponse.json({ existingProducts: {} });
 			}
 
-			// Преобразуем строки в числа
-			const numericProductIds = productIds.map((id) => parseInt(id)).filter((id) => !isNaN(id));
+			const numericProductIds = productIdsParam
+				.split(",")
+				.map((id) => parseInt(id))
+				.filter((id) => !isNaN(id));
 
 			if (numericProductIds.length === 0) {
 				return NextResponse.json({ existingProducts: {} });

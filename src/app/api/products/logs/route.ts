@@ -74,10 +74,6 @@ export const GET = withPermission(
 						userSnapshot: true,
 						departmentSnapshot: true,
 						productsSnapshot: true,
-						// Временные поля для совместимости
-						userId: true,
-						departmentId: true,
-						snapshots: true,
 					},
 				});
 
@@ -236,8 +232,12 @@ export const GET = withPermission(
 					where.createdAt = dateFilter;
 				}
 
+				// Фильтр по отделу: проверяем departmentSnapshot (Json)
 				if (Object.keys(departmentFilter).length > 0) {
-					where.departmentId = departmentFilter.departmentId;
+					where.departmentSnapshot = {
+						path: ["id"],
+						equals: departmentFilter.departmentId,
+					};
 				}
 
 				const logs = await prisma.product_log.findMany({
@@ -251,8 +251,8 @@ export const GET = withPermission(
 				const productLogs = logs.map((log) => {
 					const userSnapshot = log.userSnapshot as any;
 					let departmentSnapshot = log.departmentSnapshot as any;
-					const snapshotBefore = log.snapshotBefore ? JSON.parse(log.snapshotBefore) : null;
-					const snapshotAfter = log.snapshotAfter ? JSON.parse(log.snapshotAfter) : null;
+					const snapshotBefore = (log.productSnapshotBefore as any) ?? null;
+					const snapshotAfter = (log.productSnapshotAfter as any) ?? null;
 
 					// Если departmentSnapshot пустой, заполняем его из снапшотов
 					if (!departmentSnapshot || !departmentSnapshot.id) {

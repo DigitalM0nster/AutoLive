@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { withPermission } from "@/middleware/permissionMiddleware";
 import { Permission } from "@/lib/rolesConfig";
 import { logUserChange, logDepartmentChangeWithUsers, getFullDepartmentData } from "@/lib/universalLogging";
+import { withDbRetry } from "@/lib/utils";
 
 // Создаем обработчик, который будет вызван после проверки прав доступа
 async function getUserHandler(req: NextRequest, context: { user: any; scope: "all" | "department" | "own" }, params: { userId: string }) {
@@ -38,24 +39,26 @@ async function getUserHandler(req: NextRequest, context: { user: any; scope: "al
 			return NextResponse.json({ error: "Недостаточно прав для просмотра данного пользователя" }, { status: 403 });
 		}
 
-		// Получаем данные пользователя
-		const userData = await prisma.user.findUnique({
-			where: { id: userId },
-			include: {
-				department: true,
-				managerOrders: {
-					select: {
-						id: true,
-						comments: true,
-						status: true,
-						createdAt: true,
-					},
-					orderBy: {
-						createdAt: "desc",
+		// Получаем данные пользователя (withDbRetry — повтор при обрыве соединения Neon)
+		const userData = await withDbRetry(() =>
+			prisma.user.findUnique({
+				where: { id: userId },
+				include: {
+					department: true,
+					managerOrders: {
+						select: {
+							id: true,
+							comments: true,
+							status: true,
+							createdAt: true,
+						},
+						orderBy: {
+							createdAt: "desc",
+						},
 					},
 				},
-			},
-		});
+			})
+		);
 
 		if (!userData) {
 			return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });
@@ -192,194 +195,152 @@ async function updateUserHandler(req: NextRequest, context: { user: any; scope: 
 			return NextResponse.json({ error: "Некорректный ID пользователя" }, { status: 400 });
 		}
 
-		// Получаем данные пользователя до обновления
-		const userBeforeUpdate = await prisma.user.findUnique({
-			where: { id: userId },
-			include: { department: true },
-		});
-
-		if (!userBeforeUpdate) {
-			return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });
-		}
-
-		// Получаем данные для обновления
+		// Тело запроса читаем один раз до withDbRetry
 		const data = await req.json();
 		const { first_name, last_name, middle_name, phone, role, status, departmentId } = data;
 
-		// Запрещаем изменение роли суперадминистратора
-		if (userBeforeUpdate.role === "superadmin" && role && role !== "superadmin") {
-			return NextResponse.json({ error: "Роль суперадминистратора не может быть изменена" }, { status: 403 });
-		}
-
-		// Запрещаем изменение любых полей суперадминистратора другими пользователями
-		if (userBeforeUpdate.role === "superadmin" && user.role !== "superadmin") {
-			return NextResponse.json({ error: "Недостаточно прав для редактирования суперадминистратора" }, { status: 403 });
-		}
-
-		// Проверка прав доступа
-		let canUpdate = false;
-
-		// Суперадмин может обновлять любого пользователя
-		if (user.role === "superadmin") {
-			canUpdate = true;
-		}
-		// Админ может обновлять пользователей из своего отдела и обычных пользователей
-		else if (user.role === "admin") {
-			if (userBeforeUpdate.role === "client") {
-				canUpdate = true;
-			} else if (userBeforeUpdate.role === "manager" && user.departmentId && userBeforeUpdate.departmentId === user.departmentId) {
-				canUpdate = true;
-			}
-		}
-
-		if (!canUpdate) {
-			return NextResponse.json({ error: "Недостаточно прав для обновления этого пользователя" }, { status: 403 });
-		}
-
-		// Проверка на существование пользователя с таким телефоном (если телефон изменяется)
-		if (phone && phone !== userBeforeUpdate.phone) {
-			const existingUser = await prisma.user.findUnique({
-				where: { phone },
+		// Все обращения к БД — в withDbRetry (при обрыве соединения Neon повторяем)
+		const result = await withDbRetry(async () => {
+			const userBeforeUpdate = await prisma.user.findUnique({
+				where: { id: userId },
+				include: { department: true },
 			});
 
-			if (existingUser) {
-				return NextResponse.json({ error: "Пользователь с таким номером телефона уже существует" }, { status: 400 });
+			if (!userBeforeUpdate) {
+				return { type: "not_found" as const };
 			}
-		}
 
-		// Получаем полные снапшоты отделов ДО изменения (если пользователь был в отделе)
-		let beforeDepartmentSnapshot = null;
-		if (userBeforeUpdate.departmentId) {
-			// Создаем снапшот отдела ДО изменения (ОСТАВЛЯЕМ пользователя, который будет переведен)
-			const departmentBefore = await prisma.department.findUnique({
-				where: { id: userBeforeUpdate.departmentId },
-				include: {
-					users: {
-						select: {
-							id: true,
-							phone: true,
-							first_name: true,
-							last_name: true,
-							role: true,
-							status: true,
-							department: {
-								select: {
-									id: true,
-									name: true,
-								},
+			if (userBeforeUpdate.role === "superadmin" && role && role !== "superadmin") {
+				return { type: "error" as const, status: 403, error: "Роль суперадминистратора не может быть изменена" };
+			}
+			if (userBeforeUpdate.role === "superadmin" && user.role !== "superadmin") {
+				return { type: "error" as const, status: 403, error: "Недостаточно прав для редактирования суперадминистратора" };
+			}
+
+			let canUpdate = false;
+			if (user.role === "superadmin") {
+				canUpdate = true;
+			} else if (user.role === "admin") {
+				if (userBeforeUpdate.role === "client") {
+					canUpdate = true;
+				} else if (userBeforeUpdate.role === "manager" && user.departmentId && userBeforeUpdate.departmentId === user.departmentId) {
+					canUpdate = true;
+				}
+			}
+			if (!canUpdate) {
+				return { type: "error" as const, status: 403, error: "Недостаточно прав для обновления этого пользователя" };
+			}
+
+			if (phone && phone !== userBeforeUpdate.phone) {
+				const existingUser = await prisma.user.findUnique({ where: { phone } });
+				if (existingUser) {
+					return { type: "error" as const, status: 400, error: "Пользователь с таким номером телефона уже существует" };
+				}
+			}
+
+			let beforeDepartmentSnapshot: any = null;
+			if (userBeforeUpdate.departmentId) {
+				const departmentBefore = await prisma.department.findUnique({
+					where: { id: userBeforeUpdate.departmentId },
+					include: {
+						users: {
+							select: {
+								id: true,
+								phone: true,
+								first_name: true,
+								last_name: true,
+								role: true,
+								status: true,
+								department: { select: { id: true, name: true } },
 							},
 						},
+						products: { select: { id: true, title: true, sku: true, brand: true, price: true } },
+						orders: { select: { id: true, comments: true, status: true, createdAt: true } },
 					},
-					products: {
-						select: {
-							id: true,
-							title: true,
-							sku: true,
-							brand: true,
-							price: true,
+				});
+				if (departmentBefore) {
+					beforeDepartmentSnapshot = {
+						...departmentBefore,
+						users: departmentBefore.users,
+						usersCount: departmentBefore.users.length,
+						statistics: {
+							total_entities: departmentBefore.users.length + departmentBefore.products.length + departmentBefore.orders.length,
+							active_users: departmentBefore.users.filter((u: any) => u.status === "verified").length,
 						},
-					},
-					orders: {
-						select: {
-							id: true,
-							comments: true,
-							status: true,
-							createdAt: true,
-						},
-					},
+					};
+				}
+			}
+
+			const updatedUser = await prisma.user.update({
+				where: { id: userId },
+				data: {
+					first_name: first_name || null,
+					last_name: last_name || null,
+					middle_name: middle_name || null,
+					phone: phone || userBeforeUpdate.phone,
+					role: role || userBeforeUpdate.role,
+					status: status || userBeforeUpdate.status,
+					departmentId: departmentId ? parseInt(departmentId) : null,
 				},
+				include: { department: true },
 			});
 
-			if (departmentBefore) {
-				// Создаем снапшот ДО изменения (ОСТАВЛЯЕМ пользователя, который будет переведен)
-				beforeDepartmentSnapshot = {
-					...departmentBefore,
-					users: departmentBefore.users, // Оставляем всех пользователей, включая того, который будет переведен
-					usersCount: departmentBefore.users.length,
-					statistics: {
-						total_entities: departmentBefore.users.length + departmentBefore.products.length + departmentBefore.orders.length,
-						active_users: departmentBefore.users.filter((u) => u.status === "verified").length,
-					},
-				};
+			let afterDepartmentSnapshot: any = null;
+			if (updatedUser.departmentId) {
+				afterDepartmentSnapshot = await getFullDepartmentData(updatedUser.departmentId);
 			}
-		}
 
-		// Обновляем пользователя
-		const updatedUser = await prisma.user.update({
-			where: { id: userId },
-			data: {
-				first_name: first_name || null,
-				last_name: last_name || null,
-				middle_name: middle_name || null,
-				phone: phone || userBeforeUpdate.phone,
-				role: role || userBeforeUpdate.role,
-				status: status || userBeforeUpdate.status,
-				departmentId: departmentId ? parseInt(departmentId) : null,
-			},
-			include: { department: true },
+			let newDepartmentBeforeSnapshot: any = null;
+			if (userBeforeUpdate.departmentId && updatedUser.departmentId && userBeforeUpdate.departmentId !== updatedUser.departmentId) {
+				const newDepartmentBefore = await prisma.department.findUnique({
+					where: { id: updatedUser.departmentId },
+					include: {
+						users: {
+							select: {
+								id: true,
+								phone: true,
+								first_name: true,
+								last_name: true,
+								role: true,
+								status: true,
+								department: { select: { id: true, name: true } },
+							},
+						},
+						products: { select: { id: true, title: true, sku: true, brand: true, price: true } },
+						orders: { select: { id: true, comments: true, status: true, createdAt: true } },
+					},
+				});
+				if (newDepartmentBefore) {
+					newDepartmentBeforeSnapshot = {
+						...newDepartmentBefore,
+						users: newDepartmentBefore.users,
+						usersCount: newDepartmentBefore.users.length,
+						statistics: {
+							total_entities: newDepartmentBefore.users.length + newDepartmentBefore.products.length + newDepartmentBefore.orders.length,
+							active_users: newDepartmentBefore.users.filter((u: any) => u.status === "verified").length,
+						},
+					};
+				}
+			}
+
+			return {
+				type: "ok" as const,
+				userBeforeUpdate,
+				updatedUser,
+				beforeDepartmentSnapshot,
+				afterDepartmentSnapshot,
+				newDepartmentBeforeSnapshot,
+			};
 		});
 
-		// Получаем полные снапшоты отделов ПОСЛЕ изменения (если пользователь теперь в отделе)
-		let afterDepartmentSnapshot = null;
-		if (updatedUser.departmentId) {
-			afterDepartmentSnapshot = await getFullDepartmentData(updatedUser.departmentId);
+		if (result.type === "not_found") {
+			return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });
+		}
+		if (result.type === "error") {
+			return NextResponse.json({ error: result.error }, { status: result.status });
 		}
 
-		// Если пользователь переходит из одного отдела в другой, создаем снапшот нового отдела ДО добавления
-		let newDepartmentBeforeSnapshot = null;
-		if (userBeforeUpdate.departmentId && updatedUser.departmentId && userBeforeUpdate.departmentId !== updatedUser.departmentId) {
-			// Создаем снапшот нового отдела ДО добавления пользователя
-			const newDepartmentBefore = await prisma.department.findUnique({
-				where: { id: updatedUser.departmentId },
-				include: {
-					users: {
-						select: {
-							id: true,
-							phone: true,
-							first_name: true,
-							last_name: true,
-							role: true,
-							status: true,
-							department: {
-								select: {
-									id: true,
-									name: true,
-								},
-							},
-						},
-					},
-					products: {
-						select: {
-							id: true,
-							title: true,
-							sku: true,
-							brand: true,
-							price: true,
-						},
-					},
-					orders: {
-						select: {
-							id: true,
-							comments: true,
-							status: true,
-							createdAt: true,
-						},
-					},
-				},
-			});
-
-			if (newDepartmentBefore) {
-				newDepartmentBeforeSnapshot = {
-					...newDepartmentBefore,
-					users: newDepartmentBefore.users, // Оставляем всех пользователей (пользователь еще не добавлен)
-					usersCount: newDepartmentBefore.users.length,
-					statistics: {
-						total_entities: newDepartmentBefore.users.length + newDepartmentBefore.products.length + newDepartmentBefore.orders.length,
-						active_users: newDepartmentBefore.users.filter((u) => u.status === "verified").length,
-					},
-				};
-			}
-		}
+		const { userBeforeUpdate, updatedUser, beforeDepartmentSnapshot, afterDepartmentSnapshot, newDepartmentBeforeSnapshot } = result;
 
 		// Логируем обновление пользователя
 		await logUserChange({

@@ -92,8 +92,6 @@ export const POST = withPermission(
 						data: {
 							action: "delete",
 							message: `Товар "${singleProduct.title}" удален`,
-							userId: user.id,
-							productId: singleProduct.id, // Создаём лог ДО удаления, поэтому productId ещё существует
 							userSnapshot: userData,
 							departmentSnapshot: singleProduct.department
 								? {
@@ -101,7 +99,7 @@ export const POST = withPermission(
 										name: singleProduct.department.name,
 								  }
 								: undefined,
-							snapshotBefore: JSON.stringify({
+							productSnapshotBefore: {
 								id: singleProduct.id,
 								title: singleProduct.title,
 								sku: singleProduct.sku,
@@ -121,8 +119,8 @@ export const POST = withPermission(
 											title: singleProduct.category.title,
 									  }
 									: undefined,
-							}),
-							snapshotAfter: null,
+							} as any,
+							productSnapshotAfter: null,
 						},
 					});
 
@@ -233,21 +231,6 @@ export const POST = withPermission(
 								department: p.department ? { id: p.department.id, name: p.department.name } : undefined,
 								category: p.category ? { title: p.category.title } : undefined,
 							})),
-							// Временные поля для совместимости
-							user_id: user.id,
-							department_id: user.departmentId ?? null,
-							snapshots: JSON.stringify(
-								productsToDelete.map((p) => ({
-									id: p.id,
-									title: p.title,
-									sku: p.sku,
-									brand: p.brand,
-									price: p.price,
-									supplierPrice: p.supplierPrice,
-									department: p.department ? { id: p.department.id, name: p.department.name } : undefined,
-									category: p.category ? { title: p.category.title } : undefined,
-								}))
-							),
 						},
 					});
 
@@ -276,14 +259,6 @@ export const POST = withPermission(
 							},
 						});
 					}
-
-					// Обнуляем ссылки на удаляемые продукты в логах
-					await chunkedDeleteMany(numericIds, (chunk) =>
-						tx.product_log.updateMany({
-							where: { productId: { in: chunk } },
-							data: { productId: null },
-						})
-					);
 
 					// Удаляем связи фильтров
 					await chunkedDeleteMany(numericIds, (chunk) =>

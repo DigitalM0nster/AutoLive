@@ -387,10 +387,6 @@ export const POST = withPermission(
 							name: userDepartment?.name,
 						},
 						productsSnapshot: snapshots,
-						// Временные поля для совместимости
-						userId: user.id,
-						departmentId: departmentId,
-						snapshots: JSON.stringify(snapshots),
 					},
 				});
 				importLogId = importLog.id;
@@ -419,13 +415,8 @@ export const POST = withPermission(
 									sku: log.snapshotAfter?.sku || log.snapshotBefore?.sku || null,
 									brand: log.snapshotAfter?.brand || log.snapshotBefore?.brand || null,
 								},
-								// Временные поля для совместимости
-								userId: log.userId,
-								departmentId: log.departmentId,
-								productId: log.productId,
-								snapshotBefore: log.snapshotBefore ? JSON.stringify(log.snapshotBefore) : null,
-								snapshotAfter: log.snapshotAfter ? JSON.stringify(log.snapshotAfter) : null,
-								// Добавляем ссылку на лог импорта
+								productSnapshotBefore: log.snapshotBefore ?? undefined,
+								productSnapshotAfter: log.snapshotAfter ?? undefined,
 								importLogId: importLogId,
 							},
 						})

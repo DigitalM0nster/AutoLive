@@ -4,10 +4,10 @@ import AllDepartmentsLogsComponent from "../local_components/allDepartmentsLogs/
 
 export default function DepartmentsLogsPage() {
 	return (
-		<div className={`screenContent`}>
-			<div className="tableContainer">
+		<div className={`screenContent ${styles.screenContent}`}>
+			<div className={`tableContainer ${styles.tableContainer}`}>
 				<div className={`tabsContainer ${styles.tabsContainer}`}>
-					<Link href="/admin/departments/" className={`tabButton`}>
+					<Link href="/admin/departments" className={`tabButton`}>
 						Список отделов
 					</Link>
 					<div className={`tabButton active`}>История изменений</div>

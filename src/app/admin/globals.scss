@@ -7,7 +7,7 @@
 }
 
 :root {
-	--maxContentWidth: 1600px;
+	--maxContentWidth: 1680px;
 	--text-color: rgba(14, 14, 14, 1);
 	--light-grey-color: rgba(248, 249, 250, 1);
 	--light-grey2-color: rgba(233, 236, 239, 1);
@@ -229,6 +229,7 @@ a.button {
 	.table {
 		width: 100%;
 		height: fit-content;
+		min-width: max-content; // Предотвращаем сужение таблицы на маленьких экранах
 	}
 
 	.tableContent {
@@ -250,6 +251,14 @@ a.button {
 			border-top: 1px solid var(--light-grey2-color);
 		}
 
+		&.kitContent {
+			overflow: visible;
+
+			.formContainer {
+				overflow: visible;
+			}
+		}
+
 		.titleBlock {
 			display: flex;
 			justify-content: space-between;
@@ -257,10 +266,6 @@ a.button {
 			width: 100%;
 			gap: 10px;
 			height: fit-content;
-
-			input {
-				// width: max-content;
-			}
 
 			.button {
 				min-width: max-content;
@@ -342,7 +347,9 @@ a.button {
 		border-radius: 20px;
 		border: 1px solid var(--grey-color);
 		padding: 25px;
-		box-shadow: 0 10px 20px var(--shadow), 0px 5px 20px var(--shadow);
+		box-shadow:
+			0 10px 20px var(--shadow),
+			0px 5px 20px var(--shadow);
 		text-decoration: none;
 		color: var(--text-color);
 		transform: translate(0px, 0px);
@@ -350,7 +357,9 @@ a.button {
 
 		&:hover {
 			transform: translate(0px, -3px);
-			box-shadow: 0 10px 20px var(--shadow-hover), 0px 5px 20px var(--shadow-hover);
+			box-shadow:
+				0 10px 20px var(--shadow-hover),
+				0px 5px 20px var(--shadow-hover);
 
 			.cardTitle {
 				color: var(--blue-color);
@@ -1065,6 +1074,7 @@ table,
 	background: white;
 	box-shadow: none;
 	table-layout: fixed;
+	min-width: calc(var(--maxContentWidth) - 20px);
 
 	&.importTable {
 		tbody {
@@ -1161,10 +1171,6 @@ table,
 
 			&.actionCell {
 				width: 170px;
-			}
-
-			&:last-child {
-				// justify-items: right;
 			}
 		}
 	}
@@ -2577,9 +2583,11 @@ span {
 	}
 
 	.formHeader {
-		z-index: 100;
+		position: relative;
 		display: flex;
 		flex-direction: column;
+		z-index: 100;
+		border-radius: 12px 12px 0px 0px;
 		// justify-content: space-between;
 		// align-items: center;
 		padding: 24px 32px;
@@ -2618,7 +2626,8 @@ span {
 		}
 	}
 
-	.formFields {
+	.formFields,
+	.formSections {
 		display: flex;
 		flex-direction: column;
 		gap: 24px;
@@ -2634,67 +2643,21 @@ span {
 			}
 		}
 
+		.formSection {
+			display: flex;
+			flex-direction: column;
+			gap: 20px;
+
+			.formField {
+				border: none;
+				padding: 0;
+			}
+		}
+
 		.formField {
 			display: flex;
 			flex-direction: column;
 			gap: 4px;
-
-			input,
-			textarea,
-			select {
-				width: calc(100% - 32px);
-				padding: 12px 16px;
-				border: 1px solid var(--light-grey2-color);
-				border-radius: 8px;
-				font-size: 14px;
-				font-family: var(--mainFont);
-				background: white;
-
-				&:focus {
-					outline: none;
-					border-color: var(--blue-color);
-					box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-				}
-
-				&:disabled {
-					background: var(--light-grey-color);
-					color: #6b7280;
-					cursor: not-allowed;
-				}
-
-				&::placeholder {
-					color: #9ca3af;
-				}
-
-				&.error {
-					border-color: var(--red-color);
-					background: var(--light-red-color);
-					&::placeholder {
-						color: var(--red-color);
-						opacity: 0.5;
-					}
-				}
-
-				&.quantityInput {
-					width: 30px;
-					text-align: center;
-					-moz-appearance: textfield;
-
-					&::-webkit-outer-spin-button,
-					&::-webkit-inner-spin-button {
-						-webkit-appearance: none;
-					}
-				}
-			}
-
-			select {
-				width: 100%;
-			}
-
-			textarea {
-				resize: vertical;
-				min-height: 100px;
-			}
 		}
 
 		.fieldNote {
@@ -2706,6 +2669,11 @@ span {
 	}
 
 	.formField {
+		display: flex;
+		gap: 5px;
+		padding: 20px;
+		border-radius: 10px;
+		border: 1px solid var(--grey-color);
 		&.formFieldGroup {
 			display: flex;
 			flex-direction: row;
@@ -2725,11 +2693,6 @@ span {
 				}
 			}
 		}
-		display: flex;
-		gap: 5px;
-		padding: 20px;
-		border-radius: 10px;
-		border: 1px solid var(--grey-color);
 
 		&.column {
 			flex-direction: column;
@@ -2771,6 +2734,64 @@ span {
 				align-items: center;
 				gap: 10px;
 			}
+		}
+
+		input,
+		textarea,
+		select {
+			width: calc(100% - 32px);
+			padding: 12px 16px;
+			border: 1px solid var(--light-grey2-color);
+			border-radius: 8px;
+			font-size: 14px;
+			font-family: var(--mainFont);
+			background: white;
+
+			&:focus {
+				outline: none;
+				border-color: var(--blue-color);
+				box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+			}
+
+			&:disabled {
+				background: var(--light-grey-color);
+				color: #6b7280;
+				cursor: not-allowed;
+			}
+
+			&::placeholder {
+				color: #9ca3af;
+			}
+
+			&.error {
+				border-color: var(--red-color);
+				background: var(--light-red-color);
+				&::placeholder {
+					color: var(--red-color);
+					opacity: 0.5;
+				}
+			}
+
+			&.quantityInput {
+				width: 30px;
+				text-align: center;
+				-moz-appearance: textfield;
+				appearance: textfield;
+
+				&::-webkit-outer-spin-button,
+				&::-webkit-inner-spin-button {
+					-webkit-appearance: none;
+				}
+			}
+		}
+
+		select {
+			width: 100%;
+		}
+
+		textarea {
+			resize: vertical;
+			min-height: 100px;
 		}
 	}
 
@@ -3336,10 +3357,6 @@ span {
 					display: none; // Скрываем поля редактирования
 				}
 
-				.removeButton {
-					// display: none; // Скрываем кнопку удаления
-				}
-
 				.quantityControls {
 					.quantityButton {
 						pointer-events: none;
@@ -3515,6 +3532,7 @@ span {
 	.searchContainer {
 		position: relative;
 		margin-top: 10px;
+		z-index: 1001;
 
 		.searchHeader {
 			display: flex;
@@ -3786,7 +3804,9 @@ span {
 		border-radius: 50%;
 		transform: translate(-50%, -50%);
 		cursor: grab;
-		transition: all 0.2s ease, left 0s ease;
+		transition:
+			all 0.2s ease,
+			left 0s ease;
 
 		&:hover {
 			transform: translate(-50%, -50%) scale(1.1);
@@ -3884,7 +3904,9 @@ span {
 		border-radius: 50%;
 		transform: translate(-50%, -50%);
 		cursor: grab;
-		transition: all 0.2s ease, left 0s ease;
+		transition:
+			all 0.2s ease,
+			left 0s ease;
 
 		&:hover {
 			transform: translate(-50%, -50%) scale(1.1);
@@ -3926,10 +3948,10 @@ span {
 }
 
 @media (max-width: 640px) {
-	:root {
-	}
+	// :root {
+	// }
 }
 @media (max-width: 480px) {
-	:root {
-	}
+	// :root {
+	// }
 }

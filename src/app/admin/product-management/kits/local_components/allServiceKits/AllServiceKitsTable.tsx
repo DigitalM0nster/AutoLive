@@ -9,6 +9,7 @@ import Loading from "@/components/ui/loading/Loading";
 import { useAuthStore } from "@/store/authStore";
 import { showSuccessToast, showErrorToast } from "@/components/ui/toast/ToastProvider";
 import ConfirmPopup from "@/components/ui/confirmPopup/ConfirmPopup";
+import ScrollableTableWrapper from "@/components/ui/scrollableTableWrapper/ScrollableTableWrapper";
 
 export default function AllServiceKitsTable() {
 	const { user } = useAuthStore();
@@ -104,69 +105,75 @@ export default function AllServiceKitsTable() {
 	};
 
 	if (loading && kits.length === 0) {
-		return <Loading />;
+		return (
+			<div className="tableContent">
+				<Loading />
+			</div>
+		);
 	}
 
 	return (
-		<div className={styles.tableWrapper}>
-			<div className={styles.tableHeader}>
-				<Link href="/admin/product-management/kits/create" className={styles.createButton}>
-					Создать комплект ТО
-				</Link>
-			</div>
-
+		<div className={`tableContent ${styles.tableContent}`}>
 			{kits.length === 0 ? (
 				<div className={styles.emptyState}>
 					<p>Комплекты ТО не найдены</p>
-					<Link href="/admin/product-management/kits/create" className={styles.createButton}>
+					<Link href="/admin/product-management/kits/create" className="createButton">
 						Создать первый комплект ТО
 					</Link>
 				</div>
 			) : (
 				<>
-					<table className={styles.table}>
-						<thead>
-							<tr>
-								<th>ID</th>
-								<th>Название</th>
-								<th>Описание</th>
-								<th>Цена</th>
-								<th>Количество товаров</th>
-								<th>Действия</th>
-							</tr>
-						</thead>
-						<tbody>
-							{kits.map((kit) => (
-								<tr key={kit.id}>
-									<td>{kit.id}</td>
-									<td>
-										<Link href={`/admin/product-management/kits/${kit.id}`} className={styles.link}>
-											{kit.title}
-										</Link>
-									</td>
-									<td className={styles.descriptionCell}>
-										{kit.description ? <div className={styles.descriptionPreview}>{kit.description}</div> : <span className={styles.noData}>—</span>}
-									</td>
-									<td>{formatPrice(kit.price || 0)}</td>
-									<td>{kit.kitItems?.length || 0}</td>
-									<td>
-										<div className={styles.actions}>
-											<Link href={`/admin/product-management/kits/${kit.id}`} className={styles.editButton}>
-												Редактировать
-											</Link>
-											{user?.role === "superadmin" || user?.role === "admin" ? (
-												<button onClick={() => handleDeleteClick(kit.id)} className={styles.deleteButton} disabled={isDeleting}>
-													Удалить
-												</button>
-											) : null}
-										</div>
-									</td>
-								</tr>
-							))}
-						</tbody>
-					</table>
+					<div className={styles.tableContainer}>
+						<ScrollableTableWrapper>
+							<table className={styles.table}>
+								<thead>
+									<tr>
+										<th>ID</th>
+										<th>Название</th>
+										<th>Описание</th>
+										<th>Цена</th>
+										<th>Количество товаров</th>
+										<th>Действия</th>
+									</tr>
+								</thead>
+								<tbody>
+									{kits.map((kit) => (
+										<tr key={kit.id}>
+											<td>{kit.id}</td>
+											<td>
+												<Link href={`/admin/product-management/kits/${kit.id}`} className={styles.link}>
+													{kit.title}
+												</Link>
+											</td>
+											<td className={styles.descriptionCell}>
+												{kit.description ? <div className={styles.descriptionPreview}>{kit.description}</div> : <span className={styles.noData}>—</span>}
+											</td>
+											<td>{formatPrice(kit.price || 0)}</td>
+											<td>{kit.kitItems?.length || 0}</td>
+											<td>
+												<div className={styles.actions}>
+													<Link href={`/admin/product-management/kits/${kit.id}`} className={styles.editButton}>
+														Редактировать
+													</Link>
+													{user?.role === "superadmin" || user?.role === "admin" ? (
+														<button onClick={() => handleDeleteClick(kit.id)} className={styles.deleteButton} disabled={isDeleting}>
+															Удалить
+														</button>
+													) : null}
+												</div>
+											</td>
+										</tr>
+									))}
+								</tbody>
+							</table>
+						</ScrollableTableWrapper>
+					</div>
 
-					{totalPages > 1 && <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />}
+					<Link href="/admin/product-management/kits/create" className="createButton">
+						+ Создать комплект ТО
+					</Link>
+
+					{totalPages > 1 && <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} className={styles.productsPagination} />}
 				</>
 			)}
 

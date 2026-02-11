@@ -9,6 +9,7 @@ import Loading from "@/components/ui/loading/Loading";
 import ConfirmPopup from "@/components/ui/confirmPopup/ConfirmPopup";
 import ImageUpload from "@/components/ui/imageUpload/ImageUpload";
 import FixedActionButtons from "@/components/ui/fixedActionButtons/FixedActionButtons";
+import styles from "./ServiceKitComponent.module.scss";
 
 type ServiceKitPageProps = {
 	kitId?: string | number; // Если не указан, значит создаем новый комплект
@@ -269,7 +270,7 @@ export default function ServiceKitComponent({ kitId, isCreating = false, userRol
 					return { ...item, analogProductIds: [...item.analogProductIds, analogProduct.id] };
 				}
 				return item;
-			})
+			}),
 		);
 
 		// Очищаем поиск
@@ -356,7 +357,7 @@ export default function ServiceKitComponent({ kitId, isCreating = false, userRol
 					return { ...item, analogProductIds: item.analogProductIds.filter((id) => id !== analogProductId) };
 				}
 				return item;
-			})
+			}),
 		);
 	};
 
@@ -480,322 +481,368 @@ export default function ServiceKitComponent({ kitId, isCreating = false, userRol
 	}
 
 	return (
-		<div className="tableContent productComponent">
+		<div className="tableContent productComponent kitContent">
 			<div className="formContainer">
-				{/* Основные поля комплекта */}
-				<div className="formSection">
-					<h2 className="formSectionTitle">Основная информация</h2>
-
-					<div className="formRow">
-						<div className="formField fullWidth">
-							<label htmlFor="title">
-								Название комплекта <span className="required">*</span>
-							</label>
-							<input
-								id="title"
-								type="text"
-								value={formData.title}
-								onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-								disabled={!canEdit}
-								placeholder="Введите название комплекта ТО"
-							/>
+				<div className="formHeader">
+					<h2>{isCreating ? "Создание комплекта ТО" : kitData ? `Комплект ТО: ${kitData.title}` : "Загрузка комплекта ТО..."}</h2>
+					{!isCreating && canEdit && (
+						<div className="formActions">
+							<button type="button" onClick={() => setShowDeleteConfirm(true)} disabled={isDeleting} className="dangerButton">
+								{isDeleting ? "Удаление..." : "Удалить комплект ТО"}
+							</button>
 						</div>
-					</div>
-
-					<div className="formRow">
-						<div className="formField fullWidth">
-							<label htmlFor="description">Описание</label>
-							<textarea
-								id="description"
-								value={formData.description}
-								onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-								disabled={!canEdit}
-								rows={4}
-								placeholder="Введите описание комплекта ТО"
-							/>
-						</div>
-					</div>
-
-					<div className="formRow">
-						<div className="formField">
-							<label htmlFor="price">
-								Цена <span className="required">*</span>
-							</label>
-							<input
-								id="price"
-								type="number"
-								value={formData.price}
-								onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-								disabled={!canEdit}
-								placeholder="0"
-								min="0"
-								step="0.01"
-							/>
-						</div>
-						<div className="formField">
-							<label htmlFor="image">Изображение</label>
-							<ImageUpload
-								imageUrl={imagePreview}
-								onImageChange={(file) => {
-									setFormImage(file);
-									if (file) {
-										const reader = new FileReader();
-										reader.onloadend = () => {
-											setImagePreview(reader.result as string);
-										};
-										reader.readAsDataURL(file);
-									}
-								}}
-								onImageRemove={() => {
-									setFormImage(null);
-									setImagePreview("");
-								}}
-								disabled={!canEdit}
-							/>
-						</div>
-					</div>
+					)}
 				</div>
 
-				{/* Товары в комплекте */}
-				<div className="formSection">
-					<h2 className="formSectionTitle">Товары в комплекте</h2>
+				<div className="formSections">
+					{/* Основная информация */}
+					<div className="formSection borderBlock">
+						<h2 className="sectionTitle">Основная информация</h2>
+						<div className="formRow">
+							<div className="formField fullWidth">
+								<label htmlFor="title">
+									Название комплекта <span className="required">*</span>
+								</label>
+								<input
+									id="title"
+									type="text"
+									value={formData.title}
+									onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+									disabled={!canEdit}
+									placeholder="Введите название комплекта ТО"
+								/>
+							</div>
+						</div>
 
-					{canEdit && (
-						<div className="addProductSection">
-							{!showProductSearch ? (
-								<button type="button" onClick={() => setShowProductSearch(true)} className="primaryButton" disabled={!canEdit}>
-									Добавить товар
-								</button>
+						<div className="formRow">
+							<div className="formField">
+								<label htmlFor="image">Изображение</label>
+								<ImageUpload
+									imageUrl={imagePreview}
+									onImageChange={(file) => {
+										setFormImage(file);
+										if (file) {
+											const reader = new FileReader();
+											reader.onloadend = () => {
+												setImagePreview(reader.result as string);
+											};
+											reader.readAsDataURL(file);
+										}
+									}}
+									onImageRemove={() => {
+										setFormImage(null);
+										setImagePreview("");
+									}}
+									disabled={!canEdit}
+								/>
+							</div>
+						</div>
+
+						<div className="formRow">
+							<div className="formField fullWidth">
+								<label htmlFor="description">Описание</label>
+								<textarea
+									id="description"
+									value={formData.description}
+									onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+									disabled={!canEdit}
+									rows={4}
+									placeholder="Введите описание комплекта ТО"
+								/>
+							</div>
+						</div>
+
+						<div className="formRow">
+							<div className="formField">
+								<label htmlFor="price">
+									Цена <span className="required">*</span>
+								</label>
+								<input
+									id="price"
+									type="number"
+									value={formData.price}
+									onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+									disabled={!canEdit}
+									placeholder="0"
+									min="0"
+									step="0.01"
+								/>
+							</div>
+						</div>
+					</div>
+
+					{/* Товары в комплекте */}
+					<div className="formSection borderBlock">
+						<div className="formField fullWidth">
+							<h2 className="sectionTitle">Товары в комплекте</h2>
+							{kitItems.length === 0 ? (
+								<div className="emptyState">Товары не добавлены</div>
 							) : (
-								<div className="searchContainer">
-									<div className="searchHeader">
-										<span>Поиск товаров</span>
-										<button
-											type="button"
-											onClick={() => {
-												setShowProductSearch(false);
-												setProductSearch("");
-												setSearchResults([]);
-												setIsSearchFocused(false);
-											}}
-											className="closeSearchButton"
-										>
-											×
-										</button>
-									</div>
-									<input
-										type="text"
-										value={productSearch}
-										onChange={(e) => {
-											setProductSearch(e.target.value);
-											handleProductSearch(e.target.value);
-										}}
-										onFocus={() => setIsSearchFocused(true)}
-										placeholder="Поиск товаров по названию, артикулу или бренду"
-										className="searchInput"
-										autoFocus
-									/>
-									{isSearching && (
-										<div className="searchResults loading">
-											<Loading />
-										</div>
-									)}
-									{!isSearching && isSearchFocused && productSearch.length >= 2 && (
-										<div className="searchResults">
-											{searchResults.length === 0 ? (
-												<div className="searchResultItem">Товары не найдены</div>
-											) : (
-												searchResults.map((product) => (
-													<div key={product.id} className="searchResultItem" onClick={() => handleProductSelect(product)}>
-														<div className="productInfo">
-															<span className="productTitle">{product.title}</span>
-															<span className="productSku">({product.sku})</span>
-														</div>
+								<div className={`${styles.kitItemsList} kitItemsList`}>
+									{kitItems.map((item) => (
+										<div key={item.productId} className={`${styles.kitItemCard} kitItem`}>
+											<div className={`${styles.kitItemHeader} kitItemHeader`}>
+												<div className={`${styles.kitItemProduct} kitItemProduct`}>
+													<div className="imageBlock">
+														{item.product.image ? (
+															<img src={item.product.image} alt={item.product.title} className="image" loading="lazy" />
+														) : (
+															<div className="noImage">Нет изображения</div>
+														)}
 													</div>
-												))
+													<span className={`${styles.productTitle} productTitle`}>{item.product.title}</span>
+													<span className={`${styles.productSku} productSku`}>({item.product.sku})</span>
+												</div>
+												{canEdit && (
+													<button
+														type="button"
+														onClick={() => handleRemoveProduct(item.productId)}
+														className={`${styles.deleteProductButton} deleteButton`}
+													>
+														× Удалить
+													</button>
+												)}
+											</div>
+											{/* Управление аналогами */}
+											<div className={`${styles.analogsBlock} kitItemAnalogs`}>
+												<div className={`${styles.analogsHeader} analogsHeader`}>
+													<div className={styles.analogsTitleGroup}>
+														<span className={styles.analogBadge}>Аналоги</span>
+														<span className={styles.analogsCount}>({item.analogProductIds.length})</span>
+													</div>
+												</div>
+
+												{/* Список аналогов */}
+												{item.analogProductIds.length === 0 ? (
+													<div className="emptyState small">Аналоги не добавлены</div>
+												) : (
+													<div className={`${styles.analogsList} analogsList`}>
+														{item.analogProductIds.map((analogId) => {
+															const analogProduct = analogProductsData.get(analogId);
+															return (
+																<div key={analogId} className={`${styles.analogItem} analogItem`}>
+																	<div className={`${styles.analogInfo} analogInfo`}>
+																		{analogProduct ? (
+																			<>
+																				<div className="imageBlock">
+																					{analogProduct.image ? (
+																						<img src={analogProduct.image} alt={analogProduct.title} className="image" loading="lazy" />
+																					) : (
+																						<div className="noImage">Нет изображения</div>
+																					)}
+																				</div>
+																				<span className={`${styles.productTitle} productTitle`}>{analogProduct.title}</span>
+																				<span className={`${styles.productSku} productSku`}>({analogProduct.sku || "N/A"})</span>
+																			</>
+																		) : (
+																			<span>Товар ID: {analogId} (загрузка...)</span>
+																		)}
+																	</div>
+																	{canEdit && (
+																		<button
+																			type="button"
+																			onClick={() => handleRemoveAnalog(item.productId, analogId)}
+																			className="deleteButton small"
+																		>
+																			Удалить
+																		</button>
+																	)}
+																</div>
+															);
+														})}
+													</div>
+												)}
+
+												{canEdit && !analogSearchStates.get(item.productId)?.isOpen && (
+													<div className={styles.analogsActions}>
+														<button
+															type="button"
+															onClick={() => {
+																setAnalogSearchStates((prev) => {
+																	const newMap = new Map(prev);
+																	const state = newMap.get(item.productId) || {
+																		query: "",
+																		results: [],
+																		isSearching: false,
+																		isFocused: false,
+																		isOpen: false,
+																	};
+																	newMap.set(item.productId, { ...state, isOpen: !state.isOpen });
+																	return newMap;
+																});
+															}}
+															className="primaryButton small"
+														>
+															Добавить аналог
+														</button>
+													</div>
+												)}
+
+												{/* Поиск товаров для добавления аналога */}
+												{canEdit && analogSearchStates.get(item.productId)?.isOpen && (
+													<div className="searchContainer">
+														<div className="searchHeader">
+															<span>Поиск товаров для добавления в качестве аналога</span>
+															<button
+																type="button"
+																onClick={() => {
+																	setAnalogSearchStates((prev) => {
+																		const newMap = new Map(prev);
+																		const state = newMap.get(item.productId) || {
+																			query: "",
+																			results: [],
+																			isSearching: false,
+																			isFocused: false,
+																			isOpen: false,
+																		};
+																		newMap.set(item.productId, { ...state, query: "", results: [], isFocused: false, isOpen: false });
+																		return newMap;
+																	});
+																}}
+																className="closeSearchButton"
+															>
+																×
+															</button>
+														</div>
+														<input
+															type="text"
+															value={analogSearchStates.get(item.productId)?.query || ""}
+															onChange={(e) => {
+																const query = e.target.value;
+																setAnalogSearchStates((prev) => {
+																	const newMap = new Map(prev);
+																	const state = newMap.get(item.productId) || {
+																		query: "",
+																		results: [],
+																		isSearching: false,
+																		isFocused: false,
+																		isOpen: false,
+																	};
+																	newMap.set(item.productId, { ...state, query });
+																	return newMap;
+																});
+																handleAnalogSearch(item.productId, query);
+															}}
+															onFocus={() => {
+																setAnalogSearchStates((prev) => {
+																	const newMap = new Map(prev);
+																	const state = newMap.get(item.productId) || {
+																		query: "",
+																		results: [],
+																		isSearching: false,
+																		isFocused: false,
+																		isOpen: false,
+																	};
+
+																	newMap.set(item.productId, { ...state, isFocused: true });
+																	return newMap;
+																});
+															}}
+															placeholder="Поиск товаров по названию, артикулу или бренду"
+															className="searchInput"
+															autoFocus
+														/>
+														{analogSearchStates.get(item.productId)?.isSearching && (
+															<div className="searchResults loading">
+																<Loading />
+															</div>
+														)}
+														{!analogSearchStates.get(item.productId)?.isSearching &&
+															analogSearchStates.get(item.productId)?.isFocused &&
+															(analogSearchStates.get(item.productId)?.query || "").length >= 2 && (
+																<div className="searchResults">
+																	{analogSearchStates.get(item.productId)?.results.length === 0 ? (
+																		<div className="searchResultItem">Товары не найдены</div>
+																	) : (
+																		analogSearchStates
+																			.get(item.productId)
+																			?.results.filter(
+																				(product) => product.id !== item.productId && !item.analogProductIds.includes(product.id),
+																			)
+																			.map((product) => (
+																				<div
+																					key={product.id}
+																					className="searchResultItem"
+																					onClick={() => handleAddAnalogFromSearch(item.productId, product)}
+																				>
+																					<div className="productInfo">
+																						<span className="productTitle">{product.title}</span>
+																						<span className="productSku">({product.sku})</span>
+																					</div>
+																				</div>
+																			))
+																	)}
+																</div>
+															)}
+													</div>
+												)}
+											</div>
+										</div>
+									))}
+								</div>
+							)}
+							{canEdit && (
+								<div className="addProductSection">
+									{!showProductSearch ? (
+										<button type="button" onClick={() => setShowProductSearch(true)} className="primaryButton" disabled={!canEdit}>
+											Добавить товар
+										</button>
+									) : (
+										<div className="searchContainer">
+											<div className="searchHeader">
+												<span>Поиск товаров</span>
+												<button
+													type="button"
+													onClick={() => {
+														setShowProductSearch(false);
+														setProductSearch("");
+														setSearchResults([]);
+														setIsSearchFocused(false);
+													}}
+													className="closeSearchButton"
+												>
+													×
+												</button>
+											</div>
+											<input
+												type="text"
+												value={productSearch}
+												onChange={(e) => {
+													setProductSearch(e.target.value);
+													handleProductSearch(e.target.value);
+												}}
+												onFocus={() => setIsSearchFocused(true)}
+												placeholder="Поиск товаров по названию, артикулу или бренду"
+												className="searchInput"
+												autoFocus
+											/>
+											{isSearching && (
+												<div className="searchResults loading">
+													<Loading />
+												</div>
+											)}
+											{!isSearching && isSearchFocused && productSearch.length >= 2 && (
+												<div className="searchResults">
+													{searchResults.length === 0 ? (
+														<div className="searchResultItem">Товары не найдены</div>
+													) : (
+														searchResults.map((product) => (
+															<div key={product.id} className="searchResultItem" onClick={() => handleProductSelect(product)}>
+																<div className="productInfo">
+																	<span className="productTitle">{product.title}</span>
+																	<span className="productSku">({product.sku})</span>
+																</div>
+															</div>
+														))
+													)}
+												</div>
 											)}
 										</div>
 									)}
 								</div>
 							)}
 						</div>
-					)}
-
-					{kitItems.length === 0 ? (
-						<div className="emptyState">Товары не добавлены</div>
-					) : (
-						<div className="kitItemsList">
-							{kitItems.map((item) => (
-								<div key={item.productId} className="kitItem">
-									<div className="kitItemHeader">
-										<div className="kitItemProduct">
-											<span className="productTitle">{item.product.title}</span>
-											<span className="productSku">({item.product.sku})</span>
-										</div>
-										{canEdit && (
-											<button type="button" onClick={() => handleRemoveProduct(item.productId)} className="deleteButton">
-												Удалить
-											</button>
-										)}
-									</div>
-									{/* Управление аналогами */}
-									<div className="kitItemAnalogs">
-										<div className="analogsHeader">
-											<h4>Аналоги ({item.analogProductIds.length})</h4>
-											{canEdit && (
-												<button
-													type="button"
-													onClick={() => {
-														setAnalogSearchStates((prev) => {
-															const newMap = new Map(prev);
-															const state = newMap.get(item.productId) || {
-																query: "",
-																results: [],
-																isSearching: false,
-																isFocused: false,
-																isOpen: false,
-															};
-															newMap.set(item.productId, { ...state, isOpen: !state.isOpen });
-															return newMap;
-														});
-													}}
-													className="primaryButton small"
-												>
-													{analogSearchStates.get(item.productId)?.isOpen ? "Отменить" : "Добавить аналог"}
-												</button>
-											)}
-										</div>
-
-										{/* Поиск товаров для добавления аналога */}
-										{canEdit && analogSearchStates.get(item.productId)?.isOpen && (
-											<div className="searchContainer">
-												<div className="searchHeader">
-													<span>Поиск товаров для добавления в качестве аналога</span>
-													<button
-														type="button"
-														onClick={() => {
-															setAnalogSearchStates((prev) => {
-																const newMap = new Map(prev);
-																const state = newMap.get(item.productId) || {
-																	query: "",
-																	results: [],
-																	isSearching: false,
-																	isFocused: false,
-																	isOpen: false,
-																};
-																newMap.set(item.productId, { ...state, query: "", results: [], isFocused: false, isOpen: false });
-																return newMap;
-															});
-														}}
-														className="closeSearchButton"
-													>
-														×
-													</button>
-												</div>
-												<input
-													type="text"
-													value={analogSearchStates.get(item.productId)?.query || ""}
-													onChange={(e) => {
-														const query = e.target.value;
-														setAnalogSearchStates((prev) => {
-															const newMap = new Map(prev);
-															const state = newMap.get(item.productId) || {
-																query: "",
-																results: [],
-																isSearching: false,
-																isFocused: false,
-																isOpen: false,
-															};
-															newMap.set(item.productId, { ...state, query });
-															return newMap;
-														});
-														handleAnalogSearch(item.productId, query);
-													}}
-													onFocus={() => {
-														setAnalogSearchStates((prev) => {
-															const newMap = new Map(prev);
-															const state = newMap.get(item.productId) || {
-																query: "",
-																results: [],
-																isSearching: false,
-																isFocused: false,
-																isOpen: false,
-															};
-															newMap.set(item.productId, { ...state, isFocused: true });
-															return newMap;
-														});
-													}}
-													placeholder="Поиск товаров по названию, артикулу или бренду"
-													className="searchInput"
-													autoFocus
-												/>
-												{analogSearchStates.get(item.productId)?.isSearching && (
-													<div className="searchResults loading">
-														<Loading />
-													</div>
-												)}
-												{!analogSearchStates.get(item.productId)?.isSearching &&
-													analogSearchStates.get(item.productId)?.isFocused &&
-													(analogSearchStates.get(item.productId)?.query || "").length >= 2 && (
-														<div className="searchResults">
-															{analogSearchStates.get(item.productId)?.results.length === 0 ? (
-																<div className="searchResultItem">Товары не найдены</div>
-															) : (
-																analogSearchStates
-																	.get(item.productId)
-																	?.results.filter((product) => product.id !== item.productId && !item.analogProductIds.includes(product.id))
-																	.map((product) => (
-																		<div
-																			key={product.id}
-																			className="searchResultItem"
-																			onClick={() => handleAddAnalogFromSearch(item.productId, product)}
-																		>
-																			<div className="productInfo">
-																				<span className="productTitle">{product.title}</span>
-																				<span className="productSku">({product.sku})</span>
-																			</div>
-																		</div>
-																	))
-															)}
-														</div>
-													)}
-											</div>
-										)}
-
-										{/* Список аналогов */}
-										{item.analogProductIds.length === 0 ? (
-											<div className="emptyState small">Аналоги не добавлены</div>
-										) : (
-											<div className="analogsList">
-												{item.analogProductIds.map((analogId) => {
-													const analogProduct = analogProductsData.get(analogId);
-													return (
-														<div key={analogId} className="analogItem">
-															<div className="analogInfo">
-																{analogProduct ? (
-																	<>
-																		<span className="productTitle">{analogProduct.title}</span>
-																		<span className="productSku">({analogProduct.sku || "N/A"})</span>
-																	</>
-																) : (
-																	<span>Товар ID: {analogId} (загрузка...)</span>
-																)}
-															</div>
-															{canEdit && (
-																<button type="button" onClick={() => handleRemoveAnalog(item.productId, analogId)} className="deleteButton small">
-																	Удалить
-																</button>
-															)}
-														</div>
-													);
-												})}
-											</div>
-										)}
-									</div>
-								</div>
-							))}
-						</div>
-					)}
+					</div>
 				</div>
 			</div>
 

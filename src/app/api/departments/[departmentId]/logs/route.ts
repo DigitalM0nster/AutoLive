@@ -5,13 +5,14 @@ import { withPermission } from "@/middleware/permissionMiddleware";
 interface ExtendedRequestContext {
 	user: any;
 	scope: string;
+	params: Promise<{ departmentId: string }> | { departmentId: string };
 }
 
 export const GET = withPermission(
-	async (req: NextRequest, { user }: ExtendedRequestContext) => {
+	async (req: NextRequest, { user, params }: ExtendedRequestContext) => {
 		try {
-			// Получаем departmentId из URL
-			const departmentId = Number(req.nextUrl.pathname.split("/")[3]); // /api/departments/[departmentId]/logs
+			const resolvedParams = params instanceof Promise ? await params : params;
+			const departmentId = Number(resolvedParams.departmentId);
 
 			if (isNaN(departmentId)) {
 				return NextResponse.json({ error: "Некорректный ID отдела" }, { status: 400 });

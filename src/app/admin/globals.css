@@ -7,7 +7,7 @@
   font-display: swap;
 }
 :root {
-  --maxContentWidth: 1600px;
+  --maxContentWidth: 1680px;
   --text-color: rgba(14, 14, 14, 1);
   --light-grey-color: rgba(248, 249, 250, 1);
   --light-grey2-color: rgba(233, 236, 239, 1);
@@ -236,6 +236,8 @@ a.button.disabled {
   width: 100%;
   height: -moz-fit-content;
   height: fit-content;
+  min-width: -moz-max-content;
+  min-width: max-content;
 }
 .tableContainer .tableContent {
   display: flex;
@@ -254,6 +256,12 @@ a.button.disabled {
 .tableContainer .tableContent.allBorderRadius {
   border-radius: 10px;
   border-top: 1px solid var(--light-grey2-color);
+}
+.tableContainer .tableContent.kitContent {
+  overflow: visible;
+}
+.tableContainer .tableContent.kitContent .formContainer {
+  overflow: visible;
 }
 .tableContainer .tableContent .titleBlock {
   display: flex;
@@ -1021,6 +1029,7 @@ table,
   background: white;
   box-shadow: none;
   table-layout: fixed;
+  min-width: calc(var(--maxContentWidth) - 20px);
 }
 table.importTable tbody td,
 .table.importTable tbody td {
@@ -2468,9 +2477,11 @@ span.oldName:after {
 .productComponent .formHeader,
 .orderComponent .formHeader,
 .bookingComponent .formHeader {
-  z-index: 100;
+  position: relative;
   display: flex;
   flex-direction: column;
+  z-index: 100;
+  border-radius: 12px 12px 0px 0px;
   padding: 24px 32px;
   background: linear-gradient(135deg, var(--light-grey-color) 0%, white 100%);
   border-bottom: 1px solid var(--light-grey2-color);
@@ -2510,163 +2521,69 @@ span.oldName:after {
   gap: 16px;
 }
 .productComponent .formFields,
+.productComponent .formSections,
 .orderComponent .formFields,
-.bookingComponent .formFields {
+.orderComponent .formSections,
+.bookingComponent .formFields,
+.bookingComponent .formSections {
   display: flex;
   flex-direction: column;
   gap: 24px;
   padding: 32px;
 }
 .productComponent .formFields .formRow,
+.productComponent .formSections .formRow,
 .orderComponent .formFields .formRow,
-.bookingComponent .formFields .formRow {
+.orderComponent .formSections .formRow,
+.bookingComponent .formFields .formRow,
+.bookingComponent .formSections .formRow {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
 }
 .productComponent .formFields .formRow:last-child,
+.productComponent .formSections .formRow:last-child,
 .orderComponent .formFields .formRow:last-child,
-.bookingComponent .formFields .formRow:last-child {
+.orderComponent .formSections .formRow:last-child,
+.bookingComponent .formFields .formRow:last-child,
+.bookingComponent .formSections .formRow:last-child {
   margin-bottom: 0;
 }
+.productComponent .formFields .formSection,
+.productComponent .formSections .formSection,
+.orderComponent .formFields .formSection,
+.orderComponent .formSections .formSection,
+.bookingComponent .formFields .formSection,
+.bookingComponent .formSections .formSection {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.productComponent .formFields .formSection .formField,
+.productComponent .formSections .formSection .formField,
+.orderComponent .formFields .formSection .formField,
+.orderComponent .formSections .formSection .formField,
+.bookingComponent .formFields .formSection .formField,
+.bookingComponent .formSections .formSection .formField {
+  border: none;
+  padding: 0;
+}
 .productComponent .formFields .formField,
+.productComponent .formSections .formField,
 .orderComponent .formFields .formField,
-.bookingComponent .formFields .formField {
+.orderComponent .formSections .formField,
+.bookingComponent .formFields .formField,
+.bookingComponent .formSections .formField {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
-.productComponent .formFields .formField input,
-.productComponent .formFields .formField textarea,
-.productComponent .formFields .formField select,
-.orderComponent .formFields .formField input,
-.orderComponent .formFields .formField textarea,
-.orderComponent .formFields .formField select,
-.bookingComponent .formFields .formField input,
-.bookingComponent .formFields .formField textarea,
-.bookingComponent .formFields .formField select {
-  width: calc(100% - 32px);
-  padding: 12px 16px;
-  border: 1px solid var(--light-grey2-color);
-  border-radius: 8px;
-  font-size: 14px;
-  font-family: var(--mainFont);
-  background: white;
-}
-.productComponent .formFields .formField input:focus,
-.productComponent .formFields .formField textarea:focus,
-.productComponent .formFields .formField select:focus,
-.orderComponent .formFields .formField input:focus,
-.orderComponent .formFields .formField textarea:focus,
-.orderComponent .formFields .formField select:focus,
-.bookingComponent .formFields .formField input:focus,
-.bookingComponent .formFields .formField textarea:focus,
-.bookingComponent .formFields .formField select:focus {
-  outline: none;
-  border-color: var(--blue-color);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-.productComponent .formFields .formField input:disabled,
-.productComponent .formFields .formField textarea:disabled,
-.productComponent .formFields .formField select:disabled,
-.orderComponent .formFields .formField input:disabled,
-.orderComponent .formFields .formField textarea:disabled,
-.orderComponent .formFields .formField select:disabled,
-.bookingComponent .formFields .formField input:disabled,
-.bookingComponent .formFields .formField textarea:disabled,
-.bookingComponent .formFields .formField select:disabled {
-  background: var(--light-grey-color);
-  color: #6b7280;
-  cursor: not-allowed;
-}
-.productComponent .formFields .formField input::-moz-placeholder, .productComponent .formFields .formField textarea::-moz-placeholder, .productComponent .formFields .formField select::-moz-placeholder, .orderComponent .formFields .formField input::-moz-placeholder, .orderComponent .formFields .formField textarea::-moz-placeholder, .orderComponent .formFields .formField select::-moz-placeholder, .bookingComponent .formFields .formField input::-moz-placeholder, .bookingComponent .formFields .formField textarea::-moz-placeholder, .bookingComponent .formFields .formField select::-moz-placeholder {
-  color: #9ca3af;
-}
-.productComponent .formFields .formField input::placeholder,
-.productComponent .formFields .formField textarea::placeholder,
-.productComponent .formFields .formField select::placeholder,
-.orderComponent .formFields .formField input::placeholder,
-.orderComponent .formFields .formField textarea::placeholder,
-.orderComponent .formFields .formField select::placeholder,
-.bookingComponent .formFields .formField input::placeholder,
-.bookingComponent .formFields .formField textarea::placeholder,
-.bookingComponent .formFields .formField select::placeholder {
-  color: #9ca3af;
-}
-.productComponent .formFields .formField input.error,
-.productComponent .formFields .formField textarea.error,
-.productComponent .formFields .formField select.error,
-.orderComponent .formFields .formField input.error,
-.orderComponent .formFields .formField textarea.error,
-.orderComponent .formFields .formField select.error,
-.bookingComponent .formFields .formField input.error,
-.bookingComponent .formFields .formField textarea.error,
-.bookingComponent .formFields .formField select.error {
-  border-color: var(--red-color);
-  background: var(--light-red-color);
-}
-.productComponent .formFields .formField input.error::-moz-placeholder, .productComponent .formFields .formField textarea.error::-moz-placeholder, .productComponent .formFields .formField select.error::-moz-placeholder, .orderComponent .formFields .formField input.error::-moz-placeholder, .orderComponent .formFields .formField textarea.error::-moz-placeholder, .orderComponent .formFields .formField select.error::-moz-placeholder, .bookingComponent .formFields .formField input.error::-moz-placeholder, .bookingComponent .formFields .formField textarea.error::-moz-placeholder, .bookingComponent .formFields .formField select.error::-moz-placeholder {
-  color: var(--red-color);
-  opacity: 0.5;
-}
-.productComponent .formFields .formField input.error::placeholder,
-.productComponent .formFields .formField textarea.error::placeholder,
-.productComponent .formFields .formField select.error::placeholder,
-.orderComponent .formFields .formField input.error::placeholder,
-.orderComponent .formFields .formField textarea.error::placeholder,
-.orderComponent .formFields .formField select.error::placeholder,
-.bookingComponent .formFields .formField input.error::placeholder,
-.bookingComponent .formFields .formField textarea.error::placeholder,
-.bookingComponent .formFields .formField select.error::placeholder {
-  color: var(--red-color);
-  opacity: 0.5;
-}
-.productComponent .formFields .formField input.quantityInput,
-.productComponent .formFields .formField textarea.quantityInput,
-.productComponent .formFields .formField select.quantityInput,
-.orderComponent .formFields .formField input.quantityInput,
-.orderComponent .formFields .formField textarea.quantityInput,
-.orderComponent .formFields .formField select.quantityInput,
-.bookingComponent .formFields .formField input.quantityInput,
-.bookingComponent .formFields .formField textarea.quantityInput,
-.bookingComponent .formFields .formField select.quantityInput {
-  width: 30px;
-  text-align: center;
-  -moz-appearance: textfield;
-}
-.productComponent .formFields .formField input.quantityInput::-webkit-outer-spin-button, .productComponent .formFields .formField input.quantityInput::-webkit-inner-spin-button,
-.productComponent .formFields .formField textarea.quantityInput::-webkit-outer-spin-button,
-.productComponent .formFields .formField textarea.quantityInput::-webkit-inner-spin-button,
-.productComponent .formFields .formField select.quantityInput::-webkit-outer-spin-button,
-.productComponent .formFields .formField select.quantityInput::-webkit-inner-spin-button,
-.orderComponent .formFields .formField input.quantityInput::-webkit-outer-spin-button,
-.orderComponent .formFields .formField input.quantityInput::-webkit-inner-spin-button,
-.orderComponent .formFields .formField textarea.quantityInput::-webkit-outer-spin-button,
-.orderComponent .formFields .formField textarea.quantityInput::-webkit-inner-spin-button,
-.orderComponent .formFields .formField select.quantityInput::-webkit-outer-spin-button,
-.orderComponent .formFields .formField select.quantityInput::-webkit-inner-spin-button,
-.bookingComponent .formFields .formField input.quantityInput::-webkit-outer-spin-button,
-.bookingComponent .formFields .formField input.quantityInput::-webkit-inner-spin-button,
-.bookingComponent .formFields .formField textarea.quantityInput::-webkit-outer-spin-button,
-.bookingComponent .formFields .formField textarea.quantityInput::-webkit-inner-spin-button,
-.bookingComponent .formFields .formField select.quantityInput::-webkit-outer-spin-button,
-.bookingComponent .formFields .formField select.quantityInput::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-}
-.productComponent .formFields .formField select,
-.orderComponent .formFields .formField select,
-.bookingComponent .formFields .formField select {
-  width: 100%;
-}
-.productComponent .formFields .formField textarea,
-.orderComponent .formFields .formField textarea,
-.bookingComponent .formFields .formField textarea {
-  resize: vertical;
-  min-height: 100px;
-}
 .productComponent .formFields .fieldNote,
+.productComponent .formSections .fieldNote,
 .orderComponent .formFields .fieldNote,
-.bookingComponent .formFields .fieldNote {
+.orderComponent .formSections .fieldNote,
+.bookingComponent .formFields .fieldNote,
+.bookingComponent .formSections .fieldNote {
   font-size: 12px;
   color: var(--orange-color);
   font-style: italic;
@@ -2757,6 +2674,136 @@ span.oldName:after {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+.productComponent .formField input,
+.productComponent .formField textarea,
+.productComponent .formField select,
+.orderComponent .formField input,
+.orderComponent .formField textarea,
+.orderComponent .formField select,
+.bookingComponent .formField input,
+.bookingComponent .formField textarea,
+.bookingComponent .formField select {
+  width: calc(100% - 32px);
+  padding: 12px 16px;
+  border: 1px solid var(--light-grey2-color);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: var(--mainFont);
+  background: white;
+}
+.productComponent .formField input:focus,
+.productComponent .formField textarea:focus,
+.productComponent .formField select:focus,
+.orderComponent .formField input:focus,
+.orderComponent .formField textarea:focus,
+.orderComponent .formField select:focus,
+.bookingComponent .formField input:focus,
+.bookingComponent .formField textarea:focus,
+.bookingComponent .formField select:focus {
+  outline: none;
+  border-color: var(--blue-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+.productComponent .formField input:disabled,
+.productComponent .formField textarea:disabled,
+.productComponent .formField select:disabled,
+.orderComponent .formField input:disabled,
+.orderComponent .formField textarea:disabled,
+.orderComponent .formField select:disabled,
+.bookingComponent .formField input:disabled,
+.bookingComponent .formField textarea:disabled,
+.bookingComponent .formField select:disabled {
+  background: var(--light-grey-color);
+  color: #6b7280;
+  cursor: not-allowed;
+}
+.productComponent .formField input::-moz-placeholder, .productComponent .formField textarea::-moz-placeholder, .productComponent .formField select::-moz-placeholder, .orderComponent .formField input::-moz-placeholder, .orderComponent .formField textarea::-moz-placeholder, .orderComponent .formField select::-moz-placeholder, .bookingComponent .formField input::-moz-placeholder, .bookingComponent .formField textarea::-moz-placeholder, .bookingComponent .formField select::-moz-placeholder {
+  color: #9ca3af;
+}
+.productComponent .formField input::placeholder,
+.productComponent .formField textarea::placeholder,
+.productComponent .formField select::placeholder,
+.orderComponent .formField input::placeholder,
+.orderComponent .formField textarea::placeholder,
+.orderComponent .formField select::placeholder,
+.bookingComponent .formField input::placeholder,
+.bookingComponent .formField textarea::placeholder,
+.bookingComponent .formField select::placeholder {
+  color: #9ca3af;
+}
+.productComponent .formField input.error,
+.productComponent .formField textarea.error,
+.productComponent .formField select.error,
+.orderComponent .formField input.error,
+.orderComponent .formField textarea.error,
+.orderComponent .formField select.error,
+.bookingComponent .formField input.error,
+.bookingComponent .formField textarea.error,
+.bookingComponent .formField select.error {
+  border-color: var(--red-color);
+  background: var(--light-red-color);
+}
+.productComponent .formField input.error::-moz-placeholder, .productComponent .formField textarea.error::-moz-placeholder, .productComponent .formField select.error::-moz-placeholder, .orderComponent .formField input.error::-moz-placeholder, .orderComponent .formField textarea.error::-moz-placeholder, .orderComponent .formField select.error::-moz-placeholder, .bookingComponent .formField input.error::-moz-placeholder, .bookingComponent .formField textarea.error::-moz-placeholder, .bookingComponent .formField select.error::-moz-placeholder {
+  color: var(--red-color);
+  opacity: 0.5;
+}
+.productComponent .formField input.error::placeholder,
+.productComponent .formField textarea.error::placeholder,
+.productComponent .formField select.error::placeholder,
+.orderComponent .formField input.error::placeholder,
+.orderComponent .formField textarea.error::placeholder,
+.orderComponent .formField select.error::placeholder,
+.bookingComponent .formField input.error::placeholder,
+.bookingComponent .formField textarea.error::placeholder,
+.bookingComponent .formField select.error::placeholder {
+  color: var(--red-color);
+  opacity: 0.5;
+}
+.productComponent .formField input.quantityInput,
+.productComponent .formField textarea.quantityInput,
+.productComponent .formField select.quantityInput,
+.orderComponent .formField input.quantityInput,
+.orderComponent .formField textarea.quantityInput,
+.orderComponent .formField select.quantityInput,
+.bookingComponent .formField input.quantityInput,
+.bookingComponent .formField textarea.quantityInput,
+.bookingComponent .formField select.quantityInput {
+  width: 30px;
+  text-align: center;
+  -moz-appearance: textfield;
+  -webkit-appearance: textfield;
+          appearance: textfield;
+}
+.productComponent .formField input.quantityInput::-webkit-outer-spin-button, .productComponent .formField input.quantityInput::-webkit-inner-spin-button,
+.productComponent .formField textarea.quantityInput::-webkit-outer-spin-button,
+.productComponent .formField textarea.quantityInput::-webkit-inner-spin-button,
+.productComponent .formField select.quantityInput::-webkit-outer-spin-button,
+.productComponent .formField select.quantityInput::-webkit-inner-spin-button,
+.orderComponent .formField input.quantityInput::-webkit-outer-spin-button,
+.orderComponent .formField input.quantityInput::-webkit-inner-spin-button,
+.orderComponent .formField textarea.quantityInput::-webkit-outer-spin-button,
+.orderComponent .formField textarea.quantityInput::-webkit-inner-spin-button,
+.orderComponent .formField select.quantityInput::-webkit-outer-spin-button,
+.orderComponent .formField select.quantityInput::-webkit-inner-spin-button,
+.bookingComponent .formField input.quantityInput::-webkit-outer-spin-button,
+.bookingComponent .formField input.quantityInput::-webkit-inner-spin-button,
+.bookingComponent .formField textarea.quantityInput::-webkit-outer-spin-button,
+.bookingComponent .formField textarea.quantityInput::-webkit-inner-spin-button,
+.bookingComponent .formField select.quantityInput::-webkit-outer-spin-button,
+.bookingComponent .formField select.quantityInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
+.productComponent .formField select,
+.orderComponent .formField select,
+.bookingComponent .formField select {
+  width: 100%;
+}
+.productComponent .formField textarea,
+.orderComponent .formField textarea,
+.bookingComponent .formField textarea {
+  resize: vertical;
+  min-height: 100px;
 }
 .productComponent .infoField,
 .orderComponent .infoField,
@@ -3585,6 +3632,7 @@ span.oldName:after {
 .bookingComponent .searchContainer {
   position: relative;
   margin-top: 10px;
+  z-index: 1001;
 }
 .productComponent .searchContainer .searchHeader,
 .orderComponent .searchContainer .searchHeader,

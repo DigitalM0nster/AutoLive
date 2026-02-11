@@ -466,8 +466,6 @@ export const DELETE = withPermission(
 					data: {
 						action: "delete",
 						message: `Товар "${existing.title}" удален`,
-						userId: fullUser.id,
-						productId: productId, // Создаём лог ДО удаления, поэтому productId ещё существует
 						userSnapshot: {
 							id: fullUser.id,
 							first_name: fullUser.first_name,
@@ -488,7 +486,7 @@ export const DELETE = withPermission(
 									name: existing.department.name,
 							  }
 							: undefined,
-						snapshotBefore: JSON.stringify({
+						productSnapshotBefore: {
 							id: existing.id,
 							title: existing.title,
 							sku: existing.sku,
@@ -500,8 +498,8 @@ export const DELETE = withPermission(
 							department: existing.department,
 							category: existing.category,
 							productFilterValues: existing.productFilterValues,
-						}),
-						snapshotAfter: null,
+						} as any,
+						productSnapshotAfter: Prisma.JsonNull,
 					},
 				});
 

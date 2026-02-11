@@ -104,7 +104,7 @@ export default function AllProductsLogsTable({
 		try {
 			// Используем GET запрос с параметрами в URL
 			const params = new URLSearchParams();
-			userIds.forEach((id) => params.append("userIds", id.toString()));
+			params.set("userIds", userIds.join(","));
 
 			const response = await fetch(`/api/users/check-existence?${params.toString()}`, {
 				method: "GET",
@@ -160,7 +160,7 @@ export default function AllProductsLogsTable({
 		try {
 			// Используем GET запрос с параметрами в URL
 			const params = new URLSearchParams();
-			productIds.forEach((id) => params.append("productIds", id.toString()));
+			params.set("productIds", productIds.join(","));
 
 			const response = await fetch(`/api/products/check-existence?${params.toString()}`, {
 				method: "GET",

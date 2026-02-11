@@ -1,1 +1,5 @@
-
+.tableHeaderCell {
+	&:last-child {
+		text-align: left;
+	}
+}

@@ -9,43 +9,40 @@ const globalForPrisma = globalThis as unknown as {
 	prisma: PrismaClient | undefined;
 };
 
-// Устанавливаем стандартную переменную DATABASE_URL из DB_URL, если она не задана
-const databaseUrl = process.env.DATABASE_URL || process.env.DB_URL;
+// Устанавливаем стандартную переменную DB_URL
+const databaseUrl = process.env.DB_URL;
 
 if (!databaseUrl) {
 	throw new Error("База данных не настроена. Пожалуйста, задайте переменную окружения DB_URL или DATABASE_URL.");
 }
 
+// Локально при min: 0 Neon «засыпает», первый запрос после простоя ждёт 20+ секунд — данные не грузятся.
+// В development держим одно соединение открытым, чтобы БД не уходила в сон.
+const isDev = process.env.NODE_ENV === "development";
+
 // Создаем пул подключений к PostgreSQL
 // Pool управляет множественными подключениями к базе данных
 // Для бесплатных БД (Neon, Supabase free tier) важно ограничить размер пула
-// Оптимизировано для работы с медленным соединением Neon
 const pool = new Pool({
 	connectionString: databaseUrl,
-	// Максимальное количество соединений в пуле
-	// Для бесплатного Neon рекомендуется 1-2 соединения
-	max: 2, // Уменьшено с 5 до 2 для стабильности
-	// Минимальное количество соединений, которые всегда открыты
-	// Устанавливаем 0, чтобы не держать соединения постоянно открытыми
-	min: 0, // Уменьшено с 1 до 0 для экономии ресурсов
-	// Время ожидания получения соединения из пула (в миллисекундах)
-	// Увеличено для медленного соединения Neon
-	connectionTimeoutMillis: 20000, // Увеличено с 10 до 20 секунд
+	max: 2,
+	// В dev одно соединение держим открытым, чтобы не ждать пробуждения Neon при каждом запросе
+	min: isDev ? 1 : 0,
+	// Время ожидания получения соединения (Neon после простоя «просыпается» 15–30+ сек)
+	connectionTimeoutMillis: 40000,
 	// Время ожидания выполнения запроса (в миллисекундах)
 	// Увеличено для медленных запросов к Neon
 	query_timeout: 60000, // Увеличено с 30 до 60 секунд
-	// Время жизни соединения в пуле (в миллисекундах)
-	// Уменьшено для более частого обновления соединений
-	idleTimeoutMillis: 600000, // Уменьшено с 30 минут до 10 минут
+	// Время жизни неактивного соединения в пуле (мс). Меньше = чаще переподключаемся,
+	// реже держим «мёртвое» соединение после того как Neon закрыл его со своей стороны
+	idleTimeoutMillis: 300000, // 5 минут
 	// Интервал проверки неактивных соединений (в миллисекундах)
 	// Каждые 10 секунд проверяем, какие соединения можно закрыть
 	keepAlive: true,
 	keepAliveInitialDelayMillis: 10000,
 	// SSL настройки для Neon (если требуется)
 	// Neon требует SSL соединения
-	ssl: databaseUrl.includes("neon.tech") || databaseUrl.includes("neon") 
-		? { rejectUnauthorized: false } 
-		: undefined,
+	ssl: databaseUrl.includes("neon.tech") || databaseUrl.includes("neon") ? { rejectUnauthorized: false } : undefined,
 });
 
 // Обработка ошибок пула подключений
@@ -93,6 +90,31 @@ export const prisma =
 // В development режиме сохраняем экземпляр глобально
 // Это предотвращает создание множественных подключений при hot reload
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+
+// Keepalive для Neon в development: периодический лёгкий запрос, чтобы соединение не считалось idle
+// и Neon реже закрывал его. Чаще = стабильнее, но лишняя нагрузка на БД
+const isNeon = databaseUrl.includes("neon.tech") || databaseUrl.includes("neon");
+const keepaliveGlobal = globalThis as unknown as { dbKeepaliveStarted?: boolean };
+if (isDev && isNeon && !keepaliveGlobal.dbKeepaliveStarted) {
+	keepaliveGlobal.dbKeepaliveStarted = true;
+	const KEEPALIVE_INTERVAL_MS = 15_000; // 15 сек — баланс между стабильностью и нагрузкой
+	setTimeout(() => {
+		const tick = async () => {
+			try {
+				await prisma.$queryRaw`SELECT 1`;
+			} catch {
+				// Ошибка — не логируем, следующий тик повторит
+			}
+		};
+		tick(); // первый пинг сразу после старта
+		const intervalId = setInterval(tick, KEEPALIVE_INTERVAL_MS);
+		// Сбрасываем интервал при выходе, чтобы не висел в памяти
+		const clear = () => clearInterval(intervalId);
+		process.once("beforeExit", clear);
+		process.once("SIGINT", clear);
+		process.once("SIGTERM", clear);
+	}, 3000);
+}
 
 // Graceful shutdown для предотвращения утечек соединений
 // Добавляем обработчики событий только один раз, чтобы избежать утечек памяти

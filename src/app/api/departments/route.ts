@@ -4,28 +4,31 @@ import { prisma } from "@/lib/prisma";
 import { withPermission } from "@/middleware/permissionMiddleware";
 import { NextRequest, NextResponse } from "next/server";
 import { logDepartmentChange, logUserChange } from "@/lib/universalLogging";
+import { withDbRetry } from "@/lib/utils";
 
 // ✅ Получение списка отделов
 export const GET = withPermission(
 	async (req: NextRequest, { user, scope }) => {
 		try {
-			// Все пользователи (суперадмины, админы и менеджеры) могут видеть все отделы
-			const departments = await prisma.department.findMany({
-				select: {
-					id: true,
-					name: true,
-					allowedCategories: {
-						select: {
-							category: {
-								select: {
-									id: true,
-									title: true,
+			// Обёрнуто в withDbRetry: при "Connection terminated unexpectedly" (Neon) запрос повторяется
+			const departments = await withDbRetry(async () =>
+				prisma.department.findMany({
+					select: {
+						id: true,
+						name: true,
+						allowedCategories: {
+							select: {
+								category: {
+									select: {
+										id: true,
+										title: true,
+									},
 								},
 							},
 						},
 					},
-				},
-			});
+				})
+			);
 
 			// Преобразуем данные для удобного использования на фронтенде
 			const departmentsWithCategories = departments.map((dept) => ({

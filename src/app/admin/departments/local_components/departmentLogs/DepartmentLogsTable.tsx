@@ -24,6 +24,7 @@ export default function DepartmentLogsTable({
 	// Изменяем структуру: теперь храним Map с ID пользователя как ключом и полными данными как значением
 	const [existingUsers, setExistingUsers] = useState<Map<number, User>>(new Map());
 	const [existingDepartments, setExistingDepartments] = useState<Set<number>>(new Set());
+	const [existingCategories, setExistingCategories] = useState<Set<number>>(new Set());
 	const [departmentsData, setDepartmentsData] = useState<Map<number, { id: number; name: string }>>(new Map());
 
 	// Функция для переключения активного состояния блока
@@ -41,7 +42,7 @@ export default function DepartmentLogsTable({
 		try {
 			// Используем GET запрос с параметрами в URL вместо POST
 			const params = new URLSearchParams();
-			userIds.forEach((id) => params.append("userIds", id.toString()));
+			params.set("userIds", userIds.join(","));
 
 			const response = await fetch(`/api/users/check-existence?${params.toString()}`, {
 				method: "GET",
@@ -71,7 +72,7 @@ export default function DepartmentLogsTable({
 		try {
 			// Используем GET запрос с параметрами в URL вместо POST
 			const params = new URLSearchParams();
-			departmentIds.forEach((id) => params.append("departmentIds", id.toString()));
+			params.set("departmentIds", departmentIds.join(","));
 
 			const response = await fetch(`/api/departments/check-existence?${params.toString()}`, {
 				method: "GET",
@@ -88,6 +89,25 @@ export default function DepartmentLogsTable({
 			}
 		} catch (error) {
 			console.error("Ошибка при проверке существования отделов:", error);
+		}
+	}, []);
+
+	// Проверка существования категорий (для ссылок в логах)
+	const checkCategoriesExistence = useCallback(async (categoryIds: number[]) => {
+		if (categoryIds.length === 0) return;
+		try {
+			const params = new URLSearchParams();
+			params.set("categoryIds", categoryIds.join(","));
+			const response = await fetch(`/api/categories/check-existence?${params.toString()}`, {
+				method: "GET",
+				credentials: "include",
+			});
+			if (response.ok) {
+				const data = await response.json();
+				setExistingCategories(new Set(data.existingCategoryIds || []));
+			}
+		} catch (error) {
+			console.error("Ошибка при проверке существования категорий:", error);
 		}
 	}, []);
 
@@ -189,6 +209,29 @@ export default function DepartmentLogsTable({
 		},
 		[existingDepartments, departmentsData]
 	);
+
+	// Категория: ссылка на страницу категории, если она ещё существует
+	const renderCategory = useCallback(
+		(category: any, logId: number) => {
+			const id = category?.category?.id ?? category?.id;
+			const title = category?.category?.title ?? category?.title ?? "—";
+			if (!id) return <span className="category">{title}</span>;
+			if (existingCategories.has(id)) {
+				return (
+					<a key={`log_${logId}_cat_${id}`} href={`/admin/categories/${id}`} className={`category ${styles.departmentLink}`}>
+						{title}
+					</a>
+				);
+			}
+			return (
+				<span key={`log_${logId}_cat_${id}`} className="category">
+					{title} (удалена)
+				</span>
+			);
+		},
+		[existingCategories]
+	);
+
 	// Функция для форматирования даты
 	const formatDate = useCallback((dateString: string) => {
 		if (!dateString) return "—";
@@ -317,11 +360,9 @@ export default function DepartmentLogsTable({
 												</div>
 												<div className={`openingBlock ${activeBlocks[`${createLogKey}_categories`] ? "active" : ""}`}>
 													<div className="categoriesList">
-														{log.snapshotAfter.allowedCategories.map((category: any) => (
-															<span key={`log_${log.id}_category_${category.id}`} className="category">
-																{category.category.title}
-															</span>
-														))}
+														{log.snapshotAfter?.allowedCategories?.length
+															? log.snapshotAfter.allowedCategories.map((category: any) => renderCategory(category, log.id))
+															: "Категории не выбраны"}
 													</div>
 												</div>
 											</div>
@@ -334,9 +375,11 @@ export default function DepartmentLogsTable({
 												</div>
 												<div className={`openingBlock ${activeBlocks[`${createLogKey}_users`] ? "active" : ""}`}>
 													<div className="tableListItems">
-														{log.snapshotAfter.users.map((user: any) => {
-															return renderUserLink(log, user, log.id, "target");
-														})}
+														{log.snapshotAfter?.users?.length
+															? log.snapshotAfter.users.map((user: any) => {
+																	return renderUserLink(log, user, log.id, "target");
+															  })
+															: "Сотрудники не добавлены"}
 													</div>
 												</div>
 											</div>
@@ -369,6 +412,18 @@ export default function DepartmentLogsTable({
 												<div className="infoField">
 													<span className="title">Название:</span>
 													<span className="value">{log.snapshotBefore.name}</span>
+												</div>
+												<div className="infoField">
+													<span className="title">Категории отдела:</span>
+													<span className="value">
+														{log.snapshotBefore.allowedCategories?.length ? (
+															<div className="categoriesList">
+																{log.snapshotBefore.allowedCategories.map((category: any) => renderCategory(category, log.id))}
+															</div>
+														) : (
+															"Категории не были выбраны"
+														)}
+													</span>
 												</div>
 											</div>
 											{/* Показываем пользователей, которые остались без отдела */}
@@ -462,21 +517,12 @@ export default function DepartmentLogsTable({
 																	<td>Имя</td>
 																	<td className="oldValue">
 																		<div className="categoriesList">
-																			{log.snapshotBefore?.allowedCategories.map((category: any) => (
-																				<span key={`log_${log.id}_category_${category.id}`} className="category">
-																					{category.category.title}
-																				</span>
-																			))}
+																			{(log.snapshotBefore?.allowedCategories ?? []).map((category: any) => renderCategory(category, log.id))}
 																		</div>
 																	</td>
 																	<td className="newValue">
-																		{" "}
 																		<div className="categoriesList">
-																			{log.snapshotAfter?.allowedCategories.map((category: any) => (
-																				<span key={`log_${log.id}_category_${category.id}`} className="category">
-																					{category.category.title}
-																				</span>
-																			))}
+																			{(log.snapshotAfter?.allowedCategories ?? []).map((category: any) => renderCategory(category, log.id))}
 																		</div>
 																	</td>
 																</tr>
@@ -496,7 +542,7 @@ export default function DepartmentLogsTable({
 												</div>
 												<div className={`openingBlock ${activeBlocks[`${createLogKey}_users`] ? "active" : ""}`}>
 													<div className="tableListItems">
-														{log.snapshotAfter.addedUsers.map((user: any) => {
+														{(log.snapshotAfter?.addedUsers ?? []).map((user: any) => {
 															return renderUserLink(log, user.user, log.id, "added");
 														})}
 													</div>
@@ -513,7 +559,7 @@ export default function DepartmentLogsTable({
 												</div>
 												<div className={`openingBlock ${activeBlocks[`${createLogKey}_users`] ? "active" : ""}`}>
 													<div className="tableListItems">
-														{log.snapshotAfter.removedUsers.map((removedUser: any) => {
+														{(log.snapshotAfter?.removedUsers ?? []).map((removedUser: any) => {
 															return renderUserLink(log, removedUser.user, log.id, "removed");
 														})}
 													</div>
@@ -528,7 +574,7 @@ export default function DepartmentLogsTable({
 				);
 			}
 		},
-		[activeBlocks, toggleActiveBlock, getRoleName, getStatusName]
+		[activeBlocks, toggleActiveBlock, getRoleName, getStatusName, existingCategories, renderCategory]
 	);
 
 	useEffect(() => {
@@ -593,11 +639,34 @@ export default function DepartmentLogsTable({
 				await checkUsersExistence(userIdsToCheck);
 
 				// Проверяем существование отделов из логов
+				// В логах отдела snapshotBefore/snapshotAfter — сам отдел (id напрямую), не .department
 				const departmentIdsToCheck = (data.data || [])
-					.flatMap((log: DepartmentLog) => [log.admin?.department?.id, log.targetDepartment?.id, log.snapshotBefore?.department?.id, log.snapshotAfter?.department?.id])
+					.flatMap((log: DepartmentLog) => [
+						log.admin?.department?.id,
+						log.targetDepartment?.id,
+						log.snapshotBefore?.id,
+						log.snapshotAfter?.id,
+					])
 					.filter((id: number | undefined) => id !== undefined && id !== 0) as number[];
 
 				await checkDepartmentsExistence(departmentIdsToCheck);
+
+				// Проверяем существование категорий из логов (для ссылок)
+				const categoryIdsToCheck = (data.data || [])
+					.flatMap((log: DepartmentLog) => {
+						const ids: number[] = [];
+						(log.snapshotBefore?.allowedCategories ?? []).forEach((c: any) => {
+							const id = c?.category?.id ?? c?.id;
+							if (id) ids.push(id);
+						});
+						(log.snapshotAfter?.allowedCategories ?? []).forEach((c: any) => {
+							const id = c?.category?.id ?? c?.id;
+							if (id) ids.push(id);
+						});
+						return ids;
+					})
+					.filter((id: number, i: number, arr: number[]) => arr.indexOf(id) === i);
+				await checkCategoriesExistence(categoryIdsToCheck);
 			} catch (err) {
 				console.error("Ошибка при загрузке логов:", err);
 				setError(err instanceof Error ? err.message : "Неизвестная ошибка");
@@ -607,7 +676,7 @@ export default function DepartmentLogsTable({
 		};
 
 		fetchLogs();
-	}, [queryParams, checkUsersExistence, checkDepartmentsExistence, onLogsUpdate, departmentId]);
+	}, [queryParams, checkUsersExistence, checkDepartmentsExistence, checkCategoriesExistence, onLogsUpdate, departmentId]);
 
 	// Загружаем данные отделов при монтировании компонента
 	useEffect(() => {

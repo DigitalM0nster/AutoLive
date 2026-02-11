@@ -9,6 +9,7 @@ import ConfirmPopup from "@/components/ui/confirmPopup/ConfirmPopup";
 import { showSuccessToast, showErrorToast } from "@/components/ui/toast/ToastProvider";
 import { useAuthStore } from "@/store/authStore";
 import Loading from "@/components/ui/loading/Loading";
+import ScrollableTableWrapper from "@/components/ui/scrollableTableWrapper/ScrollableTableWrapper";
 
 // Тип для отдела с категориями
 type Department = {
@@ -163,84 +164,86 @@ export default function AllDepartmentsTable() {
 				/>
 
 				<div className={styles.tableContainer}>
-					<table className={styles.table}>
-						<thead className={styles.tableHeader}>
-							<tr>
-								<th
-									className={`${styles.tableHeaderCell} idCell sortableHeader ${sortBy === "id" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
-									onClick={() => {
-										if (sortBy !== "id") {
-											setSortBy("id");
-											setSortOrder("asc");
-										} else if (sortOrder === "asc") {
-											setSortOrder("desc");
-										} else {
-											setSortBy(null);
-											setSortOrder(null);
-										}
-									}}
-								>
-									ID
-								</th>
-								<th
-									className={`${styles.tableHeaderCell} sortableHeader ${sortBy === "name" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
-									onClick={() => {
-										if (sortBy !== "name") {
-											setSortBy("name");
-											setSortOrder("asc");
-										} else if (sortOrder === "asc") {
-											setSortOrder("desc");
-										} else {
-											setSortBy(null);
-											setSortOrder(null);
-										}
-									}}
-								>
-									Название отдела
-								</th>
-								<th className={styles.tableHeaderCell}>Категории</th>
-							</tr>
-						</thead>
-						<tbody className={styles.tableBody}>
-							{loading ? (
+					<ScrollableTableWrapper>
+						<table className={styles.table}>
+							<thead className={styles.tableHeader}>
 								<tr>
-									<td colSpan={3} className={styles.loadingCell}>
-										<Loading />
-									</td>
+									<th
+										className={`${styles.tableHeaderCell} idCell sortableHeader ${sortBy === "id" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
+										onClick={() => {
+											if (sortBy !== "id") {
+												setSortBy("id");
+												setSortOrder("asc");
+											} else if (sortOrder === "asc") {
+												setSortOrder("desc");
+											} else {
+												setSortBy(null);
+												setSortOrder(null);
+											}
+										}}
+									>
+										ID
+									</th>
+									<th
+										className={`${styles.tableHeaderCell} sortableHeader ${sortBy === "name" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
+										onClick={() => {
+											if (sortBy !== "name") {
+												setSortBy("name");
+												setSortOrder("asc");
+											} else if (sortOrder === "asc") {
+												setSortOrder("desc");
+											} else {
+												setSortBy(null);
+												setSortOrder(null);
+											}
+										}}
+									>
+										Название отдела
+									</th>
+									<th className={styles.tableHeaderCell}>Категории</th>
 								</tr>
-							) : processedDepartments.length === 0 ? (
-								<tr>
-									<td colSpan={3} className={styles.emptyCell}>
-										{search ? "Отделы не найдены" : "Нет отделов"}
-									</td>
-								</tr>
-							) : (
-								processedDepartments.map((dept) => (
-									<tr key={dept.id} className={styles.tableRow}>
-										<td className={`${styles.tableCell} idCell`}>{dept.id}</td>
-										<td className={styles.tableCell}>
-											<Link href={`/admin/departments/${dept.id}`} className={styles.departmentLink}>
-												{dept.name}
-											</Link>
-										</td>
-										<td className={styles.tableCell}>
-											{dept.categories && dept.categories.length > 0 ? (
-												<div className={styles.categoriesList}>
-													{dept.categories.map((category, index) => (
-														<span key={index} className="category">
-															{category}
-														</span>
-													))}
-												</div>
-											) : (
-												"—"
-											)}
+							</thead>
+							<tbody className={styles.tableBody}>
+								{loading ? (
+									<tr>
+										<td colSpan={3} className={styles.loadingCell}>
+											<Loading />
 										</td>
 									</tr>
-								))
-							)}
-						</tbody>
-					</table>
+								) : processedDepartments.length === 0 ? (
+									<tr>
+										<td colSpan={3} className={styles.emptyCell}>
+											{search ? "Отделы не найдены" : "Нет отделов"}
+										</td>
+									</tr>
+								) : (
+									processedDepartments.map((dept) => (
+										<tr key={dept.id} className={styles.tableRow}>
+											<td className={`${styles.tableCell} idCell`}>{dept.id}</td>
+											<td className={styles.tableCell}>
+												<Link href={`/admin/departments/${dept.id}`} className={styles.departmentLink}>
+													{dept.name}
+												</Link>
+											</td>
+											<td className={styles.tableCell}>
+												{dept.categories && dept.categories.length > 0 ? (
+													<div className={styles.categoriesList}>
+														{dept.categories.map((category, index) => (
+															<span key={index} className="category">
+																{category}
+															</span>
+														))}
+													</div>
+												) : (
+													"—"
+												)}
+											</td>
+										</tr>
+									))
+								)}
+							</tbody>
+						</table>
+					</ScrollableTableWrapper>
 					{/* Показываем кнопку создания только суперадмину */}
 					{canDeleteDepartments() && (
 						<Link href="/admin/departments/create" className={`createButton`}>

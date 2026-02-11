@@ -1,0 +1,70 @@
+.scrollableTableWrapper {
+	width: 100%;
+	overflow-x: auto;
+	overflow-y: visible;
+	-webkit-overflow-scrolling: touch; // Плавный скролл на iOS
+
+	// Скрываем стандартный скроллбар для более чистого вида
+	scrollbar-width: thin; // Firefox
+	scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+
+	&::-webkit-scrollbar {
+		height: 8px;
+	}
+
+	&::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	&::-webkit-scrollbar-thumb {
+		background-color: rgba(0, 0, 0, 0.2);
+		border-radius: 4px;
+
+		&:hover {
+			background-color: rgba(0, 0, 0, 0.3);
+		}
+	}
+
+	// Когда скролл возможен, показываем курсор grab
+	&.canScroll {
+		cursor: grab;
+
+		// При драге меняем курсор на grabbing
+		&.isDragging {
+			cursor: grabbing;
+			user-select: none;
+
+			// Предотвращаем выделение текста при драге
+			* {
+				user-select: none;
+				pointer-events: none;
+			}
+		}
+	}
+
+	// На мобильных устройствах показываем индикатор скролла
+	@media (max-width: 768px) {
+		&.canScroll {
+			// Добавляем градиент справа, чтобы показать, что можно скроллить
+			position: relative;
+
+			&::after {
+				content: "";
+				position: absolute;
+				top: 0;
+				right: 0;
+				width: 30px;
+				height: 100%;
+				background: linear-gradient(to right, transparent, rgba(0, 0, 0, 0.05));
+				pointer-events: none;
+				opacity: 0;
+				transition: opacity 0.3s ease;
+			}
+
+			// Показываем индикатор, если не прокручено до конца
+			&:not(:hover)::after {
+				opacity: 1;
+			}
+		}
+	}
+}

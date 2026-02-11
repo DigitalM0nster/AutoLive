@@ -44,7 +44,7 @@ export default function ImportDetailsComponent({ importLogId, onClose }: ImportD
 		try {
 			// Используем GET запрос с параметрами в URL
 			const params = new URLSearchParams();
-			productIds.forEach((id) => params.append("productIds", id.toString()));
+			params.set("productIds", productIds.join(","));
 
 			const response = await fetch(`/api/products/check-existence?${params.toString()}`, {
 				method: "GET",

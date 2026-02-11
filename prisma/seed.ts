@@ -1,9 +1,17 @@
 // prisma/seed.ts
 
-import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import dotenv from "dotenv";
 
-const prisma = new PrismaClient();
+// Загружаем переменные окружения для сидера
+// .env.local перекрывает .env, как в Next.js
+dotenv.config();
+dotenv.config({ path: ".env.local", override: true });
+
+// Важно: Prisma-клиент должен подтянуть DB_URL из env,
+// поэтому импортируем его после dotenv.config (через require).
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { prisma } = require("../src/lib/prisma");
 
 async function main() {
 	console.log("🌱 Start seeding...");

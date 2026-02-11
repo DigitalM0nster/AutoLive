@@ -158,40 +158,45 @@ export const POST = withPermission(
 				return NextResponse.json({ error: "Некорректный формат номера телефона" }, { status: 400 });
 			}
 
-			// Проверка на существование пользователя с таким телефоном
-			const existingUser = await prisma.user.findUnique({
-				where: { phone },
+			// Проверка и создание — в withDbRetry: при обрыве соединения (Neon) повторяем
+			const result = await withDbRetry(async () => {
+				const existingUser = await prisma.user.findUnique({
+					where: { phone },
+				});
+				if (existingUser) {
+					return { type: "exists" as const };
+				}
+				const newUser = await prisma.user.create({
+					data: {
+						first_name: first_name || null,
+						last_name: last_name || null,
+						middle_name: middle_name || null,
+						phone,
+						password: Math.random().toString(36).slice(-8),
+						role: role || "client",
+						status: status || "unverified",
+						...(departmentId && role !== "client" && role !== "superadmin"
+							? {
+									department: {
+										connect: {
+											id: departmentId,
+										},
+									},
+							  }
+							: {}),
+					},
+					include: {
+						department: true,
+					},
+				});
+				return { type: "created" as const, newUser };
 			});
 
-			if (existingUser) {
+			if (result.type === "exists") {
 				return NextResponse.json({ error: "Пользователь с таким номером телефона уже существует" }, { status: 400 });
 			}
 
-			// Создание пользователя
-			const newUser = await prisma.user.create({
-				data: {
-					first_name: first_name || null,
-					last_name: last_name || null,
-					middle_name: middle_name || null,
-					phone,
-					password: Math.random().toString(36).slice(-8), // Генерируем временный пароль
-					role: role || "client",
-					status: status || "unverified",
-					// Если указан departmentId и роль позволяет, создаем связь с отделом
-					...(departmentId && role !== "client" && role !== "superadmin"
-						? {
-								department: {
-									connect: {
-										id: departmentId,
-									},
-								},
-						  }
-						: {}),
-				},
-				include: {
-					department: true,
-				},
-			});
+			const newUser = result.newUser;
 
 			// Логируем создание пользователя
 			await logUserChange({

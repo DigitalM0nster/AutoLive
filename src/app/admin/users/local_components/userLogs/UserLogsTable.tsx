@@ -31,7 +31,7 @@ export default function UserLogsTable({
 		try {
 			// Используем GET запрос с параметрами в URL вместо POST
 			const params = new URLSearchParams();
-			userIds.forEach((id) => params.append("userIds", id.toString()));
+			params.set("userIds", userIds.join(","));
 
 			const response = await fetch(`/api/users/check-existence?${params.toString()}`, {
 				method: "GET",
@@ -61,7 +61,7 @@ export default function UserLogsTable({
 		try {
 			// Используем GET запрос с параметрами в URL вместо POST
 			const params = new URLSearchParams();
-			departmentIds.forEach((id) => params.append("departmentIds", id.toString()));
+			params.set("departmentIds", departmentIds.join(","));
 
 			const response = await fetch(`/api/departments/check-existence?${params.toString()}`, {
 				method: "GET",

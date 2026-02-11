@@ -1,5 +1,5 @@
-import Link from "next/link";
 import ProductLogsComponent from "../../local_components/productLogs/ProductLogsComponent";
+import AdminLink from "@/components/admin/AdminLink";
 
 type PageParams = {
 	params: Promise<{
