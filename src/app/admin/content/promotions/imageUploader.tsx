@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { ImagePlus, Trash2 } from "lucide-react";
+import styles from "../local_components/styles.module.scss";
 
 type Props = {
 	imageUrl: string;
@@ -34,38 +35,42 @@ export default function ImageUploader({ imageUrl, setImageUrl }: Props) {
 	const removeImage = () => setImageUrl("");
 
 	return (
-		<div className="w-full">
+		<div className={styles.imageUploadWrap}>
 			{imageUrl ? (
-				<div className="relative group">
-					<img
-						src={imageUrl}
-						alt="Загруженное изображение"
-						className="w-full h-64 object-cover rounded-xl shadow-md border border-black/10 transition-transform group-hover:scale-[1.01]"
-					/>
-					<button
-						type="button"
-						onClick={removeImage}
-						className="absolute top-3 right-3 bg-white text-red-600  border-red-300 p-2 rounded-full shadow hover:bg-red-50 transition"
-					>
+				<div className={styles.imagePreviewBox}>
+					<img src={imageUrl} alt="Загруженное изображение" />
+					<button type="button" onClick={removeImage} className={styles.imagePreviewRemove} aria-label="Удалить изображение">
 						<Trash2 size={18} />
 					</button>
 				</div>
 			) : (
 				<div
+					className={styles.imageUploadEmpty}
 					onClick={() => fileInputRef.current?.click()}
-					className="h-64 w-full border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center text-gray-500 hover:bg-gray-50 cursor-pointer transition group"
+					role="button"
+					tabIndex={0}
+					onKeyDown={(e) => e.key === "Enter" && fileInputRef.current?.click()}
 				>
 					{uploading ? (
-						<p className="text-sm">Загрузка...</p>
+						<span>Загрузка...</span>
 					) : (
 						<>
-							<ImagePlus size={32} className="mb-2 group-hover:scale-110 transition" />
-							<p className="text-sm">Нажмите, чтобы загрузить изображение</p>
+							<div className={styles.imageUploadIcon}>
+								<ImagePlus size={32} />
+							</div>
+							<span>Нажмите, чтобы загрузить изображение</span>
 						</>
 					)}
 				</div>
 			)}
-			<input type="file" accept="image/*" onChange={handleFileChange} ref={fileInputRef} className="hidden" />
+			<input
+				type="file"
+				accept="image/*"
+				onChange={handleFileChange}
+				ref={fileInputRef}
+				className={styles.inputHidden}
+				aria-hidden
+			/>
 		</div>
 	);
 }

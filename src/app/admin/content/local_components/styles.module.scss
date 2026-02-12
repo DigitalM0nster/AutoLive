@@ -1,0 +1,105 @@
+.contentComponent {
+	.formFields {
+		padding: 0;
+	}
+
+	.fieldItem {
+		display: flex;
+		flex-direction: column;
+		gap: 15px;
+
+		.fieldItemTitle {
+			font-size: 12px;
+			text-transform: uppercase;
+			letter-spacing: 1px;
+			color: var(--grey3-color);
+		}
+	}
+
+	.formField {
+		select {
+		}
+	}
+}
+
+// Контейнер для сортируемого поля формы
+.sortableFieldContainer {
+	display: flex;
+	flex-direction: column;
+	gap: 30px;
+	position: relative;
+	width: calc(100% - 40px);
+
+	// Фиксируем высоту во время перетаскивания
+	&.isDragging {
+		overflow: hidden;
+		min-height: fit-content;
+		max-height: none;
+	}
+}
+
+// Заголовок поля с номером
+.fieldHeader {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	color: var(--grey-color);
+	font-size: 14px;
+	margin-bottom: 16px;
+}
+
+// Контейнер для списка полей формы
+.fieldsListContainer {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+	position: relative;
+}
+
+// Блок ошибки
+.errorBlock {
+	padding: 12px;
+	background: var(--light-red-color);
+	border-radius: 8px;
+	color: var(--red-color);
+	margin-bottom: 24px;
+}
+
+// Подсказка в label
+.labelHint {
+	font-size: 12px;
+	font-weight: normal;
+	color: var(--grey-color);
+	margin-left: 8px;
+}
+
+// Label для checkbox
+.checkboxLabel {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	cursor: pointer;
+}
+
+// Checkbox
+.checkboxInput {
+	width: auto;
+}
+
+// Кнопка добавления поля
+.addFieldButton {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-top: 8px;
+}
+
+// Placeholder с центрированием
+.centeredPlaceholder {
+	text-align: center;
+}
+
+// Модульный класс для formField
+.formField {
+	display: block;
+}

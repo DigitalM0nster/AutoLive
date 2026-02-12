@@ -1,10 +1,12 @@
 import { create } from "zustand";
+import { HomepageContentData } from "@/app/api/homepage-content/route";
 
 type UiStore = {
 	isActiveLoginPopup: boolean;
 	isActiveRegisterPopup: boolean;
 	isActiveOrderPopup: boolean;
 	isLoading: boolean;
+	homepageFormData: HomepageContentData | null;
 
 	activateLoginPopup: () => void;
 	deactivateLoginPopup: () => void;
@@ -27,6 +29,7 @@ export const useUiStore = create<UiStore>((set) => ({
 	isActiveRegisterPopup: false,
 	isActiveOrderPopup: false,
 	isLoading: true,
+	homepageFormData: null,
 
 	// ПОПАП ЛОГИНА
 	activateLoginPopup: () => set({ isActiveLoginPopup: true }),

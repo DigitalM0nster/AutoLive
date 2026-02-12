@@ -1,15 +1,13 @@
-// src/app/admin/content/promotions/[id]/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import ImageUploader from "../imageUploader";
 import Loading from "@/components/ui/loading/Loading";
+import styles from "../../local_components/styles.module.scss";
 
 type PageParams = {
-	params: Promise<{
-		id: string;
-	}>;
+	params: Promise<{ id: string }>;
 };
 
 export default function EditPromotionPage({ params }: PageParams) {
@@ -24,7 +22,6 @@ export default function EditPromotionPage({ params }: PageParams) {
 
 	const [loading, setLoading] = useState(true);
 
-	// Получаем параметры при монтировании компонента
 	useEffect(() => {
 		const getParams = async () => {
 			const resolvedParams = await params;
@@ -35,7 +32,7 @@ export default function EditPromotionPage({ params }: PageParams) {
 
 	useEffect(() => {
 		if (!id) return;
-		
+
 		const fetchPromo = async () => {
 			setLoading(true);
 			const res = await fetch(`/api/promotions/${id}`);
@@ -63,49 +60,81 @@ export default function EditPromotionPage({ params }: PageParams) {
 	};
 
 	return (
-		<div className="px-6 py-10 max-w-3xl mx-auto">
-			<h1 className="text-2xl font-bold mb-6">Редактирование акции</h1>
-			{loading ? (
-				<div className="space-y-4 bg-white p-6 rounded shadow">
-					<Loading />
+		<div className="screenContent">
+			<div className={styles.screenContent}>
+				<h1 className={styles.contentTitle}>Редактирование акции</h1>
+				<div className={styles.contentEditorBlock}>
+					<div className={styles.formContainer}>
+						{loading ? (
+							<div className={styles.contentEditorFields}>
+								<Loading />
+							</div>
+						) : (
+							<form onSubmit={handleSubmit}>
+								<div className={`formFields ${styles.contentEditorFields}`}>
+									<div className="formRow">
+										<div className="formField fullWidth">
+											<label>Название</label>
+											<input
+												type="text"
+												placeholder="Название"
+												value={title}
+												onChange={(e) => setTitle(e.target.value)}
+												required
+											/>
+										</div>
+									</div>
+									<div className="formRow">
+										<div className="formField fullWidth">
+											<label>Описание</label>
+											<textarea
+												placeholder="Описание"
+												value={description}
+												onChange={(e) => setDescription(e.target.value)}
+												rows={4}
+												required
+											/>
+										</div>
+									</div>
+									<div className="formRow">
+										<div className="formField fullWidth">
+											<label>Изображение</label>
+											<ImageUploader imageUrl={imageUrl} setImageUrl={setImageUrl} />
+										</div>
+									</div>
+									<div className="formRow">
+										<div className="formField">
+											<label>Текст кнопки</label>
+											<input
+												type="text"
+												placeholder="Текст кнопки"
+												value={buttonText}
+												onChange={(e) => setButtonText(e.target.value)}
+											/>
+										</div>
+										<div className="formField">
+											<label>Ссылка кнопки</label>
+											<input
+												type="text"
+												placeholder="Ссылка кнопки"
+												value={buttonLink}
+												onChange={(e) => setButtonLink(e.target.value)}
+											/>
+										</div>
+									</div>
+									<div className="formRow">
+										<div className="formField">
+											<button type="submit" className="button">
+												Сохранить
+											</button>
+										</div>
+									</div>
+								</div>
+							</form>
+						)}
+					</div>
 				</div>
-			) : (
-				<form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded shadow">
-					<input
-						type="text"
-						placeholder="Название"
-						value={title}
-						onChange={(e) => setTitle(e.target.value)}
-						className="w-full border border-black/10 px-4 py-2 rounded"
-						required
-					/>
-					<textarea
-						placeholder="Описание"
-						value={description}
-						onChange={(e) => setDescription(e.target.value)}
-						className="w-full border border-black/10 px-4 py-2 rounded"
-						required
-					/>
-					<ImageUploader imageUrl={imageUrl} setImageUrl={setImageUrl} />
-					<input
-						type="text"
-						placeholder="Текст кнопки"
-						value={buttonText}
-						onChange={(e) => setButtonText(e.target.value)}
-						className="w-full border border-black/10 px-4 py-2 rounded"
-					/>
-					<input
-						type="text"
-						placeholder="Ссылка кнопки"
-						value={buttonLink}
-						onChange={(e) => setButtonLink(e.target.value)}
-						className="w-full border border-black/10 px-4 py-2 rounded"
-					/>
-					<button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-						Сохранить
-					</button>
-				</form>
-			)}
+			</div>
 		</div>
 	);
 }

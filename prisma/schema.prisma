@@ -565,3 +565,17 @@ model BookingLog {
 
     @@map("booking_log")
 }
+
+// Контент главной страницы
+model HomepageContent {
+    id                  Int      @id @default(autoincrement()) @map("id")
+    firstBlockTitle     String   @default("Выбрать запчасти с менеджером:") @map("first_block_title") @db.VarChar(255)
+    callButtonText      String   @default("Позвонить в магазин") @map("call_button_text") @db.VarChar(255)
+    orderButtonText     String   @default("Оставить заказ") @map("order_button_text") @db.VarChar(255)
+    formFields          Json     @default("[]") @map("form_fields") // Массив полей формы
+    formSubmitButtonText String  @default("Оставить заказ") @map("form_submit_button_text") @db.VarChar(255)
+    createdAt           DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+    updatedAt           DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
+
+    @@map("homepage_content")
+}

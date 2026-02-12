@@ -16,6 +16,7 @@ export type Permission =
 	| "view_products"
 	| "edit_products"
 	| "edit_categories"
+	| "edit_content"
 	| "create_orders"
 	| "create_users"
 	| "access_all"
@@ -54,6 +55,7 @@ export const ROLE_PERMISSIONS: Record<Role, RolePermission[]> = {
 		{ permission: "view_products", scope: "all" },
 		{ permission: "edit_products", scope: "all" },
 		{ permission: "edit_categories", scope: "all" },
+		{ permission: "edit_content", scope: "all" },
 		{ permission: "view_bookings", scope: "all" },
 		{ permission: "manage_bookings", scope: "all" },
 		{ permission: "access_all", scope: "all" },

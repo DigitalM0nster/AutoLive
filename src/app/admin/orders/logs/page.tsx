@@ -10,7 +10,7 @@ export default function OrdersLogsPage() {
 						Список заказов
 					</Link>
 					<Link href="/admin/orders/logs" className="tabButton active">
-						Логи заказов
+						История изменений
 					</Link>
 				</div>
 				<OrderLogsComponent />

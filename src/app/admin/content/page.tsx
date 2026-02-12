@@ -1,51 +1,53 @@
-// src/app/admin/content/page.tsx
 "use client";
 
 import Link from "next/link";
-import { FileText, Home, MapPin, Percent } from "lucide-react";
+import { Home, MapPin, Percent } from "lucide-react";
+import styles from "./local_components/styles.module.scss";
 
 const contentSections = [
 	{
 		href: "/admin/content/homepage",
 		label: "Главная страница",
+		description: "Редактировать раздел «Главная страница»",
 		icon: Home,
-		bg: "from-blue-400 to-blue-600",
+		iconBg: "blue",
 	},
 	{
 		href: "/admin/content/contacts",
 		label: "Контакты",
+		description: "Редактировать раздел «Контакты»",
 		icon: MapPin,
-		bg: "from-green-400 to-green-600",
+		iconBg: "green",
 	},
 	{
 		href: "/admin/content/promotions",
 		label: "Акции",
+		description: "Редактировать раздел «Акции»",
 		icon: Percent,
-		bg: "from-rose-400 to-rose-600",
+		iconBg: "red",
 	},
 ];
 
 export default function AdminContentPage() {
 	return (
-		<div className="px-6 py-10 w-full max-w-7xl mx-auto mb-auto">
-			<h1 className="text-3xl font-bold text-gray-800 mb-8">Редактирование контента сайта</h1>
-			<div className="grid gap-8 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-				{contentSections.map(({ href, label, icon: Icon, bg }) => (
-					<Link
-						key={href}
-						href={href}
-						className="group relative p-6 rounded-2xl border border-black/10 bg-white/80 backdrop-blur shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 hover:bg-white"
-					>
-						<div className={`w-14 h-14 flex items-center justify-center rounded-xl mb-4 bg-gradient-to-br ${bg} text-white shadow-md`}>
-							<Icon className="w-6 h-6" />
-						</div>
-						<h3 className="text-xl font-semibold text-gray-800 group-hover:text-blue-600 transition">{label}</h3>
-						<p className="text-sm text-gray-500 mt-1">Редактировать раздел “{label}”</p>
-
-						{/* glow hover effect */}
-						<div className="absolute inset-0 rounded-2xl bg-blue-100 opacity-0 group-hover:opacity-10 transition duration-300 pointer-events-none" />
-					</Link>
-				))}
+		<div className="screenContent">
+			<div className="tableContainer">
+				<div className="tabsContainer">
+					<div className="tabTitle">Редактирование контента сайта</div>
+				</div>
+				<div className="tableContent">
+					<div className="cardsList">
+						{contentSections.map(({ href, label, description, icon: Icon, iconBg }) => (
+							<Link key={href} href={href} className="cardItem">
+								<div className={`cardIcon ${iconBg}`}>
+									<Icon size={24} />
+								</div>
+								<h3 className="cardTitle">{label}</h3>
+								<p className="cardButton">{description}</p>
+							</Link>
+						))}
+					</div>
+				</div>
 			</div>
 		</div>
 	);

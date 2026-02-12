@@ -34,16 +34,6 @@
   flex-wrap: wrap;
 }
 
-.itemImage {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  -o-object-fit: cover;
-     object-fit: cover;
-  border: 1px solid var(--grey2-color);
-  background: var(--white-color);
-}
-
 .itemBadge {
   padding: 4px 8px;
   border-radius: 6px;
@@ -159,16 +149,6 @@
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
-}
-
-.analogImage {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  -o-object-fit: cover;
-     object-fit: cover;
-  border: 1px solid var(--grey2-color);
-  background: var(--white-color);
 }
 
 @media (max-width: 768px) {

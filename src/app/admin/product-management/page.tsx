@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Package, ListOrdered, Wrench } from "lucide-react";
+import { Package, Wrench } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
-import styles from "./styles.module.scss";
 
 const allSections = [
 	{
@@ -26,29 +25,26 @@ export default function ProductsDashboardPage() {
 	const { user } = useAuthStore();
 
 	return (
-		<>
-			<div className={`screenContent ${styles.screenContent}`}>
-				<div className={`tableContainer ${styles.tableContainer}`}>
-					<div className={`tabsContainer ${styles.tabsContainer}`}>
-						<div className="tabTitle">Управление товарами</div>
-					</div>
+		<div className="screenContent">
+			<div className="tableContainer">
+				<div className="tabsContainer">
+					<div className="tabTitle">Управление товарами</div>
+				</div>
 
-					<div className={`tableContent ${styles.tableContent}`}>
-						<div className={`cardsList`}>
-							{allSections.map(({ href, label, desc, icon: Icon, bgClass }) => (
-								<Link key={href} href={href} className={`cardItem ${styles.cardItem}`}>
-									<div className={`cardIcon ${bgClass}`}>
-										<Icon className={styles.icon} />
-									</div>
-									<h3 className="cardTitle">{label}</h3>
-									<p className="cardButton">{desc}</p>
-									<div className="hoverOverlay" />
-								</Link>
-							))}
-						</div>
+				<div className="tableContent">
+					<div className="cardsList">
+						{allSections.map(({ href, label, desc, icon: Icon, bgClass }) => (
+							<Link key={href} href={href} className="cardItem">
+								<div className={`cardIcon ${bgClass}`}>
+									<Icon size={24} />
+								</div>
+								<h3 className="cardTitle">{label}</h3>
+								<p className="cardButton">{desc}</p>
+							</Link>
+						))}
 					</div>
 				</div>
 			</div>
-		</>
+		</div>
 	);
 }

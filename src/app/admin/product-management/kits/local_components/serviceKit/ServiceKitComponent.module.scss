@@ -113,23 +113,7 @@
 	margin-top: 2px;
 }
 
-.deleteProductButton {
-	position: absolute;
-	top: 10px;
-	right: 12px;
-	padding: 0;
-	background: transparent;
-	border: none;
-	color: var(--red-color);
-	font-size: 13px;
-	text-decoration: underline;
-	white-space: nowrap;
-}
-
-.deleteProductButton:disabled {
-	cursor: not-allowed;
-	opacity: 0.5;
-}
+// Стили для deleteProductButton перенесены в глобальные (globals.scss) как .deleteButton
 
 .analogItem {
 	display: flex;

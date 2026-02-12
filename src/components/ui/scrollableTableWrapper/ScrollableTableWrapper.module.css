@@ -1,0 +1,56 @@
+.scrollableTableWrapper {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+.scrollableTableWrapper::-webkit-scrollbar {
+  height: 8px;
+}
+.scrollableTableWrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollableTableWrapper::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+.scrollableTableWrapper::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+.scrollableTableWrapper.canScroll {
+  cursor: grab;
+}
+.scrollableTableWrapper.canScroll.isDragging {
+  cursor: grabbing;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
+}
+.scrollableTableWrapper.canScroll.isDragging * {
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
+  pointer-events: none;
+}
+@media (max-width: 768px) {
+  .scrollableTableWrapper.canScroll {
+    position: relative;
+  }
+  .scrollableTableWrapper.canScroll::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 30px;
+    height: 100%;
+    background: linear-gradient(to right, transparent, rgba(0, 0, 0, 0.05));
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .scrollableTableWrapper.canScroll:not(:hover)::after {
+    opacity: 1;
+  }
+}/*# sourceMappingURL=ScrollableTableWrapper.module.css.map */

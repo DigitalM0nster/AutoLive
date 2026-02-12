@@ -15,7 +15,7 @@ export default function Footer() {
 						<div className={styles.navUl}>
 							{[
 								{ label: "Материалы для ТО", path: "/service-materials" },
-								{ label: "Комплеты ТО", path: "/service-kits" },
+								{ label: "Комплекты ТО", path: "/service-kits" },
 								{ label: "Запись на ТО", path: "/booking" },
 								{ label: "Запчасти", path: "/catalog" },
 								{ label: "Акции", path: "/discounts" },

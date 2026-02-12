@@ -13,6 +13,7 @@
   --light-grey2-color: rgba(233, 236, 239, 1);
   --grey-color: rgba(235, 230, 231, 1);
   --grey2-color: rgba(215, 215, 215, 1);
+  --grey3-color: rgba(155, 155, 155, 1);
   --blue-color: rgba(59, 130, 246, 1);
   --dark-blue-color: rgba(25, 65, 143, 1);
   --light-red-color: rgba(239, 68, 68, 0.1);
@@ -338,109 +339,109 @@ a.button.disabled {
 }
 
 .cardsList {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 30px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
   width: 100%;
 }
-.cardsList .cardItem,
-.cardsList a.cardItem {
+
+.cardItem,
+a.cardItem {
   display: flex;
   position: relative;
   flex-direction: column;
-  width: calc((100% - 60px) / 3 - 50px - 2px);
-  height: auto;
-  background-color: white;
-  border-radius: 20px;
-  border: 1px solid var(--grey-color);
-  padding: 25px;
-  box-shadow: 0 10px 20px var(--shadow), 0px 5px 20px var(--shadow);
+  padding: 24px;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid var(--light-grey2-color);
+  box-shadow: 0 2px 8px var(--shadow);
   text-decoration: none;
   color: var(--text-color);
-  transform: translate(0px, 0px);
-  transition: 0.25s;
+  transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
 }
-.cardsList .cardItem:hover,
-.cardsList a.cardItem:hover {
-  transform: translate(0px, -3px);
-  box-shadow: 0 10px 20px var(--shadow-hover), 0px 5px 20px var(--shadow-hover);
+.cardItem:hover,
+a.cardItem:hover {
+  box-shadow: 0 8px 24px var(--shadow-hover);
+  transform: translateY(-2px);
+  border-color: var(--grey2-color);
 }
-.cardsList .cardItem:hover .cardTitle,
-.cardsList a.cardItem:hover .cardTitle {
+.cardItem:hover .cardTitle,
+a.cardItem:hover .cardTitle {
   color: var(--blue-color);
 }
-.cardsList .cardItem:hover .cardButton,
-.cardsList a.cardItem:hover .cardButton {
+.cardItem:hover .cardButton,
+a.cardItem:hover .cardButton {
   text-decoration: underline;
 }
-.cardsList .cardItem .cardIcon,
-.cardsList a.cardItem .cardIcon {
+.cardItem .cardIcon,
+a.cardItem .cardIcon {
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 55px;
-  height: 55px;
-  border: 1px solid var(--grey-color);
-  border-radius: 10px;
-  background-color: var(--grey-color);
-  box-shadow: inset 0 0 10px var(--shadow);
-  margin: 0px 0px 15px 0px;
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  margin: 0 0 16px 0;
+  color: white;
 }
-.cardsList .cardItem .cardIcon.indigo,
-.cardsList a.cardItem .cardIcon.indigo {
+.cardItem .cardIcon.indigo,
+a.cardItem .cardIcon.indigo {
   background: linear-gradient(135deg, rgb(164, 128, 245), rgb(126, 34, 206));
 }
-.cardsList .cardItem .cardIcon.green,
-.cardsList a.cardItem .cardIcon.green {
-  background: linear-gradient(135deg, rgb(16, 185, 129), rgb(26, 127, 93));
+.cardItem .cardIcon.green,
+a.cardItem .cardIcon.green {
+  background: linear-gradient(135deg, var(--green-color), var(--dark-green-color));
 }
-.cardsList .cardItem .cardIcon.blue,
-.cardsList a.cardItem .cardIcon.blue {
-  background: linear-gradient(135deg, rgb(59, 130, 246), rgb(37, 99, 235));
+.cardItem .cardIcon.blue,
+a.cardItem .cardIcon.blue {
+  background: linear-gradient(135deg, var(--blue-color), var(--dark-blue-color));
 }
-.cardsList .cardItem .cardIcon.orange,
-.cardsList a.cardItem .cardIcon.orange {
-  background: linear-gradient(135deg, rgb(239, 68, 68), rgb(239, 35, 68));
+.cardItem .cardIcon.orange,
+a.cardItem .cardIcon.orange {
+  background: linear-gradient(135deg, var(--orange-color), var(--dark-orange-color));
 }
-.cardsList .cardItem .cardIcon.purple,
-.cardsList a.cardItem .cardIcon.purple {
+.cardItem .cardIcon.purple,
+a.cardItem .cardIcon.purple {
   background: linear-gradient(135deg, rgb(147, 51, 234), rgb(126, 34, 206));
 }
-.cardsList .cardItem .cardIcon.red,
-.cardsList a.cardItem .cardIcon.red {
-  background: linear-gradient(135deg, rgb(220, 38, 38), rgb(185, 28, 28));
+.cardItem .cardIcon.red,
+a.cardItem .cardIcon.red {
+  background: linear-gradient(135deg, var(--red-color), var(--dark-red-color));
 }
-.cardsList .cardItem .cardIcon.pink,
-.cardsList a.cardItem .cardIcon.pink {
+.cardItem .cardIcon.pink,
+a.cardItem .cardIcon.pink {
   background: linear-gradient(135deg, rgb(236, 72, 153), rgb(219, 39, 119));
 }
-.cardsList .cardItem .cardIcon svg,
-.cardsList a.cardItem .cardIcon svg {
+.cardItem .cardIcon svg,
+a.cardItem .cardIcon svg {
   stroke: white;
 }
-.cardsList .cardItem .cardTitle,
-.cardsList .cardItem a.cardTitle,
-.cardsList a.cardItem .cardTitle,
-.cardsList a.cardItem a.cardTitle {
-  margin: 0;
+.cardItem .cardTitle,
+.cardItem a.cardTitle,
+a.cardItem .cardTitle,
+a.cardItem a.cardTitle {
+  margin: 0 0 4px 0;
   font-size: 20px;
   font-weight: 600;
   text-decoration: none;
   color: var(--text-color);
-  transition: 0.25s;
+  transition: color 0.2s;
 }
-.cardsList .cardItem .cardButton,
-.cardsList a.cardItem .cardButton {
-  margin: 5px 0px 0px 0px;
-  font-size: 15px;
+.cardItem .cardButton,
+a.cardItem .cardButton {
+  margin: 0;
+  font-size: 13px;
   font-weight: 500;
-  opacity: 0.5;
+  opacity: 0.7;
+  transition: -webkit-text-decoration 0.2s;
+  transition: text-decoration 0.2s;
+  transition: text-decoration 0.2s, -webkit-text-decoration 0.2s;
 }
-.cardsList .cardItem .cardNewOrdersNumber,
-.cardsList a.cardItem .cardNewOrdersNumber {
+.cardItem .cardNewOrdersNumber,
+a.cardItem .cardNewOrdersNumber {
   position: absolute;
-  right: 25px;
-  top: 25px;
+  right: 24px;
+  top: 24px;
   border-radius: 50%;
   font-size: 12px;
   background-color: var(--red-color);
@@ -2400,7 +2401,8 @@ span.oldName:after {
 
 .productComponent .formContainer,
 .orderComponent .formContainer,
-.bookingComponent .formContainer {
+.bookingComponent .formContainer,
+.contentComponent .formContainer {
   background: white;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
@@ -2409,29 +2411,34 @@ span.oldName:after {
 }
 .productComponent .statusBlock,
 .orderComponent .statusBlock,
-.bookingComponent .statusBlock {
+.bookingComponent .statusBlock,
+.contentComponent .statusBlock {
   padding: 0px;
   margin: 0px 0px 0px 0px;
   overflow: hidden;
 }
 .productComponent .statusBlock.active .statusFields,
 .orderComponent .statusBlock.active .statusFields,
-.bookingComponent .statusBlock.active .statusFields {
+.bookingComponent .statusBlock.active .statusFields,
+.contentComponent .statusBlock.active .statusFields {
   display: flex;
 }
 .productComponent .statusBlock.active .statusHeader:hover:after,
 .orderComponent .statusBlock.active .statusHeader:hover:after,
-.bookingComponent .statusBlock.active .statusHeader:hover:after {
+.bookingComponent .statusBlock.active .statusHeader:hover:after,
+.contentComponent .statusBlock.active .statusHeader:hover:after {
   transform: translate(0px, -3px) rotate(180deg);
 }
 .productComponent .statusBlock.active .statusHeader:after,
 .orderComponent .statusBlock.active .statusHeader:after,
-.bookingComponent .statusBlock.active .statusHeader:after {
+.bookingComponent .statusBlock.active .statusHeader:after,
+.contentComponent .statusBlock.active .statusHeader:after {
   transform: translate(0px, 0px) rotate(180deg);
 }
 .productComponent .statusBlock .statusFields,
 .orderComponent .statusBlock .statusFields,
-.bookingComponent .statusBlock .statusFields {
+.bookingComponent .statusBlock .statusFields,
+.contentComponent .statusBlock .statusFields {
   display: none;
   flex-direction: column;
   gap: 24px;
@@ -2440,7 +2447,8 @@ span.oldName:after {
 }
 .productComponent .statusBlock .statusHeader,
 .orderComponent .statusBlock .statusHeader,
-.bookingComponent .statusBlock .statusHeader {
+.bookingComponent .statusBlock .statusHeader,
+.contentComponent .statusBlock .statusHeader {
   display: flex;
   position: relative;
   align-items: center;
@@ -2454,17 +2462,20 @@ span.oldName:after {
 }
 .productComponent .statusBlock .statusHeader:hover,
 .orderComponent .statusBlock .statusHeader:hover,
-.bookingComponent .statusBlock .statusHeader:hover {
+.bookingComponent .statusBlock .statusHeader:hover,
+.contentComponent .statusBlock .statusHeader:hover {
   background-color: var(--light-grey2-color);
 }
 .productComponent .statusBlock .statusHeader:hover:after,
 .orderComponent .statusBlock .statusHeader:hover:after,
-.bookingComponent .statusBlock .statusHeader:hover:after {
+.bookingComponent .statusBlock .statusHeader:hover:after,
+.contentComponent .statusBlock .statusHeader:hover:after {
   transform: translate(0px, 3px) rotate(0deg);
 }
 .productComponent .statusBlock .statusHeader:after,
 .orderComponent .statusBlock .statusHeader:after,
-.bookingComponent .statusBlock .statusHeader:after {
+.bookingComponent .statusBlock .statusHeader:after,
+.contentComponent .statusBlock .statusHeader:after {
   content: "";
   display: block;
   width: 0px;
@@ -2476,7 +2487,8 @@ span.oldName:after {
 }
 .productComponent .formHeader,
 .orderComponent .formHeader,
-.bookingComponent .formHeader {
+.bookingComponent .formHeader,
+.contentComponent .formHeader {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -2489,7 +2501,8 @@ span.oldName:after {
 }
 .productComponent .formHeader h2,
 .orderComponent .formHeader h2,
-.bookingComponent .formHeader h2 {
+.bookingComponent .formHeader h2,
+.contentComponent .formHeader h2 {
   font-size: 24px;
   font-weight: 600;
   color: var(--text-color);
@@ -2497,26 +2510,30 @@ span.oldName:after {
 }
 .productComponent .formHeader .formActions,
 .orderComponent .formHeader .formActions,
-.bookingComponent .formHeader .formActions {
+.bookingComponent .formHeader .formActions,
+.contentComponent .formHeader .formActions {
   display: flex;
   gap: 12px;
   align-items: center;
 }
 .productComponent .orderMainInfo,
 .orderComponent .orderMainInfo,
-.bookingComponent .orderMainInfo {
+.bookingComponent .orderMainInfo,
+.contentComponent .orderMainInfo {
   padding: 24px 0px;
 }
 .productComponent .orderMainInfo .orderInfoFields,
 .orderComponent .orderMainInfo .orderInfoFields,
-.bookingComponent .orderMainInfo .orderInfoFields {
+.bookingComponent .orderMainInfo .orderInfoFields,
+.contentComponent .orderMainInfo .orderInfoFields {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 .productComponent .orderMainInfo .orderInfoFields .infoRow,
 .orderComponent .orderMainInfo .orderInfoFields .infoRow,
-.bookingComponent .orderMainInfo .orderInfoFields .infoRow {
+.bookingComponent .orderMainInfo .orderInfoFields .infoRow,
+.contentComponent .orderMainInfo .orderInfoFields .infoRow {
   display: flex;
   gap: 16px;
 }
@@ -2525,7 +2542,9 @@ span.oldName:after {
 .orderComponent .formFields,
 .orderComponent .formSections,
 .bookingComponent .formFields,
-.bookingComponent .formSections {
+.bookingComponent .formSections,
+.contentComponent .formFields,
+.contentComponent .formSections {
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -2536,7 +2555,9 @@ span.oldName:after {
 .orderComponent .formFields .formRow,
 .orderComponent .formSections .formRow,
 .bookingComponent .formFields .formRow,
-.bookingComponent .formSections .formRow {
+.bookingComponent .formSections .formRow,
+.contentComponent .formFields .formRow,
+.contentComponent .formSections .formRow {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
@@ -2546,7 +2567,9 @@ span.oldName:after {
 .orderComponent .formFields .formRow:last-child,
 .orderComponent .formSections .formRow:last-child,
 .bookingComponent .formFields .formRow:last-child,
-.bookingComponent .formSections .formRow:last-child {
+.bookingComponent .formSections .formRow:last-child,
+.contentComponent .formFields .formRow:last-child,
+.contentComponent .formSections .formRow:last-child {
   margin-bottom: 0;
 }
 .productComponent .formFields .formSection,
@@ -2554,7 +2577,9 @@ span.oldName:after {
 .orderComponent .formFields .formSection,
 .orderComponent .formSections .formSection,
 .bookingComponent .formFields .formSection,
-.bookingComponent .formSections .formSection {
+.bookingComponent .formSections .formSection,
+.contentComponent .formFields .formSection,
+.contentComponent .formSections .formSection {
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -2564,16 +2589,33 @@ span.oldName:after {
 .orderComponent .formFields .formSection .formField,
 .orderComponent .formSections .formSection .formField,
 .bookingComponent .formFields .formSection .formField,
-.bookingComponent .formSections .formSection .formField {
+.bookingComponent .formSections .formSection .formField,
+.contentComponent .formFields .formSection .formField,
+.contentComponent .formSections .formSection .formField {
   border: none;
   padding: 0;
+}
+.productComponent .formFields .formSection .formSectionTitle,
+.productComponent .formSections .formSection .formSectionTitle,
+.orderComponent .formFields .formSection .formSectionTitle,
+.orderComponent .formSections .formSection .formSectionTitle,
+.bookingComponent .formFields .formSection .formSectionTitle,
+.bookingComponent .formSections .formSection .formSectionTitle,
+.contentComponent .formFields .formSection .formSectionTitle,
+.contentComponent .formSections .formSection .formSectionTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0 0 16px 0;
 }
 .productComponent .formFields .formField,
 .productComponent .formSections .formField,
 .orderComponent .formFields .formField,
 .orderComponent .formSections .formField,
 .bookingComponent .formFields .formField,
-.bookingComponent .formSections .formField {
+.bookingComponent .formSections .formField,
+.contentComponent .formFields .formField,
+.contentComponent .formSections .formField {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -2583,15 +2625,109 @@ span.oldName:after {
 .orderComponent .formFields .fieldNote,
 .orderComponent .formSections .fieldNote,
 .bookingComponent .formFields .fieldNote,
-.bookingComponent .formSections .fieldNote {
+.bookingComponent .formSections .fieldNote,
+.contentComponent .formFields .fieldNote,
+.contentComponent .formSections .fieldNote {
   font-size: 12px;
   color: var(--orange-color);
   font-style: italic;
   margin-top: 4px;
 }
+.productComponent .formFields .deleteButton,
+.productComponent .formSections .deleteButton,
+.orderComponent .formFields .deleteButton,
+.orderComponent .formSections .deleteButton,
+.bookingComponent .formFields .deleteButton,
+.bookingComponent .formSections .deleteButton,
+.contentComponent .formFields .deleteButton,
+.contentComponent .formSections .deleteButton {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--red-color);
+  font-size: 13px;
+  box-shadow: none;
+  text-decoration: underline;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.productComponent .formFields .deleteButton:hover,
+.productComponent .formSections .deleteButton:hover,
+.orderComponent .formFields .deleteButton:hover,
+.orderComponent .formSections .deleteButton:hover,
+.bookingComponent .formFields .deleteButton:hover,
+.bookingComponent .formSections .deleteButton:hover,
+.contentComponent .formFields .deleteButton:hover,
+.contentComponent .formSections .deleteButton:hover {
+  opacity: 0.8;
+  box-shadow: none;
+  transform: translate(0);
+}
+.productComponent .formFields .deleteButton:disabled,
+.productComponent .formSections .deleteButton:disabled,
+.orderComponent .formFields .deleteButton:disabled,
+.orderComponent .formSections .deleteButton:disabled,
+.bookingComponent .formFields .deleteButton:disabled,
+.bookingComponent .formSections .deleteButton:disabled,
+.contentComponent .formFields .deleteButton:disabled,
+.contentComponent .formSections .deleteButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.productComponent .formFields .deleteButton.small,
+.productComponent .formSections .deleteButton.small,
+.orderComponent .formFields .deleteButton.small,
+.orderComponent .formSections .deleteButton.small,
+.bookingComponent .formFields .deleteButton.small,
+.bookingComponent .formSections .deleteButton.small,
+.contentComponent .formFields .deleteButton.small,
+.contentComponent .formSections .deleteButton.small {
+  font-size: 12px;
+  top: 8px;
+  right: 10px;
+}
+.productComponent .formFields .dragHandle,
+.productComponent .formSections .dragHandle,
+.orderComponent .formFields .dragHandle,
+.orderComponent .formSections .dragHandle,
+.bookingComponent .formFields .dragHandle,
+.bookingComponent .formSections .dragHandle,
+.contentComponent .formFields .dragHandle,
+.contentComponent .formSections .dragHandle {
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  color: var(--grey-color);
+  transition: color 0.2s;
+}
+.productComponent .formFields .dragHandle:hover,
+.productComponent .formSections .dragHandle:hover,
+.orderComponent .formFields .dragHandle:hover,
+.orderComponent .formSections .dragHandle:hover,
+.bookingComponent .formFields .dragHandle:hover,
+.bookingComponent .formSections .dragHandle:hover,
+.contentComponent .formFields .dragHandle:hover,
+.contentComponent .formSections .dragHandle:hover {
+  color: var(--text-color);
+}
+.productComponent .formFields .dragHandle:active,
+.productComponent .formSections .dragHandle:active,
+.orderComponent .formFields .dragHandle:active,
+.orderComponent .formSections .dragHandle:active,
+.bookingComponent .formFields .dragHandle:active,
+.bookingComponent .formSections .dragHandle:active,
+.contentComponent .formFields .dragHandle:active,
+.contentComponent .formSections .dragHandle:active {
+  cursor: grabbing;
+}
 .productComponent .formField,
 .orderComponent .formField,
-.bookingComponent .formField {
+.bookingComponent .formField,
+.contentComponent .formField {
   display: flex;
   gap: 5px;
   padding: 20px;
@@ -2600,7 +2736,8 @@ span.oldName:after {
 }
 .productComponent .formField.formFieldGroup,
 .orderComponent .formField.formFieldGroup,
-.bookingComponent .formField.formFieldGroup {
+.bookingComponent .formField.formFieldGroup,
+.contentComponent .formField.formFieldGroup {
   display: flex;
   flex-direction: row;
   gap: 30px;
@@ -2608,24 +2745,28 @@ span.oldName:after {
 }
 .productComponent .formField.formFieldGroup .formField,
 .orderComponent .formField.formFieldGroup .formField,
-.bookingComponent .formField.formFieldGroup .formField {
+.bookingComponent .formField.formFieldGroup .formField,
+.contentComponent .formField.formFieldGroup .formField {
   border: none;
   border-radius: none;
 }
 .productComponent .formField.formFieldGroup .formField:nth-child(1),
 .orderComponent .formField.formFieldGroup .formField:nth-child(1),
-.bookingComponent .formField.formFieldGroup .formField:nth-child(1) {
+.bookingComponent .formField.formFieldGroup .formField:nth-child(1),
+.contentComponent .formField.formFieldGroup .formField:nth-child(1) {
   width: -moz-fit-content;
   width: fit-content;
 }
 .productComponent .formField.formFieldGroup .formField:nth-child(2),
 .orderComponent .formField.formFieldGroup .formField:nth-child(2),
-.bookingComponent .formField.formFieldGroup .formField:nth-child(2) {
+.bookingComponent .formField.formFieldGroup .formField:nth-child(2),
+.contentComponent .formField.formFieldGroup .formField:nth-child(2) {
   min-width: 50%;
 }
 .productComponent .formField.column,
 .orderComponent .formField.column,
-.bookingComponent .formField.column {
+.bookingComponent .formField.column,
+.contentComponent .formField.column {
   flex-direction: column;
   gap: 5px;
 }
@@ -2634,7 +2775,9 @@ span.oldName:after {
 .orderComponent .formField .formFieldTitle,
 .orderComponent .formField label,
 .bookingComponent .formField .formFieldTitle,
-.bookingComponent .formField label {
+.bookingComponent .formField label,
+.contentComponent .formField .formFieldTitle,
+.contentComponent .formField label {
   font-size: 12px;
   font-weight: 600;
   color: #6b7280;
@@ -2644,18 +2787,21 @@ span.oldName:after {
 }
 .productComponent .formField .formFieldInfo,
 .orderComponent .formField .formFieldInfo,
-.bookingComponent .formField .formFieldInfo {
+.bookingComponent .formField .formFieldInfo,
+.contentComponent .formField .formFieldInfo {
   display: flex;
   gap: 5px;
 }
 .productComponent .formField .formFieldInfo.column,
 .orderComponent .formField .formFieldInfo.column,
-.bookingComponent .formField .formFieldInfo.column {
+.bookingComponent .formField .formFieldInfo.column,
+.contentComponent .formField .formFieldInfo.column {
   flex-direction: column;
 }
 .productComponent .formField .formFieldInfo .itemInfoFields,
 .orderComponent .formField .formFieldInfo .itemInfoFields,
-.bookingComponent .formField .formFieldInfo .itemInfoFields {
+.bookingComponent .formField .formFieldInfo .itemInfoFields,
+.contentComponent .formField .formFieldInfo .itemInfoFields {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
@@ -2663,14 +2809,16 @@ span.oldName:after {
 }
 .productComponent .formField .selectedClient,
 .orderComponent .formField .selectedClient,
-.bookingComponent .formField .selectedClient {
+.bookingComponent .formField .selectedClient,
+.contentComponent .formField .selectedClient {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 .productComponent .formField .selectedClient span,
 .orderComponent .formField .selectedClient span,
-.bookingComponent .formField .selectedClient span {
+.bookingComponent .formField .selectedClient span,
+.contentComponent .formField .selectedClient span {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -2683,7 +2831,10 @@ span.oldName:after {
 .orderComponent .formField select,
 .bookingComponent .formField input,
 .bookingComponent .formField textarea,
-.bookingComponent .formField select {
+.bookingComponent .formField select,
+.contentComponent .formField input,
+.contentComponent .formField textarea,
+.contentComponent .formField select {
   width: calc(100% - 32px);
   padding: 12px 16px;
   border: 1px solid var(--light-grey2-color);
@@ -2700,7 +2851,10 @@ span.oldName:after {
 .orderComponent .formField select:focus,
 .bookingComponent .formField input:focus,
 .bookingComponent .formField textarea:focus,
-.bookingComponent .formField select:focus {
+.bookingComponent .formField select:focus,
+.contentComponent .formField input:focus,
+.contentComponent .formField textarea:focus,
+.contentComponent .formField select:focus {
   outline: none;
   border-color: var(--blue-color);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
@@ -2713,12 +2867,15 @@ span.oldName:after {
 .orderComponent .formField select:disabled,
 .bookingComponent .formField input:disabled,
 .bookingComponent .formField textarea:disabled,
-.bookingComponent .formField select:disabled {
+.bookingComponent .formField select:disabled,
+.contentComponent .formField input:disabled,
+.contentComponent .formField textarea:disabled,
+.contentComponent .formField select:disabled {
   background: var(--light-grey-color);
   color: #6b7280;
   cursor: not-allowed;
 }
-.productComponent .formField input::-moz-placeholder, .productComponent .formField textarea::-moz-placeholder, .productComponent .formField select::-moz-placeholder, .orderComponent .formField input::-moz-placeholder, .orderComponent .formField textarea::-moz-placeholder, .orderComponent .formField select::-moz-placeholder, .bookingComponent .formField input::-moz-placeholder, .bookingComponent .formField textarea::-moz-placeholder, .bookingComponent .formField select::-moz-placeholder {
+.productComponent .formField input::-moz-placeholder, .productComponent .formField textarea::-moz-placeholder, .productComponent .formField select::-moz-placeholder, .orderComponent .formField input::-moz-placeholder, .orderComponent .formField textarea::-moz-placeholder, .orderComponent .formField select::-moz-placeholder, .bookingComponent .formField input::-moz-placeholder, .bookingComponent .formField textarea::-moz-placeholder, .bookingComponent .formField select::-moz-placeholder, .contentComponent .formField input::-moz-placeholder, .contentComponent .formField textarea::-moz-placeholder, .contentComponent .formField select::-moz-placeholder {
   color: #9ca3af;
 }
 .productComponent .formField input::placeholder,
@@ -2729,7 +2886,10 @@ span.oldName:after {
 .orderComponent .formField select::placeholder,
 .bookingComponent .formField input::placeholder,
 .bookingComponent .formField textarea::placeholder,
-.bookingComponent .formField select::placeholder {
+.bookingComponent .formField select::placeholder,
+.contentComponent .formField input::placeholder,
+.contentComponent .formField textarea::placeholder,
+.contentComponent .formField select::placeholder {
   color: #9ca3af;
 }
 .productComponent .formField input.error,
@@ -2740,11 +2900,14 @@ span.oldName:after {
 .orderComponent .formField select.error,
 .bookingComponent .formField input.error,
 .bookingComponent .formField textarea.error,
-.bookingComponent .formField select.error {
+.bookingComponent .formField select.error,
+.contentComponent .formField input.error,
+.contentComponent .formField textarea.error,
+.contentComponent .formField select.error {
   border-color: var(--red-color);
   background: var(--light-red-color);
 }
-.productComponent .formField input.error::-moz-placeholder, .productComponent .formField textarea.error::-moz-placeholder, .productComponent .formField select.error::-moz-placeholder, .orderComponent .formField input.error::-moz-placeholder, .orderComponent .formField textarea.error::-moz-placeholder, .orderComponent .formField select.error::-moz-placeholder, .bookingComponent .formField input.error::-moz-placeholder, .bookingComponent .formField textarea.error::-moz-placeholder, .bookingComponent .formField select.error::-moz-placeholder {
+.productComponent .formField input.error::-moz-placeholder, .productComponent .formField textarea.error::-moz-placeholder, .productComponent .formField select.error::-moz-placeholder, .orderComponent .formField input.error::-moz-placeholder, .orderComponent .formField textarea.error::-moz-placeholder, .orderComponent .formField select.error::-moz-placeholder, .bookingComponent .formField input.error::-moz-placeholder, .bookingComponent .formField textarea.error::-moz-placeholder, .bookingComponent .formField select.error::-moz-placeholder, .contentComponent .formField input.error::-moz-placeholder, .contentComponent .formField textarea.error::-moz-placeholder, .contentComponent .formField select.error::-moz-placeholder {
   color: var(--red-color);
   opacity: 0.5;
 }
@@ -2756,7 +2919,10 @@ span.oldName:after {
 .orderComponent .formField select.error::placeholder,
 .bookingComponent .formField input.error::placeholder,
 .bookingComponent .formField textarea.error::placeholder,
-.bookingComponent .formField select.error::placeholder {
+.bookingComponent .formField select.error::placeholder,
+.contentComponent .formField input.error::placeholder,
+.contentComponent .formField textarea.error::placeholder,
+.contentComponent .formField select.error::placeholder {
   color: var(--red-color);
   opacity: 0.5;
 }
@@ -2768,7 +2934,10 @@ span.oldName:after {
 .orderComponent .formField select.quantityInput,
 .bookingComponent .formField input.quantityInput,
 .bookingComponent .formField textarea.quantityInput,
-.bookingComponent .formField select.quantityInput {
+.bookingComponent .formField select.quantityInput,
+.contentComponent .formField input.quantityInput,
+.contentComponent .formField textarea.quantityInput,
+.contentComponent .formField select.quantityInput {
   width: 30px;
   text-align: center;
   -moz-appearance: textfield;
@@ -2791,23 +2960,47 @@ span.oldName:after {
 .bookingComponent .formField textarea.quantityInput::-webkit-outer-spin-button,
 .bookingComponent .formField textarea.quantityInput::-webkit-inner-spin-button,
 .bookingComponent .formField select.quantityInput::-webkit-outer-spin-button,
-.bookingComponent .formField select.quantityInput::-webkit-inner-spin-button {
+.bookingComponent .formField select.quantityInput::-webkit-inner-spin-button,
+.contentComponent .formField input.quantityInput::-webkit-outer-spin-button,
+.contentComponent .formField input.quantityInput::-webkit-inner-spin-button,
+.contentComponent .formField textarea.quantityInput::-webkit-outer-spin-button,
+.contentComponent .formField textarea.quantityInput::-webkit-inner-spin-button,
+.contentComponent .formField select.quantityInput::-webkit-outer-spin-button,
+.contentComponent .formField select.quantityInput::-webkit-inner-spin-button {
   -webkit-appearance: none;
+}
+.productComponent .formField input[type=checkbox],
+.productComponent .formField textarea[type=checkbox],
+.productComponent .formField select[type=checkbox],
+.orderComponent .formField input[type=checkbox],
+.orderComponent .formField textarea[type=checkbox],
+.orderComponent .formField select[type=checkbox],
+.bookingComponent .formField input[type=checkbox],
+.bookingComponent .formField textarea[type=checkbox],
+.bookingComponent .formField select[type=checkbox],
+.contentComponent .formField input[type=checkbox],
+.contentComponent .formField textarea[type=checkbox],
+.contentComponent .formField select[type=checkbox] {
+  width: 15px;
+  height: 15px;
 }
 .productComponent .formField select,
 .orderComponent .formField select,
-.bookingComponent .formField select {
+.bookingComponent .formField select,
+.contentComponent .formField select {
   width: 100%;
 }
 .productComponent .formField textarea,
 .orderComponent .formField textarea,
-.bookingComponent .formField textarea {
+.bookingComponent .formField textarea,
+.contentComponent .formField textarea {
   resize: vertical;
   min-height: 100px;
 }
 .productComponent .infoField,
 .orderComponent .infoField,
-.bookingComponent .infoField {
+.bookingComponent .infoField,
+.contentComponent .infoField {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -2822,7 +3015,8 @@ span.oldName:after {
 }
 .productComponent .infoField .takeOrderButton,
 .orderComponent .infoField .takeOrderButton,
-.bookingComponent .infoField .takeOrderButton {
+.bookingComponent .infoField .takeOrderButton,
+.contentComponent .infoField .takeOrderButton {
   margin-top: 8px;
   padding: 6px 12px;
   background: var(--blue-color);
@@ -2836,25 +3030,29 @@ span.oldName:after {
 }
 .productComponent .infoField .takeOrderButton:hover:not(:disabled),
 .orderComponent .infoField .takeOrderButton:hover:not(:disabled),
-.bookingComponent .infoField .takeOrderButton:hover:not(:disabled) {
+.bookingComponent .infoField .takeOrderButton:hover:not(:disabled),
+.contentComponent .infoField .takeOrderButton:hover:not(:disabled) {
   background: var(--blue-color);
   opacity: 0.9;
 }
 .productComponent .infoField .takeOrderButton:disabled,
 .orderComponent .infoField .takeOrderButton:disabled,
-.bookingComponent .infoField .takeOrderButton:disabled {
+.bookingComponent .infoField .takeOrderButton:disabled,
+.contentComponent .infoField .takeOrderButton:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 .productComponent .infoField:hover,
 .orderComponent .infoField:hover,
-.bookingComponent .infoField:hover {
+.bookingComponent .infoField:hover,
+.contentComponent .infoField:hover {
   background: #f0f4f8;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 .productComponent .infoField .infoLabel,
 .orderComponent .infoField .infoLabel,
-.bookingComponent .infoField .infoLabel {
+.bookingComponent .infoField .infoLabel,
+.contentComponent .infoField .infoLabel {
   font-size: 12px;
   font-weight: 600;
   color: #6b7280;
@@ -2864,7 +3062,8 @@ span.oldName:after {
 }
 .productComponent .infoField .infoValue,
 .orderComponent .infoField .infoValue,
-.bookingComponent .infoField .infoValue {
+.bookingComponent .infoField .infoValue,
+.contentComponent .infoField .infoValue {
   font-size: 15px;
   font-weight: 500;
   color: var(--text-color);
@@ -2873,13 +3072,15 @@ span.oldName:after {
 }
 .productComponent .infoField .statusWithDate,
 .orderComponent .infoField .statusWithDate,
-.bookingComponent .infoField .statusWithDate {
+.bookingComponent .infoField .statusWithDate,
+.contentComponent .infoField .statusWithDate {
   display: flex;
   flex-direction: column;
 }
 .productComponent .infoField .statusWithDate .statusDateInfo,
 .orderComponent .infoField .statusWithDate .statusDateInfo,
-.bookingComponent .infoField .statusWithDate .statusDateInfo {
+.bookingComponent .infoField .statusWithDate .statusDateInfo,
+.contentComponent .infoField .statusWithDate .statusDateInfo {
   font-size: 12px;
   color: #6b7280;
   font-style: italic;
@@ -2887,7 +3088,8 @@ span.oldName:after {
 }
 .productComponent button.removeButton,
 .orderComponent button.removeButton,
-.bookingComponent button.removeButton {
+.bookingComponent button.removeButton,
+.contentComponent button.removeButton {
   padding: 10px 25px;
   background: var(--red-color);
   box-shadow: none;
@@ -2895,12 +3097,14 @@ span.oldName:after {
 }
 .productComponent .viewModeContainer,
 .orderComponent .viewModeContainer,
-.bookingComponent .viewModeContainer {
+.bookingComponent .viewModeContainer,
+.contentComponent .viewModeContainer {
   padding: 32px;
 }
 .productComponent .viewModeContainer .productInfoCard,
 .orderComponent .viewModeContainer .productInfoCard,
-.bookingComponent .viewModeContainer .productInfoCard {
+.bookingComponent .viewModeContainer .productInfoCard,
+.contentComponent .viewModeContainer .productInfoCard {
   display: grid;
   grid-template-columns: 300px 1fr;
   gap: 32px;
@@ -2913,13 +3117,15 @@ span.oldName:after {
 @media (max-width: 768px) {
   .productComponent .viewModeContainer .productInfoCard,
   .orderComponent .viewModeContainer .productInfoCard,
-  .bookingComponent .viewModeContainer .productInfoCard {
+  .bookingComponent .viewModeContainer .productInfoCard,
+  .contentComponent .viewModeContainer .productInfoCard {
     grid-template-columns: 1fr;
   }
 }
 .productComponent .viewModeContainer .productImageSection,
 .orderComponent .viewModeContainer .productImageSection,
-.bookingComponent .viewModeContainer .productImageSection {
+.bookingComponent .viewModeContainer .productImageSection,
+.contentComponent .viewModeContainer .productImageSection {
   background: var(--light-grey-color);
   display: flex;
   align-items: center;
@@ -2928,7 +3134,8 @@ span.oldName:after {
 }
 .productComponent .viewModeContainer .productImageSection .productImage,
 .orderComponent .viewModeContainer .productImageSection .productImage,
-.bookingComponent .viewModeContainer .productImageSection .productImage {
+.bookingComponent .viewModeContainer .productImageSection .productImage,
+.contentComponent .viewModeContainer .productImageSection .productImage {
   max-width: 100%;
   max-height: 250px;
   -o-object-fit: contain;
@@ -2938,7 +3145,8 @@ span.oldName:after {
 }
 .productComponent .viewModeContainer .productImageSection .noImagePlaceholder,
 .orderComponent .viewModeContainer .productImageSection .noImagePlaceholder,
-.bookingComponent .viewModeContainer .productImageSection .noImagePlaceholder {
+.bookingComponent .viewModeContainer .productImageSection .noImagePlaceholder,
+.contentComponent .viewModeContainer .productImageSection .noImagePlaceholder {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2950,14 +3158,16 @@ span.oldName:after {
 }
 .productComponent .viewModeContainer .productImageSection .noImagePlaceholder span,
 .orderComponent .viewModeContainer .productImageSection .noImagePlaceholder span,
-.bookingComponent .viewModeContainer .productImageSection .noImagePlaceholder span {
+.bookingComponent .viewModeContainer .productImageSection .noImagePlaceholder span,
+.contentComponent .viewModeContainer .productImageSection .noImagePlaceholder span {
   color: #6b7280;
   font-size: 14px;
   font-weight: 500;
 }
 .productComponent .viewModeContainer .productDetailsSection,
 .orderComponent .viewModeContainer .productDetailsSection,
-.bookingComponent .viewModeContainer .productDetailsSection {
+.bookingComponent .viewModeContainer .productDetailsSection,
+.contentComponent .viewModeContainer .productDetailsSection {
   padding: 24px;
   display: flex;
   flex-direction: column;
@@ -2965,7 +3175,8 @@ span.oldName:after {
 }
 .productComponent .viewModeContainer .productDetailsSection .productInfoRow,
 .orderComponent .viewModeContainer .productDetailsSection .productInfoRow,
-.bookingComponent .viewModeContainer .productDetailsSection .productInfoRow {
+.bookingComponent .viewModeContainer .productDetailsSection .productInfoRow,
+.contentComponent .viewModeContainer .productDetailsSection .productInfoRow {
   display: grid;
   grid-template-columns: 140px 1fr;
   gap: 16px;
@@ -2975,18 +3186,21 @@ span.oldName:after {
 }
 .productComponent .viewModeContainer .productDetailsSection .productInfoRow.fullWidth,
 .orderComponent .viewModeContainer .productDetailsSection .productInfoRow.fullWidth,
-.bookingComponent .viewModeContainer .productDetailsSection .productInfoRow.fullWidth {
+.bookingComponent .viewModeContainer .productDetailsSection .productInfoRow.fullWidth,
+.contentComponent .viewModeContainer .productDetailsSection .productInfoRow.fullWidth {
   grid-template-columns: 1fr;
   gap: 8px;
 }
 .productComponent .viewModeContainer .productDetailsSection .productInfoRow:last-child,
 .orderComponent .viewModeContainer .productDetailsSection .productInfoRow:last-child,
-.bookingComponent .viewModeContainer .productDetailsSection .productInfoRow:last-child {
+.bookingComponent .viewModeContainer .productDetailsSection .productInfoRow:last-child,
+.contentComponent .viewModeContainer .productDetailsSection .productInfoRow:last-child {
   border-bottom: none;
 }
 .productComponent .viewModeContainer .productDetailsSection .productInfoRow .infoLabel,
 .orderComponent .viewModeContainer .productDetailsSection .productInfoRow .infoLabel,
-.bookingComponent .viewModeContainer .productDetailsSection .productInfoRow .infoLabel {
+.bookingComponent .viewModeContainer .productDetailsSection .productInfoRow .infoLabel,
+.contentComponent .viewModeContainer .productDetailsSection .productInfoRow .infoLabel {
   font-size: 14px;
   font-weight: 600;
   color: #6b7280;
@@ -2995,7 +3209,8 @@ span.oldName:after {
 }
 .productComponent .viewModeContainer .productDetailsSection .productInfoRow .infoValue,
 .orderComponent .viewModeContainer .productDetailsSection .productInfoRow .infoValue,
-.bookingComponent .viewModeContainer .productDetailsSection .productInfoRow .infoValue {
+.bookingComponent .viewModeContainer .productDetailsSection .productInfoRow .infoValue,
+.contentComponent .viewModeContainer .productDetailsSection .productInfoRow .infoValue {
   font-size: 16px;
   font-weight: 500;
   color: var(--text-color);
@@ -3003,14 +3218,16 @@ span.oldName:after {
 }
 .productComponent .viewModeContainer .productDetailsSection .productInfoRow .infoValue.priceValue,
 .orderComponent .viewModeContainer .productDetailsSection .productInfoRow .infoValue.priceValue,
-.bookingComponent .viewModeContainer .productDetailsSection .productInfoRow .infoValue.priceValue {
+.bookingComponent .viewModeContainer .productDetailsSection .productInfoRow .infoValue.priceValue,
+.contentComponent .viewModeContainer .productDetailsSection .productInfoRow .infoValue.priceValue {
   font-size: 20px;
   font-weight: 700;
   color: var(--green-color);
 }
 .productComponent .viewModeContainer .productDetailsSection .productInfoRow .infoValue.descriptionValue,
 .orderComponent .viewModeContainer .productDetailsSection .productInfoRow .infoValue.descriptionValue,
-.bookingComponent .viewModeContainer .productDetailsSection .productInfoRow .infoValue.descriptionValue {
+.bookingComponent .viewModeContainer .productDetailsSection .productInfoRow .infoValue.descriptionValue,
+.contentComponent .viewModeContainer .productDetailsSection .productInfoRow .infoValue.descriptionValue {
   line-height: 1.6;
   background: var(--light-grey-color);
   padding: 16px;
@@ -3019,7 +3236,8 @@ span.oldName:after {
 }
 .productComponent .noEditMessage,
 .orderComponent .noEditMessage,
-.bookingComponent .noEditMessage {
+.bookingComponent .noEditMessage,
+.contentComponent .noEditMessage {
   padding: 40px;
   text-align: center;
   background: var(--light-grey-color);
@@ -3028,7 +3246,8 @@ span.oldName:after {
 }
 .productComponent .noEditMessage p,
 .orderComponent .noEditMessage p,
-.bookingComponent .noEditMessage p {
+.bookingComponent .noEditMessage p,
+.contentComponent .noEditMessage p {
   font-size: 16px;
   color: #6b7280;
   margin: 0;
@@ -3036,7 +3255,8 @@ span.oldName:after {
 }
 .productComponent .primaryButton,
 .orderComponent .primaryButton,
-.bookingComponent .primaryButton {
+.bookingComponent .primaryButton,
+.contentComponent .primaryButton {
   background: var(--blue-color);
   color: white;
   border: none;
@@ -3052,14 +3272,16 @@ span.oldName:after {
 }
 .productComponent .primaryButton:hover:not(:disabled),
 .orderComponent .primaryButton:hover:not(:disabled),
-.bookingComponent .primaryButton:hover:not(:disabled) {
+.bookingComponent .primaryButton:hover:not(:disabled),
+.contentComponent .primaryButton:hover:not(:disabled) {
   background: var(--dark-blue-color);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 .productComponent .primaryButton:disabled,
 .orderComponent .primaryButton:disabled,
-.bookingComponent .primaryButton:disabled {
+.bookingComponent .primaryButton:disabled,
+.contentComponent .primaryButton:disabled {
   background: #9ca3af;
   cursor: not-allowed;
   transform: none;
@@ -3067,17 +3289,20 @@ span.oldName:after {
 }
 .productComponent .primaryButton.hasChanges,
 .orderComponent .primaryButton.hasChanges,
-.bookingComponent .primaryButton.hasChanges {
+.bookingComponent .primaryButton.hasChanges,
+.contentComponent .primaryButton.hasChanges {
   background: var(--green-color);
 }
 .productComponent .primaryButton.hasChanges:hover:not(:disabled),
 .orderComponent .primaryButton.hasChanges:hover:not(:disabled),
-.bookingComponent .primaryButton.hasChanges:hover:not(:disabled) {
+.bookingComponent .primaryButton.hasChanges:hover:not(:disabled),
+.contentComponent .primaryButton.hasChanges:hover:not(:disabled) {
   background: var(--dark-green-color);
 }
 .productComponent .dangerButton,
 .orderComponent .dangerButton,
-.bookingComponent .dangerButton {
+.bookingComponent .dangerButton,
+.contentComponent .dangerButton {
   background: var(--red-color);
   color: white;
   border: none;
@@ -3093,14 +3318,16 @@ span.oldName:after {
 }
 .productComponent .dangerButton:hover:not(:disabled),
 .orderComponent .dangerButton:hover:not(:disabled),
-.bookingComponent .dangerButton:hover:not(:disabled) {
+.bookingComponent .dangerButton:hover:not(:disabled),
+.contentComponent .dangerButton:hover:not(:disabled) {
   background: var(--dark-red-color);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 .productComponent .dangerButton:disabled,
 .orderComponent .dangerButton:disabled,
-.bookingComponent .dangerButton:disabled {
+.bookingComponent .dangerButton:disabled,
+.contentComponent .dangerButton:disabled {
   background: #9ca3af;
   cursor: not-allowed;
   transform: none;
@@ -3108,14 +3335,16 @@ span.oldName:after {
 }
 .productComponent .filtersSection,
 .orderComponent .filtersSection,
-.bookingComponent .filtersSection {
+.bookingComponent .filtersSection,
+.contentComponent .filtersSection {
   margin-top: 32px;
   padding-top: 24px;
   border-top: 2px solid var(--light-grey-color);
 }
 .productComponent .filtersSection .filtersTitle,
 .orderComponent .filtersSection .filtersTitle,
-.bookingComponent .filtersSection .filtersTitle {
+.bookingComponent .filtersSection .filtersTitle,
+.contentComponent .filtersSection .filtersTitle {
   font-size: 18px;
   font-weight: 600;
   color: var(--text-color);
@@ -3123,42 +3352,48 @@ span.oldName:after {
 }
 .productComponent .filtersSection .filtersContainer,
 .orderComponent .filtersSection .filtersContainer,
-.bookingComponent .filtersSection .filtersContainer {
+.bookingComponent .filtersSection .filtersContainer,
+.contentComponent .filtersSection .filtersContainer {
   display: flex;
   flex-direction: column;
   gap: 24px;
 }
 .productComponent .filtersSection .filterGroup,
 .orderComponent .filtersSection .filterGroup,
-.bookingComponent .filtersSection .filterGroup {
+.bookingComponent .filtersSection .filterGroup,
+.contentComponent .filtersSection .filterGroup {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 .productComponent .filtersSection .filterGroup .filterLabel,
 .orderComponent .filtersSection .filterGroup .filterLabel,
-.bookingComponent .filtersSection .filterGroup .filterLabel {
+.bookingComponent .filtersSection .filterGroup .filterLabel,
+.contentComponent .filtersSection .filterGroup .filterLabel {
   font-size: 14px;
   font-weight: 600;
   color: var(--text-color);
 }
 .productComponent .filtersSection .filterGroup .filterValues,
 .orderComponent .filtersSection .filterGroup .filterValues,
-.bookingComponent .filtersSection .filterGroup .filterValues {
+.bookingComponent .filtersSection .filterGroup .filterValues,
+.contentComponent .filtersSection .filterGroup .filterValues {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 12px;
 }
 .productComponent .filtersSection .filterGroup .filterRangeInput,
 .orderComponent .filtersSection .filterGroup .filterRangeInput,
-.bookingComponent .filtersSection .filterGroup .filterRangeInput {
+.bookingComponent .filtersSection .filterGroup .filterRangeInput,
+.contentComponent .filtersSection .filterGroup .filterRangeInput {
   display: flex;
   align-items: center;
   gap: 4px;
 }
 .productComponent .filtersSection .filterGroup .filterValueItem,
 .orderComponent .filtersSection .filterGroup .filterValueItem,
-.bookingComponent .filtersSection .filterGroup .filterValueItem {
+.bookingComponent .filtersSection .filterGroup .filterValueItem,
+.contentComponent .filtersSection .filterGroup .filterValueItem {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -3171,12 +3406,14 @@ span.oldName:after {
 }
 .productComponent .filtersSection .filterGroup .filterValueItem:hover,
 .orderComponent .filtersSection .filterGroup .filterValueItem:hover,
-.bookingComponent .filtersSection .filterGroup .filterValueItem:hover {
+.bookingComponent .filtersSection .filterGroup .filterValueItem:hover,
+.contentComponent .filtersSection .filterGroup .filterValueItem:hover {
   background: var(--light-grey2-color);
 }
 .productComponent .filtersSection .filterGroup .filterValueItem .filterValueText,
 .orderComponent .filtersSection .filterGroup .filterValueItem .filterValueText,
-.bookingComponent .filtersSection .filterGroup .filterValueItem .filterValueText {
+.bookingComponent .filtersSection .filterGroup .filterValueItem .filterValueText,
+.contentComponent .filtersSection .filterGroup .filterValueItem .filterValueText {
   font-size: 14px;
   color: var(--text-color);
   -webkit-user-select: none;
@@ -3185,32 +3422,37 @@ span.oldName:after {
 }
 .productComponent .filtersSection .filterGroup .filterValueItem.active,
 .orderComponent .filtersSection .filterGroup .filterValueItem.active,
-.bookingComponent .filtersSection .filterGroup .filterValueItem.active {
+.bookingComponent .filtersSection .filterGroup .filterValueItem.active,
+.contentComponent .filtersSection .filterGroup .filterValueItem.active {
   background: var(--blue-color);
   border-color: var(--blue-color);
 }
 .productComponent .filtersSection .filterGroup .filterValueItem.active .filterValueText,
 .orderComponent .filtersSection .filterGroup .filterValueItem.active .filterValueText,
-.bookingComponent .filtersSection .filterGroup .filterValueItem.active .filterValueText {
+.bookingComponent .filtersSection .filterGroup .filterValueItem.active .filterValueText,
+.contentComponent .filtersSection .filterGroup .filterValueItem.active .filterValueText {
   color: white;
   font-weight: 500;
 }
 .productComponent .filtersSection .filterGroup .filterValueItem.disabled,
 .orderComponent .filtersSection .filterGroup .filterValueItem.disabled,
-.bookingComponent .filtersSection .filterGroup .filterValueItem.disabled {
+.bookingComponent .filtersSection .filterGroup .filterValueItem.disabled,
+.contentComponent .filtersSection .filterGroup .filterValueItem.disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 .productComponent .filtersSection .filterGroup .filterBoolean,
 .orderComponent .filtersSection .filterGroup .filterBoolean,
-.bookingComponent .filtersSection .filterGroup .filterBoolean {
+.bookingComponent .filtersSection .filterGroup .filterBoolean,
+.contentComponent .filtersSection .filterGroup .filterBoolean {
   display: flex;
   flex-direction: column;
   gap: 5px;
 }
 .productComponent .filtersSection .filterGroup .filterBoolean .booleanOption,
 .orderComponent .filtersSection .filterGroup .filterBoolean .booleanOption,
-.bookingComponent .filtersSection .filterGroup .filterBoolean .booleanOption {
+.bookingComponent .filtersSection .filterGroup .filterBoolean .booleanOption,
+.contentComponent .filtersSection .filterGroup .filterBoolean .booleanOption {
   display: flex;
   position: relative;
   gap: 5px;
@@ -3218,12 +3460,14 @@ span.oldName:after {
 }
 .productComponent .filtersSection .filterGroup .filterBoolean .booleanOption.active:before,
 .orderComponent .filtersSection .filterGroup .filterBoolean .booleanOption.active:before,
-.bookingComponent .filtersSection .filterGroup .filterBoolean .booleanOption.active:before {
+.bookingComponent .filtersSection .filterGroup .filterBoolean .booleanOption.active:before,
+.contentComponent .filtersSection .filterGroup .filterBoolean .booleanOption.active:before {
   border: 2px solid var(--blue-color);
 }
 .productComponent .filtersSection .filterGroup .filterBoolean .booleanOption.active:after,
 .orderComponent .filtersSection .filterGroup .filterBoolean .booleanOption.active:after,
-.bookingComponent .filtersSection .filterGroup .filterBoolean .booleanOption.active:after {
+.bookingComponent .filtersSection .filterGroup .filterBoolean .booleanOption.active:after,
+.contentComponent .filtersSection .filterGroup .filterBoolean .booleanOption.active:after {
   content: "";
   position: absolute;
   width: 10px;
@@ -3235,7 +3479,8 @@ span.oldName:after {
 }
 .productComponent .filtersSection .filterGroup .filterBoolean .booleanOption:before,
 .orderComponent .filtersSection .filterGroup .filterBoolean .booleanOption:before,
-.bookingComponent .filtersSection .filterGroup .filterBoolean .booleanOption:before {
+.bookingComponent .filtersSection .filterGroup .filterBoolean .booleanOption:before,
+.contentComponent .filtersSection .filterGroup .filterBoolean .booleanOption:before {
   content: "";
   display: inline-block;
   width: 16px;
@@ -3244,9 +3489,8 @@ span.oldName:after {
   border: 2px solid var(--grey-color);
   vertical-align: middle;
 }
-.productComponent .fixedButtons,
-.orderComponent .fixedButtons,
-.bookingComponent .fixedButtons {
+
+.fixedButtons {
   position: fixed;
   bottom: 20px;
   left: calc((100vw - var(--maxContentWidth)) * 0.5);
@@ -3260,21 +3504,15 @@ span.oldName:after {
   z-index: 1000;
   animation: slideUp 0.3s ease-out;
 }
-.productComponent .fixedButtons .formField,
-.orderComponent .fixedButtons .formField,
-.bookingComponent .fixedButtons .formField {
+.fixedButtons .formField {
   display: flex;
   flex-direction: column;
 }
-.productComponent .fixedButtons .buttonsBlock,
-.orderComponent .fixedButtons .buttonsBlock,
-.bookingComponent .fixedButtons .buttonsBlock {
+.fixedButtons .buttonsBlock {
   display: flex;
   gap: 10px;
 }
-.productComponent .fixedButtons button,
-.orderComponent .fixedButtons button,
-.bookingComponent .fixedButtons button {
+.fixedButtons button {
   padding: 12px 24px;
   font-size: 14px;
   font-weight: 600;
@@ -3284,42 +3522,30 @@ span.oldName:after {
   transition: all 0.2s ease;
   min-width: 120px;
 }
-.productComponent .fixedButtons button.primaryButton,
-.orderComponent .fixedButtons button.primaryButton,
-.bookingComponent .fixedButtons button.primaryButton {
+.fixedButtons button.primaryButton {
   background: var(--green-color);
   color: white;
 }
-.productComponent .fixedButtons button.primaryButton:hover:not(:disabled),
-.orderComponent .fixedButtons button.primaryButton:hover:not(:disabled),
-.bookingComponent .fixedButtons button.primaryButton:hover:not(:disabled) {
+.fixedButtons button.primaryButton:hover:not(:disabled) {
   background: var(--dark-green-color);
   transform: translateY(-1px);
 }
-.productComponent .fixedButtons button.primaryButton:disabled,
-.orderComponent .fixedButtons button.primaryButton:disabled,
-.bookingComponent .fixedButtons button.primaryButton:disabled {
+.fixedButtons button.primaryButton:disabled {
   background: var(--light-grey-color);
   cursor: not-allowed;
   opacity: 0.6;
 }
-.productComponent .fixedButtons button.secondaryButton,
-.orderComponent .fixedButtons button.secondaryButton,
-.bookingComponent .fixedButtons button.secondaryButton {
+.fixedButtons button.secondaryButton {
   background: transparent;
   color: var(--red-color);
   border: 1px solid var(--red-color);
 }
-.productComponent .fixedButtons button.secondaryButton:hover:not(:disabled),
-.orderComponent .fixedButtons button.secondaryButton:hover:not(:disabled),
-.bookingComponent .fixedButtons button.secondaryButton:hover:not(:disabled) {
+.fixedButtons button.secondaryButton:hover:not(:disabled) {
   border: 1px solid var(--dark-red-color);
   color: var(--dark-red-color);
   transform: translateY(-1px);
 }
-.productComponent .fixedButtons button.secondaryButton:disabled,
-.orderComponent .fixedButtons button.secondaryButton:disabled,
-.bookingComponent .fixedButtons button.secondaryButton:disabled {
+.fixedButtons button.secondaryButton:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -3333,16 +3559,12 @@ span.oldName:after {
     transform: translateY(0);
   }
 }
-.productComponent .filtersValue,
-.orderComponent .filtersValue,
-.bookingComponent .filtersValue {
+.fixedButtons .filtersValue {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
-.productComponent .filtersValue .filterDisplayGroup,
-.orderComponent .filtersValue .filterDisplayGroup,
-.bookingComponent .filtersValue .filterDisplayGroup {
+.fixedButtons .filtersValue .filterDisplayGroup {
   display: flex;
   align-items: flex-start;
   gap: 8px;
@@ -3350,24 +3572,18 @@ span.oldName:after {
   background: var(--light-grey-color);
   border-radius: 6px;
 }
-.productComponent .filtersValue .filterDisplayGroup .filterDisplayLabel,
-.orderComponent .filtersValue .filterDisplayGroup .filterDisplayLabel,
-.bookingComponent .filtersValue .filterDisplayGroup .filterDisplayLabel {
+.fixedButtons .filtersValue .filterDisplayGroup .filterDisplayLabel {
   font-size: 14px;
   font-weight: 600;
   color: var(--text-color);
   min-width: 80px;
 }
-.productComponent .filtersValue .filterDisplayGroup .filterDisplayValues,
-.orderComponent .filtersValue .filterDisplayGroup .filterDisplayValues,
-.bookingComponent .filtersValue .filterDisplayGroup .filterDisplayValues {
+.fixedButtons .filtersValue .filterDisplayGroup .filterDisplayValues {
   font-size: 14px;
   color: var(--text-color);
   flex: 1;
 }
-.productComponent .skeletonTitle,
-.orderComponent .skeletonTitle,
-.bookingComponent .skeletonTitle {
+.fixedButtons .skeletonTitle {
   height: 24px;
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200% 100%;
@@ -3375,15 +3591,11 @@ span.oldName:after {
   border-radius: 4px;
   width: 300px;
 }
-.productComponent .skeletonActions,
-.orderComponent .skeletonActions,
-.bookingComponent .skeletonActions {
+.fixedButtons .skeletonActions {
   display: flex;
   gap: 12px;
 }
-.productComponent .skeletonButton,
-.orderComponent .skeletonButton,
-.bookingComponent .skeletonButton {
+.fixedButtons .skeletonButton {
   height: 40px;
   width: 120px;
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
@@ -3391,9 +3603,7 @@ span.oldName:after {
   animation: loading 1.5s infinite;
   border-radius: 8px;
 }
-.productComponent .skeletonLabel,
-.orderComponent .skeletonLabel,
-.bookingComponent .skeletonLabel {
+.fixedButtons .skeletonLabel {
   height: 16px;
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200% 100%;
@@ -3402,9 +3612,7 @@ span.oldName:after {
   width: 80px;
   margin-bottom: 8px;
 }
-.productComponent .skeletonInput,
-.orderComponent .skeletonInput,
-.bookingComponent .skeletonInput {
+.fixedButtons .skeletonInput {
   height: 40px;
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200% 100%;
@@ -3419,53 +3627,37 @@ span.oldName:after {
     background-position: -200% 0;
   }
 }
-.productComponent .orderItemsList,
-.orderComponent .orderItemsList,
-.bookingComponent .orderItemsList {
+.fixedButtons .orderItemsList {
   display: flex;
   flex-direction: column;
   gap: 30px;
 }
-.productComponent .orderItemsList.readonly .orderItem,
-.orderComponent .orderItemsList.readonly .orderItem,
-.bookingComponent .orderItemsList.readonly .orderItem {
+.fixedButtons .orderItemsList.readonly .orderItem {
   opacity: 0.7;
   background-color: #f8f9fa;
   border: 1px solid #e9ecef;
 }
-.productComponent .orderItemsList.readonly .orderItem .itemFields,
-.orderComponent .orderItemsList.readonly .orderItem .itemFields,
-.bookingComponent .orderItemsList.readonly .orderItem .itemFields {
+.fixedButtons .orderItemsList.readonly .orderItem .itemFields {
   display: none;
 }
-.productComponent .orderItemsList.readonly .orderItem .quantityControls .quantityButton,
-.orderComponent .orderItemsList.readonly .orderItem .quantityControls .quantityButton,
-.bookingComponent .orderItemsList.readonly .orderItem .quantityControls .quantityButton {
+.fixedButtons .orderItemsList.readonly .orderItem .quantityControls .quantityButton {
   pointer-events: none;
   display: none;
 }
-.productComponent .orderItemsList.editable .orderItem,
-.orderComponent .orderItemsList.editable .orderItem,
-.bookingComponent .orderItemsList.editable .orderItem {
+.fixedButtons .orderItemsList.editable .orderItem {
   background-color: var(--light-grey-color);
   border: 1px solid var(--light-grey2-color);
 }
-.productComponent .orderItemsList.editable .orderItem .itemHeader .removeButton,
-.orderComponent .orderItemsList.editable .orderItem .itemHeader .removeButton,
-.bookingComponent .orderItemsList.editable .orderItem .itemHeader .removeButton {
+.fixedButtons .orderItemsList.editable .orderItem .itemHeader .removeButton {
   display: none;
 }
-.productComponent .orderItem,
-.orderComponent .orderItem,
-.bookingComponent .orderItem {
+.fixedButtons .orderItem {
   position: relative;
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
-.productComponent .orderItem:before,
-.orderComponent .orderItem:before,
-.bookingComponent .orderItem:before {
+.fixedButtons .orderItem:before {
   content: "";
   position: absolute;
   top: 0;
@@ -3477,14 +3669,10 @@ span.oldName:after {
   border-radius: 10px 0px 0px 10px;
   z-index: 2;
 }
-.productComponent .orderItem:not(.active) .itemInfoBlock,
-.orderComponent .orderItem:not(.active) .itemInfoBlock,
-.bookingComponent .orderItem:not(.active) .itemInfoBlock {
+.fixedButtons .orderItem:not(.active) .itemInfoBlock {
   display: none;
 }
-.productComponent .orderItem .itemTitle,
-.orderComponent .orderItem .itemTitle,
-.bookingComponent .orderItem .itemTitle {
+.fixedButtons .orderItem .itemTitle {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -3499,33 +3687,23 @@ span.oldName:after {
           user-select: none;
   transition: opacity 0.2s ease;
 }
-.productComponent .orderItem .itemTitle:hover,
-.orderComponent .orderItem .itemTitle:hover,
-.bookingComponent .orderItem .itemTitle:hover {
+.fixedButtons .orderItem .itemTitle:hover {
   opacity: 0.8;
 }
-.productComponent .orderItem .itemTitle a:visited,
-.orderComponent .orderItem .itemTitle a:visited,
-.bookingComponent .orderItem .itemTitle a:visited {
+.fixedButtons .orderItem .itemTitle a:visited {
   color: inherit;
 }
-.productComponent .orderItem .itemFields,
-.orderComponent .orderItem .itemFields,
-.bookingComponent .orderItem .itemFields {
+.fixedButtons .orderItem .itemFields {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
-.productComponent .orderItem .buttonsBlock,
-.orderComponent .orderItem .buttonsBlock,
-.bookingComponent .orderItem .buttonsBlock {
+.fixedButtons .orderItem .buttonsBlock {
   display: flex;
   gap: 10px;
   align-items: center;
 }
-.productComponent .orderItem .removeButton,
-.orderComponent .orderItem .removeButton,
-.bookingComponent .orderItem .removeButton {
+.fixedButtons .orderItem .removeButton {
   position: absolute;
   right: 20px;
   top: -22px;
@@ -3537,15 +3715,11 @@ span.oldName:after {
   color: red;
   text-decoration: underline;
 }
-.productComponent .orderItem .removeButton:disabled,
-.orderComponent .orderItem .removeButton:disabled,
-.bookingComponent .orderItem .removeButton:disabled {
+.fixedButtons .orderItem .removeButton:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
-.productComponent .orderItem .expandButton,
-.orderComponent .orderItem .expandButton,
-.bookingComponent .orderItem .expandButton {
+.fixedButtons .orderItem .expandButton {
   padding: 0;
   color: var(--text-color);
   background: transparent;
@@ -3553,29 +3727,19 @@ span.oldName:after {
   border: none;
   box-shadow: none;
 }
-.productComponent .orderItem .expandButton.active:hover:after,
-.orderComponent .orderItem .expandButton.active:hover:after,
-.bookingComponent .orderItem .expandButton.active:hover:after {
+.fixedButtons .orderItem .expandButton.active:hover:after {
   transform: translate(0px, -2px) rotate(180deg);
 }
-.productComponent .orderItem .expandButton.active:after,
-.orderComponent .orderItem .expandButton.active:after,
-.bookingComponent .orderItem .expandButton.active:after {
+.fixedButtons .orderItem .expandButton.active:after {
   transform: translate(0px, 0px) rotate(180deg);
 }
-.productComponent .orderItem .expandButton:hover,
-.orderComponent .orderItem .expandButton:hover,
-.bookingComponent .orderItem .expandButton:hover {
+.fixedButtons .orderItem .expandButton:hover {
   transform: translate(0px, 0px);
 }
-.productComponent .orderItem .expandButton:hover:after,
-.orderComponent .orderItem .expandButton:hover:after,
-.bookingComponent .orderItem .expandButton:hover:after {
+.fixedButtons .orderItem .expandButton:hover:after {
   transform: translate(0px, 2px);
 }
-.productComponent .orderItem .expandButton:after,
-.orderComponent .orderItem .expandButton:after,
-.bookingComponent .orderItem .expandButton:after {
+.fixedButtons .orderItem .expandButton:after {
   content: "";
   display: flex;
   position: relative;
@@ -3588,23 +3752,17 @@ span.oldName:after {
   transform: translate(0px, 0px) rotate(0deg);
   transition: 0.15s;
 }
-.productComponent .orderItem .quantityControls,
-.orderComponent .orderItem .quantityControls,
-.bookingComponent .orderItem .quantityControls {
+.fixedButtons .orderItem .quantityControls {
   display: flex;
   align-items: center;
   gap: 10px;
 }
-.productComponent .orderItem .itemInfoBlock,
-.orderComponent .orderItem .itemInfoBlock,
-.bookingComponent .orderItem .itemInfoBlock {
+.fixedButtons .orderItem .itemInfoBlock {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
-.productComponent .addProductButton,
-.orderComponent .addProductButton,
-.bookingComponent .addProductButton {
+.fixedButtons .addProductButton {
   padding: 8px 16px;
   background: var(--blue-color);
   color: white;
@@ -3615,43 +3773,31 @@ span.oldName:after {
   margin-top: 10px;
   transition: all 0.2s ease;
 }
-.productComponent .addProductButton:hover:not(:disabled),
-.orderComponent .addProductButton:hover:not(:disabled),
-.bookingComponent .addProductButton:hover:not(:disabled) {
+.fixedButtons .addProductButton:hover:not(:disabled) {
   background: var(--blue-color);
   opacity: 0.9;
 }
-.productComponent .addProductButton:disabled,
-.orderComponent .addProductButton:disabled,
-.bookingComponent .addProductButton:disabled {
+.fixedButtons .addProductButton:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
-.productComponent .searchContainer,
-.orderComponent .searchContainer,
-.bookingComponent .searchContainer {
+.fixedButtons .searchContainer {
   position: relative;
   margin-top: 10px;
   z-index: 1001;
 }
-.productComponent .searchContainer .searchHeader,
-.orderComponent .searchContainer .searchHeader,
-.bookingComponent .searchContainer .searchHeader {
+.fixedButtons .searchContainer .searchHeader {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
 }
-.productComponent .searchContainer .searchHeader span,
-.orderComponent .searchContainer .searchHeader span,
-.bookingComponent .searchContainer .searchHeader span {
+.fixedButtons .searchContainer .searchHeader span {
   font-size: 14px;
   font-weight: 500;
 }
-.productComponent .searchContainer .closeSearchButton,
-.orderComponent .searchContainer .closeSearchButton,
-.bookingComponent .searchContainer .closeSearchButton {
+.fixedButtons .searchContainer .closeSearchButton {
   padding: 4px 8px;
   background: transparent;
   border: 1px solid var(--grey-color);
@@ -3662,28 +3808,20 @@ span.oldName:after {
   color: var(--text-color);
   transition: all 0.2s ease;
 }
-.productComponent .searchContainer .closeSearchButton:hover,
-.orderComponent .searchContainer .closeSearchButton:hover,
-.bookingComponent .searchContainer .closeSearchButton:hover {
+.fixedButtons .searchContainer .closeSearchButton:hover {
   background: var(--light-grey-color);
   border-color: var(--red-color);
   color: var(--red-color);
 }
-.productComponent .searchContainer input,
-.orderComponent .searchContainer input,
-.bookingComponent .searchContainer input {
+.fixedButtons .searchContainer input {
   transition: 0s;
 }
-.productComponent .searchContainer input.activeSearch,
-.orderComponent .searchContainer input.activeSearch,
-.bookingComponent .searchContainer input.activeSearch {
+.fixedButtons .searchContainer input.activeSearch {
   border-color: var(--blue-color);
   box-shadow: 0 0 3px rgba(59, 130, 246, 0.1);
   border-radius: 10px 10px 0 0;
 }
-.productComponent .searchResults,
-.orderComponent .searchResults,
-.bookingComponent .searchResults {
+.fixedButtons .searchResults {
   display: flex;
   flex-direction: column;
   position: absolute;
@@ -3699,150 +3837,100 @@ span.oldName:after {
   max-height: 300px;
   overflow-y: auto;
 }
-.productComponent .searchResults.loading,
-.orderComponent .searchResults.loading,
-.bookingComponent .searchResults.loading {
+.fixedButtons .searchResults.loading {
   padding: 20px 10px;
 }
-.productComponent .searchResultItem,
-.orderComponent .searchResultItem,
-.bookingComponent .searchResultItem {
+.fixedButtons .searchResultItem {
   border-bottom: 1px solid var(--grey-color);
   padding: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
   overflow: hidden;
 }
-.productComponent .searchResultItem:hover,
-.orderComponent .searchResultItem:hover,
-.bookingComponent .searchResultItem:hover {
+.fixedButtons .searchResultItem:hover {
   background: var(--light-grey-color);
 }
-.productComponent .searchResultItem:first-child,
-.orderComponent .searchResultItem:first-child,
-.bookingComponent .searchResultItem:first-child {
+.fixedButtons .searchResultItem:first-child {
   border-top: 1px solid var(--grey-color);
 }
-.productComponent .searchResultItem:last-child,
-.orderComponent .searchResultItem:last-child,
-.bookingComponent .searchResultItem:last-child {
+.fixedButtons .searchResultItem:last-child {
   border-bottom: none;
 }
-.productComponent .searchResultItem .productInfo,
-.orderComponent .searchResultItem .productInfo,
-.bookingComponent .searchResultItem .productInfo {
+.fixedButtons .searchResultItem .productInfo {
   font-size: 14px;
   display: flex;
   align-items: center;
   gap: 5px;
 }
-.productComponent .searchResultItem .productTitle,
-.orderComponent .searchResultItem .productTitle,
-.bookingComponent .searchResultItem .productTitle {
+.fixedButtons .searchResultItem .productTitle {
   font-weight: 600;
 }
-.productComponent .searchResultItem .additionalInfoBorderBlock,
-.orderComponent .searchResultItem .additionalInfoBorderBlock,
-.bookingComponent .searchResultItem .additionalInfoBorderBlock {
+.fixedButtons .searchResultItem .additionalInfoBorderBlock {
   font-size: 12px;
   border: 1px solid var(--grey-color);
   padding: 10px 15px;
   border-radius: 20px;
 }
 @media (max-width: 768px) {
-  .productComponent .formHeader,
-  .orderComponent .formHeader,
-  .bookingComponent .formHeader {
+  .fixedButtons .formHeader {
     flex-direction: column;
     gap: 16px;
     align-items: stretch;
     text-align: center;
     padding: 20px 24px;
   }
-  .productComponent .formHeader .formActions,
-  .orderComponent .formHeader .formActions,
-  .bookingComponent .formHeader .formActions {
+  .fixedButtons .formHeader .formActions {
     justify-content: center;
   }
-  .productComponent .orderMainInfo,
-  .orderComponent .orderMainInfo,
-  .bookingComponent .orderMainInfo {
+  .fixedButtons .orderMainInfo {
     padding: 20px 24px;
   }
-  .productComponent .orderMainInfo .orderInfoFields,
-  .orderComponent .orderMainInfo .orderInfoFields,
-  .bookingComponent .orderMainInfo .orderInfoFields {
+  .fixedButtons .orderMainInfo .orderInfoFields {
     flex-direction: column;
     gap: 12px;
   }
-  .productComponent .formFields,
-  .orderComponent .formFields,
-  .bookingComponent .formFields {
+  .fixedButtons .formFields {
     padding: 24px;
   }
-  .productComponent .formFields .formRow,
-  .orderComponent .formFields .formRow,
-  .bookingComponent .formFields .formRow {
+  .fixedButtons .formFields .formRow {
     grid-template-columns: 1fr;
     gap: 16px;
   }
-  .productComponent .viewModeContainer,
-  .orderComponent .viewModeContainer,
-  .bookingComponent .viewModeContainer {
+  .fixedButtons .viewModeContainer {
     padding: 24px;
   }
-  .productComponent .viewModeContainer .productDetailsSection .productInfoRow,
-  .orderComponent .viewModeContainer .productDetailsSection .productInfoRow,
-  .bookingComponent .viewModeContainer .productDetailsSection .productInfoRow {
+  .fixedButtons .viewModeContainer .productDetailsSection .productInfoRow {
     grid-template-columns: 1fr;
     gap: 8px;
     text-align: left;
   }
 }
 @media (max-width: 480px) {
-  .productComponent .formHeader,
-  .orderComponent .formHeader,
-  .bookingComponent .formHeader {
+  .fixedButtons .formHeader {
     padding: 16px;
   }
-  .productComponent .formHeader h2,
-  .orderComponent .formHeader h2,
-  .bookingComponent .formHeader h2 {
+  .fixedButtons .formHeader h2 {
     font-size: 20px;
   }
-  .productComponent .orderMainInfo,
-  .orderComponent .orderMainInfo,
-  .bookingComponent .orderMainInfo {
+  .fixedButtons .orderMainInfo {
     padding: 16px;
   }
-  .productComponent .orderMainInfo .orderInfoFields,
-  .orderComponent .orderMainInfo .orderInfoFields,
-  .bookingComponent .orderMainInfo .orderInfoFields {
+  .fixedButtons .orderMainInfo .orderInfoFields {
     gap: 10px;
   }
-  .productComponent .orderMainInfo .orderInfoFields .infoField,
-  .orderComponent .orderMainInfo .orderInfoFields .infoField,
-  .bookingComponent .orderMainInfo .orderInfoFields .infoField {
+  .fixedButtons .orderMainInfo .orderInfoFields .infoField {
     padding: 10px 12px;
   }
-  .productComponent .orderMainInfo .orderInfoFields .infoField .infoLabel,
-  .orderComponent .orderMainInfo .orderInfoFields .infoField .infoLabel,
-  .bookingComponent .orderMainInfo .orderInfoFields .infoField .infoLabel {
+  .fixedButtons .orderMainInfo .orderInfoFields .infoField .infoLabel {
     font-size: 11px;
   }
-  .productComponent .orderMainInfo .orderInfoFields .infoField .infoValue,
-  .orderComponent .orderMainInfo .orderInfoFields .infoField .infoValue,
-  .bookingComponent .orderMainInfo .orderInfoFields .infoField .infoValue {
+  .fixedButtons .orderMainInfo .orderInfoFields .infoField .infoValue {
     font-size: 14px;
   }
-  .productComponent .formFields,
-  .orderComponent .formFields,
-  .bookingComponent .formFields {
+  .fixedButtons .formFields {
     padding: 20px;
   }
-  .productComponent .viewModeContainer,
-  .orderComponent .viewModeContainer,
-  .bookingComponent .viewModeContainer {
+  .fixedButtons .viewModeContainer {
     padding: 20px;
   }
 }

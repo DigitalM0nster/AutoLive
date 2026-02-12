@@ -597,7 +597,7 @@ export default function ServiceKitComponent({ kitId, isCreating = false, userRol
 													<button
 														type="button"
 														onClick={() => handleRemoveProduct(item.productId)}
-														className={`${styles.deleteProductButton} deleteButton`}
+														className="deleteButton"
 													>
 														× Удалить
 													</button>

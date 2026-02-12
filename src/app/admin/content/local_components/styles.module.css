@@ -1,0 +1,84 @@
+.contentComponent .formFields {
+  padding: 0;
+}
+.contentComponent .fieldItem {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+.contentComponent .fieldItem .fieldItemTitle {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--grey3-color);
+}
+.sortableFieldContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  position: relative;
+  width: calc(100% - 40px);
+}
+.sortableFieldContainer.isDragging {
+  overflow: hidden;
+  min-height: -moz-fit-content;
+  min-height: fit-content;
+  max-height: none;
+}
+
+.fieldHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--grey-color);
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.fieldsListContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: relative;
+}
+
+.errorBlock {
+  padding: 12px;
+  background: var(--light-red-color);
+  border-radius: 8px;
+  color: var(--red-color);
+  margin-bottom: 24px;
+}
+
+.labelHint {
+  font-size: 12px;
+  font-weight: normal;
+  color: var(--grey-color);
+  margin-left: 8px;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.checkboxInput {
+  width: auto;
+}
+
+.addFieldButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.centeredPlaceholder {
+  text-align: center;
+}
+
+.formField {
+  display: block;
+}/*# sourceMappingURL=styles.module.css.map */

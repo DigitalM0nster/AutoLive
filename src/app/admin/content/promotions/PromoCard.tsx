@@ -1,4 +1,3 @@
-// src/components/admin/promotions/PromoCard.tsx
 "use client";
 
 import Link from "next/link";
@@ -6,6 +5,7 @@ import { Promotion } from "@/lib/types";
 import { GripVertical } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import styles from "../local_components/styles.module.scss";
 
 type Props = {
 	promo: Promotion;
@@ -22,32 +22,28 @@ export default function PromoCard({ promo, onDelete }: Props) {
 	};
 
 	return (
-		<div ref={setNodeRef} style={style} {...attributes} className="flex gap-4 items-center bg-white rounded-xl shadow hover:shadow-md border border-black/10 px-4 py-3">
-			{/* Перетаскиватель */}
-			<div {...listeners} className="text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing" title="Перетащить">
+		<div ref={setNodeRef} style={style} {...attributes} className={styles.promoCard}>
+			<div {...listeners} className={styles.promoCardDrag} title="Перетащить">
 				<GripVertical size={18} />
 			</div>
 
-			{/* Изображение */}
-			{promo.image && <img src={promo.image} alt={promo.title} className="w-28 h-20 object-cover rounded-lg border" />}
+			{promo.image && <img src={promo.image} alt={promo.title} className={styles.promoCardImage} />}
 
-			{/* Контент */}
-			<div className="flex-1">
-				<h3 className="text-lg font-semibold">{promo.title}</h3>
-				<p className="text-sm text-gray-600 line-clamp-2">{promo.description}</p>
+			<div className={styles.promoCardBody}>
+				<h3 className={styles.promoCardTitle}>{promo.title}</h3>
+				<p className={styles.promoCardDescription}>{promo.description}</p>
 				{promo.buttonText && promo.buttonLink && (
-					<a href={promo.buttonLink} target="_blank" className="text-blue-600 text-sm underline hover:text-blue-800">
+					<a href={promo.buttonLink} target="_blank" rel="noreferrer" className={styles.promoCardButtonLink}>
 						{promo.buttonText}
 					</a>
 				)}
 			</div>
 
-			{/* Действия */}
-			<div className="flex flex-col gap-2 items-end">
-				<Link href={`/admin/content/promotions/${promo.id}`} className="text-blue-600 hover:underline text-sm">
+			<div className={styles.promoCardActions}>
+				<Link href={`/admin/content/promotions/${promo.id}`} className={styles.promoCardLink}>
 					Редактировать
 				</Link>
-				<button onClick={onDelete} className="text-red-600 hover:underline text-sm">
+				<button type="button" onClick={onDelete} className={styles.promoCardDelete}>
 					Удалить
 				</button>
 			</div>

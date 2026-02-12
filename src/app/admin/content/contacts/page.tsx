@@ -1,13 +1,23 @@
-// src/app/admin/content/contacts/page.tsx
 "use client";
 
 import React from "react";
+import styles from "../local_components/styles.module.scss";
 
 export default function AdminContactsContent() {
 	return (
-		<div className="px-6 py-10 w-full max-w-7xl mx-auto mb-auto">
-			<h1 className="text-2xl font-bold mb-4">Редактирование страницы контактов</h1>
-			<p className="text-gray-600">Тут будет редактор контактов: адрес, телефон, карта и т.д.</p>
+		<div className="screenContent">
+			<div className={styles.screenContent}>
+				<h1 className={styles.contentTitle}>Редактирование страницы контактов</h1>
+				<div className={styles.contentEditorBlock}>
+					<div className={styles.formContainer}>
+						<div className={styles.contentEditorFields}>
+							<div className={styles.editorPlaceholder}>
+								Здесь будет редактор контактов: адрес, телефон, email, карта, режим работы и т.д.
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
 		</div>
 	);
 }
