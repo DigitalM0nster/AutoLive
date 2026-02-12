@@ -1,6 +1,6 @@
 "use client";
 
-import styles from "../../../../departments/local_components/styles.module.scss";
+import styles from "@/app/admin/departments/local_components/styles.module.scss";
 import { useCallback, useEffect, useState, useMemo } from "react";
 import { ServiceKitLog, ServiceKitLogResponse, User, AdminSnapshotForBookingLog, ServiceKitSnapshotForLog } from "@/lib/types";
 import Loading from "@/components/ui/loading/Loading";

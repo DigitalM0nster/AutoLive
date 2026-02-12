@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import styles from "../../../products/local_components/styles.module.scss";
+import styles from "@/app/admin/product-management/products/local_components/styles.module.scss";
 import Pagination from "@/components/ui/pagination/Pagination";
 import type { ServiceKit } from "@/lib/types";
 import Link from "next/link";

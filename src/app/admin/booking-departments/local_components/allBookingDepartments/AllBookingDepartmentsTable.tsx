@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import styles from "../../../departments/local_components/styles.module.scss";
+import styles from "@/app/admin/departments/local_components/styles.module.scss";
 import FiltersBlock from "@/components/ui/filtersBlock/FiltersBlock";
 import { ActiveFilter, BookingDepartment } from "@/lib/types";
 import Link from "next/link";

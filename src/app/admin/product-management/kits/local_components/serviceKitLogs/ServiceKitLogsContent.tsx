@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { ServiceKitLog, ServiceKitLogResponse } from "@/lib/types";
-import styles from "../../../../../orders/local_components/styles.module.scss";
+import Loading from "@/components/ui/loading/Loading";
+import Pagination from "@/components/ui/pagination/Pagination";
 
 // Логи одного комплекта ТО — со страницы [kitId]/logs
 export default function ServiceKitLogsContent({ serviceKitId, kitTitle }: { serviceKitId: number; kitTitle: string }) {
@@ -72,19 +73,16 @@ export default function ServiceKitLogsContent({ serviceKitId, kitTitle }: { serv
 
 	if (loading && logs.length === 0) {
 		return (
-			<div className={styles.ordersPageContainer}>
-				<div className={styles.loadingContainer}>
-					<div className={styles.loadingSpinner}></div>
-					<p>Загрузка логов...</p>
-				</div>
+			<div className="tableContent">
+				<Loading />
 			</div>
 		);
 	}
 
 	return (
-		<div className={styles.ordersPageContainer}>
-			<div className={styles.ordersFiltersRow}>
-				<select value={actionFilter} onChange={(e) => setActionFilter(e.target.value)} className={styles.filterSelect}>
+		<div className="tableContent">
+			<div className="rowBlock">
+				<select value={actionFilter} onChange={(e) => setActionFilter(e.target.value)}>
 					<option value="">Все действия</option>
 					<option value="create">Создание</option>
 					<option value="update">Обновление</option>
@@ -93,7 +91,7 @@ export default function ServiceKitLogsContent({ serviceKitId, kitTitle }: { serv
 			</div>
 
 			{error && (
-				<div className={styles.errorMessage}>
+				<div className="errorMessage">
 					{error}
 					<button type="button" onClick={() => setError(null)}>
 						×
@@ -101,8 +99,8 @@ export default function ServiceKitLogsContent({ serviceKitId, kitTitle }: { serv
 				</div>
 			)}
 
-			<div className={styles.ordersTableContainer}>
-				<table className={styles.ordersTable}>
+			<div className="tableContainer">
+				<table className="table">
 					<thead>
 						<tr>
 							<th>ID</th>
@@ -136,21 +134,11 @@ export default function ServiceKitLogsContent({ serviceKitId, kitTitle }: { serv
 			</div>
 
 			{totalPages > 1 && (
-				<div className={styles.paginationContainer}>
-					<button type="button" onClick={() => fetchLogs(page - 1)} disabled={page === 1} className={styles.paginationButton}>
-						Предыдущая
-					</button>
-					<span className={styles.paginationInfo}>
-						Страница {page} из {totalPages}
-					</span>
-					<button type="button" onClick={() => fetchLogs(page + 1)} disabled={page === totalPages} className={styles.paginationButton}>
-						Следующая
-					</button>
-				</div>
+				<Pagination currentPage={page} totalPages={totalPages} onPageChange={(newPage) => fetchLogs(newPage)} className="logsPagination" />
 			)}
 
 			{logs.length === 0 && !loading && (
-				<div className={styles.noOrdersMessage}>
+				<div className="errorMessage">
 					<p>По комплекту «{kitTitle}» логов пока нет</p>
 				</div>
 			)}

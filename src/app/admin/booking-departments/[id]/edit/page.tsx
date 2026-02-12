@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
-import BookingDepartmentFormComponent from "../../local_components/bookingDepartment/BookingDepartmentFormComponent";
+import BookingDepartmentFormComponent from "@/app/admin/booking-departments/local_components/bookingDepartment/BookingDepartmentFormComponent";
 
 export default async function EditBookingDepartmentPage({ params }: { params: Promise<{ id: string }> }) {
 	const { id } = await params;

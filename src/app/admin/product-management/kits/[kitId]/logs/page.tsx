@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
-import ServiceKitLogsContent from "../../local_components/serviceKitLogs/ServiceKitLogsContent";
+import ServiceKitLogsContent from "@/app/admin/product-management/kits/local_components/serviceKitLogs/ServiceKitLogsContent";
 
 export default async function ServiceKitLogsPage({ params }: { params: Promise<{ kitId: string }> }) {
 	const { kitId } = await params;

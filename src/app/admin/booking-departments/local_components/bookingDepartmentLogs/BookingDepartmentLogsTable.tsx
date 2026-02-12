@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Loading from "@/components/ui/loading/Loading";
 import { BookingDepartmentLog } from "@/lib/types";
-import styles from "../../../departments/local_components/styles.module.scss";
+import styles from "@/app/admin/departments/local_components/styles.module.scss";
 
 type BookingDepartmentLogsTableProps = {
 	bookingDepartmentId: number;

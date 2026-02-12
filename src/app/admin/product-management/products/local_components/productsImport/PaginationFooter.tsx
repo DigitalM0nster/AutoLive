@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from "react";
-import Pagination from "../../../../../../components/ui/pagination/Pagination";
+import Pagination from "@/components/ui/pagination/Pagination";
 
 type PaginationFooterProps = {
 	totalRows: number | null;

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
-import OrderLogsComponent from "../../local_components/orderLogs/OrderLogsComponent";
+import OrderLogsComponent from "@/app/admin/orders/local_components/orderLogs/OrderLogsComponent";
 
 type PageParams = {
 	params: Promise<{

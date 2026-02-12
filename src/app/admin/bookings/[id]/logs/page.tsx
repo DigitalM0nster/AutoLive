@@ -1,5 +1,5 @@
 import Link from "next/link";
-import BookingLogsComponent from "../../local_components/bookingLogs/BookingLogsComponent";
+import BookingLogsComponent from "@/app/admin/bookings/local_components/bookingLogs/BookingLogsComponent";
 
 type PageParams = {
 	params: Promise<{

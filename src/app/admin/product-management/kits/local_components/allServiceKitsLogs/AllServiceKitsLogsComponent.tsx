@@ -1,6 +1,6 @@
 "use client";
 
-import styles from "../../../../departments/local_components/styles.module.scss";
+import styles from "@/app/admin/departments/local_components/styles.module.scss";
 import Pagination from "@/components/ui/pagination/Pagination";
 import CustomSelect from "@/components/ui/customSelect/CustomSelect";
 import DateRangePicker from "@/components/ui/dateRangePicker/DateRangePicker";

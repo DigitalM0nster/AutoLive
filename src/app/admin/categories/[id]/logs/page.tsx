@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
-import CategoryLogsComponent from "../../local_components/categoryLogs/CategoryLogsComponent";
+import CategoryLogsComponent from "@/app/admin/categories/local_components/categoryLogs/CategoryLogsComponent";
 
 export default async function CategoryLogsPage({ params }: { params: Promise<{ id: string }> }) {
 	const { id } = await params;

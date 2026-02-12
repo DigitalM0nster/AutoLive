@@ -7,7 +7,7 @@ import DateRangePicker from "@/components/ui/dateRangePicker/DateRangePicker";
 import FiltersBlock from "@/components/ui/filtersBlock/FiltersBlock";
 import { ActiveFilter } from "@/lib/types";
 import BookingDepartmentLogsTable from "./BookingDepartmentLogsTable";
-import styles from "../../../departments/local_components/styles.module.scss";
+import styles from "@/app/admin/departments/local_components/styles.module.scss";
 
 // Поле поиска по администратору
 const AdminSearchField = React.memo(

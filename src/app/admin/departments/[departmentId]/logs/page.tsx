@@ -1,6 +1,6 @@
 import Link from "next/link";
-import DepartmentLogsComponent from "../../local_components/departmentLogs/DepartmentLogsComponent";
-import styles from "../../local_components/styles.module.scss";
+import DepartmentLogsComponent from "@/app/admin/departments/local_components/departmentLogs/DepartmentLogsComponent";
+import styles from "@/app/admin/departments/local_components/styles.module.scss";
 
 type PageParams = {
 	params: Promise<{
