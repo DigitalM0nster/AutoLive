@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Loading from "@/components/ui/loading/Loading";
 
@@ -308,13 +308,16 @@ export default function CategoryLogsTable({ categoryId, tableHeaders, queryParam
 		[activeBlocks, toggleActiveBlock]
 	);
 
+	// Мемоизируем строковое представление queryParams для использования в зависимостях useEffect
+	const queryParamsString = useMemo(() => queryParams.toString(), [queryParams]);
+
 	useEffect(() => {
 		const baseUrl = categoryId ? `/api/categories/${categoryId}/logs` : "/api/categories/logs";
 		const fetchLogs = async () => {
 			setLoading(true);
 			setError(null);
 			try {
-				const res = await fetch(`${baseUrl}?${queryParams.toString()}`, { credentials: "include" });
+				const res = await fetch(`${baseUrl}?${queryParamsString}`, { credentials: "include" });
 				const data = await res.json();
 				if (data.error) throw new Error(data.error);
 				const logs = data.data || [];
@@ -335,7 +338,7 @@ export default function CategoryLogsTable({ categoryId, tableHeaders, queryParam
 			}
 		};
 		fetchLogs();
-	}, [queryParams.toString(), categoryId, onLogsUpdate, checkCategoriesExistence, checkUsersExistence]);
+	}, [queryParamsString, categoryId, onLogsUpdate, checkCategoriesExistence, checkUsersExistence]);
 
 	const colCount = categoryId ? 3 : 4;
 

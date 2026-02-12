@@ -414,7 +414,7 @@ export default function AdminHomepageContent() {
 							<div className="formRow">
 								<div className={`formField ${styles.formField}`}>
 									<label htmlFor="callButtonText">
-										Текст кнопки "Позвонить в магазин" *<span className={styles.labelHint}>(кнопка для связи с магазином)</span>
+										Текст кнопки &quot;Позвонить в магазин&quot; *<span className={styles.labelHint}>(кнопка для связи с магазином)</span>
 									</label>
 									<input
 										type="text"
@@ -427,7 +427,7 @@ export default function AdminHomepageContent() {
 
 								<div className={`formField ${styles.formField}`}>
 									<label htmlFor="orderButtonText">
-										Текст кнопки "Оставить заказ" *<span className={styles.labelHint}>(кнопка для открытия формы заказа)</span>
+										Текст кнопки &quot;Оставить заказ&quot; *<span className={styles.labelHint}>(кнопка для открытия формы заказа)</span>
 									</label>
 									<input
 										type="text"
@@ -472,7 +472,7 @@ export default function AdminHomepageContent() {
 
 										{data.formFields.length === 0 && (
 											<div className={`${styles.editorPlaceholder} ${styles.centeredPlaceholder}`}>
-												Нет полей формы. Нажмите "Добавить поле" для создания первого поля.
+												Нет полей формы. Нажмите &quot;Добавить поле&quot; для создания первого поля.
 											</div>
 										)}
 									</div>
