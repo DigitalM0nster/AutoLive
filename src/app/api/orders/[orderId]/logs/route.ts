@@ -78,25 +78,25 @@ async function getOrderLogsHandler(req: NextRequest, { user, scope }: { user: an
 			return NextResponse.json({ error: "Order not found or access denied" }, { status: 404 });
 		}
 
-		// Условия фильтрации
-		const whereClause: any = { orderId: orderId };
+		// Условия фильтрации логов заказа (отдельная переменная, т.к. whereClause выше — для проверки доступа к заказу)
+		const logsWhereClause: any = { orderId: orderId };
 		if (action) {
-			whereClause.action = action;
+			logsWhereClause.action = action;
 		}
 		if (startDate || endDate) {
-			whereClause.createdAt = {};
+			logsWhereClause.createdAt = {};
 			if (startDate) {
-				whereClause.createdAt.gte = new Date(startDate);
+				logsWhereClause.createdAt.gte = new Date(startDate);
 			}
 			if (endDate) {
-				whereClause.createdAt.lte = new Date(endDate + "T23:59:59.999Z");
+				logsWhereClause.createdAt.lte = new Date(endDate + "T23:59:59.999Z");
 			}
 		}
 
 		// Получаем логи заказа с пагинацией
 		const [logs, total] = await Promise.all([
 			prisma.orderLog.findMany({
-				where: whereClause,
+				where: logsWhereClause,
 				orderBy: {
 					createdAt: "desc",
 				},
@@ -104,7 +104,7 @@ async function getOrderLogsHandler(req: NextRequest, { user, scope }: { user: an
 				take: limit,
 			}),
 			prisma.orderLog.count({
-				where: whereClause,
+				where: logsWhereClause,
 			}),
 		]);
 
@@ -112,9 +112,12 @@ async function getOrderLogsHandler(req: NextRequest, { user, scope }: { user: an
 		let filteredLogs = logs;
 		if (adminSearch) {
 			const search = adminSearch.toLowerCase();
+			// adminSnapshot — JSON-поле из БД, нужна проверка и приведение типа
+			type AdminSnapshot = { last_name?: string; first_name?: string; middle_name?: string; phone?: string };
 			filteredLogs = logs.filter((log) => {
-				const admin = log.adminSnapshot;
-				if (!admin || typeof admin !== "object") return false;
+				const raw = log.adminSnapshot;
+				if (!raw || typeof raw !== "object" || Array.isArray(raw)) return false;
+				const admin = raw as AdminSnapshot;
 				const fio = [admin.last_name, admin.first_name, admin.middle_name].filter(Boolean).join(" ").toLowerCase();
 				const phone = (admin.phone || "").toLowerCase();
 				return fio.includes(search) || phone.includes(search);

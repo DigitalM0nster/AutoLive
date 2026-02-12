@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
-import BookingDepartmentLogsContent from "../../local_components/bookingDepartmentLogs/BookingDepartmentLogsContent";
+import BookingDepartmentLogsComponent from "../../local_components/bookingDepartmentLogs/BookingDepartmentLogsComponent";
 
 export default async function BookingDepartmentLogsPage({ params }: { params: Promise<{ id: string }> }) {
 	const { id } = await params;
@@ -20,8 +20,6 @@ export default async function BookingDepartmentLogsPage({ params }: { params: Pr
 		notFound();
 	}
 
-	const title = department.name || department.address || `Адрес #${department.id}`;
-
 	return (
 		<div className="screenContent">
 			<div className="tableContainer">
@@ -34,7 +32,7 @@ export default async function BookingDepartmentLogsPage({ params }: { params: Pr
 					</Link>
 				</div>
 				<div className="tableContent">
-					<BookingDepartmentLogsContent bookingDepartmentId={bookingDepartmentId} departmentName={title} />
+					<BookingDepartmentLogsComponent bookingDepartmentId={bookingDepartmentId} />
 				</div>
 			</div>
 		</div>
