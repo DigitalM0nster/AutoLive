@@ -1,5 +1,6 @@
 export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { withPermission } from "@/middleware/permissionMiddleware";
 import { OrderResponse, CreateOrderRequest } from "@/lib/types";
@@ -648,7 +649,7 @@ async function createOrderHandler(req: NextRequest, { user, scope }: { user: any
 					entityId: newOrder.id,
 					adminId: fullUser.id,
 					departmentId: fullUser.departmentId,
-					snapshotBefore: null, // При создании нет данных "до"
+					snapshotBefore: Prisma.JsonNull, // При создании нет данных "до"
 					snapshotAfter: {
 						...orderSnapshotForLog,
 						orderItems: newOrder.orderItems,

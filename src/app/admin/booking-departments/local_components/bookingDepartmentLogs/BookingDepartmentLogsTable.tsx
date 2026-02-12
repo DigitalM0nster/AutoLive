@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Loading from "@/components/ui/loading/Loading";
 import { BookingDepartmentLog } from "@/lib/types";
@@ -355,12 +355,12 @@ export default function BookingDepartmentLogsTable({ bookingDepartmentId, tableH
 				const res = await fetch(`/api/booking-departments/${bookingDepartmentId}/logs?${queryParams.toString()}`, { credentials: "include" });
 				const data = await res.json();
 				if (data.error) throw new Error(data.error);
-				const logs = data.data || [];
+				const logs: BookingDepartmentLog[] = data.data || [];
 				setLocalLogs(logs);
 				setTotalPages(data.totalPages ?? 1);
 				if (onLogsUpdate) onLogsUpdate(data.total ?? 0, data.totalPages ?? 1);
 
-				const bookingDepartmentIdsToCheck = [...new Set(logs.map((l: BookingDepartmentLog) => l.bookingDepartmentId).filter(Boolean))];
+				const bookingDepartmentIdsToCheck: number[] = [...new Set(logs.map((l) => l.bookingDepartmentId).filter((id): id is number => typeof id === "number"))];
 				await checkBookingDepartmentsExistence(bookingDepartmentIdsToCheck);
 
 				const adminIdsToCheck = [...new Set(logs.map((l: BookingDepartmentLog) => {

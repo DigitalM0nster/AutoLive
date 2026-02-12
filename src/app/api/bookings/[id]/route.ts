@@ -1,5 +1,6 @@
 // src/app/api/bookings/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { withPermission } from "@/middleware/permissionMiddleware";
 import {
@@ -623,7 +624,7 @@ async function deleteBookingHandler(req: NextRequest, { user, scope, params }: {
 						adminId: fullUser.id,
 						departmentId: fullUser.departmentId,
 						snapshotBefore: deletedBookingSnapshot as any, // Полный снапшот удалённой записи
-						snapshotAfter: null, // После удаления нет данных
+						snapshotAfter: Prisma.JsonNull, // После удаления нет данных
 						adminSnapshot: adminSnapshot as any,
 					},
 				});

@@ -1,6 +1,7 @@
 // src/app/api/categories/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
@@ -197,7 +198,7 @@ export async function POST(request: NextRequest) {
 					entityId: category.id,
 					adminId: fullUser.id,
 					departmentId: fullUser.departmentId,
-					snapshotBefore: null, // При создании нет данных "до"
+					snapshotBefore: Prisma.JsonNull, // При создании нет данных "до"
 					snapshotAfter: {
 						id: category.id,
 						title: category.title,

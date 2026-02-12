@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { withPermission } from "@/middleware/permissionMiddleware";
@@ -89,8 +90,8 @@ export const GET = withPermission(
 						admin: null, // Будет заполнено позже
 						targetProduct: null,
 						department: departmentSnapshot ? { id: departmentSnapshot.id, name: departmentSnapshot.name } : null, // Отдел импорта из снапшота
-						snapshotBefore: null,
-						snapshotAfter: null,
+						snapshotBefore: Prisma.JsonNull,
+						snapshotAfter: Prisma.JsonNull,
 						userSnapshot: null,
 						departmentSnapshot: departmentSnapshot, // Снапшот отдела импорта
 						importLogId: log.id, // Для логов импорта это ID самого лога импорта
@@ -185,8 +186,8 @@ export const GET = withPermission(
 							// Если отделов нет, возвращаем null
 							return null;
 						})(),
-						snapshotBefore: null,
-						snapshotAfter: null,
+						snapshotBefore: Prisma.JsonNull,
+						snapshotAfter: Prisma.JsonNull,
 						userSnapshot,
 						departmentSnapshot,
 						productSnapshot: null, // Для массовых операций как в логе импорта

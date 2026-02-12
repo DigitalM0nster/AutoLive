@@ -1,5 +1,6 @@
 // src/app/api/products/bulk-delete/route.ts
 
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { withPermission } from "@/middleware/permissionMiddleware";
@@ -120,7 +121,7 @@ export const POST = withPermission(
 									  }
 									: undefined,
 							} as any,
-							productSnapshotAfter: null,
+							productSnapshotAfter: Prisma.JsonNull,
 						},
 					});
 
@@ -143,7 +144,7 @@ export const POST = withPermission(
 								department: singleProduct.department,
 								category: singleProduct.category,
 							} as any,
-							snapshotAfter: null,
+							snapshotAfter: Prisma.JsonNull,
 							adminSnapshot: userData as any,
 						},
 					});
@@ -254,7 +255,7 @@ export const POST = withPermission(
 									department: product.department,
 									category: product.category,
 								} as any,
-								snapshotAfter: null,
+								snapshotAfter: Prisma.JsonNull,
 								adminSnapshot: userData as any,
 							},
 						});

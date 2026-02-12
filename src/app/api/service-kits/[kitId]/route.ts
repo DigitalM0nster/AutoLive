@@ -1,6 +1,7 @@
 // src/app/api/service-kits/[kitId]/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { withPermission } from "@/middleware/permissionMiddleware";
 import { ServiceKit, ServiceKitSnapshotForLog, AdminSnapshotForBookingLog } from "@/lib/types";
@@ -275,7 +276,7 @@ async function updateServiceKitHandler(req: NextRequest, { user, params }: { use
 								image: kitBefore.image,
 								price: kitBefore.price,
 						  }
-						: null,
+						: Prisma.JsonNull,
 					snapshotAfter: serviceKitSnapshot as any,
 					adminSnapshot: adminSnapshot as any,
 				},
@@ -432,7 +433,7 @@ async function deleteServiceKitHandler(req: NextRequest, { user, params }: { use
 					adminId: fullUser.id,
 					departmentId: fullUser.departmentId,
 					snapshotBefore: serviceKitSnapshot as any,
-					snapshotAfter: null,
+					snapshotAfter: Prisma.JsonNull,
 					adminSnapshot: adminSnapshot as any,
 				},
 			});

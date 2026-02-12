@@ -1,6 +1,7 @@
 // src/app/api/service-kits/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { withPermission } from "@/middleware/permissionMiddleware";
 import { withDbRetry } from "@/lib/utils";
@@ -231,7 +232,7 @@ async function createServiceKitHandler(req: NextRequest, { user }: { user: any }
 					entityId: newKit.id,
 					adminId: fullUser.id,
 					departmentId: fullUser.departmentId,
-					snapshotBefore: null, // При создании нет данных "до"
+					snapshotBefore: Prisma.JsonNull, // При создании нет данных "до"
 					snapshotAfter: serviceKitSnapshot as any,
 					adminSnapshot: adminSnapshot as any,
 				},

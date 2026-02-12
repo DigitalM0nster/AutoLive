@@ -113,9 +113,11 @@ async function getOrderLogsHandler(req: NextRequest, { user, scope }: { user: an
 		let filteredLogs = logs;
 		if (adminSearch) {
 			const search = adminSearch.toLowerCase();
+			type AdminSnapshot = { last_name?: string; first_name?: string; middle_name?: string; phone?: string };
 			filteredLogs = logs.filter((log) => {
-				const admin = log.adminSnapshot;
-				if (!admin || typeof admin !== "object") return false;
+				const raw = log.adminSnapshot;
+				if (!raw || typeof raw !== "object" || Array.isArray(raw)) return false;
+				const admin = raw as AdminSnapshot;
 				const fio = [admin.last_name, admin.first_name, admin.middle_name].filter(Boolean).join(" ").toLowerCase();
 				const phone = (admin.phone || "").toLowerCase();
 				return fio.includes(search) || phone.includes(search);

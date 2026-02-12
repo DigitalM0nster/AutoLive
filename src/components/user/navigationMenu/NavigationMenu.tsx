@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import styles from "./styles.module.scss";
 import { Product, Category } from "@/lib/types";
@@ -16,13 +16,16 @@ export default function NavigationMenu({ productId }: NavigationMenuProps) {
 	const [categories, setCategories] = useState<Category[]>([]);
 	const [product, setProduct] = useState<Product | null>(null);
 
-	const pages: Record<string, string> = {
-		"/promotions": "Акции",
-		"/categories": "Материалы для ТО",
-		"/service-kits": "Комплекты ТО",
-		"/booking": "Запись на ТО",
-		"/products": "Запчасти",
-	};
+	const pages = useMemo<Record<string, string>>(
+		() => ({
+			"/promotions": "Акции",
+			"/categories": "Материалы для ТО",
+			"/service-kits": "Комплекты ТО",
+			"/booking": "Запись на ТО",
+			"/products": "Запчасти",
+		}),
+		[],
+	);
 
 	// 🔄 Обновлённый fetch категорий
 	useEffect(() => {
@@ -52,19 +55,13 @@ export default function NavigationMenu({ productId }: NavigationMenuProps) {
 		}
 	}, [productId]);
 
-	const getCategoryTitle = (id: string | number): string | undefined => {
-		console.log("Ищем категорию с ID:", id, "в списке:", categories);
-
-		// Проверяем, что categories является массивом
+	const getCategoryTitle = useCallback((id: string | number): string | undefined => {
 		if (!Array.isArray(categories)) {
-			console.log("categories не является массивом:", typeof categories, categories);
 			return undefined;
 		}
-
 		const found = categories.find((cat) => cat.id.toString() === id.toString());
-		console.log("Найденная категория:", found);
 		return found?.title;
-	};
+	}, [categories]);
 
 	const breadcrumbs = useMemo(() => {
 		const segments = pathname.split("/").filter(Boolean);

@@ -1,5 +1,6 @@
 // src/app/api/booking-departments/route.ts
 
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { withPermission } from "@/middleware/permissionMiddleware";
 import { NextRequest, NextResponse } from "next/server";
@@ -130,7 +131,7 @@ export const POST = withPermission(
 						entityId: newBookingDepartment.id,
 						adminId: fullUser.id,
 						departmentId: fullUser.departmentId,
-						snapshotBefore: null, // При создании нет данных "до"
+						snapshotBefore: Prisma.JsonNull, // При создании нет данных "до"
 						snapshotAfter: bookingDepartmentSnapshot as any,
 						adminSnapshot: adminSnapshot as any,
 					},

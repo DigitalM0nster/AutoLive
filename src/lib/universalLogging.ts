@@ -371,7 +371,7 @@ export async function logChange(options: UniversalLogOptions) {
 		}
 
 		// Для удаления snapshotAfter не заполняем (оставляем null). Для создания/обновления — подставляем из БД при необходимости
-		const isDeleteAction = Array.isArray(options.actions) && options.actions.includes("delete");
+		const isDeleteAction = Array.isArray(options.actions) && (options.actions as string[]).includes("delete");
 		if (!snapshotAfter && options.entityId && !options.afterData && !isDeleteAction) {
 			if (options.entityType === "user") {
 				snapshotAfter = await getFullUserData(options.entityId);

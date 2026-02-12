@@ -1,6 +1,7 @@
 // src/app/api/categories/[id]/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { uploadFile, validateFile } from "@/lib/simpleFileUpload";
 import { withDbRetry } from "@/lib/utils";
@@ -283,7 +284,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 						productsCount: category._count.products,
 						allowedDepartmentsCount: category._count.allowedDepartments,
 					} as any,
-					snapshotAfter: null,
+					snapshotAfter: Prisma.JsonNull,
 					adminSnapshot: {
 						id: fullUser.id,
 						first_name: fullUser.first_name,

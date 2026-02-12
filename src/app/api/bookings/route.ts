@@ -1,5 +1,6 @@
 // src/app/api/bookings/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { withPermission } from "@/middleware/permissionMiddleware";
 import {
@@ -485,7 +486,7 @@ async function createBookingHandler(req: NextRequest, { user }: { user: any }) {
 							entityId: newBooking.id,
 							adminId: fullUser.id,
 							departmentId: fullUser.departmentId,
-							snapshotBefore: null, // При создании нет данных "до"
+							snapshotBefore: Prisma.JsonNull, // При создании нет данных "до"
 							snapshotAfter: {
 								...bookingSnapshot,
 								bookingDepartment: departmentSnapshot,

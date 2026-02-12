@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { withPermission } from "@/middleware/permissionMiddleware";
 import { OrderResponse, UpdateOrderRequest, Order } from "@/lib/types";
@@ -557,8 +558,8 @@ async function updateOrderHandler(req: NextRequest, { user, scope, params }: { u
 							: null,
 					},
 					orderSnapshot: orderSnapshotAfter,
-					managerSnapshot: managerSnapshot,
-					departmentSnapshot: departmentSnapshot,
+					managerSnapshot: managerSnapshot ?? Prisma.JsonNull,
+					departmentSnapshot: departmentSnapshot ?? Prisma.JsonNull,
 				},
 			});
 

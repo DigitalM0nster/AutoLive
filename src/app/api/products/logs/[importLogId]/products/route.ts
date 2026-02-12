@@ -274,8 +274,8 @@ export const GET = withPermission(
 			let duplicateProducts: any[] = [];
 
 			try {
-				if (importLog.snapshots) {
-					const snapshots = JSON.parse(importLog.snapshots);
+				if (importLog.productsSnapshot) {
+					const snapshots = typeof importLog.productsSnapshot === "string" ? JSON.parse(importLog.productsSnapshot) : importLog.productsSnapshot;
 					if (Array.isArray(snapshots)) {
 						// Разделяем товары по статусу
 						snapshots.forEach((product: any) => {

@@ -1,5 +1,6 @@
 // src/app/api/booking-departments/[id]/route.ts
 
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { withPermission } from "@/middleware/permissionMiddleware";
 import { NextRequest, NextResponse } from "next/server";
@@ -337,7 +338,7 @@ export const DELETE = withPermission(
 						adminId: fullUser.id,
 						departmentId: fullUser.departmentId,
 						snapshotBefore: bookingDepartmentSnapshot as any,
-						snapshotAfter: null,
+						snapshotAfter: Prisma.JsonNull,
 						adminSnapshot: adminSnapshot as any,
 					},
 				});
