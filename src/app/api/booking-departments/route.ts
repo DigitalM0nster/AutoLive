@@ -19,6 +19,10 @@ export const GET = withPermission(
 					address: true,
 					phones: true,
 					emails: true,
+					workingHours: true,
+					showOnContactsPage: true,
+					latitude: true,
+					longitude: true,
 					createdAt: true,
 					updatedAt: true,
 				},
@@ -42,7 +46,7 @@ export const POST = withPermission(
 	async (req: NextRequest, { user }) => {
 		try {
 			const body = await req.json();
-			const { name, address, phones, emails } = body;
+			const { name, address, phones, emails, workingHours, showOnContactsPage, latitude, longitude } = body;
 
 			// Валидация - address обязателен
 			if (!address) {
@@ -87,6 +91,10 @@ export const POST = withPermission(
 						address,
 						phones: phones || [],
 						emails: emails || [],
+						workingHours: workingHours != null && String(workingHours).trim() !== "" ? String(workingHours).trim() : null,
+						showOnContactsPage: showOnContactsPage !== false,
+						latitude: latitude != null ? Number(latitude) : null,
+						longitude: longitude != null ? Number(longitude) : null,
 					},
 				});
 

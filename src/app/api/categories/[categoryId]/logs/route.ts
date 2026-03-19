@@ -18,7 +18,8 @@ function parseJsonField(value: unknown): any {
 export const GET = withPermission(
 	async (req: NextRequest) => {
 		try {
-			const categoryId = Number(req.nextUrl.pathname.split("/")[4]); // /api/categories/[categoryId]/logs
+			// Путь: /api/categories/[categoryId]/logs → сегменты ["", "api", "categories", "9", "logs"], ID на индексе 3
+			const categoryId = Number(req.nextUrl.pathname.split("/")[3]);
 			if (isNaN(categoryId)) {
 				return NextResponse.json({ error: "Некорректный ID категории" }, { status: 400 });
 			}

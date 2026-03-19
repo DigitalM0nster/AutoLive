@@ -26,6 +26,10 @@ export default function BookingDepartmentFormComponent({ isCreating = true, book
 		address: initialData?.address || "",
 		phones: initialData?.phones || [],
 		emails: initialData?.emails || [],
+		workingHours: (initialData as any)?.workingHours ?? "",
+		showOnContactsPage: (initialData as any)?.showOnContactsPage !== false,
+		latitude: initialData?.latitude != null ? String(initialData.latitude) : "",
+		longitude: initialData?.longitude != null ? String(initialData.longitude) : "",
 	});
 
 	// Начальные данные для сравнения (при редактировании)
@@ -34,6 +38,10 @@ export default function BookingDepartmentFormComponent({ isCreating = true, book
 		address: initialData?.address || "",
 		phones: initialData?.phones || [],
 		emails: initialData?.emails || [],
+		workingHours: (initialData as any)?.workingHours ?? "",
+		showOnContactsPage: (initialData as any)?.showOnContactsPage !== false,
+		latitude: initialData?.latitude != null ? String(initialData.latitude) : "",
+		longitude: initialData?.longitude != null ? String(initialData.longitude) : "",
 	});
 
 	// Загрузка данных адреса (если редактирование)
@@ -53,6 +61,10 @@ export default function BookingDepartmentFormComponent({ isCreating = true, book
 						address: data.address || "",
 						phones: data.phones || [],
 						emails: data.emails || [],
+						workingHours: data.workingHours ?? "",
+						showOnContactsPage: data.showOnContactsPage !== false,
+						latitude: data.latitude != null ? String(data.latitude) : "",
+						longitude: data.longitude != null ? String(data.longitude) : "",
 					};
 						setFormData(loadedData);
 						setInitialFormData(loadedData); // Сохраняем начальные данные для сравнения
@@ -73,6 +85,10 @@ export default function BookingDepartmentFormComponent({ isCreating = true, book
 				address: initialData.address || "",
 				phones: initialData.phones || [],
 				emails: initialData.emails || [],
+				workingHours: (initialData as any).workingHours ?? "",
+				showOnContactsPage: (initialData as any).showOnContactsPage !== false,
+				latitude: initialData.latitude != null ? String(initialData.latitude) : "",
+				longitude: initialData.longitude != null ? String(initialData.longitude) : "",
 			});
 		}
 	}, [isCreating, bookingDepartmentId, initialData]);
@@ -90,7 +106,11 @@ export default function BookingDepartmentFormComponent({ isCreating = true, book
 			formData.name !== initialFormData.name ||
 			formData.address !== initialFormData.address ||
 			JSON.stringify(formData.phones) !== JSON.stringify(initialFormData.phones) ||
-			JSON.stringify(formData.emails) !== JSON.stringify(initialFormData.emails);
+			JSON.stringify(formData.emails) !== JSON.stringify(initialFormData.emails) ||
+			formData.workingHours !== initialFormData.workingHours ||
+			formData.showOnContactsPage !== initialFormData.showOnContactsPage ||
+			formData.latitude !== initialFormData.latitude ||
+			formData.longitude !== initialFormData.longitude;
 
 		setHasChanges(hasFormChanges);
 	}, [formData, initialFormData, isCreating]);
@@ -168,6 +188,10 @@ export default function BookingDepartmentFormComponent({ isCreating = true, book
 				address: formData.address.trim(),
 				phones: phones,
 				emails: emails,
+				workingHours: formData.workingHours.trim() || null,
+				showOnContactsPage: formData.showOnContactsPage,
+				latitude: formData.latitude === "" ? null : Number(formData.latitude),
+				longitude: formData.longitude === "" ? null : Number(formData.longitude),
 			};
 
 			let response;
@@ -222,6 +246,10 @@ export default function BookingDepartmentFormComponent({ isCreating = true, book
 				address: initialFormData.address || "",
 				phones: initialFormData.phones || [],
 				emails: initialFormData.emails || [],
+				workingHours: initialFormData.workingHours ?? "",
+				showOnContactsPage: initialFormData.showOnContactsPage !== false,
+				latitude: initialFormData.latitude ?? "",
+				longitude: initialFormData.longitude ?? "",
 			});
 			setHasChanges(false);
 		} else {
@@ -264,6 +292,43 @@ export default function BookingDepartmentFormComponent({ isCreating = true, book
 					/>
 				</div>
 
+				{/* Координаты на карте (для Яндекс.Карт). Можно вставить из буфера формат «широта, долгота» (как в Яндексе). */}
+				<div className="formField">
+					<label>Координаты на карте (широта / долгота)</label>
+					<div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
+						<input
+							type="number"
+							step="any"
+							value={formData.latitude}
+							onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
+							onPaste={(e) => {
+								const text = (e.clipboardData?.getData("text") ?? "").trim();
+								const match = text.match(/^\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*$/);
+								if (match) {
+									e.preventDefault();
+									setFormData((prev) => ({ ...prev, latitude: match[1]!, longitude: match[2]! }));
+								}
+							}}
+							placeholder="Широта или вставьте «широта, долгота»"
+						/>
+						<input
+							type="number"
+							step="any"
+							value={formData.longitude}
+							onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
+							onPaste={(e) => {
+								const text = (e.clipboardData?.getData("text") ?? "").trim();
+								const match = text.match(/^\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*$/);
+								if (match) {
+									e.preventDefault();
+									setFormData((prev) => ({ ...prev, latitude: match[1]!, longitude: match[2]! }));
+								}
+							}}
+							placeholder="Долгота"
+						/>
+					</div>
+				</div>
+
 				{/* Телефоны (массив) */}
 				<div className="formField">
 					<label>Телефоны</label>
@@ -298,6 +363,32 @@ export default function BookingDepartmentFormComponent({ isCreating = true, book
 							+ Добавить почту
 						</button>
 					</div>
+				</div>
+
+				{/* Режим работы */}
+				<div className="formField">
+					<label htmlFor="workingHours">Режим работы</label>
+					<input
+						id="workingHours"
+						type="text"
+						value={formData.workingHours}
+						onChange={(e) => setFormData({ ...formData, workingHours: e.target.value })}
+						placeholder="Пн–Пт: 9:00–18:00, Сб–Вс: выходной"
+					/>
+					<p style={{ marginTop: 4, fontSize: 12, color: "var(--grey-color)" }}>Отображается на странице «Контакты» с иконкой часов.</p>
+				</div>
+
+				{/* Отображать на странице Контакты */}
+				<div className="formField">
+					<label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+						<input
+							type="checkbox"
+							checked={formData.showOnContactsPage}
+							onChange={(e) => setFormData({ ...formData, showOnContactsPage: e.target.checked })}
+						/>
+						Отображать на странице «Контакты» и на карте
+					</label>
+					<p style={{ marginTop: 4, fontSize: 12, color: "var(--grey-color)" }}>Если снять галочку, адрес не будет показан на странице контактов и на карте.</p>
 				</div>
 			</div>
 

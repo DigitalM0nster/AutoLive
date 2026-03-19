@@ -27,6 +27,10 @@ export const GET = withPermission(
 					address: true,
 					phones: true,
 					emails: true,
+					workingHours: true,
+					showOnContactsPage: true,
+					latitude: true,
+					longitude: true,
 					createdAt: true,
 					updatedAt: true,
 				},
@@ -58,7 +62,7 @@ export const PUT = withPermission(
 			}
 
 			const body = await req.json();
-			const { name, address, phones, emails } = body;
+			const { name, address, phones, emails, workingHours, showOnContactsPage, latitude, longitude } = body;
 
 			// Получаем полную информацию о пользователе из базы данных
 			const fullUser = await withDbRetry(async () => {
@@ -127,6 +131,19 @@ export const PUT = withPermission(
 					updateData.emails = emails || [];
 				}
 
+				if (latitude !== undefined) {
+					updateData.latitude = latitude === null || latitude === "" ? null : Number(latitude);
+				}
+				if (longitude !== undefined) {
+					updateData.longitude = longitude === null || longitude === "" ? null : Number(longitude);
+				}
+				if (workingHours !== undefined) {
+					updateData.workingHours = workingHours === null || workingHours === "" ? null : String(workingHours).trim();
+				}
+				if (showOnContactsPage !== undefined) {
+					updateData.showOnContactsPage = Boolean(showOnContactsPage);
+				}
+
 				// Обновляем адрес
 				const updatedDepartment = await tx.bookingDepartment.update({
 					where: { id },
@@ -169,6 +186,12 @@ export const PUT = withPermission(
 				}
 				if (emails !== undefined && JSON.stringify(emails) !== JSON.stringify(existingDepartment.emails)) {
 					changes.push("почты");
+				}
+				if (workingHours !== undefined && workingHours !== (existingDepartment as any).workingHours) {
+					changes.push("режим работы");
+				}
+				if (showOnContactsPage !== undefined && showOnContactsPage !== (existingDepartment as any).showOnContactsPage) {
+					changes.push("отображение на странице контактов");
 				}
 				if (changes.length > 0) {
 					message = `Адрес обновлен: ${changes.join(", ")}`;

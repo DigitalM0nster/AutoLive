@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Loading from "@/components/ui/loading/Loading";
+import DeletedBlockNotice from "@/components/ui/deletedBlockNotice/DeletedBlockNotice";
 import { BookingDepartmentLog } from "@/lib/types";
 import styles from "@/app/admin/departments/local_components/styles.module.scss";
 
@@ -236,6 +237,7 @@ export default function BookingDepartmentLogsTable({ bookingDepartmentId, tableH
 									Удаление адреса
 								</div>
 								<div className={`openingBlock ${activeBlocks[key("delete")] ? "active" : ""}`}>
+									<DeletedBlockNotice deletedAt={formatDate(log.createdAt)} deletedBy={getAdminName(log.adminSnapshot)} />
 									{snapshotBefore && (
 										<>
 											<div className="infoField">

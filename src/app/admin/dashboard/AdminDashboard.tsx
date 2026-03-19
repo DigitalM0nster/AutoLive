@@ -47,7 +47,7 @@ export default function AdminDashboard({ user }: Props) {
 
 	// Собираем все секции и группируем их по цветам
 	// Порядок в массиве определяет порядок отображения карточек в каждой строке
-	["departments", "users", "orders", "product-management", "categories", "bookings", "booking-departments", "content"].forEach((key) => {
+	["departments", "users", "orders", "product-management", "categories", "bookings", "booking-departments", "pickup-points", "content"].forEach((key) => {
 		const meta = adminRoutesMeta[key];
 		if (!meta || !meta.icon || !meta.bg) return;
 		const section: Section = {

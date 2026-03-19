@@ -35,6 +35,8 @@ export async function PUT(req: NextRequest, { params }: Params) {
 				image: body.imageUrl,
 				buttonText: body.buttonText,
 				buttonLink: body.buttonLink,
+				startDate: body.startDate ? new Date(body.startDate) : null,
+				endDate: body.endDate ? new Date(body.endDate) : null,
 			},
 		});
 		return NextResponse.json(updated);

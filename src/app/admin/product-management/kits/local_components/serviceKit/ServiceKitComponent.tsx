@@ -21,7 +21,7 @@ type ServiceKitPageProps = {
 type KitItem = {
 	productId: number;
 	product: Product;
-	analogProductIds: number[]; // Массив ID аналогов
+	analogProductIds: number[];
 };
 
 export default function ServiceKitComponent({ kitId, isCreating = false, userRole }: ServiceKitPageProps) {
@@ -55,13 +55,16 @@ export default function ServiceKitComponent({ kitId, isCreating = false, userRol
 	const [imagePreview, setImagePreview] = useState<string>("");
 	const [originalImage, setOriginalImage] = useState<string>("");
 
-	// Состояния для поиска товаров
+	// Состояния для поиска товаров (пагинация по 20 на страницу)
+	const SEARCH_PAGE_SIZE = 20;
 	const [productSearch, setProductSearch] = useState("");
 	const [searchResults, setSearchResults] = useState<ProductListItem[]>([]);
+	const [searchTotal, setSearchTotal] = useState<number>(0);
+	const [searchPage, setSearchPage] = useState(1);
 	const [isSearching, setIsSearching] = useState(false);
 	const [isSearchFocused, setIsSearchFocused] = useState(false);
-	const [showProductSearch, setShowProductSearch] = useState(false);
 	const blurTimeout = useRef<NodeJS.Timeout | null>(null);
+	const [isAddZoneOpen, setIsAddZoneOpen] = useState(false);
 
 	// Определяем режим редактирования
 	const canEdit = userRole === "superadmin" || userRole === "admin";
@@ -130,28 +133,43 @@ export default function ServiceKitComponent({ kitId, isCreating = false, userRol
 		setHasChanges(formChanged);
 	}, [formData, initialFormData, formImage, kitItems, initialKitItems]);
 
-	// Поиск товаров
-	const handleProductSearch = async (query: string) => {
-		if (query.length < 2) {
+	// Поиск товаров с пагинацией: одна страница за раз (по 20)
+	const handleProductSearch = async (query: string, page: number = 1) => {
+		const q = query.trim();
+		if (q.length < 1) {
 			setSearchResults([]);
+			setSearchTotal(0);
+			setSearchPage(1);
 			return;
 		}
 
 		try {
 			setIsSearching(true);
-			const response = await fetch(`/api/products?search=${encodeURIComponent(query)}&limit=10`, {
-				credentials: "include",
-			});
+			const response = await fetch(
+				`/api/products?search=${encodeURIComponent(q)}&limit=${SEARCH_PAGE_SIZE}&page=${page}`,
+				{ credentials: "include" },
+			);
 
 			if (response.ok) {
 				const data = await response.json();
-				setSearchResults(data.products || []);
+				const list = data.products || [];
+				const total = typeof data.total === "number" ? data.total : list.length;
+				setSearchResults(list);
+				setSearchTotal(total);
+				setSearchPage(page);
 			}
 		} catch (error) {
 			console.error("Ошибка поиска товаров:", error);
 		} finally {
 			setIsSearching(false);
 		}
+	};
+
+	// Переход на страницу поиска (для пагинации)
+	const goToSearchPage = (page: number) => {
+		const totalPages = Math.max(1, Math.ceil(searchTotal / SEARCH_PAGE_SIZE));
+		if (page < 1 || page > totalPages) return;
+		handleProductSearch(productSearch, page);
 	};
 
 	// Добавление товара в комплект
@@ -194,8 +212,7 @@ export default function ServiceKitComponent({ kitId, isCreating = false, userRol
 		setKitItems([...kitItems, newItem]);
 		setProductSearch("");
 		setSearchResults([]);
-		setIsSearchFocused(false);
-		setShowProductSearch(false);
+		setIsAddZoneOpen(false);
 	};
 
 	// Состояния для поиска аналогов (для каждого товара)
@@ -286,7 +303,6 @@ export default function ServiceKitComponent({ kitId, isCreating = false, userRol
 	const handleRemoveProduct = (productId: number) => {
 		if (!canEdit) return;
 		setKitItems(kitItems.filter((item) => item.productId !== productId));
-		// Очищаем состояние поиска аналогов для этого товара
 		setAnalogSearchStates((prev) => {
 			const newMap = new Map(prev);
 			newMap.delete(productId);
@@ -579,27 +595,34 @@ export default function ServiceKitComponent({ kitId, isCreating = false, userRol
 								<div className="emptyState">Товары не добавлены</div>
 							) : (
 								<div className={`${styles.kitItemsList} kitItemsList`}>
-									{kitItems.map((item) => (
+									{kitItems.map((item, index) => (
 										<div key={item.productId} className={`${styles.kitItemCard} kitItem`}>
-											<div className={`${styles.kitItemHeader} kitItemHeader`}>
-												<div className={`${styles.kitItemProduct} kitItemProduct`}>
-													<div className="imageBlock">
-														{item.product.image ? (
-															<img src={item.product.image} alt={item.product.title} className="image" loading="lazy" />
-														) : (
-															<div className="noImage">Нет изображения</div>
+											<div className={styles.kitItemMain}>
+												<span className={styles.kitItemIndex}>№{index + 1}</span>
+												<div className={styles.kitItemImageWrap}>
+													{item.product.image ? (
+														<img src={item.product.image} alt={item.product.title} className={styles.kitItemImage} loading="lazy" />
+													) : (
+														<div className={styles.kitItemNoImage}>Нет фото</div>
+													)}
+												</div>
+												<div className={styles.kitItemDetails}>
+													<div className={styles.kitItemTitle}>{item.product.title}</div>
+													<div className={styles.kitItemMeta}>
+														<span className={styles.kitItemMetaRow}><span className={styles.kitItemLabel}>Артикул:</span> {item.product.sku}</span>
+														{item.product.brand && (
+															<span className={styles.kitItemMetaRow}><span className={styles.kitItemLabel}>Бренд:</span> {item.product.brand}</span>
 														)}
+														<span className={styles.kitItemMetaRow}><span className={styles.kitItemLabel}>Цена:</span> {typeof item.product.price === "number" ? `${item.product.price.toLocaleString("ru-RU")} ₽` : "—"}</span>
 													</div>
-													<span className={`${styles.productTitle} productTitle`}>{item.product.title}</span>
-													<span className={`${styles.productSku} productSku`}>({item.product.sku})</span>
 												</div>
 												{canEdit && (
 													<button
 														type="button"
 														onClick={() => handleRemoveProduct(item.productId)}
-														className="deleteButton"
+														className={styles.removeProductButton}
 													>
-														× Удалить
+														Удалить товар
 													</button>
 												)}
 											</div>
@@ -621,30 +644,34 @@ export default function ServiceKitComponent({ kitId, isCreating = false, userRol
 															const analogProduct = analogProductsData.get(analogId);
 															return (
 																<div key={analogId} className={`${styles.analogItem} analogItem`}>
-																	<div className={`${styles.analogInfo} analogInfo`}>
-																		{analogProduct ? (
-																			<>
-																				<div className="imageBlock">
-																					{analogProduct.image ? (
-																						<img src={analogProduct.image} alt={analogProduct.title} className="image" loading="lazy" />
-																					) : (
-																						<div className="noImage">Нет изображения</div>
-																					)}
+																	{analogProduct ? (
+																		<>
+																			<div className={styles.analogItemImageWrap}>
+																				{analogProduct.image ? (
+																					<img src={analogProduct.image} alt={analogProduct.title} className={styles.analogItemImage} loading="lazy" />
+																				) : (
+																					<div className={styles.analogItemNoImage}>—</div>
+																				)}
+																			</div>
+																			<div className={styles.analogItemDetails}>
+																				<div className={styles.analogItemTitle}>{analogProduct.title}</div>
+																				<div className={styles.analogItemMeta}>
+																					{analogProduct.sku && <span>Арт. {analogProduct.sku}</span>}
+																					{analogProduct.brand && <span>{analogProduct.brand}</span>}
+																					{typeof analogProduct.price === "number" && <span>{analogProduct.price.toLocaleString("ru-RU")} ₽</span>}
 																				</div>
-																				<span className={`${styles.productTitle} productTitle`}>{analogProduct.title}</span>
-																				<span className={`${styles.productSku} productSku`}>({analogProduct.sku || "N/A"})</span>
-																			</>
-																		) : (
-																			<span>Товар ID: {analogId} (загрузка...)</span>
-																		)}
-																	</div>
+																			</div>
+																		</>
+																	) : (
+																		<span className={styles.analogItemLoading}>Товар ID: {analogId} (загрузка…)</span>
+																	)}
 																	{canEdit && (
 																		<button
 																			type="button"
 																			onClick={() => handleRemoveAnalog(item.productId, analogId)}
-																			className="deleteButton small"
+																			className={styles.analogItemRemove}
 																		>
-																			Удалить
+																			Удалить из аналогов
 																		</button>
 																	)}
 																</div>
@@ -671,9 +698,9 @@ export default function ServiceKitComponent({ kitId, isCreating = false, userRol
 																	return newMap;
 																});
 															}}
-															className="primaryButton small"
+															className={styles.analogAddButton}
 														>
-															Добавить аналог
+															+ Добавить аналог
 														</button>
 													</div>
 												)}
@@ -699,7 +726,8 @@ export default function ServiceKitComponent({ kitId, isCreating = false, userRol
 																		return newMap;
 																	});
 																}}
-																className="closeSearchButton"
+																className={styles.analogSearchClose}
+																title="Закрыть поиск аналогов"
 															>
 																×
 															</button>
@@ -762,12 +790,14 @@ export default function ServiceKitComponent({ kitId, isCreating = false, userRol
 																			.map((product) => (
 																				<div
 																					key={product.id}
-																					className="searchResultItem"
+																					className={`searchResultItem ${styles.searchResultItemRich}`}
 																					onClick={() => handleAddAnalogFromSearch(item.productId, product)}
 																				>
-																					<div className="productInfo">
-																						<span className="productTitle">{product.title}</span>
-																						<span className="productSku">({product.sku})</span>
+																					<div className={styles.searchResultItemLine1}>{product.title}</div>
+																					<div className={styles.searchResultItemLine2}>
+																						{product.sku && <span>Арт. {product.sku}</span>}
+																						{product.brand && <span>{product.brand}</span>}
+																						{typeof product.price === "number" && <span>{product.price.toLocaleString("ru-RU")} ₽</span>}
 																					</div>
 																				</div>
 																			))
@@ -781,25 +811,33 @@ export default function ServiceKitComponent({ kitId, isCreating = false, userRol
 									))}
 								</div>
 							)}
+							{/* Пунктирная зона «+ Добавить товар»: при клике открывается поиск внутри */}
 							{canEdit && (
-								<div className="addProductSection">
-									{!showProductSearch ? (
-										<button type="button" onClick={() => setShowProductSearch(true)} className="primaryButton" disabled={!canEdit}>
-											Добавить товар
-										</button>
+								<div
+									className={`${styles.addProductZone} ${isAddZoneOpen ? styles.addProductZoneOpen : ""}`}
+									onClick={() => !isAddZoneOpen && setIsAddZoneOpen(true)}
+								>
+									{!isAddZoneOpen ? (
+										<div className={styles.addProductZonePlaceholder}>
+											<span className={styles.addProductZonePlus}>+</span>
+											<span className={styles.addProductZoneText}>Добавить товар</span>
+										</div>
 									) : (
-										<div className="searchContainer">
-											<div className="searchHeader">
-												<span>Поиск товаров</span>
+										<div className={styles.addProductZoneSearch} onClick={(e) => e.stopPropagation()}>
+											<div className={styles.addProductZoneSearchHeader}>
+												<span className={styles.addProductZoneSearchTitle}>Поиск товара</span>
 												<button
 													type="button"
 													onClick={() => {
-														setShowProductSearch(false);
+														setIsAddZoneOpen(false);
 														setProductSearch("");
 														setSearchResults([]);
+														setSearchTotal(0);
+														setSearchPage(1);
 														setIsSearchFocused(false);
 													}}
-													className="closeSearchButton"
+													className={styles.addProductZoneClose}
+													aria-label="Закрыть"
 												>
 													×
 												</button>
@@ -812,7 +850,7 @@ export default function ServiceKitComponent({ kitId, isCreating = false, userRol
 													handleProductSearch(e.target.value);
 												}}
 												onFocus={() => setIsSearchFocused(true)}
-												placeholder="Поиск товаров по названию, артикулу или бренду"
+												placeholder="По названию, артикулу или бренду"
 												className="searchInput"
 												autoFocus
 											/>
@@ -821,20 +859,53 @@ export default function ServiceKitComponent({ kitId, isCreating = false, userRol
 													<Loading />
 												</div>
 											)}
-											{!isSearching && isSearchFocused && productSearch.length >= 2 && (
-												<div className="searchResults">
-													{searchResults.length === 0 ? (
-														<div className="searchResultItem">Товары не найдены</div>
-													) : (
-														searchResults.map((product) => (
-															<div key={product.id} className="searchResultItem" onClick={() => handleProductSelect(product)}>
-																<div className="productInfo">
-																	<span className="productTitle">{product.title}</span>
-																	<span className="productSku">({product.sku})</span>
-																</div>
-															</div>
-														))
-													)}
+											{!isSearching && isSearchFocused && productSearch.trim().length >= 1 && (
+												<div className={styles.searchResultsBlock}>
+													<div className="searchResults">
+														{searchResults.length === 0 ? (
+															<div className="searchResultItem">Товары не найдены</div>
+														) : (
+															<>
+																{searchResults
+																	.filter((product) => !kitItems.some((it) => it.productId === product.id))
+																	.map((product) => (
+																		<div key={product.id} className={`searchResultItem ${styles.searchResultItemRich}`} onClick={() => handleProductSelect(product)}>
+																			<div className={styles.searchResultItemLine1}>{product.title}</div>
+																			<div className={styles.searchResultItemLine2}>
+																				{product.sku && <span>Арт. {product.sku}</span>}
+																				{product.brand && <span>{product.brand}</span>}
+																				{typeof product.price === "number" && <span>{product.price.toLocaleString("ru-RU")} ₽</span>}
+																			</div>
+																		</div>
+																	))}
+																{searchTotal > 0 && (
+																	<div className={styles.searchResultsFooter}>
+																		<div className={styles.searchResultsPagination}>
+																			<button
+																				type="button"
+																				onClick={() => goToSearchPage(searchPage - 1)}
+																				disabled={isSearching || searchPage <= 1}
+																				className={styles.searchResultsPageBtn}
+																			>
+																				← Предыдущая
+																			</button>
+																			<span className={styles.searchResultsPageInfo}>
+																				Страница {searchPage} из {Math.max(1, Math.ceil(searchTotal / SEARCH_PAGE_SIZE))} (всего {searchTotal.toLocaleString("ru-RU")})
+																			</span>
+																			<button
+																				type="button"
+																				onClick={() => goToSearchPage(searchPage + 1)}
+																				disabled={isSearching || searchPage >= Math.ceil(searchTotal / SEARCH_PAGE_SIZE)}
+																				className={styles.searchResultsPageBtn}
+																			>
+																				Следующая →
+																			</button>
+																		</div>
+																	</div>
+																)}
+															</>
+														)}
+													</div>
 												</div>
 											)}
 										</div>

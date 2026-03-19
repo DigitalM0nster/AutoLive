@@ -14,11 +14,11 @@ export default function Footer() {
 					<div className={styles.blockContent}>
 						<div className={styles.navUl}>
 							{[
-								{ label: "Материалы для ТО", path: "/service-materials" },
+								{ label: "Материалы для ТО", path: "/categories" },
 								{ label: "Комплекты ТО", path: "/service-kits" },
 								{ label: "Запись на ТО", path: "/booking" },
 								{ label: "Запчасти", path: "/catalog" },
-								{ label: "Акции", path: "/discounts" },
+								{ label: "Акции", path: "/promotions" },
 								{ label: "Контакты", path: "/contacts" },
 							].map((item) => (
 								<div key={item.path} className={styles.navLi} onClick={() => router.push(item.path)}>

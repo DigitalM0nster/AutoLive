@@ -24,6 +24,7 @@ type CategoryInLog =
 import Loading from "@/components/ui/loading/Loading";
 import ImportDetailsComponent from "./ImportDetailsComponent";
 import BulkDeleteDetailsComponent from "./BulkDeleteDetailsComponent";
+import DeletedBlockNotice from "@/components/ui/deletedBlockNotice/DeletedBlockNotice";
 
 export default function AllProductsLogsTable({
 	logs,
@@ -1059,6 +1060,10 @@ export default function AllProductsLogsTable({
 									Удаление продукта
 								</div>
 								<div className={`openingBlock ${activeBlocks[deleteLogKey] ? "active" : ""}`}>
+									<DeletedBlockNotice
+										deletedAt={formatDate(log.createdAt)}
+										deletedBy={log.admin ? [log.admin.last_name, log.admin.first_name, log.admin.middle_name].filter(Boolean).join(" ").trim() || "—" : undefined}
+									/>
 									{log.snapshotBefore && (
 										<>
 											<div className="infoField">
@@ -1380,6 +1385,10 @@ export default function AllProductsLogsTable({
 									Массовое удаление
 								</div>
 								<div className={`openingBlock ${activeBlocks[bulkDeleteLogKey] ? "active" : ""}`}>
+									<DeletedBlockNotice
+										deletedAt={formatDate(log.createdAt)}
+										deletedBy={log.admin ? [log.admin.last_name, log.admin.first_name, log.admin.middle_name].filter(Boolean).join(" ").trim() || "—" : undefined}
+									/>
 									<div className="infoField">
 										<span className="value">{log.bulkLogData.message || "—"}</span>
 									</div>

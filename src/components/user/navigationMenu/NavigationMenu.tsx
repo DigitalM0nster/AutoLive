@@ -16,6 +16,8 @@ export default function NavigationMenu({ productId }: NavigationMenuProps) {
 	const [categories, setCategories] = useState<Category[]>([]);
 	const [product, setProduct] = useState<Product | null>(null);
 
+	// Все сегменты путей клиентской части — только русские подписи, чтобы в крошках не было английского
+	// Только разделы навигации: без регистрации и корзины
 	const pages = useMemo<Record<string, string>>(
 		() => ({
 			"/promotions": "Акции",
@@ -23,6 +25,7 @@ export default function NavigationMenu({ productId }: NavigationMenuProps) {
 			"/service-kits": "Комплекты ТО",
 			"/booking": "Запись на ТО",
 			"/products": "Запчасти",
+			"/contacts": "Контакты",
 		}),
 		[],
 	);

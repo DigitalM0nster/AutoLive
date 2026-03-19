@@ -19,11 +19,13 @@
 .breadcrumbs .breadcrumbsList li {
   font-size: 15px;
   color: var(--text-color);
-  display: flex;
-  align-items: center;
 }
 .breadcrumbs .breadcrumbsList li a {
   color: var(--text-color);
+}
+.breadcrumbs .breadcrumbsList li {
+  display: flex;
+  align-items: center;
 }
 .breadcrumbs .arrowsRight {
   display: flex;

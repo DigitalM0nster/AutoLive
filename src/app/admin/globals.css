@@ -190,6 +190,9 @@ a.button.disabled {
   display: flex;
   gap: 10px;
 }
+.rowBlock.phoneRowBlock {
+  align-items: center;
+}
 
 .tableContainer {
   border-radius: 12px;
@@ -851,8 +854,7 @@ textarea.error::placeholder {
   width: 100%;
   height: 100%;
   background-color: rgba(0, 0, 0, 0.3);
-  -webkit-backdrop-filter: blur(3px);
-          backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
   cursor: pointer;
 }
 .popup .contentBlock {
@@ -1321,54 +1323,54 @@ table .fullInfoBlock:before,
   opacity: 0.1;
   pointer-events: none;
 }
-table .fullInfoBlock.create_department,
-.table .fullInfoBlock.create_department {
-  border: 1px solid var(--green-color);
-}
 table .fullInfoBlock.create_department:before,
 .table .fullInfoBlock.create_department:before {
   background: var(--green-color);
 }
+table .fullInfoBlock.create_department,
+.table .fullInfoBlock.create_department {
+  border: 1px solid var(--green-color);
+}
 table .fullInfoBlock.create_department .clickInfoBlock,
 .table .fullInfoBlock.create_department .clickInfoBlock {
   color: var(--dark-green-color);
-}
-table .fullInfoBlock.update_name, table .fullInfoBlock.update,
-.table .fullInfoBlock.update_name,
-.table .fullInfoBlock.update {
-  border: 1px solid var(--blue-color);
 }
 table .fullInfoBlock.update_name:before, table .fullInfoBlock.update:before,
 .table .fullInfoBlock.update_name:before,
 .table .fullInfoBlock.update:before {
   background: var(--blue-color);
 }
+table .fullInfoBlock.update_name, table .fullInfoBlock.update,
+.table .fullInfoBlock.update_name,
+.table .fullInfoBlock.update {
+  border: 1px solid var(--blue-color);
+}
 table .fullInfoBlock.update_name .clickInfoBlock, table .fullInfoBlock.update .clickInfoBlock,
 .table .fullInfoBlock.update_name .clickInfoBlock,
 .table .fullInfoBlock.update .clickInfoBlock {
   color: var(--dark-blue-color);
 }
-table .fullInfoBlock.update_categories,
-.table .fullInfoBlock.update_categories {
-  border: 1px solid var(--blue-color);
-}
 table .fullInfoBlock.update_categories:before,
 .table .fullInfoBlock.update_categories:before {
   background: var(--blue-color);
+}
+table .fullInfoBlock.update_categories,
+.table .fullInfoBlock.update_categories {
+  border: 1px solid var(--blue-color);
 }
 table .fullInfoBlock.update_categories .clickInfoBlock,
 .table .fullInfoBlock.update_categories .clickInfoBlock {
   color: var(--dark-blue-color);
 }
-table .fullInfoBlock.add_users, table .fullInfoBlock.create,
-.table .fullInfoBlock.add_users,
-.table .fullInfoBlock.create {
-  border: 1px solid var(--green-color);
-}
 table .fullInfoBlock.add_users:before, table .fullInfoBlock.create:before,
 .table .fullInfoBlock.add_users:before,
 .table .fullInfoBlock.create:before {
   background: var(--green-color);
+}
+table .fullInfoBlock.add_users, table .fullInfoBlock.create,
+.table .fullInfoBlock.add_users,
+.table .fullInfoBlock.create {
+  border: 1px solid var(--green-color);
 }
 table .fullInfoBlock.add_users .clickInfoBlock, table .fullInfoBlock.create .clickInfoBlock,
 .table .fullInfoBlock.add_users .clickInfoBlock,
@@ -1378,17 +1380,27 @@ table .fullInfoBlock.add_users .clickInfoBlock, table .fullInfoBlock.create .cli
 table .fullInfoBlock.remove_users, table .fullInfoBlock.remove,
 .table .fullInfoBlock.remove_users,
 .table .fullInfoBlock.remove {
-  border: 1px solid var(--red-color);
+  background-color: var(--light-red-color);
 }
 table .fullInfoBlock.remove_users:before, table .fullInfoBlock.remove:before,
 .table .fullInfoBlock.remove_users:before,
 .table .fullInfoBlock.remove:before {
   background: var(--red-color);
 }
+table .fullInfoBlock.remove_users, table .fullInfoBlock.remove,
+.table .fullInfoBlock.remove_users,
+.table .fullInfoBlock.remove {
+  border: 1px solid var(--red-color);
+}
 table .fullInfoBlock.remove_users .clickInfoBlock, table .fullInfoBlock.remove .clickInfoBlock,
 .table .fullInfoBlock.remove_users .clickInfoBlock,
 .table .fullInfoBlock.remove .clickInfoBlock {
   color: var(--dark-red-color);
+}
+table .fullInfoBlock.remove_users .openingBlock .value, table .fullInfoBlock.remove .openingBlock .value,
+.table .fullInfoBlock.remove_users .openingBlock .value,
+.table .fullInfoBlock.remove .openingBlock .value {
+  text-decoration: line-through;
 }
 table .fullInfoBlock:last-child,
 .table .fullInfoBlock:last-child {
@@ -1478,6 +1490,11 @@ table .fullInfoBlock .openingBlock .infoField,
   display: flex;
   gap: 5px;
 }
+table .fullInfoBlock .openingBlock .infoField .title.maxContent,
+.table .fullInfoBlock .openingBlock .infoField .title.maxContent {
+  min-width: -moz-max-content;
+  min-width: max-content;
+}
 table .fullInfoBlock .openingBlock .infoField .title,
 .table .fullInfoBlock .openingBlock .infoField .title {
   font-size: 14px;
@@ -1486,11 +1503,6 @@ table .fullInfoBlock .openingBlock .infoField .title,
   min-width: -moz-max-content;
   min-width: max-content;
   max-width: 50%;
-}
-table .fullInfoBlock .openingBlock .infoField .title.maxContent,
-.table .fullInfoBlock .openingBlock .infoField .title.maxContent {
-  min-width: -moz-max-content;
-  min-width: max-content;
 }
 table .fullInfoBlock .openingBlock .infoField .value,
 .table .fullInfoBlock .openingBlock .infoField .value {
@@ -1656,9 +1668,35 @@ table tr td .category:last-child,
 }
 table .deletedItemStatus,
 .table .deletedItemStatus {
-  color: #dc3545;
+  color: var(--red-color);
   font-weight: 500;
   font-style: italic;
+  text-decoration: line-through;
+  background-color: var(--light-red-color);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+table .deletedBlockNotice,
+.table .deletedBlockNotice {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 0;
+  margin-bottom: 8px;
+  border-bottom: 1px solid rgba(239, 68, 68, 0.25);
+  color: var(--dark-red-color);
+  font-weight: 500;
+}
+table .deletedBlockNoticeText,
+.table .deletedBlockNoticeText {
+  font-weight: 600;
+}
+table .deletedBlockNoticeMeta,
+.table .deletedBlockNoticeMeta {
+  font-size: 12px;
+  color: var(--grey3-color);
+  font-weight: normal;
 }
 
 form {
@@ -2155,8 +2193,7 @@ span.oldName:after {
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.3);
-  -webkit-backdrop-filter: blur(3px);
-          backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
   z-index: 1;
   cursor: pointer;
 }
@@ -2770,6 +2807,16 @@ span.oldName:after {
   flex-direction: column;
   gap: 5px;
 }
+.productComponent .formField.colorRow,
+.orderComponent .formField.colorRow,
+.bookingComponent .formField.colorRow,
+.contentComponent .formField.colorRow {
+  flex-direction: row;
+  gap: 5px;
+  padding: 20px;
+  border-radius: 10px;
+  border: 1px solid var(--grey-color);
+}
 .productComponent .formField .formFieldTitle,
 .productComponent .formField label,
 .orderComponent .formField .formFieldTitle,
@@ -3009,9 +3056,6 @@ span.oldName:after {
   padding: 12px 16px;
   background: var(--light-grey-color);
   position: relative;
-  border: 1px solid var(--light-grey2-color);
-  border-radius: 8px;
-  transition: all 0.2s ease;
 }
 .productComponent .infoField .takeOrderButton,
 .orderComponent .infoField .takeOrderButton,
@@ -3041,6 +3085,14 @@ span.oldName:after {
 .contentComponent .infoField .takeOrderButton:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+.productComponent .infoField,
+.orderComponent .infoField,
+.bookingComponent .infoField,
+.contentComponent .infoField {
+  border: 1px solid var(--light-grey2-color);
+  border-radius: 8px;
+  transition: all 0.2s ease;
 }
 .productComponent .infoField:hover,
 .orderComponent .infoField:hover,
@@ -3090,6 +3142,8 @@ span.oldName:after {
 .orderComponent button.removeButton,
 .bookingComponent button.removeButton,
 .contentComponent button.removeButton {
+  min-width: -moz-fit-content;
+  min-width: fit-content;
   padding: 10px 25px;
   background: var(--red-color);
   box-shadow: none;

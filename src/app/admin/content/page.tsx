@@ -1,10 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { Home, MapPin, Percent } from "lucide-react";
+import { Home, MapPin, Percent, Settings } from "lucide-react";
 import styles from "./local_components/styles.module.scss";
 
 const contentSections = [
+	{
+		href: "/admin/content/settings",
+		label: "Основные настройки",
+		description: "Логотип, фавиконка, основные цвета сайта",
+		icon: Settings,
+		iconBg: "blue",
+	},
 	{
 		href: "/admin/content/homepage",
 		label: "Главная страница",

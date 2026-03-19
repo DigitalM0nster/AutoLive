@@ -3,8 +3,8 @@
   width: calc(100% - 40px);
   height: -moz-fit-content;
   height: fit-content;
-  background-color: rgb(61, 61, 61);
-  color: white;
+  background-color: var(--site-color-grey, #3d3d3d);
+  color: var(--site-color-white, white);
   padding: 20px;
   z-index: 8;
 }

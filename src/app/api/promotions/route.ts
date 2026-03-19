@@ -30,6 +30,8 @@ export async function POST(req: NextRequest) {
 				buttonText: body.buttonText,
 				buttonLink: body.buttonLink,
 				order: 0,
+				startDate: body.startDate ? new Date(body.startDate) : null,
+				endDate: body.endDate ? new Date(body.endDate) : null,
 			},
 		});
 		return NextResponse.json(created);

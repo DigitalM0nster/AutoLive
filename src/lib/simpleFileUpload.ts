@@ -131,7 +131,7 @@ export async function deleteFile(url: string): Promise<boolean> {
 export function validateFile(
 	file: File,
 	maxSize: number = 5 * 1024 * 1024, // 5MB
-	allowedTypes: string[] = ["image/jpeg", "image/png", "image/gif", "image/webp"]
+	allowedTypes: string[] = ["image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"]
 ): { isValid: boolean; error?: string } {
 	// Проверяем размер файла
 	if (file.size > maxSize) {

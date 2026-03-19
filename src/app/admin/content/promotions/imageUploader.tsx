@@ -32,13 +32,32 @@ export default function ImageUploader({ imageUrl, setImageUrl }: Props) {
 		setUploading(false);
 	};
 
-	const removeImage = () => setImageUrl("");
+	const removeImage = (e: React.MouseEvent) => {
+		e.stopPropagation();
+		setImageUrl("");
+	};
+
+	const openFileDialog = () => {
+		if (fileInputRef.current) {
+			fileInputRef.current.value = "";
+			fileInputRef.current.click();
+		}
+	};
 
 	return (
 		<div className={styles.imageUploadWrap}>
 			{imageUrl ? (
 				<div className={styles.imagePreviewBox}>
-					<img src={imageUrl} alt="Загруженное изображение" />
+					<button
+						type="button"
+						className={styles.imagePreviewReplace}
+						onClick={openFileDialog}
+						title="Заменить изображение"
+						aria-label="Заменить изображение"
+					>
+						<img src={imageUrl} alt="Загруженное изображение" />
+						<span className={styles.imagePreviewReplaceLabel}>Заменить</span>
+					</button>
 					<button type="button" onClick={removeImage} className={styles.imagePreviewRemove} aria-label="Удалить изображение">
 						<Trash2 size={18} />
 					</button>

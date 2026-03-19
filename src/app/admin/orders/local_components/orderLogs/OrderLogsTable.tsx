@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Loading from "@/components/ui/loading/Loading";
+import DeletedBlockNotice from "@/components/ui/deletedBlockNotice/DeletedBlockNotice";
 import { OrderLog } from "@/lib/types";
 
 type OrderLogsTableProps = {
@@ -283,6 +284,7 @@ export default function OrderLogsTable({ orderId, tableHeaders, queryParams, onL
 									Отмена заказа
 								</div>
 								<div className={`openingBlock ${activeBlocks[key("cancel")] ? "active" : ""}`}>
+									<DeletedBlockNotice deletedAt={formatDate(log.createdAt)} deletedBy={getAdminName(log.adminSnapshot)} />
 									{log.message && (
 										<div className="infoField">
 											<span className="title">Сообщение:</span>

@@ -385,15 +385,17 @@ model supplier {
 }
 
 model Promotion {
-    id          Int      @id @default(autoincrement())
-    title       String   @db.VarChar(255)
-    description String?  @db.Text
-    image       String?  @db.VarChar(255)
-    buttonText  String?  @db.VarChar(255)
-    buttonLink  String?  @db.VarChar(255)
-    order       Int      @default(0)
-    createdAt   DateTime @default(now()) @db.Timestamp(0)
-    updatedAt   DateTime @default(now()) @updatedAt @db.Timestamp(0)
+    id          Int       @id @default(autoincrement())
+    title       String    @db.VarChar(255)
+    description String?   @db.Text
+    image       String?   @db.VarChar(255)
+    buttonText  String?   @db.VarChar(255)
+    buttonLink  String?   @db.VarChar(255)
+    order       Int       @default(0)
+    startDate   DateTime? @db.Date
+    endDate     DateTime? @db.Date
+    createdAt   DateTime  @default(now()) @db.Timestamp(0)
+    updatedAt   DateTime  @default(now()) @updatedAt @db.Timestamp(0)
 }
 
 model user_log {
@@ -472,13 +474,17 @@ enum FilterType {
 }
 
 model BookingDepartment {
-    id        Int      @id @default(autoincrement()) @map("id")
-    name      String?  @map("name") @db.VarChar(255) // Название отдела для записей (опционально)
-    address   String   @map("address") @db.Text // Адрес отдела (обязательно)
-    phones    String[] @map("phones") // Массив телефонов (может быть пустым или содержать до 100 телефонов)
-    emails    String[] @map("emails") // Массив почт (может быть пустым или содержать несколько почт)
-    createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
-    updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
+    id                  Int      @id @default(autoincrement()) @map("id")
+    name                String?  @map("name") @db.VarChar(255) // Название отдела для записей (опционально)
+    address             String   @map("address") @db.Text // Адрес отдела (обязательно)
+    phones              String[] @map("phones") // Массив телефонов (может быть пустым или содержать до 100 телефонов)
+    emails              String[] @map("emails") // Массив почт (может быть пустым или содержать несколько почт)
+    workingHours        String?  @map("working_hours") @db.VarChar(500)   // Режим работы (отображается с иконкой часов)
+    showOnContactsPage  Boolean  @default(true) @map("show_on_contacts_page") // Показывать на странице «Контакты» и на карте
+    latitude            Float?   @map("latitude") // Широта для точки на карте (Яндекс.Карты)
+    longitude           Float?   @map("longitude") // Долгота для точки на карте (Яндекс.Карты)
+    createdAt           DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+    updatedAt           DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
 
     // Связи
     bookings              Booking[]
@@ -578,4 +584,91 @@ model HomepageContent {
     updatedAt           DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
 
     @@map("homepage_content")
+}
+
+// Контент страницы контактов (настройки карты, заголовки блоков; контактные адреса — в ContactAddress)
+model ContactsContent {
+    id                   Int      @id @default(autoincrement()) @map("id")
+    address              String?  @db.Text       // Устаревшее: оставлено для миграции, используется contactAddresses
+    phone                String?  @db.VarChar(255)
+    email                String?  @db.VarChar(255)
+    workingHours         String?  @map("working_hours") @db.VarChar(500)
+    mapNote              String?  @map("map_note") @db.VarChar(500)
+    mapMarkerColor       String?  @map("map_marker_color") @db.VarChar(32) // Цвет меток на карте (hex, например #2c5aa0)
+    mapZoom              Int?     @map("map_zoom") // Масштаб карты 1–19, пусто — авто
+    addressesBlockTitle  String?  @map("addresses_block_title") @db.VarChar(255) // Название блока адресов на странице контактов
+    pickupBlockTitle     String?  @map("pickup_block_title") @db.VarChar(255) // Название блока пунктов выдачи на странице контактов
+    createdAt            DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+    updatedAt            DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
+
+    contactAddresses ContactAddress[]
+
+    @@map("contacts_content")
+}
+
+// Адреса контактной информации на странице «Контакты»: каждый со своими координатами, телефонами, почтами и режимом работы. Всегда отображаются на карте.
+model ContactAddress {
+    id               Int      @id @default(autoincrement()) @map("id")
+    contactsContentId Int      @map("contacts_content_id")
+    address          String   @map("address") @db.Text
+    latitude         Float?   @map("latitude")
+    longitude        Float?   @map("longitude")
+    phones           String[] @map("phones")
+    emails           String[] @map("emails")
+    workingHours     String?  @map("working_hours") @db.VarChar(500)
+    sortOrder        Int      @default(0) @map("sort_order")
+
+    contactsContent ContactsContent @relation(fields: [contactsContentId], references: [id], onDelete: Cascade)
+
+    @@map("contact_address")
+}
+
+// Основные настройки сайта: логотип, фавиконка, цвета, телефон в шапке (одна запись)
+model SiteSettings {
+    id             Int      @id @default(autoincrement()) @map("id")
+    logoUrl        String?  @map("logo_url") @db.VarChar(500)
+    faviconUrl     String?  @map("favicon_url") @db.VarChar(500)
+    headerPhone    String?  @map("header_phone") @db.VarChar(64)   // Телефон в шапке рядом с корзиной
+    colorGrey      String?  @map("color_grey") @db.VarChar(32)      // Основной серый (шапка и т.д.)
+    colorGreyLight String?  @map("color_grey_light") @db.VarChar(32) // Серый светлее (второстепенный текст)
+    colorGreen     String?  @map("color_green") @db.VarChar(32)    // Зелёный (кнопки, акценты)
+    colorWhite     String?  @map("color_white") @db.VarChar(32)    // Белый фон/текст
+    createdAt      DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+    updatedAt      DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
+
+    @@map("site_settings")
+}
+
+// Пункты выдачи (для редактора контактов и отображения на сайте)
+model PickupPoint {
+    id                  Int      @id @default(autoincrement()) @map("id")
+    name                String?  @map("name") @db.VarChar(255)
+    address             String   @map("address") @db.Text
+    phones              String[] @map("phones")
+    emails              String[] @map("emails")
+    workingHours        String?  @map("working_hours") @db.VarChar(500)   // Режим работы (отображается с иконкой часов)
+    showOnContactsPage  Boolean  @default(true) @map("show_on_contacts_page") // Показывать на странице «Контакты» и на карте
+    latitude            Float?   @map("latitude") // Широта для точки на карте (Яндекс.Карты)
+    longitude           Float?   @map("longitude") // Долгота для точки на карте (Яндекс.Карты)
+    createdAt           DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+    updatedAt           DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
+
+    pickupPointLogs PickupPointLog[]
+
+    @@map("pickup_point")
+}
+
+model PickupPointLog {
+    id             Int      @id @default(autoincrement()) @map("id")
+    createdAt      DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+    action         String   @db.VarChar(255)
+    message        String?  @db.Text
+    pickupPointId  Int      @map("pickup_point_id")
+
+    adminSnapshot    Json?
+    pickupPointSnapshot Json?
+
+    pickupPoint PickupPoint @relation(fields: [pickupPointId], references: [id], onDelete: Cascade)
+
+    @@map("pickup_point_log")
 }

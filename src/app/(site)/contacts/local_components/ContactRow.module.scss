@@ -1,0 +1,42 @@
+.row {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+}
+
+.iconWrap {
+	flex-shrink: 0;
+	width: 22px;
+	height: 22px;
+	color: #2c5aa0;
+}
+
+.text {
+	margin: 0;
+	line-height: 1.5;
+	font-size: 15px;
+	color: #333;
+}
+
+.textSecondary {
+	color: #555;
+	font-size: 14px;
+}
+
+.lines {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	margin: 0;
+}
+
+.line {
+	line-height: 1.5;
+	font-size: 15px;
+	color: #333;
+}
+
+.lineSecondary {
+	color: #555;
+	font-size: 14px;
+}

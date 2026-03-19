@@ -4,6 +4,7 @@ import styles from "@/app/admin/departments/local_components/styles.module.scss"
 import { useCallback, useEffect, useState, useMemo } from "react";
 import { BookingLog, BookingLogResponse, User, AdminSnapshotForBookingLog, BookingSnapshotForLog, ManagerSnapshotForBookingLog, BookingDepartmentSnapshotForLog, BookingStatus } from "@/lib/types";
 import Loading from "@/components/ui/loading/Loading";
+import DeletedBlockNotice from "@/components/ui/deletedBlockNotice/DeletedBlockNotice";
 import { useRouter } from "next/navigation";
 import React from "react";
 
@@ -635,6 +636,10 @@ export default function AllBookingsLogsTable({
 									Отмена записи
 								</div>
 								<div className={`openingBlock ${activeBlocks[resultLogKey] ? "active" : ""}`}>
+									<DeletedBlockNotice
+										deletedAt={formatDate(log.createdAt)}
+										deletedBy={log.adminSnapshot ? [log.adminSnapshot.last_name, log.adminSnapshot.first_name, log.adminSnapshot.middle_name].filter(Boolean).join(" ").trim() || "—" : undefined}
+									/>
 									{log.bookingSnapshot && (
 										<div className="tableListItems">
 											<div className="tableListItem fullInfoBlock">

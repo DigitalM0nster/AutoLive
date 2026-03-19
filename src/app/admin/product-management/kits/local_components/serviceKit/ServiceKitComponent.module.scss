@@ -17,6 +17,116 @@
 	align-items: stretch;
 }
 
+.kitItemCardEmpty {
+	border-style: dashed;
+}
+
+.kitItemHeaderEmpty {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+
+.emptyCardLabel {
+	font-size: 14px;
+	color: var(--text-muted-color, #666);
+}
+
+.removeProductButton {
+	padding: 8px 14px;
+	font-size: 13px;
+	background: var(--red-color, #c0392b);
+	color: white;
+	border: none;
+	border-radius: 8px;
+	cursor: pointer;
+	white-space: nowrap;
+	transition: opacity 0.2s;
+
+	&:hover {
+		opacity: 0.9;
+	}
+}
+
+// Основной блок товара в комплекте: номер, фото, данные, кнопка
+.kitItemMain {
+	display: flex;
+	align-items: flex-start;
+	gap: 16px;
+	flex-wrap: wrap;
+}
+
+.kitItemIndex {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 28px;
+	height: 28px;
+	padding: 0 6px;
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--text-muted-color, #666);
+	background: var(--light-grey-color, #f0f0f0);
+	border-radius: 6px;
+}
+
+.kitItemImageWrap {
+	flex-shrink: 0;
+	width: 72px;
+	height: 72px;
+	border-radius: 8px;
+	overflow: hidden;
+	background: var(--light-grey-color, #eee);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.kitItemImage {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.kitItemNoImage {
+	font-size: 11px;
+	color: var(--text-muted-color, #999);
+}
+
+.kitItemDetails {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.kitItemTitle {
+	font-size: 15px;
+	font-weight: 600;
+	line-height: 1.35;
+	color: var(--text-color, #333);
+}
+
+.kitItemMeta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px 16px;
+	font-size: 13px;
+	color: var(--text-muted-color, #555);
+}
+
+.kitItemMetaRow {
+	display: inline;
+}
+
+.kitItemLabel {
+	color: var(--text-muted-color, #888);
+	margin-right: 4px;
+}
+
 .kitItemHeader {
 	position: relative;
 	display: flex;
@@ -113,18 +223,131 @@
 	margin-top: 2px;
 }
 
+// Кнопка «Добавить аналог» — в одном стиле с зоной добавления товара (пунктир, акцент при ховере)
+.analogAddButton {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 8px 14px;
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--blue-color, #2980b9);
+	background: var(--white-color);
+	border: 2px dashed var(--blue-color, #2980b9);
+	border-radius: 8px;
+	cursor: pointer;
+	transition: background 0.2s, color 0.2s, border-style 0.2s;
+
+	&:hover {
+		background: rgba(41, 128, 185, 0.08);
+		border-style: solid;
+	}
+}
+
+// Кнопка закрытия блока поиска аналогов (×)
+.analogSearchClose {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	padding: 0;
+	font-size: 18px;
+	line-height: 1;
+	color: var(--text-muted-color, #666);
+	background: transparent;
+	border: none;
+	border-radius: 6px;
+	cursor: pointer;
+	transition: color 0.2s, background 0.2s;
+
+	&:hover {
+		color: var(--text-color, #333);
+		background: rgba(0, 0, 0, 0.06);
+	}
+}
+
 // Стили для deleteProductButton перенесены в глобальные (globals.scss) как .deleteButton
 
 .analogItem {
 	display: flex;
-	position: relative;
 	align-items: center;
-	justify-content: space-between;
-	gap: 10px;
+	gap: 12px;
 	padding: 10px 12px;
 	background: var(--white-color);
 	border: 1px solid var(--light-grey2-color);
 	border-radius: 8px;
+}
+
+.analogItemImageWrap {
+	flex-shrink: 0;
+	width: 48px;
+	height: 48px;
+	border-radius: 6px;
+	overflow: hidden;
+	background: var(--light-grey-color, #eee);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.analogItemImage {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.analogItemNoImage {
+	font-size: 12px;
+	color: var(--text-muted-color, #999);
+}
+
+.analogItemDetails {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.analogItemTitle {
+	font-size: 13px;
+	font-weight: 600;
+	line-height: 1.3;
+	color: var(--text-color, #333);
+}
+
+.analogItemMeta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px 12px;
+	font-size: 12px;
+	color: var(--text-muted-color, #555);
+}
+
+.analogItemLoading {
+	flex: 1;
+	font-size: 13px;
+	color: var(--text-muted-color, #666);
+}
+
+// Кнопка «Удалить из аналогов» — понятная, в одном стиле с «Удалить товар», но компактнее
+.analogItemRemove {
+	padding: 6px 12px;
+	font-size: 12px;
+	font-weight: 500;
+	background: transparent;
+	border: 1px solid var(--red-color, #c0392b);
+	color: var(--red-color, #c0392b);
+	border-radius: 6px;
+	cursor: pointer;
+	white-space: nowrap;
+	transition: background 0.2s, color 0.2s;
+
+	&:hover {
+		background: var(--red-color, #c0392b);
+		color: white;
+	}
 }
 
 .analogInfo {
@@ -133,6 +356,187 @@
 	align-items: center;
 	gap: 6px;
 	flex-wrap: wrap;
+}
+
+// Результаты поиска: ховер и курсор
+.searchResultItemRich {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 10px 12px;
+	cursor: pointer;
+	transition: background 0.2s ease;
+
+	&:hover {
+		background: var(--light-grey-color, #f0f0f0);
+	}
+}
+
+.searchResultItemLine1 {
+	font-weight: 600;
+	font-size: 14px;
+	line-height: 1.3;
+	color: var(--text-color, #333);
+}
+
+.searchResultItemLine2 {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px 12px;
+	font-size: 12px;
+	color: var(--text-muted-color, #555);
+}
+
+.searchResultsBlock {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+}
+
+.searchResultsFooter {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	padding: 10px 12px;
+	border-top: 1px solid var(--light-grey2-color, #eee);
+	background: var(--light-grey-color, #f8f9fa);
+}
+
+.searchResultsPagination {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+
+.searchResultsPageInfo {
+	font-size: 13px;
+	color: var(--text-muted-color, #555);
+}
+
+.searchResultsPageBtn {
+	padding: 6px 12px;
+	font-size: 13px;
+	background: var(--white-color);
+	border: 1px solid var(--light-grey2-color, #ddd);
+	color: var(--text-color, #333);
+	border-radius: 6px;
+	cursor: pointer;
+	transition: background 0.2s, border-color 0.2s, color 0.2s;
+
+	&:hover:not(:disabled) {
+		border-color: var(--blue-color, #2980b9);
+		color: var(--blue-color, #2980b9);
+		background: rgba(41, 128, 185, 0.05);
+	}
+
+	&:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+}
+
+.addProductHint {
+	margin: 0 0 10px 0;
+	font-size: 13px;
+	color: var(--text-muted-color, #666);
+	line-height: 1.35;
+}
+
+// Пунктирная зона «+ Добавить товар» с подсветкой при наведении
+.addProductZone {
+	min-height: 80px;
+	margin-top: 16px;
+	padding: 20px 24px;
+	border: 2px dashed var(--light-grey2-color, #ddd);
+	border-radius: 12px;
+	background: var(--white-color);
+	cursor: pointer;
+	transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
+
+	&:hover {
+		border-color: var(--blue-color, #2980b9);
+		background: rgba(41, 128, 185, 0.04);
+		box-shadow: 0 0 0 1px rgba(41, 128, 185, 0.15);
+	}
+}
+
+.addProductZoneOpen {
+	border-style: solid;
+	border-color: var(--light-grey2-color);
+	cursor: default;
+	background: var(--light-grey-color, #f8f9fa);
+
+	&:hover {
+		border-color: var(--light-grey2-color);
+		background: var(--light-grey-color);
+		box-shadow: none;
+	}
+}
+
+.addProductZonePlaceholder {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	min-height: 40px;
+}
+
+.addProductZonePlus {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	font-size: 22px;
+	font-weight: 300;
+	line-height: 1;
+	color: var(--blue-color, #2980b9);
+	border: 2px solid var(--blue-color, #2980b9);
+	border-radius: 8px;
+}
+
+.addProductZoneText {
+	font-size: 15px;
+	font-weight: 500;
+	color: var(--text-color, #333);
+}
+
+.addProductZoneSearch {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.addProductZoneSearchHeader {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.addProductZoneSearchTitle {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--text-color, #333);
+}
+
+.addProductZoneClose {
+	padding: 4px 10px;
+	font-size: 18px;
+	line-height: 1;
+	background: transparent;
+	border: none;
+	color: var(--text-muted-color, #666);
+	cursor: pointer;
+	border-radius: 6px;
+	transition: color 0.2s, background 0.2s;
+
+	&:hover {
+		color: var(--text-color);
+		background: rgba(0, 0, 0, 0.06);
+	}
 }
 
 @media (max-width: 768px) {

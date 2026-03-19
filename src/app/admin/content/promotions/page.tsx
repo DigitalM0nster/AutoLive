@@ -9,7 +9,7 @@ import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import PromoCard from "./PromoCard";
 import Loading from "@/components/ui/loading/Loading";
 import ConfirmPopup from "@/components/ui/confirmPopup/ConfirmPopup";
-import styles from "../local_components/styles.module.scss";
+import styles from "./promotionsList.module.scss";
 
 export default function PromotionsPage() {
 	const [promos, setPromos] = useState<Promotion[]>([]);
@@ -76,40 +76,41 @@ export default function PromotionsPage() {
 
 	return (
 		<div className="screenContent">
-			<div className={styles.screenContent}>
-				<div className={styles.headerRow}>
-					<h1 className={styles.contentTitle}>Акции</h1>
+			<div className="tableContainer">
+				<div className="tabsContainer">
+					<div className="tabTitle">Акции</div>
+				</div>
+				<div className="tableContent">
+					{isLoading ? (
+						<Loading />
+					) : promos.length === 0 ? (
+						<p className={styles.emptyState}>Акций пока нет</p>
+					) : (
+						<DndContext sensors={sensors} collisionDetection={closestCenter} modifiers={[restrictToVerticalAxis]} onDragEnd={handleDragEnd}>
+							<SortableContext items={promos.map((promo) => promo.id)} strategy={verticalListSortingStrategy}>
+								<div className={styles.promosList}>
+									{promos.map((promo) => (
+										<PromoCard key={promo.id} promo={promo} onDelete={() => openDeleteModal(promo)} />
+									))}
+								</div>
+							</SortableContext>
+						</DndContext>
+					)}
 					<Link href="/admin/content/promotions/create" className="createButton">
 						+ Создать акцию
 					</Link>
 				</div>
-
-				{isLoading ? (
-					<Loading />
-				) : promos.length === 0 ? (
-					<p className={styles.emptyState}>Акций пока нет</p>
-				) : (
-					<DndContext sensors={sensors} collisionDetection={closestCenter} modifiers={[restrictToVerticalAxis]} onDragEnd={handleDragEnd}>
-						<SortableContext items={promos.map((promo) => promo.id)} strategy={verticalListSortingStrategy}>
-							<div className={styles.promosList}>
-								{promos.map((promo) => (
-									<PromoCard key={promo.id} promo={promo} onDelete={() => openDeleteModal(promo)} />
-								))}
-							</div>
-						</SortableContext>
-					</DndContext>
-				)}
-
-				<ConfirmPopup
-					open={isModalOpen}
-					title="Удалить акцию?"
-					message="Вы уверены, что хотите удалить эту акцию?"
-					confirmText="Удалить"
-					cancelText="Отмена"
-					onConfirm={handleConfirmDelete}
-					onCancel={handleCancelDelete}
-				/>
 			</div>
+
+			<ConfirmPopup
+				open={isModalOpen}
+				title="Удалить акцию?"
+				message="Вы уверены, что хотите удалить эту акцию?"
+				confirmText="Удалить"
+				cancelText="Отмена"
+				onConfirm={handleConfirmDelete}
+				onCancel={handleCancelDelete}
+			/>
 		</div>
 	);
 }

@@ -1,0 +1,13 @@
+.contactsMapWrap {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.contactsMapContainer {
+  width: 100%;
+  height: 400px;
+  min-height: 300px;
+  background: #e8e8e8;
+  border-radius: 8px;
+  overflow: hidden;
+}/*# sourceMappingURL=ContactsMap.module.css.map */

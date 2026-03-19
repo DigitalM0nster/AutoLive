@@ -1,0 +1,70 @@
+// Страница контактов — блок контента
+
+.screen {
+	// При необходимости переопределения глобального .screen
+}
+
+.screenBlock {
+	display: flex;
+	flex-direction: column;
+	gap: 24px;
+	max-width: 800px;
+}
+
+.contactsSection {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.contactsSectionTitle {
+	margin: 0;
+	font-size: 18px;
+	font-weight: 600;
+}
+
+// Цвет иконок (адрес, телефон, почта, часы) — меняйте под стиль сайта
+.contactsIconColor {
+	color: #2c5aa0;
+}
+
+.contactsMainBlock {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+.contactsText {
+	margin: 0;
+	line-height: 1.5;
+}
+
+.contactsAddressList {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.contactsAddressItem {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding: 14px 16px;
+	background: var(--light-grey-color, #f5f5f5);
+	border-radius: 8px;
+}
+
+.contactsAddressName {
+	font-weight: 600;
+	font-size: 15px;
+}
+
+.contactsAddressLine {
+	font-size: 14px;
+	line-height: 1.4;
+	color: #555;
+}
+

@@ -2,8 +2,8 @@
 	justify-content: center;
 	width: calc(100% - 40px);
 	height: fit-content;
-	background-color: rgba(61, 61, 61, 1);
-	color: white;
+	background-color: var(--site-color-grey, #3d3d3d);
+	color: var(--site-color-white, white);
 	padding: 20px;
 	z-index: 8;
 }

@@ -32,7 +32,7 @@ export default async function EditBookingDepartmentPage({ params }: { params: Pr
 					</Link>
 				</div>
 				<div className="tableContent bookingComponent">
-					<BookingDepartmentFormComponent bookingDepartmentId={bookingDepartmentId} initialData={bookingDepartment} />
+					<BookingDepartmentFormComponent isCreating={false} bookingDepartmentId={bookingDepartmentId} initialData={bookingDepartment} />
 				</div>
 			</div>
 		</div>

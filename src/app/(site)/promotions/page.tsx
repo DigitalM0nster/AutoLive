@@ -2,6 +2,7 @@ import Link from "next/link";
 import NavigationMenu from "@/components/user/navigationMenu/NavigationMenu";
 import styles from "./styles.module.scss";
 import CONFIG from "@/lib/config";
+import { slugify } from "@/lib/slugify";
 import type { Promotion } from "@/lib/types";
 
 // Не статически генерируем при build — страница запрашивает API при каждом запросе (для Vercel и локального build)
@@ -36,24 +37,35 @@ export default async function Promotions() {
 					{promotions.length === 0 ? (
 						<div className={styles.loading}>Загрузка...</div>
 					) : (
-						promotions.map((promotion) => (
-							<div key={promotion.id} className={styles.promotionItem}>
-								<div className={styles.photo}>
-									{promotion.image ? <img src={promotion.image} alt={promotion.title} /> : <img src="/images/no-image.png" alt="" />}
-								</div>
-								<div className={styles.contentBlock}>
-									<div className={styles.textContent}>
-										<div className={styles.title}>{promotion.title}</div>
-										<div className={styles.description}>{promotion.description}</div>
+						promotions.map((promotion) => {
+							const promoSlug = slugify(promotion.title);
+							return (
+								<div key={promotion.id} className={styles.promotionItem}>
+									<div className={styles.photo}>
+										{promotion.image ? <img src={promotion.image} alt={promotion.title} /> : <img src="/images/no-image.png" alt="" />}
 									</div>
-									{(promotion.buttonLink || promotion.buttonText) && (
-										<Link href={promotion.buttonLink || ""} className={`button ${styles.button}`}>
-											{promotion.buttonText || "Подробнее"}
-										</Link>
-									)}
+									<div className={styles.contentBlock}>
+										<div className={styles.textContent}>
+											<div className={styles.title}>
+												<Link href={promoSlug ? `/promotions/${promoSlug}` : "/promotions"} className={styles.titleLink}>
+													{promotion.title}
+												</Link>
+											</div>
+											<div className={styles.description}>{promotion.description}</div>
+										</div>
+										{promoSlug ? (
+											<Link href={`/promotions/${promoSlug}`} className={`button ${styles.button}`}>
+												Подробнее
+											</Link>
+										) : (promotion.buttonLink || promotion.buttonText) ? (
+											<Link href={promotion.buttonLink || ""} className={`button ${styles.button}`}>
+												{promotion.buttonText || "Подробнее"}
+											</Link>
+										) : null}
+									</div>
 								</div>
-							</div>
-						))
+							);
+						})
 					)}
 				</div>
 			</div>

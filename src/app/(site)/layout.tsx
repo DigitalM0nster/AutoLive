@@ -10,6 +10,7 @@ import React from "react";
 import GlobalLoadingProvider from "@/components/ui/loading/GlobalLoadingProvider";
 import GlobalLoadingOverlay from "@/components/ui/loading/GlobalLoadingOverlay";
 import ToastProvider from "@/components/ui/toast/ToastProvider";
+import { SiteSettingsProvider } from "@/contexts/SiteSettingsContext";
 
 export const metadata: Metadata = {
 	title: `Главная | ${CONFIG.STORE_NAME} ${CONFIG.CITY}`,
@@ -21,13 +22,15 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
 	return (
 		<html lang="ru">
 			<body>
-				<GlobalLoadingProvider>
-					<ToastProvider />
-					<Header />
-					{children}
-					<Footer />
-					<GlobalLoadingOverlay />
-				</GlobalLoadingProvider>
+				<SiteSettingsProvider>
+					<GlobalLoadingProvider>
+						<ToastProvider />
+						<Header />
+						{children}
+						<Footer />
+						<GlobalLoadingOverlay />
+					</GlobalLoadingProvider>
+				</SiteSettingsProvider>
 			</body>
 		</html>
 	);

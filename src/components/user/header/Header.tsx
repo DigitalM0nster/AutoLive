@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { useUiStore } from "@/store/uiStore";
 import { useCartStore } from "@/store/cartStore";
+import { useSiteSettings } from "@/contexts/SiteSettingsContext";
 import styles from "./styles.module.scss";
 import LoginPopup from "@/components/user/loginPopup/LoginPopup";
 import OrderPopup from "@/components/user/orderPopup/OrderPopup";
@@ -15,8 +16,10 @@ export default function Header() {
 	const { isLogined, user, initAuth, logout } = useAuthStore();
 	const { activateLoginPopup, setHeaderHeight } = useUiStore();
 	const { getTotalItems, items } = useCartStore(); // Получаем функцию для подсчета товаров и список товаров
+	const siteSettings = useSiteSettings();
 	const totalItems = getTotalItems(); // Получаем общее количество товаров в корзине
 	const router = useRouter();
+	const logoUrl = siteSettings?.logoUrl || "/images/logo.svg";
 
 	const [activeBurger, setActiveBurger] = useState(false);
 	const [isAnimating, setIsAnimating] = useState(false); // Состояние для анимации корзины
@@ -83,7 +86,7 @@ export default function Header() {
 				<div className={styles.headerContent}>
 					<div className={styles.leftBlock}>
 						<div className={styles.logo} onClick={() => router.push("/")}>
-							<img src="/images/logo.svg" alt="Логотип" />
+							<img src={logoUrl} alt="Логотип" />
 						</div>
 						{(user?.role === "admin" || user?.role === "superadmin" || user?.role === "manager") && (
 							<div className={styles.dashboardButton} onClick={() => router.push("/admin/dashboard")}>
@@ -93,11 +96,11 @@ export default function Header() {
 					</div>
 					<div className={styles.centerBlock}>
 						{[
-							{ label: "Материалы для ТО", path: "/service-materials" },
+							{ label: "Материалы для ТО", path: "/categories" },
 							{ label: "Комплекты ТО", path: "/service-kits" },
 							{ label: "Запись на ТО", path: "/booking" },
 							{ label: "Запчасти", path: "/catalog" },
-							{ label: "Акции", path: "/discounts" },
+							{ label: "Акции", path: "/promotions" },
 							{ label: "Контакты", path: "/contacts" },
 						].map((item) => (
 							<div key={item.path} className={styles.navLi} onClick={() => router.push(item.path)}>
@@ -133,7 +136,7 @@ export default function Header() {
 								<div className={styles.phoneIcon}>
 									<img src="/images/phoneIcon.svg" alt="Телефон" />
 								</div>
-								<div className={styles.phoneNumber}>+7 (995) 409-18-82</div>
+								<div className={styles.phoneNumber}>{siteSettings?.headerPhone ?? "+7 (995) 409-18-82"}</div>
 							</div>
 						</div>
 						<div className={styles.cart} onClick={() => router.push("/cart")}>

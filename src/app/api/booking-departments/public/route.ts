@@ -8,18 +8,19 @@ import { withDbRetry } from "@/lib/utils";
 // GET /api/booking-departments/public - Получить список отделов для записей (публичный, без авторизации)
 export async function GET(req: NextRequest) {
 	try {
-		// Все могут видеть отделы для записей без авторизации
-		// Обёрнуто в withDbRetry для обработки ошибок соединения с Neon
+		// Только отделы с галочкой «отображать на странице Контакты»
 		const bookingDepartments = await withDbRetry(async () => {
 			return await prisma.bookingDepartment.findMany({
+				where: { showOnContactsPage: true },
 				select: {
 					id: true,
 					name: true,
 					address: true,
 					phones: true,
 					emails: true,
-					createdAt: true,
-					updatedAt: true,
+					workingHours: true,
+					latitude: true,
+					longitude: true,
 				},
 				orderBy: {
 					name: "asc",

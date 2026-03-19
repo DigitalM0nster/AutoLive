@@ -53,6 +53,7 @@ export type UserLog = {
 		id: number;
 		first_name: string | null;
 		last_name: string | null;
+		middle_name?: string | null;
 		role: string;
 		department?: DepartmentForLog | null;
 	};
@@ -93,6 +94,7 @@ export type DepartmentLog = {
 		id: number;
 		first_name: string | null;
 		last_name: string | null;
+		middle_name?: string | null;
 		role: string;
 		department?: DepartmentForLog | null;
 	};
@@ -392,6 +394,8 @@ export type Promotion = {
 	order: number;
 	buttonText: string;
 	buttonLink: string;
+	startDate: string | null;
+	endDate: string | null;
 };
 
 export type AdminData = {
@@ -707,6 +711,8 @@ export type BookingDepartment = {
 	address: string; // Адрес отдела (обязательно)
 	phones: string[]; // Массив телефонов (может быть пустым или содержать до 100 телефонов)
 	emails: string[]; // Массив почт (может быть пустым или содержать несколько почт)
+	latitude?: number | null; // Широта для точки на карте (Яндекс.Карты)
+	longitude?: number | null; // Долгота для точки на карте (Яндекс.Карты)
 	createdAt: string | Date;
 	updatedAt: string | Date;
 };
@@ -813,6 +819,8 @@ export type AdminSnapshotForBookingLog = {
 	id: number;
 	first_name: string | null;
 	last_name: string | null;
+	/** Отчество; в старых логах может отсутствовать в JSON */
+	middle_name?: string | null;
 	role: string;
 	department: {
 		id: number;
@@ -880,6 +888,47 @@ export type BookingDepartmentLog = {
 
 export type BookingDepartmentLogResponse = {
 	data: BookingDepartmentLog[];
+	total: number;
+	page: number;
+	totalPages: number;
+	error?: string;
+};
+
+// Пункты выдачи (аналогично адресам для записей)
+export type PickupPoint = {
+	id: number;
+	name?: string | null;
+	address: string;
+	phones: string[];
+	emails: string[];
+	latitude?: number | null; // Широта для точки на карте (Яндекс.Карты)
+	longitude?: number | null; // Долгота для точки на карте (Яндекс.Карты)
+	createdAt: string | Date;
+	updatedAt: string | Date;
+};
+
+export type PickupPointSnapshotForLog = {
+	id: number;
+	name: string | null;
+	address: string;
+	phones: string[];
+	emails: string[];
+};
+
+export type PickupPointLogAction = "create" | "update" | "delete";
+
+export type PickupPointLog = {
+	id: number;
+	createdAt: string | Date;
+	action: PickupPointLogAction | string;
+	message?: string | null;
+	pickupPointId: number;
+	adminSnapshot?: AdminSnapshotForBookingLog | null;
+	pickupPointSnapshot?: PickupPointSnapshotForLog | null;
+};
+
+export type PickupPointLogResponse = {
+	data: PickupPointLog[];
 	total: number;
 	page: number;
 	totalPages: number;

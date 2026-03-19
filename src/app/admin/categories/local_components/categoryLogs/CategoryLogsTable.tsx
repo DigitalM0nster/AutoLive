@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Loading from "@/components/ui/loading/Loading";
+import DeletedBlockNotice from "@/components/ui/deletedBlockNotice/DeletedBlockNotice";
 
 export type CategoryLog = {
 	id: number;
@@ -233,6 +234,7 @@ export default function CategoryLogsTable({ categoryId, tableHeaders, queryParam
 									Удаление категории
 								</div>
 								<div className={`openingBlock ${activeBlocks[key("delete")] ? "active" : ""}`}>
+									<DeletedBlockNotice deletedAt={formatDate(log.createdAt)} deletedBy={getAdminName(log.admin)} />
 									{log.snapshotBefore && (
 										<>
 											<div className="infoField">
@@ -311,8 +313,12 @@ export default function CategoryLogsTable({ categoryId, tableHeaders, queryParam
 	// Мемоизируем строковое представление queryParams для использования в зависимостях useEffect
 	const queryParamsString = useMemo(() => queryParams.toString(), [queryParams]);
 
+	// Используем API одной категории только при валидном числовом ID (иначе — все логи)
+	const effectiveCategoryId =
+		categoryId != null && Number.isInteger(Number(categoryId)) && Number(categoryId) > 0 ? Number(categoryId) : undefined;
+
 	useEffect(() => {
-		const baseUrl = categoryId ? `/api/categories/${categoryId}/logs` : "/api/categories/logs";
+		const baseUrl = effectiveCategoryId ? `/api/categories/${effectiveCategoryId}/logs` : "/api/categories/logs";
 		const fetchLogs = async () => {
 			setLoading(true);
 			setError(null);
@@ -338,9 +344,9 @@ export default function CategoryLogsTable({ categoryId, tableHeaders, queryParam
 			}
 		};
 		fetchLogs();
-	}, [queryParamsString, categoryId, onLogsUpdate, checkCategoriesExistence, checkUsersExistence]);
+	}, [queryParamsString, effectiveCategoryId, onLogsUpdate, checkCategoriesExistence, checkUsersExistence]);
 
-	const colCount = categoryId ? 3 : 4;
+	const colCount = effectiveCategoryId ? 3 : 4;
 
 	return (
 		<div className="tableContent">
@@ -365,7 +371,7 @@ export default function CategoryLogsTable({ categoryId, tableHeaders, queryParam
 								<td>
 									<div className="dateCell">{formatDate(log.createdAt)}</div>
 								</td>
-								{!categoryId && (
+								{!effectiveCategoryId && (
 									<td>{renderCategoryCell(log)}</td>
 								)}
 								<td>

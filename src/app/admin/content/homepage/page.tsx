@@ -391,7 +391,7 @@ export default function AdminHomepageContent() {
 		<div className="screenContent">
 			<div className="tableContainer">
 				<div className="tabsContainer">
-					<div className="tabTitle">Редактирование главной страницы</div>
+					<div className="tabTitle">Главная страница</div>
 				</div>
 				<div className={`tableContent contentComponent ${styles.contentComponent}`}>
 					<div className={`formFields ${styles.formFields}`}>

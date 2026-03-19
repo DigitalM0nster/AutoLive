@@ -4,6 +4,7 @@ import styles from "../styles.module.scss";
 import { useCallback, useEffect, useState } from "react";
 import { DepartmentLog, DepartmentLogResponse, User } from "@/lib/types";
 import Loading from "@/components/ui/loading/Loading";
+import DeletedBlockNotice from "@/components/ui/deletedBlockNotice/DeletedBlockNotice";
 
 export default function AllDepartmentsLogsTable({
 	tableHeaders,
@@ -487,6 +488,10 @@ export default function AllDepartmentsLogsTable({
 									Удаление отдела
 								</div>
 								<div className={`openingBlock ${activeBlocks[deleteLogKey] ? "active" : ""}`}>
+									<DeletedBlockNotice
+										deletedAt={formatDate(log.createdAt)}
+										deletedBy={log.admin ? [log.admin.last_name, log.admin.first_name, log.admin.middle_name].filter(Boolean).join(" ").trim() || "—" : undefined}
+									/>
 									{log.snapshotBefore && (
 										<div className="tableListItems">
 											<div className="tableListItem">
