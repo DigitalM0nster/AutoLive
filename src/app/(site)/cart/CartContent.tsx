@@ -3,13 +3,19 @@
 import { useCartStore } from "@/store/cartStore";
 import styles from "./styles.module.scss";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import PhoneInput from "@/components/ui/phoneInput/PhoneInput";
+import { useAuthStore } from "@/store/authStore";
 
 // Компонент для отображения контента страницы корзины
+function digitsFromPhone(phone: string): string {
+	return phone.replace(/\D/g, "");
+}
+
 export default function CartContent() {
 	const { items, updateQuantity, removeItem, getTotalPrice, clearCart } = useCartStore();
 	const router = useRouter();
+	const { user, role, initAuth } = useAuthStore();
 
 	const [clientName, setClientName] = useState("");
 	const [clientPhoneRaw, setClientPhoneRaw] = useState(""); // только цифры из PhoneInput
@@ -18,6 +24,23 @@ export default function CartContent() {
 	const [success, setSuccess] = useState<string | null>(null);
 
 	const totalPrice = getTotalPrice();
+
+	// Автозаполнение для залогиненного клиента + заказ уйдёт в ЛК (cookie на POST)
+	useEffect(() => {
+		void initAuth();
+	}, [initAuth]);
+
+	useEffect(() => {
+		if (role !== "client" || !user) return;
+		const parts = [user.first_name, user.last_name].filter(Boolean);
+		if (parts.length) {
+			setClientName((prev) => (prev.trim() === "" ? parts.join(" ") : prev));
+		}
+		const d = digitsFromPhone(user.phone || "");
+		if (d.length >= 10) {
+			setClientPhoneRaw((prev) => (prev.length < 10 ? d : prev));
+		}
+	}, [role, user]);
 
 	// Если корзина пуста, показываем сообщение
 	if (items.length === 0) {
@@ -86,6 +109,11 @@ export default function CartContent() {
 
 				{/* Форма оформления заказа */}
 				<div className={styles.checkoutForm}>
+					{role === "client" && (
+						<div className={styles.formRow}>
+							<p className={styles.formHint}>Вы вошли в аккаунт — заявка будет видна в разделе «Личный кабинет».</p>
+						</div>
+					)}
 					<div className={styles.formRow}>
 						<label className={styles.formLabel}>Ваше имя</label>
 						<input className={styles.formInput} placeholder="Иван" value={clientName} onChange={(e) => setClientName(e.target.value)} />
@@ -127,6 +155,7 @@ export default function CartContent() {
 								const res = await fetch("/api/orders/public", {
 									method: "POST",
 									headers: { "Content-Type": "application/json" },
+									credentials: "include",
 									body: JSON.stringify(payload),
 								});
 								const data = await res.json();

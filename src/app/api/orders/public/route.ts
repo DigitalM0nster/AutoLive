@@ -1,6 +1,7 @@
-// Публичное оформление заказа без авторизации
+// Публичное оформление заказа (гость или клиент с cookie — заказ привязывается к аккаунту)
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getOptionalClientUserIdFromRequest } from "@/lib/getOptionalClientUserIdFromRequest";
 
 type PublicOrderItem = {
 	product_sku: string;
@@ -51,8 +52,9 @@ export async function POST(req: NextRequest) {
 		}
 		const departmentId = uniqueDepartments.size === 1 ? [...uniqueDepartments][0] : null;
 
-		// ПУБЛИЧНАЯ ЗАЯВКА: НЕ ПРИВЯЗЫВАЕМ заказ к пользователю по номеру телефона
-		// Телефон и имя — это только контактные данные лида. Пользователь не создаётся и не изменяется.
+		// Если пользователь вошёл как client — привязываем заказ к ЛК (cookie authToken)
+		const linkedClientId = getOptionalClientUserIdFromRequest(req);
+
 		const normalizedPhone = rawPhone.length === 11 && rawPhone.startsWith("7") ? `+${rawPhone}` : rawPhone;
 
 		// createdBy для публичной заявки — null (требует миграции: Order.createdBy сделать опциональным)
@@ -69,13 +71,13 @@ export async function POST(req: NextRequest) {
 
 			const newOrder = await tx.order.create({
 				data: {
-					// Сохраняем контактные данные лида в структурированном виде в комментариях заказа
+					// Сохраняем контактные данные в комментариях (удобно менеджеру в любом случае)
 					comments: guestInfoComments,
 					status: "created",
-					clientId: null, // клиент не привязан — только контакты
+					clientId: linkedClientId,
 					managerId: null,
 					departmentId: departmentId,
-					createdBy: undefined, // публичная заявка — без создателя в системе
+					createdBy: linkedClientId ?? undefined, // если оформил залогиненный клиент — фиксируем
 				} as any,
 			});
 

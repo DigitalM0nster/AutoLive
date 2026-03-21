@@ -9,6 +9,7 @@ import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import PromoCard from "./PromoCard";
 import Loading from "@/components/ui/loading/Loading";
 import ConfirmPopup from "@/components/ui/confirmPopup/ConfirmPopup";
+import contentStyles from "../local_components/styles.module.scss";
 import styles from "./promotionsList.module.scss";
 
 export default function PromotionsPage() {
@@ -77,7 +78,13 @@ export default function PromotionsPage() {
 	return (
 		<div className="screenContent">
 			<div className="tableContainer">
-				<div className="tabsContainer">
+				<div className="tabsContainer column">
+					<Link href="/admin/content" className={contentStyles.backToContentLink}>
+						<span className={contentStyles.backToContentLinkArrow} aria-hidden>
+							←
+						</span>
+						Редактор контента
+					</Link>
 					<div className="tabTitle">Акции</div>
 				</div>
 				<div className="tableContent">

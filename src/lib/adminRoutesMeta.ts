@@ -66,6 +66,8 @@ export const adminRoutesMeta: Record<string, AdminRouteMeta> = {
 	managers: { label: "Менеджеры" },
 	homepage: { label: "Главная" },
 	contacts: { label: "Контакты" },
+	footer: { label: "Редактор подвала" },
+	settings: { label: "Основные настройки" },
 	promotions: { label: "Акции" },
 	edit: { label: "Редактирование" },
 	create: { label: "Создание" },

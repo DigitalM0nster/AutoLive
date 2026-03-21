@@ -1418,12 +1418,12 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 																	style={{ width: "100%" }}
 																/>
 																{isToResponsibleSearchFocused && isSearchingToResponsible && toResponsibleSearch && (
-																	<div className="searchResults loading" style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 1000 }}>
+																	<div className="searchResults loading">
 																		<Loading />
 																	</div>
 																)}
 																{isToResponsibleSearchFocused && toResponsibleSearch && !isSearchingToResponsible && (
-																	<div className="searchResults" style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 1000 }}>
+																	<div className="searchResults">
 																		{toResponsibleSearchResults.length > 0 ? (
 																			toResponsibleSearchResults.map((manager) => (
 																				<div key={manager.id} className={`searchResultItem`} onMouseDown={() => handleToResponsibleSelect(manager)}>

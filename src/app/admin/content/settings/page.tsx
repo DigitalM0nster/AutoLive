@@ -141,9 +141,11 @@ export default function AdminSiteSettingsPage() {
 	return (
 		<div className="screenContent">
 			<div className="tableContainer">
-				<div className="tabsContainer">
+				<div className="tabsContainer column">
 					<Link href="/admin/content" className={styles.backToContentLink}>
-						<span className={styles.backToContentLinkArrow} aria-hidden>←</span>
+						<span className={styles.backToContentLinkArrow} aria-hidden>
+							←
+						</span>
 						Редактор контента
 					</Link>
 					<div className="tabTitle">Основные настройки</div>
@@ -155,7 +157,10 @@ export default function AdminSiteSettingsPage() {
 						{/* Логотип, фавиконка, телефон в шапке */}
 						<div className="formSection borderBlock">
 							<h3 className="formSectionTitle">Логотип, фавиконка и контакты в шапке</h3>
-							<p className={styles.addressesSectionHint}>Логотип отображается в шапке сайта. Фавиконка — вкладка браузера. Телефон показывается в шапке рядом с корзиной. Если не заданы, используются текущие.</p>
+							<p className={styles.addressesSectionHint}>
+								Логотип отображается в шапке сайта. Фавиконка — вкладка браузера. Телефон показывается в шапке рядом с корзиной. Если не заданы, используются
+								текущие.
+							</p>
 							<div className="formRow">
 								<div className={`formField ${styles.formField}`}>
 									<label>Логотип (шапка)</label>

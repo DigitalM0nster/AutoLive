@@ -41,12 +41,12 @@ export async function GET(request: NextRequest) {
 			return await prisma.homepageContent.findFirst();
 		});
 
-		// Если записи нет, возвращаем дефолтные значения
+		// Если записи нет, возвращаем пустые тексты, но сохраняем структуру полей попапа
 		if (!content) {
 			const defaultContent: HomepageContentData = {
-				firstBlockTitle: "Выбрать запчасти с менеджером:",
-				callButtonText: "Позвонить в магазин",
-				orderButtonText: "Оставить заказ",
+				firstBlockTitle: "",
+				callButtonText: "",
+				orderButtonText: "",
 				formFields: [
 					{
 						id: "1",
@@ -108,23 +108,6 @@ export const POST = withPermission(
 	async (req: NextRequest, { user }) => {
 		try {
 			const body: HomepageContentData = await req.json();
-
-			// Валидация данных
-			if (!body.firstBlockTitle || !body.firstBlockTitle.trim()) {
-				return NextResponse.json({ error: "Заголовок первого блока обязателен" }, { status: 400 });
-			}
-
-			if (!body.callButtonText || !body.callButtonText.trim()) {
-				return NextResponse.json({ error: "Текст кнопки звонка обязателен" }, { status: 400 });
-			}
-
-			if (!body.orderButtonText || !body.orderButtonText.trim()) {
-				return NextResponse.json({ error: "Текст кнопки заказа обязателен" }, { status: 400 });
-			}
-
-			if (!body.formSubmitButtonText || !body.formSubmitButtonText.trim()) {
-				return NextResponse.json({ error: "Текст кнопки отправки формы обязателен" }, { status: 400 });
-			}
 
 			if (!Array.isArray(body.formFields)) {
 				return NextResponse.json({ error: "Поля формы должны быть массивом" }, { status: 400 });

@@ -82,7 +82,66 @@
 	.column {
 		flex-direction: column;
 		padding: 0px 0px 0px 25px;
+		gap: 4px;
 	}
+}
+
+.blockLineText {
+	font-size: 18px;
+}
+
+.blockLineTel {
+	font-size: 18px;
+	cursor: pointer;
+	text-decoration: underline;
+	&:hover {
+		opacity: 0.9;
+	}
+}
+
+.documentsRow {
+	flex-direction: column;
+	gap: 12px;
+	width: 100%;
+	max-width: 1400px;
+	margin-top: 20px;
+	padding-top: 16px;
+	border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.documentsTitle {
+	font-size: 14px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.documentsLinks {
+	flex-wrap: wrap;
+	gap: 12px 24px;
+}
+
+.documentLink {
+	font-size: 14px;
+	text-decoration: underline;
+	cursor: pointer;
+	&:hover {
+		opacity: 0.88;
+	}
+}
+
+.footerCopyright {
+	justify-content: center;
+	align-items: center;
+	width: 100%;
+	max-width: 1400px;
+	margin-top: 24px;
+	padding-top: 16px;
+	border-top: 1px solid rgba(255, 255, 255, 0.15);
+	font-size: 13px;
+	line-height: 1.4;
+	opacity: 0.9;
+	text-align: center;
 }
 
 @media (max-width: 1280px) {

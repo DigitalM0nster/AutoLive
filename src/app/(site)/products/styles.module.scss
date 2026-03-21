@@ -29,14 +29,15 @@
 .searchInput {
 	width: 100%;
 	padding: 12px 15px;
-	border: 2px solid #e0e0e0;
-	border-radius: 8px;
+	border: 1px solid #e0e0e0;
+	border-radius: 10px;
 	font-size: 16px;
 	outline: none;
-	transition: border-color 0.3s ease;
+	transition: border-color 0.3s ease, box-shadow 0.2s ease;
 
 	&:focus {
 		border-color: var(--blue-color);
+		box-shadow: 0 0 0 1px rgba(41, 128, 185, 0.2);
 	}
 }
 
@@ -48,34 +49,58 @@
 	display: flex;
 	flex-direction: column;
 	position: absolute;
-	top: calc(100% - 8px);
+	top: calc(100% - 2px);
 	left: 0;
 	right: 0;
-	background: white;
-	border: 2px solid #e0e0e0;
+	background: #fff;
+	border: 1px solid var(--blue-color);
 	border-top: none;
-	border-radius: 0 0 8px 8px;
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+	border-radius: 0 0 10px 10px;
+	box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(41, 128, 185, 0.08);
 	z-index: 1000;
 	max-height: 300px;
 	overflow-y: auto;
-	transition: 0.3s;
+	transition: border-color 0.2s ease, box-shadow 0.2s ease;
 
 	&.blue {
 		border-color: var(--blue-color);
-		box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
+		box-shadow: 0 12px 32px rgba(41, 128, 185, 0.18), 0 0 0 1px rgba(41, 128, 185, 0.12);
 	}
 }
 
 .searchResultItem {
 	display: flex;
 	width: 100%;
+	position: relative;
 	cursor: pointer;
-	border-bottom: 1px solid #f0f0f0;
-	transition: background-color 0.2s ease;
+	border-bottom: 1px solid #e8ecf0;
+	transition: background 0.2s ease, box-shadow 0.2s ease;
+
+	&::before {
+		content: "";
+		position: absolute;
+		left: 0;
+		top: 0;
+		bottom: 0;
+		width: 3px;
+		background: var(--blue-color);
+		opacity: 0;
+		transform: scaleY(0.65);
+		transition: opacity 0.2s ease, transform 0.2s ease;
+	}
 
 	&:hover {
-		background-color: #f8f9fa;
+		background: linear-gradient(90deg, rgba(41, 128, 185, 0.1) 0%, rgba(41, 128, 185, 0.03) 55%, transparent 100%);
+		box-shadow: inset 0 0 0 1px rgba(41, 128, 185, 0.12);
+
+		&::before {
+			opacity: 1;
+			transform: scaleY(1);
+		}
+
+		.searchResultTitle {
+			color: var(--blue-color);
+		}
 	}
 
 	&:last-child {
@@ -118,6 +143,7 @@
 .searchResultTitle {
 	font-weight: 600;
 	font-size: 14px;
+	transition: color 0.2s ease;
 }
 
 .searchResultSubtitle {

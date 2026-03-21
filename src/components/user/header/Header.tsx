@@ -19,7 +19,7 @@ export default function Header() {
 	const siteSettings = useSiteSettings();
 	const totalItems = getTotalItems(); // Получаем общее количество товаров в корзине
 	const router = useRouter();
-	const logoUrl = siteSettings?.logoUrl || "/images/logo.svg";
+	const logoUrl = siteSettings?.logoUrl ?? null;
 
 	const [activeBurger, setActiveBurger] = useState(false);
 	const [isAnimating, setIsAnimating] = useState(false); // Состояние для анимации корзины
@@ -85,9 +85,11 @@ export default function Header() {
 			<div className={`${styles.header} ${activeBurger ? styles.active : ""}`} ref={headerRef}>
 				<div className={styles.headerContent}>
 					<div className={styles.leftBlock}>
-						<div className={styles.logo} onClick={() => router.push("/")}>
-							<img src={logoUrl} alt="Логотип" />
-						</div>
+						{logoUrl && (
+							<div className={styles.logo} onClick={() => router.push("/")}>
+								<img src={logoUrl} alt="Логотип" />
+							</div>
+						)}
 						{(user?.role === "admin" || user?.role === "superadmin" || user?.role === "manager") && (
 							<div className={styles.dashboardButton} onClick={() => router.push("/admin/dashboard")}>
 								Вход в админ панель
@@ -118,7 +120,20 @@ export default function Header() {
 									<div className={styles.logoutText}>Выйти</div>
 								</div>
 								<div className={styles.userBlock}>
-									<div className={styles.user}>
+									<div
+										className={styles.user}
+										onClick={() => {
+											if (user?.role === "client") router.push("/profile");
+										}}
+										role={user?.role === "client" ? "button" : undefined}
+										tabIndex={user?.role === "client" ? 0 : undefined}
+										onKeyDown={(e) => {
+											if (user?.role === "client" && (e.key === "Enter" || e.key === " ")) {
+												e.preventDefault();
+												router.push("/profile");
+											}
+										}}
+									>
 										<div className={styles.userIcon}>
 											<img src="/images/userIcon.svg" alt="Пользователь" />
 										</div>
@@ -131,14 +146,16 @@ export default function Header() {
 								<div className={`button ${styles.button}`}>Войти</div>
 							</div>
 						)}
-						<div className={styles.contacts}>
-							<div className={styles.phone}>
-								<div className={styles.phoneIcon}>
-									<img src="/images/phoneIcon.svg" alt="Телефон" />
+						{siteSettings?.headerPhone && (
+							<div className={styles.contacts}>
+								<div className={styles.phone}>
+									<div className={styles.phoneIcon}>
+										<img src="/images/phoneIcon.svg" alt="Телефон" />
+									</div>
+									<div className={styles.phoneNumber}>{siteSettings.headerPhone}</div>
 								</div>
-								<div className={styles.phoneNumber}>{siteSettings?.headerPhone ?? "+7 (995) 409-18-82"}</div>
 							</div>
-						</div>
+						)}
 						<div className={styles.cart} onClick={() => router.push("/cart")}>
 							<div className={`${styles.cartIcon} ${isAnimating ? styles.cartAnimating : ""}`}>
 								<img src="/images/cartIcon.svg" alt="Корзина" />

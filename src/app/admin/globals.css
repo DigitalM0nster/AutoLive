@@ -210,6 +210,9 @@ a.button.disabled {
   border-radius: 10px 10px 0px 0px;
   padding: 10px 10px 0px 10px;
 }
+.tableContainer .tabsContainer.column {
+  flex-direction: column;
+}
 .tableContainer .tabsContainer .tabButton {
   position: relative;
   background: var(--light-grey-color);
@@ -2973,6 +2976,20 @@ span.oldName:after {
   color: var(--red-color);
   opacity: 0.5;
 }
+.productComponent .formField input.little,
+.productComponent .formField textarea.little,
+.productComponent .formField select.little,
+.orderComponent .formField input.little,
+.orderComponent .formField textarea.little,
+.orderComponent .formField select.little,
+.bookingComponent .formField input.little,
+.bookingComponent .formField textarea.little,
+.bookingComponent .formField select.little,
+.contentComponent .formField input.little,
+.contentComponent .formField textarea.little,
+.contentComponent .formField select.little {
+  width: 250px;
+}
 .productComponent .formField input.quantityInput,
 .productComponent .formField textarea.quantityInput,
 .productComponent .formField select.quantityInput,
@@ -3880,44 +3897,68 @@ span.oldName:after {
   flex-direction: column;
   position: absolute;
   width: calc(100% - 0px);
-  background: white;
-  z-index: 1;
+  left: 0;
+  right: 0;
+  background: #fff;
+  z-index: 1000;
   top: calc(100% - 2px);
-  border: 1px solid var(--light-grey2-color);
-  border-color: var(--blue-color);
+  border: 1px solid var(--blue-color);
   border-top: 1px solid transparent;
   border-radius: 0 0 10px 10px;
   overflow: hidden;
   max-height: 300px;
   overflow-y: auto;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(41, 128, 185, 0.08);
 }
 .fixedButtons .searchResults.loading {
   padding: 20px 10px;
+  align-items: center;
+  justify-content: center;
 }
 .fixedButtons .searchResultItem {
-  border-bottom: 1px solid var(--grey-color);
-  padding: 10px;
+  position: relative;
+  border-bottom: 1px solid var(--light-grey2-color);
+  padding: 11px 14px 11px 16px;
   cursor: pointer;
-  transition: all 0.2s ease;
   overflow: hidden;
-}
-.fixedButtons .searchResultItem:hover {
-  background: var(--light-grey-color);
-}
-.fixedButtons .searchResultItem:first-child {
-  border-top: 1px solid var(--grey-color);
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
 }
 .fixedButtons .searchResultItem:last-child {
   border-bottom: none;
+}
+.fixedButtons .searchResultItem::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--blue-color);
+  opacity: 0;
+  transform: scaleY(0.65);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.fixedButtons .searchResultItem:hover {
+  background: linear-gradient(90deg, rgba(41, 128, 185, 0.1) 0%, rgba(41, 128, 185, 0.03) 55%, transparent 100%);
+  box-shadow: inset 0 0 0 1px rgba(41, 128, 185, 0.12);
+}
+.fixedButtons .searchResultItem:hover::before {
+  opacity: 1;
+  transform: scaleY(1);
+}
+.fixedButtons .searchResultItem:hover .productTitle {
+  color: var(--blue-color);
 }
 .fixedButtons .searchResultItem .productInfo {
   font-size: 14px;
   display: flex;
   align-items: center;
   gap: 5px;
+  flex-wrap: wrap;
 }
 .fixedButtons .searchResultItem .productTitle {
   font-weight: 600;
+  transition: color 0.2s ease;
 }
 .fixedButtons .searchResultItem .additionalInfoBorderBlock {
   font-size: 12px;

@@ -33,6 +33,8 @@
   color: var(--site-color-grey-light, #a9a9a9);
   cursor: pointer;
   gap: 3px;
+  width: -moz-max-content;
+  width: max-content;
 }
 .dashboardButton:hover {
   text-decoration: underline;

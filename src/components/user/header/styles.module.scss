@@ -33,6 +33,7 @@
 	color: var(--site-color-grey-light, #a9a9a9);
 	cursor: pointer;
 	gap: 3px;
+	width: max-content;
 
 	&:hover {
 		text-decoration: underline;

@@ -2,7 +2,8 @@
 
 "use client";
 
-import { useState, FormEvent, useEffect } from "react";
+import { useState, FormEvent, useEffect, useCallback } from "react";
+import { useAuthStore } from "@/store/authStore";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import styles from "./styles.module.scss";
@@ -18,7 +19,13 @@ type BookingDepartment = {
 	emails: string[];
 };
 
+function digitsFromPhone(phone: string): string {
+	return phone.replace(/\D/g, "");
+}
+
 export default function ServiceBookingContent() {
+	const { user, role, initAuth } = useAuthStore();
+
 	const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 	const [selectedTime, setSelectedTime] = useState<string>("");
 	const [selectedService, setSelectedService] = useState<string>("");
@@ -38,6 +45,23 @@ export default function ServiceBookingContent() {
 	});
 
 	const services: string[] = ["Замена масла", "Комплексное ТО", "Диагностика двигателя", "Шиномонтаж"];
+
+	const prefillFromClient = useCallback(() => {
+		if (role !== "client" || !user) return;
+		const parts = [user.first_name, user.last_name].filter(Boolean);
+		if (parts.length) {
+			setName((prev) => (prev.trim() === "" ? parts.join(" ") : prev));
+		}
+		const d = digitsFromPhone(user.phone || "");
+		if (d.length >= 10) {
+			setPhoneRaw((prev) => (prev.length < 10 ? d : prev));
+		}
+	}, [role, user]);
+
+	// Сессия: чтобы привязать запись к ЛК (cookie уходит на POST)
+	useEffect(() => {
+		void initAuth().then(() => prefillFromClient());
+	}, [initAuth, prefillFromClient]);
 
 	// Загрузка списка отделов для записей
 	useEffect(() => {
@@ -124,6 +148,7 @@ export default function ServiceBookingContent() {
 			const res = await fetch("/api/bookings/public", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
+				credentials: "include",
 				body: JSON.stringify(bookingData),
 			});
 
@@ -140,6 +165,8 @@ export default function ServiceBookingContent() {
 				setPhoneRaw("");
 				setPhoneFormatted("");
 				setComment("");
+				// После сброса состояния снова подставить данные из аккаунта
+				queueMicrotask(() => prefillFromClient());
 			} else {
 				showErrorToast(result.error || "Ошибка отправки");
 			}
@@ -172,6 +199,7 @@ export default function ServiceBookingContent() {
 
 			<div className={styles.inputsBlock}>
 				<div className={styles.blockDescription}>Оставьте свои данные для подтверждения записи:</div>
+				{role === "client" && <div className={styles.blockDescription}>Запись будет отображаться в вашем личном кабинете.</div>}
 
 				{/* Выбор отдела для записи */}
 				<select

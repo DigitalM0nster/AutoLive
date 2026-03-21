@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withDbRetry } from "@/lib/utils";
+import { getOptionalClientUserIdFromRequest } from "@/lib/getOptionalClientUserIdFromRequest";
 
 // Тип запроса для публичного создания записи
 type PublicCreateBookingRequest = {
@@ -66,25 +67,22 @@ export async function POST(req: NextRequest) {
 			return NextResponse.json({ error: "Отдел для записей не найден" }, { status: 404 });
 		}
 
-		// Формируем notes: добавляем имя незарегистрированного клиента, если оно есть
+		const linkedClientId = getOptionalClientUserIdFromRequest(req);
+
+		// Формируем notes: блок «гость» только если нет привязки к аккаунту
 		let bookingNotes = body.notes || "";
-		if (body.clientName && body.clientName.trim() !== "") {
+		if (!linkedClientId && body.clientName && body.clientName.trim() !== "") {
 			const guestInfoLines: string[] = [];
 			guestInfoLines.push("--- Данные незарегистрированного клиента ---");
 			guestInfoLines.push(`Имя: ${body.clientName.trim()}`);
 			guestInfoLines.push("---");
 
-			// Добавляем к существующим notes, если они есть
 			if (bookingNotes) {
 				bookingNotes = `${bookingNotes}\n\n${guestInfoLines.join("\n")}`;
 			} else {
 				bookingNotes = guestInfoLines.join("\n");
 			}
 		}
-
-		// ПУБЛИЧНАЯ ЗАЯВКА: НЕ ПРИВЯЗЫВАЕМ запись к пользователю по номеру телефона
-		// Телефон и имя — это только контактные данные лида. Пользователь не создаётся и не изменяется.
-		// clientId = null, managerId = null (назначается позже админом)
 
 		// Создаем запись в транзакции
 		// Обёрнуто в withDbRetry для обработки ошибок соединения с Neon
@@ -96,7 +94,7 @@ export async function POST(req: NextRequest) {
 						scheduledDate: scheduledDate,
 						scheduledTime: body.scheduledTime,
 						contactPhone: normalizedPhone, // Телефон для связи (обязательное поле)
-						clientId: null, // Клиент не привязан — только контакты
+						clientId: linkedClientId,
 						managerId: null, // Менеджер назначается позже админом
 						bookingDepartmentId: body.bookingDepartmentId,
 						orderId: null, // Связь с заказом (если нужно, добавляется позже)

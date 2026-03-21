@@ -29,11 +29,11 @@ export default function HomePageClient() {
 	};
 
 	if (loading || !content) {
-		// Показываем дефолтные значения пока загружается
+		// Пока нет контента, не подставляем тексты по умолчанию
 		return (
 			<div className={`screenBlock ${styles.screenBlock}`}>
 				<div className={styles.block}>
-					<div className={styles.blockName}>Выбрать запчасти с менеджером:</div>
+					<div className={styles.blockName}></div>
 					<div className={styles.blockContent}>
 						<div className={styles.liveVideoBlock}>
 							<div className={styles.liveVideo}>
@@ -41,13 +41,7 @@ export default function HomePageClient() {
 								<div className={styles.liveVideoText}>Прямой эфир из магазина</div>
 							</div>
 							<div className={styles.liveButtons}>
-								<Link href="tel:+79991234567" className={`button ${styles.button} ${styles.callButton}`}>
-									<div className={styles.buttonIcon}>
-										<img src="/images/phoneIcon.svg" alt="Phone Icon" />
-									</div>
-									<div className={styles.buttonText}>Позвонить в магазин</div>
-								</Link>
-								<OrderPopupButton />
+								<OrderPopupButton buttonText="" />
 							</div>
 						</div>
 					</div>
@@ -94,13 +88,15 @@ export default function HomePageClient() {
 							<div className={styles.liveVideoText}>Прямой эфир из магазина</div>
 						</div>
 						<div className={styles.liveButtons}>
-							<Link href="tel:+79991234567" className={`button ${styles.button} ${styles.callButton}`}>
-								<div className={styles.buttonIcon}>
-									<img src="/images/phoneIcon.svg" alt="Phone Icon" />
-								</div>
-								<div className={styles.buttonText}>{content.callButtonText}</div>
-							</Link>
-							<OrderPopupButton buttonText={content.orderButtonText} formData={content} />
+							{content.callButtonText.trim() !== "" && (
+								<Link href="tel:+79991234567" className={`button ${styles.button} ${styles.callButton}`}>
+									<div className={styles.buttonIcon}>
+										<img src="/images/phoneIcon.svg" alt="Phone Icon" />
+									</div>
+									<div className={styles.buttonText}>{content.callButtonText}</div>
+								</Link>
+							)}
+							{content.orderButtonText.trim() !== "" && <OrderPopupButton buttonText={content.orderButtonText} formData={content} />}
 						</div>
 					</div>
 				</div>

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
+import Link from "next/link";
 import styles from "../local_components/styles.module.scss";
 import { HomepageContentData, FormField, FormFieldType, CustomFieldSubType } from "@/app/api/homepage-content/route";
 import { Trash2, Plus, GripVertical } from "lucide-react";
@@ -362,11 +363,18 @@ export default function AdminHomepageContent() {
 	if (loading) {
 		return (
 			<div className="screenContent">
-				<div className={styles.contentEditorBlock}>
-					<div className={styles.formContainer}>
-						<div className="formFields">
-							<div className={styles.editorPlaceholder}>Загрузка...</div>
-						</div>
+				<div className="tableContainer">
+					<div className="tabsContainer column">
+						<Link href="/admin/content" className={styles.backToContentLink}>
+							<span className={styles.backToContentLinkArrow} aria-hidden>
+								←
+							</span>
+							Редактор контента
+						</Link>
+						<div className="tabTitle">Главная страница</div>
+					</div>
+					<div className="tableContent">
+						<div className={styles.editorPlaceholder}>Загрузка...</div>
 					</div>
 				</div>
 			</div>
@@ -376,11 +384,18 @@ export default function AdminHomepageContent() {
 	if (!data) {
 		return (
 			<div className="screenContent">
-				<div className={styles.contentEditorBlock}>
-					<div className={styles.formContainer}>
-						<div className="formFields">
-							<div className={styles.editorPlaceholder}>Ошибка загрузки данных</div>
-						</div>
+				<div className="tableContainer">
+					<div className="tabsContainer column">
+						<Link href="/admin/content" className={styles.backToContentLink}>
+							<span className={styles.backToContentLinkArrow} aria-hidden>
+								←
+							</span>
+							Редактор контента
+						</Link>
+						<div className="tabTitle">Главная страница</div>
+					</div>
+					<div className="tableContent">
+						<div className={styles.editorPlaceholder}>Ошибка загрузки данных</div>
 					</div>
 				</div>
 			</div>
@@ -390,7 +405,13 @@ export default function AdminHomepageContent() {
 	return (
 		<div className="screenContent">
 			<div className="tableContainer">
-				<div className="tabsContainer">
+				<div className="tabsContainer column">
+					<Link href="/admin/content" className={styles.backToContentLink}>
+						<span className={styles.backToContentLinkArrow} aria-hidden>
+							←
+						</span>
+						Редактор контента
+					</Link>
 					<div className="tabTitle">Главная страница</div>
 				</div>
 				<div className={`tableContent contentComponent ${styles.contentComponent}`}>

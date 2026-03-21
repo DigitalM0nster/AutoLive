@@ -199,6 +199,10 @@ a.button {
 		border-radius: 10px 10px 0px 0px;
 		padding: 10px 10px 0px 10px;
 
+		&.column {
+			flex-direction: column;
+		}
+
 		.tabButton {
 			position: relative;
 			background: var(--light-grey-color);
@@ -2869,6 +2873,10 @@ span {
 				}
 			}
 
+			&.little {
+				width: 250px;
+			}
+
 			&.quantityInput {
 				width: 30px;
 				text-align: center;
@@ -3678,44 +3686,77 @@ span {
 		}
 	}
 
+	// Выпадающий список результатов поиска (товары, клиенты, менеджеры и т.д.)
 	.searchResults {
 		display: flex;
 		flex-direction: column;
 		position: absolute;
 		width: calc(100% - 0px);
-		background: white;
-		z-index: 1;
+		left: 0;
+		right: 0;
+		background: #fff;
+		z-index: 1000;
 		top: calc(100% - 2px);
-		border: 1px solid var(--light-grey2-color);
-		border-color: var(--blue-color);
+		border: 1px solid var(--blue-color);
 		border-top: 1px solid transparent;
 		border-radius: 0 0 10px 10px;
 		overflow: hidden;
 		max-height: 300px;
 		overflow-y: auto;
+		box-shadow:
+			0 12px 32px rgba(15, 23, 42, 0.12),
+			0 0 0 1px rgba(41, 128, 185, 0.08);
 
 		&.loading {
 			padding: 20px 10px;
+			align-items: center;
+			justify-content: center;
 		}
 	}
 
 	.searchResultItem {
-		border-bottom: 1px solid var(--grey-color);
-		padding: 10px;
+		position: relative;
+		border-bottom: 1px solid var(--light-grey2-color);
+		padding: 11px 14px 11px 16px;
 		cursor: pointer;
-		transition: all 0.2s ease;
 		overflow: hidden;
-
-		&:hover {
-			background: var(--light-grey-color);
-		}
-
-		&:first-child {
-			border-top: 1px solid var(--grey-color);
-		}
+		transition:
+			background 0.2s ease,
+			box-shadow 0.2s ease,
+			transform 0.15s ease;
 
 		&:last-child {
 			border-bottom: none;
+		}
+
+		// Полоска слева + мягкий фон — явно видно, какая строка под курсором
+		&::before {
+			content: "";
+			position: absolute;
+			left: 0;
+			top: 0;
+			bottom: 0;
+			width: 3px;
+			background: var(--blue-color);
+			opacity: 0;
+			transform: scaleY(0.65);
+			transition:
+				opacity 0.2s ease,
+				transform 0.2s ease;
+		}
+
+		&:hover {
+			background: linear-gradient(90deg, rgba(41, 128, 185, 0.1) 0%, rgba(41, 128, 185, 0.03) 55%, transparent 100%);
+			box-shadow: inset 0 0 0 1px rgba(41, 128, 185, 0.12);
+
+			&::before {
+				opacity: 1;
+				transform: scaleY(1);
+			}
+
+			.productTitle {
+				color: var(--blue-color);
+			}
 		}
 
 		.productInfo {
@@ -3723,10 +3764,12 @@ span {
 			display: flex;
 			align-items: center;
 			gap: 5px;
+			flex-wrap: wrap;
 		}
 
 		.productTitle {
 			font-weight: 600;
+			transition: color 0.2s ease;
 		}
 
 		.additionalInfoBorderBlock {

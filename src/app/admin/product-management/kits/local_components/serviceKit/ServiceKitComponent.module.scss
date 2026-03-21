@@ -358,18 +358,13 @@
 	flex-wrap: wrap;
 }
 
-// Результаты поиска: ховер и курсор
+// Результаты поиска товара в комплекте: внешний вид строки задаётся в admin globals (.searchResultItem)
 .searchResultItemRich {
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
-	padding: 10px 12px;
-	cursor: pointer;
-	transition: background 0.2s ease;
-
-	&:hover {
-		background: var(--light-grey-color, #f0f0f0);
-	}
+	padding: 0;
+	cursor: inherit;
 }
 
 .searchResultItemLine1 {

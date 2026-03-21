@@ -1,0 +1,350 @@
+// Общая оболочка личного кабинета и вложенных страниц
+
+.screen {
+	padding-top: 100px;
+	min-height: calc(100vh - 100px);
+	padding-bottom: 48px;
+}
+
+.layoutInner {
+	flex-direction: column;
+	gap: 20px;
+	max-width: 1100px;
+	width: 100%;
+	margin: 0 auto;
+	padding: 0 20px 20px;
+	align-self: stretch;
+}
+
+.cabinetNav {
+	flex-wrap: wrap;
+	gap: 8px;
+	padding: 4px 0 8px;
+	border-bottom: 1px solid #e8e8e8;
+}
+
+.navLink {
+	padding: 10px 16px;
+	border-radius: 10px;
+	font-size: 14px;
+	font-weight: 600;
+	text-decoration: none;
+	color: var(--site-color-grey, #3d3d3d);
+	border: 1px solid transparent;
+	transition:
+		background 0.2s,
+		border-color 0.2s,
+		color 0.2s;
+
+	&:hover {
+		border-color: #ddd;
+		background: #fafafa;
+	}
+}
+
+.navLinkActive {
+	background: rgba(176, 203, 31, 0.15);
+	border-color: var(--site-color-green, #b0cb1f);
+	color: var(--site-color-grey, #3d3d3d);
+}
+
+.pageTitle {
+	font-size: 26px;
+	font-weight: 700;
+	color: var(--site-color-grey, #3d3d3d);
+}
+
+.subTitle {
+	font-size: 18px;
+	font-weight: 700;
+	color: var(--site-color-grey, #3d3d3d);
+}
+
+.muted {
+	font-size: 14px;
+	color: #666;
+	line-height: 1.45;
+}
+
+.errorBanner {
+	padding: 12px 14px;
+	background: #fff0f0;
+	border: 1px solid #f0c0c0;
+	border-radius: 8px;
+	color: #b00020;
+	font-size: 14px;
+}
+
+.successBanner {
+	padding: 12px 14px;
+	background: #f0fff4;
+	border: 1px solid #b8e0c0;
+	border-radius: 8px;
+	color: #1b5e20;
+	font-size: 14px;
+}
+
+.redirectNote {
+	font-size: 15px;
+	color: #555;
+	text-align: center;
+	padding: 40px 20px;
+}
+
+.card {
+	flex-direction: column;
+	gap: 12px;
+	padding: 18px 20px;
+	background: #fff;
+	border-radius: 12px;
+	border: 1px solid #e8e8e8;
+	box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+.welcomeTitle {
+	font-size: 18px;
+	font-weight: 600;
+	color: var(--site-color-grey, #3d3d3d);
+}
+
+.phoneLine {
+	font-size: 15px;
+	color: #444;
+}
+
+.welcomeHint {
+	font-size: 14px;
+	color: var(--site-color-grey-light, #a9a9a9);
+}
+
+.statusBadge {
+	display: inline-block;
+	margin-top: 6px;
+	font-size: 12px;
+	padding: 4px 10px;
+	border-radius: 20px;
+	background: rgba(176, 203, 31, 0.2);
+	color: var(--site-color-green, #b0cb1f);
+	font-weight: 600;
+}
+
+.quickLinks {
+	flex-wrap: wrap;
+	gap: 12px;
+}
+
+.quickLink {
+	padding: 12px 18px;
+	border-radius: 10px;
+	border: 1px solid var(--site-color-green, #b0cb1f);
+	color: var(--site-color-grey, #3d3d3d);
+	font-size: 14px;
+	font-weight: 600;
+	text-decoration: none;
+	transition:
+		background 0.2s,
+		color 0.2s;
+
+	&:hover {
+		background: var(--site-color-green, #b0cb1f);
+		color: #fff;
+	}
+}
+
+.section {
+	flex-direction: column;
+	gap: 14px;
+}
+
+.rowBetween {
+	flex-wrap: wrap;
+	justify-content: space-between;
+	align-items: flex-start;
+	gap: 10px;
+}
+
+.orderListCard {
+	flex-direction: column;
+	gap: 8px;
+	padding: 16px 18px;
+	background: #fafafa;
+	border-radius: 10px;
+	border: 1px solid #eee;
+	text-decoration: none;
+	color: inherit;
+	transition:
+		border-color 0.2s,
+		box-shadow 0.2s;
+
+	&:hover {
+		border-color: #d0d0d0;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+	}
+}
+
+.orderId {
+	font-weight: 700;
+	font-size: 16px;
+	color: var(--site-color-grey, #3d3d3d);
+}
+
+.orderMeta {
+	font-size: 14px;
+	color: #555;
+}
+
+.orderStatus {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--site-color-green, #6a7a12);
+}
+
+.orderPreview {
+	font-size: 14px;
+	color: #444;
+	line-height: 1.4;
+}
+
+.linkDetail {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--site-color-green, #6a7a12);
+	margin-top: 4px;
+}
+
+.emptyState {
+	padding: 24px;
+	text-align: center;
+	color: #777;
+	font-size: 15px;
+	line-height: 1.5;
+	background: #fafafa;
+	border-radius: 10px;
+	border: 1px dashed #ddd;
+}
+
+.itemsTable {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 14px;
+
+	th,
+	td {
+		padding: 10px 8px;
+		text-align: left;
+		border-bottom: 1px solid #eee;
+	}
+
+	th {
+		font-weight: 600;
+		color: #555;
+		font-size: 13px;
+	}
+}
+
+.backLink {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--site-color-green, #6a7a12);
+	text-decoration: none;
+	margin-bottom: 8px;
+
+	&:hover {
+		text-decoration: underline;
+	}
+}
+
+.deliveryBlock {
+	flex-direction: column;
+	gap: 6px;
+	font-size: 14px;
+	color: #444;
+}
+
+.bookingRow {
+	font-size: 14px;
+	color: #444;
+	line-height: 1.45;
+}
+
+.formGrid {
+	flex-wrap: wrap;
+	gap: 16px;
+}
+
+.formField {
+	flex-direction: column;
+	gap: 6px;
+	min-width: 200px;
+	flex: 1;
+
+	label {
+		font-size: 13px;
+		font-weight: 600;
+		color: #555;
+	}
+
+	input {
+		padding: 10px 12px;
+		border: 1px solid #ddd;
+		border-radius: 8px;
+		font-size: 15px;
+	}
+}
+
+.saveRow {
+	margin-top: 4px;
+}
+
+.saveButton {
+	padding: 12px 24px;
+	border-radius: 10px;
+	border: none;
+	background: var(--site-color-green, #b0cb1f);
+	color: #fff;
+	font-size: 15px;
+	font-weight: 600;
+	cursor: pointer;
+
+	&:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+}
+
+.documentsList {
+	flex-direction: column;
+	gap: 10px;
+}
+
+.docLink {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--site-color-green, #6a7a12);
+	text-decoration: none;
+
+	&:hover {
+		text-decoration: underline;
+	}
+}
+
+.thumb {
+	width: 48px;
+	height: 48px;
+	object-fit: cover;
+	border-radius: 6px;
+	background: #f0f0f0;
+}
+
+.itemTitleCell {
+	font-weight: 600;
+	color: #333;
+}
+
+.totalRow {
+	margin-top: 12px;
+}
+
+.notesBlock {
+	white-space: pre-wrap;
+}

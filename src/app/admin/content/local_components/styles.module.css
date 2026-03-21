@@ -53,7 +53,7 @@
 .labelHint {
   font-size: 12px;
   font-weight: normal;
-  color: var(--grey-color);
+  color: var(--grey3-color);
   margin-left: 8px;
 }
 
@@ -80,24 +80,35 @@
 }
 
 .backToContentLink {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  margin-right: 16px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-color);
+  border: none;
+  padding: 0;
+  height: -moz-fit-content;
+  height: fit-content;
+  width: -moz-fit-content;
+  width: fit-content;
+  margin: 0px 0px 10px 10px;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 1px;
+  gap: 2px;
   text-decoration: none;
-  background: var(--white-color);
-  border: 1px solid var(--light-grey2-color);
-  border-radius: 8px;
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 .backToContentLink:hover {
   background: var(--light-grey-color);
   border-color: var(--grey3-color);
   color: var(--text-color);
+}
+.backToContentLink:hover:after {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 1px;
+  top: 100%;
+  background: black;
 }
 .backToContentLink .backToContentLinkArrow {
   opacity: 0.8;

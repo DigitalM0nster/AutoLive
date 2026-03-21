@@ -639,6 +639,21 @@ model SiteSettings {
     @@map("site_settings")
 }
 
+// Контент подвала: основной телефон, блоки контактов (JSON), документы (JSON), копирайт (одна запись)
+model FooterContent {
+    id            Int      @id @default(autoincrement()) @map("id")
+    phone         String?  @map("phone") @db.VarChar(64) // Основной телефон: иконка + tel:, если заполнен
+    // Массив блоков: заголовок, ключ иконки, пункты (телефон → tel:, текст → обычная строка)
+    contactBlocks Json     @default("[]") @map("contact_blocks")
+    // Документы для ссылок в подвале (PDF и т.д.): название + URL файла
+    documents     Json     @default("[]") @map("documents")
+    copyrightLine String?  @map("copyright_line") @db.VarChar(500) // {{year}} подставляется на сайте
+    createdAt     DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+    updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
+
+    @@map("footer_content")
+}
+
 // Пункты выдачи (для редактора контактов и отображения на сайте)
 model PickupPoint {
     id                  Int      @id @default(autoincrement()) @map("id")

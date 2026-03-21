@@ -137,7 +137,13 @@ export default function AdminContactsContent() {
 		return (
 			<div className="screenContent">
 				<div className="tableContainer">
-					<div className="tabsContainer">
+					<div className="tabsContainer column">
+						<Link href="/admin/content" className={styles.backToContentLink}>
+							<span className={styles.backToContentLinkArrow} aria-hidden>
+								←
+							</span>
+							Редактор контента
+						</Link>
 						<div className="tabTitle">Контакты</div>
 					</div>
 					<div className="tableContent">
@@ -152,7 +158,13 @@ export default function AdminContactsContent() {
 		return (
 			<div className="screenContent">
 				<div className="tableContainer">
-					<div className="tabsContainer">
+					<div className="tabsContainer column">
+						<Link href="/admin/content" className={styles.backToContentLink}>
+							<span className={styles.backToContentLinkArrow} aria-hidden>
+								←
+							</span>
+							Редактор контента
+						</Link>
 						<div className="tabTitle">Контакты</div>
 					</div>
 					<div className="tableContent">
@@ -166,7 +178,13 @@ export default function AdminContactsContent() {
 	return (
 		<div className="screenContent">
 			<div className="tableContainer">
-				<div className="tabsContainer">
+				<div className="tabsContainer column">
+					<Link href="/admin/content" className={styles.backToContentLink}>
+						<span className={styles.backToContentLinkArrow} aria-hidden>
+							←
+						</span>
+						Редактор контента
+					</Link>
 					<div className="tabTitle">Контакты</div>
 				</div>
 				<div className={`tableContent contentComponent ${styles.contentComponent}`}>
@@ -251,6 +269,7 @@ export default function AdminContactsContent() {
 												{(item.phones ?? []).map((phone, phoneIndex) => (
 													<div key={phoneIndex} className="rowBlock phoneRowBlock">
 														<input
+															className="little"
 															type="tel"
 															value={phone}
 															onChange={(e) => {
@@ -297,6 +316,7 @@ export default function AdminContactsContent() {
 												{(item.emails ?? []).map((email, emailIndex) => (
 													<div key={emailIndex} className="rowBlock phoneRowBlock">
 														<input
+															className="little"
 															type="email"
 															value={email}
 															onChange={(e) => {

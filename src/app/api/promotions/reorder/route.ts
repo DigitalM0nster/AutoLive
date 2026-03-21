@@ -1,10 +1,17 @@
 // src\app\api\promotions\reorder\route.ts
 
 import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
+import { getUserFromRequest } from "@/middleware/permissionMiddleware";
 
-// POST /api/promotions/reorder
-export async function POST(req: Request) {
+// POST /api/promotions/reorder — порядок карточек акций (только суперадмин, как PUT/DELETE акций)
+export async function POST(req: NextRequest) {
+	const { user, error, status } = await getUserFromRequest(req);
+	if (!user) return NextResponse.json({ error }, { status });
+	if (user.role !== "superadmin") {
+		return NextResponse.json({ error: "Недостаточно прав" }, { status: 403 });
+	}
+
 	try {
 		const body = await req.json(); // [{ id, order }, ...]
 		await Promise.all(

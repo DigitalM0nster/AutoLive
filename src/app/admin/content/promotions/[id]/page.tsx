@@ -152,7 +152,13 @@ export default function EditPromotionPage({ params }: PageParams) {
 		return (
 			<div className="screenContent">
 				<div className="tableContainer">
-					<div className="tabsContainer">
+					<div className="tabsContainer column">
+						<Link href="/admin/content" className={styles.backToContentLink}>
+							<span className={styles.backToContentLinkArrow} aria-hidden>
+								←
+							</span>
+							Редактор контента
+						</Link>
 						<div className="tabTitle">Редактирование акции</div>
 					</div>
 					<div className="tableContent">
@@ -166,11 +172,19 @@ export default function EditPromotionPage({ params }: PageParams) {
 	return (
 		<div className="screenContent">
 			<div className="tableContainer">
-				<div className="tabsContainer">
-					<Link href="/admin/content/promotions" className="tabButton">
-						Акции
+				<div className="tabsContainer column">
+					<Link href="/admin/content" className={styles.backToContentLink}>
+						<span className={styles.backToContentLinkArrow} aria-hidden>
+							←
+						</span>
+						Редактор контента
 					</Link>
-					<div className="tabTitle">Редактирование акции</div>
+					<div className="rowBlock">
+						<Link href="/admin/content/promotions" className="tabButton">
+							Акции
+						</Link>
+						<div className="tabTitle">Редактирование акции</div>
+					</div>
 				</div>
 				<div className={`tableContent contentComponent ${styles.contentComponent}`}>
 					<div className={`formFields ${styles.formFields}`}>

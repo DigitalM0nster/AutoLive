@@ -240,6 +240,14 @@
 	}
 }
 
+// Подсказка при оформлении из-под аккаунта клиента
+.formHint {
+	font-size: 14px;
+	line-height: 1.45;
+	color: #555;
+	margin: 0;
+}
+
 @media (max-width: 768px) {
 	.cartContainer {
 		padding: 10px;
