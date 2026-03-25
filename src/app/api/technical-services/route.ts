@@ -141,6 +141,7 @@ async function searchTechnicalServicesHandler(
 		);
 
 		let previewBooking: (typeof linkedOrders)[0]["booking"] = null;
+		let forOrderContext: { orderId: number; hasBooking: boolean } | undefined = undefined;
 		const forOid = forOrderIdRaw ? parseInt(forOrderIdRaw, 10) : NaN;
 		if (!Number.isNaN(forOid)) {
 			const fullUser = await prisma.user.findUnique({
@@ -157,6 +158,9 @@ async function searchTechnicalServicesHandler(
 				},
 			});
 			previewBooking = ctxOrder?.booking ?? null;
+			if (ctxOrder) {
+				forOrderContext = { orderId: forOid, hasBooking: !!ctxOrder.booking };
+			}
 		}
 
 		const enriched = list.map((ts) => {
@@ -214,7 +218,7 @@ async function searchTechnicalServicesHandler(
 			};
 		});
 
-		return NextResponse.json({ technicalServices: enriched });
+		return NextResponse.json({ technicalServices: enriched, ...(forOrderContext ? { forOrderContext } : {}) });
 	} catch (e) {
 		console.error("technical-services GET:", e);
 		return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
