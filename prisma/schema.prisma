@@ -629,10 +629,10 @@ model SiteSettings {
     logoUrl        String?  @map("logo_url") @db.VarChar(500)
     faviconUrl     String?  @map("favicon_url") @db.VarChar(500)
     headerPhone    String?  @map("header_phone") @db.VarChar(64)   // Телефон в шапке рядом с корзиной
-    colorGrey      String?  @map("color_grey") @db.VarChar(32)      // Основной серый (шапка и т.д.)
-    colorGreyLight String?  @map("color_grey_light") @db.VarChar(32) // Серый светлее (второстепенный текст)
-    colorGreen     String?  @map("color_green") @db.VarChar(32)    // Зелёный (кнопки, акценты)
-    colorWhite     String?  @map("color_white") @db.VarChar(32)    // Белый фон/текст
+    colorPrimary        String?  @map("color_grey") @db.VarChar(32)       // Основной цвет (шапка, подвал)
+    colorSecondary      String?  @map("color_grey_light") @db.VarChar(32) // Вторичный (приглушённый текст, UI)
+    colorAccent         String?  @map("color_green") @db.VarChar(32)     // Акцентирующий (кнопки, ссылки, корзина)
+    colorContrastLight  String?  @map("color_white") @db.VarChar(32)     // Светлый контраст (текст на тёмном, обводки, подложки)
     createdAt      DateTime @default(now()) @map("created_at") @db.Timestamp(0)
     updatedAt      DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
 
@@ -652,6 +652,19 @@ model FooterContent {
     updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
 
     @@map("footer_content")
+}
+
+// Юридические документы для страниц /privacy и /cookies (отдельно от документов в подвале)
+model SiteLegalContent {
+    id                   Int      @id @default(autoincrement()) @map("id")
+    privacyPolicyTitle   String?  @map("privacy_policy_title") @db.VarChar(255)
+    privacyPolicyFileUrl String?  @map("privacy_policy_file_url") @db.VarChar(1000)
+    cookiesPolicyTitle   String?  @map("cookies_policy_title") @db.VarChar(255)
+    cookiesPolicyFileUrl String?  @map("cookies_policy_file_url") @db.VarChar(1000)
+    createdAt            DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+    updatedAt            DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
+
+    @@map("site_legal_content")
 }
 
 // Пункты выдачи (для редактора контактов и отображения на сайте)

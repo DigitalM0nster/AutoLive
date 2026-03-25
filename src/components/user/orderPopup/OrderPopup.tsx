@@ -4,11 +4,14 @@ import { useState, useRef, useEffect } from "react";
 import styles from "@/components/user/loginPopup/styles.module.scss";
 import { useUiStore } from "@/store/uiStore";
 import { HomepageContentData, FormField, CustomFieldSubType } from "@/app/api/homepage-content/route";
+import PersonalDataConsent from "@/components/user/personalDataConsent/PersonalDataConsent";
 
 export default function OrderPopup() {
 	const { isActiveOrderPopup, deactivateOrderPopup, homepageFormData } = useUiStore();
 	const [formValues, setFormValues] = useState<Record<string, string | File>>({});
 	const [submitting, setSubmitting] = useState(false);
+	const [personalDataConsent, setPersonalDataConsent] = useState(false);
+	const [consentShowError, setConsentShowError] = useState(false);
 	const textareaRefs = useRef<Record<string, HTMLTextAreaElement | null>>({});
 
 	// Загружаем данные формы при открытии попапа, если их нет в store
@@ -58,6 +61,13 @@ export default function OrderPopup() {
 	const handleSubmit = async () => {
 		if (!homepageFormData) return;
 
+		if (!personalDataConsent) {
+			setConsentShowError(true);
+			alert("Отметьте согласие на обработку персональных данных.");
+			return;
+		}
+		setConsentShowError(false);
+
 		// Валидация обязательных полей
 		for (const field of homepageFormData.formFields) {
 			if (field.required) {
@@ -80,7 +90,7 @@ export default function OrderPopup() {
 
 		setSubmitting(true);
 		try {
-			// TODO: Реализовать отправку данных формы на сервер
+			// TODO: отправка на API — передавать personal_data_consent: true в теле запроса
 			// Пока просто показываем сообщение об успехе
 			alert("Заявка отправлена! Мы свяжемся с вами по телефону.");
 			setFormValues({});
@@ -245,6 +255,16 @@ export default function OrderPopup() {
 			<div className={`${styles.orderPopup} ${styles.popup} ${isActiveOrderPopup ? styles.active : ""}`}>
 				<div className={styles.inputsBlock}>
 					{formData.formFields.map((field) => renderFormField(field))}
+					<PersonalDataConsent
+						id="order-popup-pd-consent"
+						wrapperClassName={styles.consentBlock}
+						checked={personalDataConsent}
+						onChange={(v) => {
+							setPersonalDataConsent(v);
+							if (v) setConsentShowError(false);
+						}}
+						showError={consentShowError}
+					/>
 					<div className={`button ${styles.button}`} onClick={handleSubmit} style={{ cursor: submitting ? "wait" : "pointer" }}>
 						{submitting ? "Отправка..." : formData.formSubmitButtonText}
 					</div>

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Home, MapPin, PanelBottom, Percent, Settings } from "lucide-react";
+import { FileText, Home, MapPin, PanelBottom, Percent, Settings } from "lucide-react";
 import styles from "./local_components/styles.module.scss";
 
 const contentSections = [
@@ -25,6 +25,13 @@ const contentSections = [
 		description: "Редактировать раздел «Контакты»",
 		icon: MapPin,
 		iconBg: "green",
+	},
+	{
+		href: "/admin/content/legal-documents",
+		label: "Юридические документы",
+		description: "Политики для страниц /privacy и /cookies (отдельно от подвала)",
+		icon: FileText,
+		iconBg: "blue",
 	},
 	{
 		href: "/admin/content/footer",

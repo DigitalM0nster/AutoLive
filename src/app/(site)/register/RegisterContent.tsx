@@ -116,6 +116,7 @@ export default function RegisterContent() {
 					first_name: userData.first_name,
 					last_name: userData.last_name,
 					middle_name: userData.middle_name,
+					personal_data_consent: true,
 				}),
 			});
 			const data = await response.json();

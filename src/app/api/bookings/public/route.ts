@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withDbRetry } from "@/lib/utils";
 import { getOptionalClientUserIdFromRequest } from "@/lib/getOptionalClientUserIdFromRequest";
+import { hasPersonalDataConsent, PERSONAL_DATA_CONSENT_ERROR } from "@/lib/personalDataConsentServer";
 
 // Тип запроса для публичного создания записи
 type PublicCreateBookingRequest = {
@@ -20,6 +21,10 @@ type PublicCreateBookingRequest = {
 export async function POST(req: NextRequest) {
 	try {
 		const body: PublicCreateBookingRequest = await req.json();
+
+		if (!hasPersonalDataConsent(body)) {
+			return NextResponse.json({ error: PERSONAL_DATA_CONSENT_ERROR }, { status: 400 });
+		}
 
 		// Базовая валидация
 		if (!body.scheduledDate || !body.scheduledTime) {

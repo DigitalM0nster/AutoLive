@@ -2,16 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import {
-	Building2,
-	FileText,
-	Headphones,
-	MapPin,
-	Phone,
-	ShoppingCart,
-	Wrench,
-	type LucideIcon,
-} from "lucide-react";
+import { Building2, FileText, Headphones, MapPin, Phone, ShoppingCart, Wrench, type LucideIcon } from "lucide-react";
 import styles from "./styles.module.scss";
 import {
 	defaultFooterContentDisplay,
@@ -111,18 +102,14 @@ export default function Footer() {
 														.filter((i) => i.value.trim() !== "")
 														.map((item, i) =>
 															item.type === "phone" ? (
-																<a
-																	key={`${block.id}-p-${i}`}
-																	className={styles.blockLineTel}
-																	href={footerPhoneToTelHref(item.value)}
-																>
+																<a key={`${block.id}-p-${i}`} className={styles.blockLineTel} href={footerPhoneToTelHref(item.value)}>
 																	{item.value}
 																</a>
 															) : (
 																<div key={`${block.id}-t-${i}`} className={styles.blockLineText}>
 																	{item.value}
 																</div>
-															)
+															),
 														)}
 												</div>
 											)}
@@ -133,6 +120,7 @@ export default function Footer() {
 						</div>
 					</div>
 				)}
+				<div className={styles.footerCopyright}>{copyrightText}</div>
 			</div>
 
 			{visibleDocuments.length > 0 && (
@@ -140,21 +128,13 @@ export default function Footer() {
 					<div className={styles.documentsTitle}>Документы</div>
 					<div className={styles.documentsLinks}>
 						{visibleDocuments.map((doc) => (
-							<a
-								key={doc.id}
-								href={doc.fileUrl}
-								target="_blank"
-								rel="noopener noreferrer"
-								className={styles.documentLink}
-							>
+							<a key={doc.id} href={doc.fileUrl} target="_blank" rel="noopener noreferrer" className={styles.documentLink}>
 								{doc.title}
 							</a>
 						))}
 					</div>
 				</div>
 			)}
-
-			<div className={styles.footerCopyright}>{copyrightText}</div>
 		</div>
 	);
 }

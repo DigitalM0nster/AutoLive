@@ -5,14 +5,15 @@ import { prisma } from "@/lib/prisma";
 import { withPermission } from "@/middleware/permissionMiddleware";
 import { withDbRetry } from "@/lib/utils";
 
+/** Публичный DTO: семантические имена (колонки БД прежние — @map в Prisma) */
 export interface SiteSettingsData {
 	logoUrl: string | null;
 	faviconUrl: string | null;
 	headerPhone: string | null;
-	colorGrey: string | null;
-	colorGreyLight: string | null;
-	colorGreen: string | null;
-	colorWhite: string | null;
+	colorPrimary: string | null;
+	colorSecondary: string | null;
+	colorAccent: string | null;
+	colorContrastLight: string | null;
 }
 
 // GET /api/site-settings — получить настройки (публичный, для отображения на сайте)
@@ -27,22 +28,22 @@ export async function GET() {
 				logoUrl: null,
 				faviconUrl: null,
 				headerPhone: null,
-				colorGrey: null,
-				colorGreyLight: null,
-				colorGreen: null,
-				colorWhite: null,
-			} as SiteSettingsData);
+				colorPrimary: null,
+				colorSecondary: null,
+				colorAccent: null,
+				colorContrastLight: null,
+			} satisfies SiteSettingsData);
 		}
 
 		return NextResponse.json({
 			logoUrl: row.logoUrl ?? null,
 			faviconUrl: row.faviconUrl ?? null,
 			headerPhone: row.headerPhone ?? null,
-			colorGrey: row.colorGrey ?? null,
-			colorGreyLight: row.colorGreyLight ?? null,
-			colorGreen: row.colorGreen ?? null,
-			colorWhite: row.colorWhite ?? null,
-		} as SiteSettingsData);
+			colorPrimary: row.colorPrimary ?? null,
+			colorSecondary: row.colorSecondary ?? null,
+			colorAccent: row.colorAccent ?? null,
+			colorContrastLight: row.colorContrastLight ?? null,
+		} satisfies SiteSettingsData);
 	} catch (error) {
 		console.error("Ошибка при получении настроек сайта:", error);
 		return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
@@ -53,26 +54,47 @@ export async function GET() {
 export const POST = withPermission(
 	async (req: NextRequest) => {
 		try {
-			const body = (await req.json()) as SiteSettingsData;
+			const body = (await req.json()) as Record<string, unknown>;
 
 			const logoUrl = body.logoUrl != null && body.logoUrl !== "" ? String(body.logoUrl).trim() : null;
 			const faviconUrl = body.faviconUrl != null && body.faviconUrl !== "" ? String(body.faviconUrl).trim() : null;
 			const headerPhone = body.headerPhone != null && body.headerPhone !== "" ? String(body.headerPhone).trim() : null;
-			const colorGrey = body.colorGrey != null && body.colorGrey !== "" ? String(body.colorGrey).trim() : null;
-			const colorGreyLight = body.colorGreyLight != null && body.colorGreyLight !== "" ? String(body.colorGreyLight).trim() : null;
-			const colorGreen = body.colorGreen != null && body.colorGreen !== "" ? String(body.colorGreen).trim() : null;
-			const colorWhite = body.colorWhite != null && body.colorWhite !== "" ? String(body.colorWhite).trim() : null;
+
+			const pickColor = (next: string, legacy: string) => {
+				const v = body[next] ?? body[legacy];
+				return v != null && v !== "" ? String(v).trim() : null;
+			};
+			const colorPrimary = pickColor("colorPrimary", "colorGrey");
+			const colorSecondary = pickColor("colorSecondary", "colorGreyLight");
+			const colorAccent = pickColor("colorAccent", "colorGreen");
+			const colorContrastLight = pickColor("colorContrastLight", "colorWhite");
 
 			const result = await withDbRetry(async () => {
 				const existing = await prisma.siteSettings.findFirst();
 				if (existing) {
 					return await prisma.siteSettings.update({
 						where: { id: existing.id },
-						data: { logoUrl, faviconUrl, headerPhone, colorGrey, colorGreyLight, colorGreen, colorWhite },
+						data: {
+							logoUrl,
+							faviconUrl,
+							headerPhone,
+							colorPrimary,
+							colorSecondary,
+							colorAccent,
+							colorContrastLight,
+						},
 					});
 				}
 				return await prisma.siteSettings.create({
-					data: { logoUrl, faviconUrl, headerPhone, colorGrey, colorGreyLight, colorGreen, colorWhite },
+					data: {
+						logoUrl,
+						faviconUrl,
+						headerPhone,
+						colorPrimary,
+						colorSecondary,
+						colorAccent,
+						colorContrastLight,
+					},
 				});
 			});
 
@@ -80,11 +102,11 @@ export const POST = withPermission(
 				logoUrl: result.logoUrl ?? null,
 				faviconUrl: result.faviconUrl ?? null,
 				headerPhone: result.headerPhone ?? null,
-				colorGrey: result.colorGrey ?? null,
-				colorGreyLight: result.colorGreyLight ?? null,
-				colorGreen: result.colorGreen ?? null,
-				colorWhite: result.colorWhite ?? null,
-			});
+				colorPrimary: result.colorPrimary ?? null,
+				colorSecondary: result.colorSecondary ?? null,
+				colorAccent: result.colorAccent ?? null,
+				colorContrastLight: result.colorContrastLight ?? null,
+			} satisfies SiteSettingsData);
 		} catch (error) {
 			console.error("Ошибка при сохранении настроек сайта:", error);
 			return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });

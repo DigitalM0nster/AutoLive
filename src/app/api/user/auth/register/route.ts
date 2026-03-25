@@ -6,10 +6,15 @@ import { cookies } from "next/headers";
 
 export async function POST(req: NextRequest) {
 	try {
-		const { phone, code, first_name, last_name, middle_name } = await req.json();
+		const body = await req.json();
+		const { phone, code, first_name, last_name, middle_name } = body;
 
 		if (!phone || !code) {
 			return NextResponse.json({ error: "Введите телефон и код" }, { status: 400 });
+		}
+
+		if (body.personal_data_consent !== true) {
+			return NextResponse.json({ error: "Необходимо согласие на обработку персональных данных" }, { status: 400 });
 		}
 
 		// Находим актуальный (неиспользованный) код

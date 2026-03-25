@@ -9,6 +9,7 @@ import "react-calendar/dist/Calendar.css";
 import styles from "./styles.module.scss";
 import PhoneInput from "@/components/ui/phoneInput/PhoneInput";
 import { showSuccessToast, showErrorToast } from "@/components/ui/toast/ToastProvider";
+import PersonalDataConsent from "@/components/user/personalDataConsent/PersonalDataConsent";
 
 // Тип для отдела для записей
 type BookingDepartment = {
@@ -37,6 +38,8 @@ export default function ServiceBookingContent() {
 	const [loading, setLoading] = useState(false);
 	const [departments, setDepartments] = useState<BookingDepartment[]>([]);
 	const [loadingDepartments, setLoadingDepartments] = useState(true);
+	const [personalDataConsent, setPersonalDataConsent] = useState(false);
+	const [consentShowError, setConsentShowError] = useState(false);
 
 	const timeSlots: string[] = Array.from({ length: 18 }, (_, i) => {
 		const hours = Math.floor(i / 2) + 10;
@@ -124,6 +127,13 @@ export default function ServiceBookingContent() {
 			return;
 		}
 
+		if (!personalDataConsent) {
+			setConsentShowError(true);
+			showErrorToast("Нужно согласие на обработку персональных данных");
+			return;
+		}
+		setConsentShowError(false);
+
 		// Формируем notes: добавляем тип услуги и комментарий
 		let notes = "";
 		if (selectedService) {
@@ -141,6 +151,7 @@ export default function ServiceBookingContent() {
 			contactPhone: phoneRaw, // Сырое значение телефона (цифры)
 			clientName: name.trim(),
 			notes: notes || undefined, // Примечания (опционально)
+			personal_data_consent: true as const,
 		};
 
 		setLoading(true);
@@ -256,6 +267,17 @@ export default function ServiceBookingContent() {
 					onChange={(e) => setComment(e.target.value)}
 					placeholder="Дополнительная информация"
 					disabled={loading}
+				/>
+
+				<PersonalDataConsent
+					id="booking-pd-consent"
+					wrapperClassName={styles.consentBlock}
+					checked={personalDataConsent}
+					onChange={(v) => {
+						setPersonalDataConsent(v);
+						if (v) setConsentShowError(false);
+					}}
+					showError={consentShowError}
 				/>
 
 				<button type="submit" className={`button ${styles.button}`} disabled={loading}>

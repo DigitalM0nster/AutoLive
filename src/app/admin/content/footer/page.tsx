@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import styles from "../local_components/styles.module.scss";
 import FixedActionButtons from "@/components/ui/fixedActionButtons/FixedActionButtons";
@@ -16,6 +16,9 @@ import {
 	createEmptyFooterDocument,
 	parseFooterContactBlocks,
 } from "@/lib/footerDisplay";
+
+/** Раздел «Юридические документы» в меню контента — единое место настройки файлов для подвала и страниц политик */
+const LEGAL_DOCUMENTS_ADMIN_HREF = "/admin/content/legal-documents";
 
 /** Документы в форме: сохраняем пустые title/fileUrl до ввода и сохранения */
 function normalizeDocumentsForForm(raw: unknown): FooterDocument[] {
@@ -44,24 +47,6 @@ function normalizeState(raw: FooterContentData): FooterContentData {
 	};
 }
 
-async function uploadFooterDocument(file: File): Promise<string> {
-	const formData = new FormData();
-	formData.append("document", file);
-	const res = await fetch("/api/upload", {
-		method: "POST",
-		body: formData,
-		credentials: "include",
-	});
-	const data = await res.json().catch(() => ({}));
-	if (!res.ok) {
-		throw new Error(typeof data.error === "string" ? data.error : "Ошибка загрузки файла");
-	}
-	if (typeof data.url !== "string" || !data.url) {
-		throw new Error("Сервер не вернул адрес файла");
-	}
-	return data.url;
-}
-
 export default function AdminFooterContentPage() {
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
@@ -69,8 +54,6 @@ export default function AdminFooterContentPage() {
 	const [initialData, setInitialData] = useState<FooterContentData | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [hasChanges, setHasChanges] = useState(false);
-	const [uploadingDocId, setUploadingDocId] = useState<string | null>(null);
-	const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
 	const loadData = useCallback(async () => {
 		try {
@@ -147,29 +130,6 @@ export default function AdminFooterContentPage() {
 		items[itemIndex] = { ...items[itemIndex], ...patch };
 		next[blockIndex] = { ...next[blockIndex], items };
 		setData({ ...data, contactBlocks: next });
-	};
-
-	const updateDocument = (index: number, patch: Partial<FooterDocument>) => {
-		if (!data) return;
-		const next = [...data.documents];
-		next[index] = { ...next[index], ...patch };
-		setData({ ...data, documents: next });
-	};
-
-	const onPickDocumentFile = async (docIndex: number, file: File | null) => {
-		if (!file || !data) return;
-		const doc = data.documents[docIndex];
-		if (!doc) return;
-		try {
-			setUploadingDocId(doc.id);
-			setError(null);
-			const url = await uploadFooterDocument(file);
-			updateDocument(docIndex, { fileUrl: url });
-		} catch (e) {
-			setError(e instanceof Error ? e.message : "Ошибка загрузки");
-		} finally {
-			setUploadingDocId(null);
-		}
 	};
 
 	if (loading) {
@@ -341,76 +301,15 @@ export default function AdminFooterContentPage() {
 						<div className="formSection borderBlock">
 							<h3 className="formSectionTitle">Документы в подвале</h3>
 							<p className={styles.addressesSectionHint}>
-								Загрузите PDF или DOC/DOCX (до 15 МБ). На сайте отобразятся ссылки; при открытии файл загружается/открывается в новой вкладке.
+								Здесь документы <strong>не редактируются</strong>. Список файлов и ссылок для блока «Документы» внизу сайта, а также политики для страниц{" "}
+								<code>/privacy</code> и <code>/cookies</code>, настраиваются в отдельном разделе меню контента —{" "}
+								<strong>«Юридические документы»</strong>.
 							</p>
-
-							{data.documents.map((doc, di) => (
-								<div key={doc.id} className={styles.contactAddressCard}>
-									<div className={styles.addressesListName}>Документ {di + 1}</div>
-									<div className="formRow">
-										<div className={`formField ${styles.formField} fullWidth`}>
-											<label>Название для ссылки</label>
-											<input
-												type="text"
-												value={doc.title}
-												onChange={(e) => updateDocument(di, { title: e.target.value })}
-												placeholder="Согласие на обработку персональных данных"
-											/>
-										</div>
-									</div>
-									<div className="formRow">
-										<div className={`formField ${styles.formField} fullWidth`}>
-											<label>Файл</label>
-											<div className="rowBlock phoneRowBlock">
-												<input
-													type="file"
-													hidden
-													ref={(el) => {
-														fileInputRefs.current[doc.id] = el;
-													}}
-													accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-													onChange={(e) => {
-														const f = e.target.files?.[0] ?? null;
-														e.target.value = "";
-														void onPickDocumentFile(di, f);
-													}}
-												/>
-												<button
-													type="button"
-													className={`button ${styles.addButton} ${styles.button}`}
-													disabled={uploadingDocId === doc.id}
-													onClick={() => fileInputRefs.current[doc.id]?.click()}
-												>
-													{uploadingDocId === doc.id ? "Загрузка…" : doc.fileUrl ? "Заменить файл" : "Загрузить файл"}
-												</button>
-												{doc.fileUrl ? (
-													<a
-														href={doc.fileUrl}
-														target="_blank"
-														rel="noopener noreferrer"
-														className={styles.addressesListEdit}
-													>
-														Открыть текущий файл
-													</a>
-												) : (
-													<span className={styles.labelHint}>Файл не выбран</span>
-												)}
-											</div>
-										</div>
-									</div>
-									<button
-										type="button"
-										className={`removeButton ${styles.removeAdressButton} ${styles.button}`}
-										onClick={() => setData({ ...data, documents: data.documents.filter((_, j) => j !== di) })}
-									>
-										Удалить документ
-									</button>
-								</div>
-							))}
-
-							<button type="button" className="button" onClick={() => setData({ ...data, documents: [...data.documents, createEmptyFooterDocument()] })}>
-								+ Добавить документ
-							</button>
+							<p className={styles.addressesSectionHint}>
+								<Link href={LEGAL_DOCUMENTS_ADMIN_HREF} className={styles.addressesListEdit}>
+									Перейти к разделу «Юридические документы»
+								</Link>
+							</p>
 						</div>
 
 						<div className="formSection borderBlock">

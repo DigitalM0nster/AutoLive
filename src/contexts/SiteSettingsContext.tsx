@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import type { SiteSettingsData } from "@/app/api/site-settings/route";
+import { getSiteSettings } from "@/lib/siteSettingsLoad";
 
 const SiteSettingsContext = createContext<SiteSettingsData | null>(null);
 
@@ -14,17 +15,17 @@ function applySettings(settings: SiteSettingsData | null) {
 	const root = typeof document !== "undefined" ? document.documentElement : null;
 	if (!root) return;
 
-	if (settings?.colorGrey) root.style.setProperty("--site-color-grey", settings.colorGrey);
-	else root.style.removeProperty("--site-color-grey");
+	if (settings?.colorPrimary) root.style.setProperty("--site-color-primary", settings.colorPrimary);
+	else root.style.removeProperty("--site-color-primary");
 
-	if (settings?.colorGreyLight) root.style.setProperty("--site-color-grey-light", settings.colorGreyLight);
-	else root.style.removeProperty("--site-color-grey-light");
+	if (settings?.colorSecondary) root.style.setProperty("--site-color-secondary", settings.colorSecondary);
+	else root.style.removeProperty("--site-color-secondary");
 
-	if (settings?.colorGreen) root.style.setProperty("--site-color-green", settings.colorGreen);
-	else root.style.removeProperty("--site-color-green");
+	if (settings?.colorAccent) root.style.setProperty("--site-color-accent", settings.colorAccent);
+	else root.style.removeProperty("--site-color-accent");
 
-	if (settings?.colorWhite) root.style.setProperty("--site-color-white", settings.colorWhite);
-	else root.style.removeProperty("--site-color-white");
+	if (settings?.colorContrastLight) root.style.setProperty("--site-color-contrast-light", settings.colorContrastLight);
+	else root.style.removeProperty("--site-color-contrast-light");
 
 	// Фавиконка: при наличии URL — создаём/обновляем link, иначе ставим дефолт
 	let link = document.querySelector<HTMLLinkElement>('link[rel="icon"][data-site-settings]');
@@ -43,8 +44,7 @@ export function SiteSettingsProvider({ children }: { children: React.ReactNode }
 
 	useEffect(() => {
 		let cancelled = false;
-		fetch("/api/site-settings")
-			.then((res) => (res.ok ? res.json() : null))
+		getSiteSettings()
 			.then((data) => {
 				if (!cancelled && data) {
 					setSettings(data);

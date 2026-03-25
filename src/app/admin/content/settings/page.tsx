@@ -7,12 +7,12 @@ import FixedActionButtons from "@/components/ui/fixedActionButtons/FixedActionBu
 import ImageUploader from "@/app/admin/content/promotions/imageUploader";
 import type { SiteSettingsData } from "@/app/api/site-settings/route";
 
-// Дефолтные цвета сайта (как в шапке и index.css) — подсказка и fallback при пустом поле
+// Дефолтные значения палитры (как в шапке / SCSS) — подсказка и fallback при пустом поле
 const DEFAULT_COLORS = {
-	colorGrey: "#3d3d3d",
-	colorGreyLight: "#a9a9a9",
-	colorGreen: "#b0cb1f",
-	colorWhite: "#ffffff",
+	colorPrimary: "#3d3d3d",
+	colorSecondary: "#a9a9a9",
+	colorAccent: "#b0cb1f",
+	colorContrastLight: "#ffffff",
 } as const;
 
 function hexOrNull(value: string | null | undefined): string {
@@ -42,10 +42,10 @@ export default function AdminSiteSettingsPage() {
 			data.logoUrl !== initialData.logoUrl ||
 			data.faviconUrl !== initialData.faviconUrl ||
 			data.headerPhone !== initialData.headerPhone ||
-			data.colorGrey !== initialData.colorGrey ||
-			data.colorGreyLight !== initialData.colorGreyLight ||
-			data.colorGreen !== initialData.colorGreen ||
-			data.colorWhite !== initialData.colorWhite;
+			data.colorPrimary !== initialData.colorPrimary ||
+			data.colorSecondary !== initialData.colorSecondary ||
+			data.colorAccent !== initialData.colorAccent ||
+			data.colorContrastLight !== initialData.colorContrastLight;
 		setHasChanges(changed);
 	}, [data, initialData]);
 
@@ -186,82 +186,86 @@ export default function AdminSiteSettingsPage() {
 							</div>
 						</div>
 
-						{/* Цвета */}
+						{/* Палитра: имена полей совпадают с API и с --site-color-* на сайте */}
 						<div className="formSection borderBlock">
-							<h3 className="formSectionTitle">Основные цвета</h3>
+							<h3 className="formSectionTitle">Палитра сайта</h3>
 							<p className={styles.addressesSectionHint}>
-								Сейчас на сайте используются: серый (шапка), серый светлее (второстепенный текст), зелёный (кнопки, акценты), белый. Оставьте поле пустым, чтобы
-								использовать текущий цвет.
+								На страницу выставляются переменные <code>--site-color-primary</code>, <code>--site-color-secondary</code>, <code>--site-color-accent</code>,{" "}
+								<code>--site-color-contrast-light</code>. Пустое поле — остаётся запасной цвет из вёрстки.
+							</p>
+							<p className={styles.addressesSectionHint}>
+								<strong>Основной цвет</strong> — фон шапки и подвала. <strong>Вторичный</strong> — приглушённый текст и элементы. <strong>Акцентирующий</strong> — кнопки,
+								важные ссылки, иконка корзины, заливки акций. <strong>Светлый контраст</strong> — текст на тёмном фоне, обводки у кнопок, светлые подложки (прелоадер).
 							</p>
 							<div className="formRow">
 								<div className={`formField colorRow ${styles.formField} ${styles.colorRow}`}>
-									<label>Серый (шапка)</label>
+									<label>Основной цвет</label>
 									<input
 										type="color"
-										value={colorValue("colorGrey") || DEFAULT_COLORS.colorGrey}
-										onChange={(e) => setColor("colorGrey", e.target.value)}
-										aria-label="Серый"
+										value={colorValue("colorPrimary") || DEFAULT_COLORS.colorPrimary}
+										onChange={(e) => setColor("colorPrimary", e.target.value)}
+										aria-label="Основной цвет"
 									/>
 									<input
 										type="text"
 										className={styles.colorHex}
-										placeholder={DEFAULT_COLORS.colorGrey}
-										value={colorValue("colorGrey")}
-										onChange={(e) => setColor("colorGrey", e.target.value)}
+										placeholder={DEFAULT_COLORS.colorPrimary}
+										value={colorValue("colorPrimary")}
+										onChange={(e) => setColor("colorPrimary", e.target.value)}
 									/>
 								</div>
 							</div>
 							<div className="formRow">
 								<div className={`formField colorRow ${styles.formField} ${styles.colorRow}`}>
-									<label>Серый светлее</label>
+									<label>Вторичный цвет</label>
 									<input
 										type="color"
-										value={colorValue("colorGreyLight") || DEFAULT_COLORS.colorGreyLight}
-										onChange={(e) => setColor("colorGreyLight", e.target.value)}
-										aria-label="Серый светлее"
+										value={colorValue("colorSecondary") || DEFAULT_COLORS.colorSecondary}
+										onChange={(e) => setColor("colorSecondary", e.target.value)}
+										aria-label="Вторичный цвет"
 									/>
 									<input
 										type="text"
 										className={styles.colorHex}
-										placeholder={DEFAULT_COLORS.colorGreyLight}
-										value={colorValue("colorGreyLight")}
-										onChange={(e) => setColor("colorGreyLight", e.target.value)}
+										placeholder={DEFAULT_COLORS.colorSecondary}
+										value={colorValue("colorSecondary")}
+										onChange={(e) => setColor("colorSecondary", e.target.value)}
 									/>
 								</div>
 							</div>
 							<div className="formRow">
 								<div className={`formField colorRow ${styles.formField} ${styles.colorRow}`}>
-									<label>Зелёный</label>
+									<label>Акцентирующий цвет</label>
 									<input
 										type="color"
-										value={colorValue("colorGreen") || DEFAULT_COLORS.colorGreen}
-										onChange={(e) => setColor("colorGreen", e.target.value)}
-										aria-label="Зелёный"
+										value={colorValue("colorAccent") || DEFAULT_COLORS.colorAccent}
+										onChange={(e) => setColor("colorAccent", e.target.value)}
+										aria-label="Акцентирующий цвет"
 									/>
 									<input
 										type="text"
 										className={styles.colorHex}
-										placeholder={DEFAULT_COLORS.colorGreen}
-										value={colorValue("colorGreen")}
-										onChange={(e) => setColor("colorGreen", e.target.value)}
+										placeholder={DEFAULT_COLORS.colorAccent}
+										value={colorValue("colorAccent")}
+										onChange={(e) => setColor("colorAccent", e.target.value)}
 									/>
 								</div>
 							</div>
 							<div className="formRow">
 								<div className={`formField colorRow ${styles.formField} ${styles.colorRow}`}>
-									<label>Белый</label>
+									<label>Светлый контраст</label>
 									<input
 										type="color"
-										value={colorValue("colorWhite") || DEFAULT_COLORS.colorWhite}
-										onChange={(e) => setColor("colorWhite", e.target.value)}
-										aria-label="Белый"
+										value={colorValue("colorContrastLight") || DEFAULT_COLORS.colorContrastLight}
+										onChange={(e) => setColor("colorContrastLight", e.target.value)}
+										aria-label="Светлый контраст"
 									/>
 									<input
 										type="text"
 										className={styles.colorHex}
-										placeholder={DEFAULT_COLORS.colorWhite}
-										value={colorValue("colorWhite")}
-										onChange={(e) => setColor("colorWhite", e.target.value)}
+										placeholder={DEFAULT_COLORS.colorContrastLight}
+										value={colorValue("colorContrastLight")}
+										onChange={(e) => setColor("colorContrastLight", e.target.value)}
 									/>
 								</div>
 							</div>

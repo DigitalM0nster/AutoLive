@@ -1,6 +1,7 @@
 "use client";
 
-import { ChangeEvent } from "react";
+import { ChangeEvent, useState } from "react";
+import PersonalDataConsent from "@/components/user/personalDataConsent/PersonalDataConsent";
 import styles from "./styles.module.scss";
 
 interface UserDataFormProps {
@@ -16,12 +17,20 @@ interface UserDataFormProps {
 }
 
 export default function UserDataForm({ userData, setUserData, onSubmit, onBack, error }: UserDataFormProps) {
+	const [personalDataConsent, setPersonalDataConsent] = useState(false);
+	const [consentShowError, setConsentShowError] = useState(false);
+
 	const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
 		const { name, value } = e.target;
 		setUserData({ ...userData, [name]: value });
 	};
 
 	const handleSubmit = () => {
+		if (!personalDataConsent) {
+			setConsentShowError(true);
+			return;
+		}
+		setConsentShowError(false);
 		onSubmit();
 	};
 
@@ -43,6 +52,16 @@ export default function UserDataForm({ userData, setUserData, onSubmit, onBack, 
 				<label htmlFor="middle_name">Отчество</label>
 				<input type="text" id="middle_name" name="middle_name" value={userData.middle_name} onChange={handleChange} placeholder="Введите отчество" />
 			</div>
+
+			<PersonalDataConsent
+				id="register-pd-consent"
+				checked={personalDataConsent}
+				onChange={(v) => {
+					setPersonalDataConsent(v);
+					if (v) setConsentShowError(false);
+				}}
+				showError={consentShowError}
+			/>
 
 			<div className={`button ${styles.button}`} onClick={handleSubmit}>
 				Завершить регистрацию

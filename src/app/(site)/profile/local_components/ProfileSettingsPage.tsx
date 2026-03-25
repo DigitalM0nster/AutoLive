@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAuthStore } from "@/store/authStore";
-import { defaultFooterContentDisplay, type FooterContentData } from "@/lib/footerDisplay";
+import type { SiteLegalContentData } from "@/lib/siteLegalContent.shared";
+import { defaultSiteLegalContent } from "@/lib/siteLegalContent.shared";
 import styles from "./profileArea.module.scss";
 
 type UserRow = {
@@ -29,7 +30,7 @@ export default function ProfileSettingsPage() {
 	const [confirmPassword, setConfirmPassword] = useState("");
 	const [savingPassword, setSavingPassword] = useState(false);
 
-	const [footer, setFooter] = useState<FooterContentData | null>(null);
+	const [legal, setLegal] = useState<SiteLegalContentData>(defaultSiteLegalContent);
 	const [banner, setBanner] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
 	const loadUser = useCallback(async () => {
@@ -59,10 +60,10 @@ export default function ProfileSettingsPage() {
 
 	useEffect(() => {
 		let cancelled = false;
-		fetch("/api/footer-content")
+		fetch("/api/legal-content")
 			.then((r) => (r.ok ? r.json() : null))
-			.then((data: FooterContentData | null) => {
-				if (!cancelled && data) setFooter(data);
+			.then((data: SiteLegalContentData | null) => {
+				if (!cancelled && data) setLegal({ ...defaultSiteLegalContent, ...data });
 			})
 			.catch(() => {});
 		return () => {
@@ -147,9 +148,6 @@ export default function ProfileSettingsPage() {
 	if (!profile) {
 		return <p className={styles.redirectNote}>Загрузка…</p>;
 	}
-
-	const effectiveFooter = footer ?? defaultFooterContentDisplay;
-	const visibleDocs = (effectiveFooter.documents ?? []).filter((d) => d.title.trim() !== "" && d.fileUrl.trim() !== "");
 
 	return (
 		<>
@@ -238,17 +236,22 @@ export default function ProfileSettingsPage() {
 			</section>
 
 			<section className={styles.section}>
-				<h2 className={styles.subTitle}>Документы</h2>
-				<p className={styles.muted}>Те же файлы, что в подвале сайта (политика, оферта и т.д.).</p>
-				{visibleDocs.length === 0 ?
-					<div className={styles.emptyState}>Документы не настроены.</div>
+				<h2 className={styles.subTitle}>Юридические документы</h2>
+				<p className={styles.muted}>Политики, размещённые администратором для страниц сайта (не путать со ссылками в подвале).</p>
+				{!legal.privacyPolicyFileUrl && !legal.cookiesPolicyFileUrl ?
+					<div className={styles.emptyState}>Файлы политик ещё не загружены.</div>
 				:	<div className={styles.card}>
 						<div className={styles.documentsList}>
-							{visibleDocs.map((d) => (
-								<a key={d.id} className={styles.docLink} href={d.fileUrl} target="_blank" rel="noopener noreferrer">
-									{d.title}
+							{legal.privacyPolicyFileUrl && (
+								<a className={styles.docLink} href={legal.privacyPolicyFileUrl} target="_blank" rel="noopener noreferrer">
+									{legal.privacyPolicyTitle?.trim() || "Политика персональных данных"}
 								</a>
-							))}
+							)}
+							{legal.cookiesPolicyFileUrl && (
+								<a className={styles.docLink} href={legal.cookiesPolicyFileUrl} target="_blank" rel="noopener noreferrer">
+									{legal.cookiesPolicyTitle?.trim() || "Политика использования cookie"}
+								</a>
+							)}
 						</div>
 					</div>
 				}

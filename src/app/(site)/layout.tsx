@@ -11,6 +11,8 @@ import GlobalLoadingProvider from "@/components/ui/loading/GlobalLoadingProvider
 import GlobalLoadingOverlay from "@/components/ui/loading/GlobalLoadingOverlay";
 import ToastProvider from "@/components/ui/toast/ToastProvider";
 import { SiteSettingsProvider } from "@/contexts/SiteSettingsContext";
+import SitePreloader from "@/components/site/preloader/SitePreloader";
+import CookieConsent from "@/components/site/cookieConsent/CookieConsent";
 
 export const metadata: Metadata = {
 	title: `Главная | ${CONFIG.STORE_NAME} ${CONFIG.CITY}`,
@@ -24,10 +26,13 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
 			<body>
 				<SiteSettingsProvider>
 					<GlobalLoadingProvider>
-						<ToastProvider />
-						<Header />
-						{children}
-						<Footer />
+						<SitePreloader>
+							<ToastProvider />
+							<Header />
+							{children}
+							<Footer />
+						</SitePreloader>
+						<CookieConsent />
 						<GlobalLoadingOverlay />
 					</GlobalLoadingProvider>
 				</SiteSettingsProvider>

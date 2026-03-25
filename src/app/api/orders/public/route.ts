@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getOptionalClientUserIdFromRequest } from "@/lib/getOptionalClientUserIdFromRequest";
+import { hasPersonalDataConsent, PERSONAL_DATA_CONSENT_ERROR } from "@/lib/personalDataConsentServer";
 
 type PublicOrderItem = {
 	product_sku: string;
@@ -16,11 +17,16 @@ type PublicCreateOrderRequest = {
 	name: string; // Имя клиента (произвольная строка)
 	phone: string; // Телефон в формате 79XXXXXXXXX (сырое значение)
 	orderItems: PublicOrderItem[];
+	personal_data_consent?: boolean;
 };
 
 export async function POST(req: NextRequest) {
 	try {
 		const body: PublicCreateOrderRequest = await req.json();
+
+		if (!hasPersonalDataConsent(body)) {
+			return NextResponse.json({ error: PERSONAL_DATA_CONSENT_ERROR }, { status: 400 });
+		}
 
 		// Базовая валидация
 		const rawName = (body.name || "").trim();

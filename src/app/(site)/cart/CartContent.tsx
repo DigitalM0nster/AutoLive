@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import PhoneInput from "@/components/ui/phoneInput/PhoneInput";
 import { useAuthStore } from "@/store/authStore";
+import PersonalDataConsent from "@/components/user/personalDataConsent/PersonalDataConsent";
 
 // Компонент для отображения контента страницы корзины
 function digitsFromPhone(phone: string): string {
@@ -22,6 +23,8 @@ export default function CartContent() {
 	const [submitting, setSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [success, setSuccess] = useState<string | null>(null);
+	const [personalDataConsent, setPersonalDataConsent] = useState(false);
+	const [consentShowError, setConsentShowError] = useState(false);
 
 	const totalPrice = getTotalPrice();
 
@@ -123,6 +126,17 @@ export default function CartContent() {
 						<PhoneInput value={clientPhoneRaw} onValueChange={(raw) => setClientPhoneRaw(raw)} inputClassName={styles.formInput} />
 					</div>
 
+					<PersonalDataConsent
+						id="cart-pd-consent"
+						wrapperClassName={styles.consentBlock}
+						checked={personalDataConsent}
+						onChange={(v) => {
+							setPersonalDataConsent(v);
+							if (v) setConsentShowError(false);
+						}}
+						showError={consentShowError}
+					/>
+
 					{error && <div className={styles.formError}>{error}</div>}
 					{success && <div className={styles.formSuccess}>{success}</div>}
 				</div>
@@ -133,15 +147,22 @@ export default function CartContent() {
 					</button>
 					<button
 						className={`button ${styles.buttonOrder}`}
-						disabled={submitting || !clientName.trim() || clientPhoneRaw.length < 10}
+						disabled={submitting || !clientName.trim() || clientPhoneRaw.length < 10 || !personalDataConsent}
 						onClick={async () => {
 							setError(null);
 							setSuccess(null);
+							if (!personalDataConsent) {
+								setConsentShowError(true);
+								setError("Нужно согласие на обработку персональных данных.");
+								return;
+							}
+							setConsentShowError(false);
 							setSubmitting(true);
 							try {
 								const payload = {
 									name: clientName.trim(),
 									phone: clientPhoneRaw,
+									personal_data_consent: true as const,
 									orderItems: items.map((it) => ({
 										product_sku: it.sku,
 										product_title: it.title,

@@ -1,0 +1,40 @@
+// Просмотр PDF политик на публичных страницах
+
+.toolbar {
+	margin-bottom: 12px;
+}
+
+.openLink {
+	font-size: 15px;
+	font-weight: 600;
+	color: var(--site-color-accent, #6a7a12);
+	text-decoration: underline;
+	text-underline-offset: 2px;
+
+	&:hover {
+		color: var(--site-color-primary, #3d3d3d);
+	}
+}
+
+.frameWrap {
+	width: 100%;
+	min-height: 72vh;
+	border: 1px solid #e0e0e0;
+	border-radius: 10px;
+	overflow: hidden;
+	background: #fafafa;
+}
+
+.frame {
+	width: 100%;
+	min-height: 72vh;
+	border: none;
+	flex: 1;
+}
+
+.emptyBox {
+	padding: 24px;
+	background: #fafafa;
+	border-radius: 10px;
+	border: 1px dashed #ddd;
+}

@@ -29,7 +29,7 @@
 	font-size: 14px;
 	font-weight: 600;
 	text-decoration: none;
-	color: var(--site-color-grey, #3d3d3d);
+	color: var(--site-color-primary, #3d3d3d);
 	border: 1px solid transparent;
 	transition:
 		background 0.2s,
@@ -44,20 +44,20 @@
 
 .navLinkActive {
 	background: rgba(176, 203, 31, 0.15);
-	border-color: var(--site-color-green, #b0cb1f);
-	color: var(--site-color-grey, #3d3d3d);
+	border-color: var(--site-color-accent, #b0cb1f);
+	color: var(--site-color-primary, #3d3d3d);
 }
 
 .pageTitle {
 	font-size: 26px;
 	font-weight: 700;
-	color: var(--site-color-grey, #3d3d3d);
+	color: var(--site-color-primary, #3d3d3d);
 }
 
 .subTitle {
 	font-size: 18px;
 	font-weight: 700;
-	color: var(--site-color-grey, #3d3d3d);
+	color: var(--site-color-primary, #3d3d3d);
 }
 
 .muted {
@@ -104,7 +104,7 @@
 .welcomeTitle {
 	font-size: 18px;
 	font-weight: 600;
-	color: var(--site-color-grey, #3d3d3d);
+	color: var(--site-color-primary, #3d3d3d);
 }
 
 .phoneLine {
@@ -114,7 +114,7 @@
 
 .welcomeHint {
 	font-size: 14px;
-	color: var(--site-color-grey-light, #a9a9a9);
+	color: var(--site-color-secondary, #a9a9a9);
 }
 
 .statusBadge {
@@ -124,7 +124,7 @@
 	padding: 4px 10px;
 	border-radius: 20px;
 	background: rgba(176, 203, 31, 0.2);
-	color: var(--site-color-green, #b0cb1f);
+	color: var(--site-color-accent, #b0cb1f);
 	font-weight: 600;
 }
 
@@ -136,8 +136,8 @@
 .quickLink {
 	padding: 12px 18px;
 	border-radius: 10px;
-	border: 1px solid var(--site-color-green, #b0cb1f);
-	color: var(--site-color-grey, #3d3d3d);
+	border: 1px solid var(--site-color-accent, #b0cb1f);
+	color: var(--site-color-primary, #3d3d3d);
 	font-size: 14px;
 	font-weight: 600;
 	text-decoration: none;
@@ -146,7 +146,7 @@
 		color 0.2s;
 
 	&:hover {
-		background: var(--site-color-green, #b0cb1f);
+		background: var(--site-color-accent, #b0cb1f);
 		color: #fff;
 	}
 }
@@ -185,7 +185,7 @@
 .orderId {
 	font-weight: 700;
 	font-size: 16px;
-	color: var(--site-color-grey, #3d3d3d);
+	color: var(--site-color-primary, #3d3d3d);
 }
 
 .orderMeta {
@@ -196,7 +196,7 @@
 .orderStatus {
 	font-size: 13px;
 	font-weight: 600;
-	color: var(--site-color-green, #6a7a12);
+	color: var(--site-color-accent, #6a7a12);
 }
 
 .orderPreview {
@@ -208,7 +208,7 @@
 .linkDetail {
 	font-size: 14px;
 	font-weight: 600;
-	color: var(--site-color-green, #6a7a12);
+	color: var(--site-color-accent, #6a7a12);
 	margin-top: 4px;
 }
 
@@ -245,7 +245,7 @@
 .backLink {
 	font-size: 14px;
 	font-weight: 600;
-	color: var(--site-color-green, #6a7a12);
+	color: var(--site-color-accent, #6a7a12);
 	text-decoration: none;
 	margin-bottom: 8px;
 
@@ -300,7 +300,7 @@
 	padding: 12px 24px;
 	border-radius: 10px;
 	border: none;
-	background: var(--site-color-green, #b0cb1f);
+	background: var(--site-color-accent, #b0cb1f);
 	color: #fff;
 	font-size: 15px;
 	font-weight: 600;
@@ -320,7 +320,7 @@
 .docLink {
 	font-size: 14px;
 	font-weight: 600;
-	color: var(--site-color-green, #6a7a12);
+	color: var(--site-color-accent, #6a7a12);
 	text-decoration: none;
 
 	&:hover {

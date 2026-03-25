@@ -1,9 +1,9 @@
 .breadcrumb {
 	font-size: 14px;
-	color: var(--site-color-grey, #3d3d3d);
+	color: var(--site-color-primary, #3d3d3d);
 	margin-bottom: 12px;
 	a {
-		color: var(--site-color-green, #b0cb1f);
+		color: var(--site-color-accent, #b0cb1f);
 		text-decoration: none;
 		&:hover {
 			text-decoration: underline;
@@ -59,7 +59,7 @@
 		color: inherit;
 		text-decoration: none;
 		&:hover {
-			color: var(--site-color-green, #b0cb1f);
+			color: var(--site-color-accent, #b0cb1f);
 		}
 	}
 
