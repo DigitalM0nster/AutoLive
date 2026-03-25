@@ -33,7 +33,7 @@ const StatusReturnedSection: React.FC<StatusReturnedSectionProps> = ({ isActive,
 
 	return (
 		<div className={`statusBlock borderBlock ${isExpanded ? "active" : ""}`}>
-			<div className={`statusHeader`} onClick={toggleExpand}>
+			<div className={`statusHeader statusToneReturned`} onClick={toggleExpand}>
 				<h3>7. Возврат</h3>
 				{statusDate && <span className={`statusDate`}>Присвоен: {formatDate(statusDate)}</span>}
 			</div>

@@ -33,7 +33,7 @@ const StatusBookedSection: React.FC<StatusBookedSectionProps> = ({ isActive, for
 
 	return (
 		<div className={`statusBlock borderBlock ${isExpanded ? "active" : ""}`}>
-			<div className={`statusHeader`} onClick={toggleExpand}>
+			<div className={`statusHeader statusToneBooked`} onClick={toggleExpand}>
 				<h3>3. Забронирован</h3>
 				{statusDate && <span className={`statusDate`}>Присвоен: {formatDate(statusDate)}</span>}
 			</div>

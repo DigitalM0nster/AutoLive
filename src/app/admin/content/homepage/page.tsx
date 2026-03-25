@@ -94,9 +94,12 @@ export default function AdminHomepageContent() {
 				throw new Error(errorData.error || "Ошибка сохранения");
 			}
 
-			// Обновляем исходные данные после успешного сохранения
+			// Синхронизируем "текущие" и "исходные" данные из одного источника.
+			// Это убирает ложный hasChanges, если бэкенд нормализует данные (например trim).
 			const savedData = await response.json();
-			setInitialData(JSON.parse(JSON.stringify(savedData)));
+			const normalizedSavedData = JSON.parse(JSON.stringify(savedData)) as HomepageContentData;
+			setData(normalizedSavedData);
+			setInitialData(normalizedSavedData);
 			setHasChanges(false);
 
 			alert("Данные успешно сохранены!");

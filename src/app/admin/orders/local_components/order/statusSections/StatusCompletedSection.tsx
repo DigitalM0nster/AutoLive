@@ -33,7 +33,7 @@ const StatusCompletedSection: React.FC<StatusCompletedSectionProps> = ({ isActiv
 
 	return (
 		<div className={`statusBlock borderBlock ${isExpanded ? "active" : ""}`}>
-			<div className={`statusHeader`} onClick={toggleExpand}>
+			<div className={`statusHeader statusToneCompleted`} onClick={toggleExpand}>
 				<h3>6. Выполнен</h3>
 				{statusDate && <span className={`statusDate`}>Присвоен: {formatDate(statusDate)}</span>}
 			</div>

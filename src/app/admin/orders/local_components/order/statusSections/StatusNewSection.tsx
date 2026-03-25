@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Loading from "@/components/ui/loading/Loading";
+import SearchDropdownInput from "@/components/ui/searchDropdownInput/SearchDropdownInput";
 import { showErrorToast } from "@/components/ui/toast/ToastProvider";
 import { OrderFormState, OrderItemClient, ProductListItem } from "@/lib/types";
 
@@ -46,14 +47,15 @@ export default function StatusNewSection({
 	}, []);
 
 	const handleProductSearch = async (query: string) => {
-		if (query.length < 2) {
+		const trimmedQuery = query.trim();
+		if (trimmedQuery.length < 1) {
 			setSearchResults([]);
 			return;
 		}
 
 		try {
 			setIsSearching(true);
-			const response = await fetch(`/api/products?search=${encodeURIComponent(query)}&limit=10`, {
+			const response = await fetch(`/api/products?search=${encodeURIComponent(trimmedQuery)}&limit=20`, {
 				credentials: "include",
 			});
 
@@ -80,12 +82,14 @@ export default function StatusNewSection({
 			return;
 		}
 
+		let addedNewItem = false;
 		setOrderItems((prev) => {
 			const existingItem = prev.find((item) => item.product_sku === product.sku);
 
 			if (existingItem) {
 				return prev.map((item) => (item.product_sku === product.sku ? { ...item, quantity: item.quantity + 1 } : item));
 			}
+			addedNewItem = true;
 
 			return [
 				...prev,
@@ -107,6 +111,14 @@ export default function StatusNewSection({
 				},
 			];
 		});
+
+		if (addedNewItem) {
+			setCollapsedItems((prev) => {
+				const newSet = new Set(prev);
+				newSet.add(product.sku);
+				return newSet;
+			});
+		}
 
 		setProductSearch("");
 		setSearchResults([]);
@@ -218,7 +230,7 @@ export default function StatusNewSection({
 
 	return (
 		<div className={`statusBlock borderBlock ${isExpanded ? "active" : ""}`}>
-			<div className={`statusHeader`} onClick={toggleExpand}>
+			<div className={`statusHeader statusToneCreated`} onClick={toggleExpand}>
 				<h3>1. Новый</h3>
 				{statusDate && <span className={`statusDate`}>Присвоен: {formatDate(statusDate)}</span>}
 			</div>
@@ -262,20 +274,90 @@ export default function StatusNewSection({
 				{/* Список товаров в заказе */}
 				<div className={`formField`}>
 					<div>Товары в заказе ({orderItems.length})</div>
-					<div className={`orderItemsList${canEdit ? "" : " readonly"}`}>
+					<div className={`productItemsList${canEdit ? "" : " readonly"}`}>
 						{orderItems.map((item, index) => {
 							const isExpanded = collapsedItems.has(item.product_sku);
 							return (
-								<div key={index} className={`orderItem borderBlock${canEdit ? "" : " readonly"}${isExpanded ? " active" : ""}`}>
-									<span className="itemTitle" onClick={(e) => toggleItemVisibility(item.product_sku, e)}>
-										{item.productId ? (
-											<Link href={`/admin/product-management/products/${item.productId}`} className="itemLink" target="_blank">
-												{item.product_title}
-											</Link>
-										) : (
-											item.product_title
-										)}
+								<div key={index} className={`productItem borderBlock${canEdit ? "" : " readonly"}${isExpanded ? " active" : ""}`}>
+									<div className="productItemMain" onClick={(e) => toggleItemVisibility(item.product_sku, e)}>
+										<span className="productItemIndex">№{index + 1}</span>
+										<div className="productItemImageWrap">
+											{item.product_image ? (
+												<img src={item.product_image} alt={item.product_title} className="productItemImage" loading="lazy" />
+											) : (
+												<div className="productItemNoImage">Нет фото</div>
+											)}
+										</div>
+										<div className="productItemDetails">
+											<div className="productItemTitleText productItemTitleRow">
+												{item.productId ? (
+													<Link href={`/admin/product-management/products/${item.productId}`} className="itemLink" target="_blank">
+														{item.product_title}
+													</Link>
+												) : (
+													item.product_title
+												)}
+												<span className="productItemQtyBadge" title={`Количество: ${item.quantity}`}>
+													x{item.quantity}
+												</span>
+												<span className="productItemTotalBadge" title="Общая стоимость позиции">
+													{(item.product_price * item.quantity).toLocaleString("ru-RU")} ₽
+												</span>
+											</div>
+											<div className="productItemMeta">
+												<div className="productItemMetaLine">
+													<span className="productItemMetaRow">
+														<span className="productItemLabel">Артикул:</span> {item.product_sku}
+													</span>
+													{item.product_brand && (
+														<span className="productItemMetaRow">
+															<span className="productItemLabel">Бренд:</span> {item.product_brand}
+														</span>
+													)}
+													<span className="productItemMetaRow">
+														<span className="productItemLabel">Цена за 1шт:</span> {item.product_price.toLocaleString("ru-RU")} ₽
+													</span>
+												</div>
+												<div className="productItemMetaLine">
+													<span className="productItemMetaRow">
+														<span className="productItemLabel">Отдел:</span> {item.department?.name || "Не указана"}
+													</span>
+													<span className="productItemMetaRow">
+														<span className="productItemLabel">Модель авто:</span> {item.carModel?.trim() ? item.carModel : "Не указана"}
+													</span>
+												</div>
+											</div>
+										</div>
 										<div className="buttonsBlock">
+											<button
+												type="button"
+												onClick={(e) => {
+													e.stopPropagation();
+													handleRemoveProduct(item.product_sku);
+												}}
+												className="removeProductButton"
+												disabled={!canEdit}
+											>
+												Удалить товар из заказа ×
+											</button>
+										</div>
+									</div>
+									<div className="analogsBlock productItemAnalogs">
+										<div
+											className="analogsHeader"
+											onClick={(e) => toggleItemVisibility(item.product_sku, e)}
+											role="button"
+											tabIndex={0}
+											onKeyDown={(e) => {
+												if (e.key === "Enter" || e.key === " ") {
+													e.preventDefault();
+													toggleItemVisibility(item.product_sku);
+												}
+											}}
+										>
+											<div className="analogsTitleGroup">
+												<span className="productItemInfoTitle">Подробная информация</span>
+											</div>
 											<button
 												type="button"
 												onClick={(e) => {
@@ -286,20 +368,8 @@ export default function StatusNewSection({
 											>
 												{isExpanded ? "Свернуть" : "Развернуть"}
 											</button>
-											<button
-												type="button"
-												onClick={(e) => {
-													e.stopPropagation();
-													handleRemoveProduct(item.product_sku);
-												}}
-												className="removeButton"
-												disabled={!canEdit}
-											>
-												Удалить товар из заказа ×
-											</button>
 										</div>
-									</span>
-									<div className="itemInfoBlock">
+										<div className="itemInfoBlock">
 										<div className="formField formFieldGroup">
 											<div className="formField">
 												<div className="formFieldTitle">Данные о товаре</div>
@@ -384,101 +454,98 @@ export default function StatusNewSection({
 											<label>Сумма</label>
 											<input type="text" value={`${(item.product_price * item.quantity).toLocaleString()} ₽`} disabled className="totalInput" />
 										</div>
+										</div>
 									</div>
 								</div>
 							);
 						})}
 					</div>
-					{!showProductSearch && (
-						<button
-							type="button"
-							onClick={() => {
-								if (canEdit) {
-									setShowProductSearch(true);
-								}
-							}}
-							className="addProductButton"
-							disabled={!canEdit}
-						>
-							Добавить товар
-						</button>
-					)}
-					{showProductSearch && (
-						<div className={`searchContainer`}>
-							<div className="searchHeader">
-								<span>Поиск товаров</span>
-								<button
-									type="button"
-									onClick={() => {
-										setShowProductSearch(false);
-										setProductSearch("");
-										setSearchResults([]);
-										setIsSearchFocused(false);
-										if (blurTimeout.current) {
-											clearTimeout(blurTimeout.current);
-										}
-									}}
-									className="closeSearchButton"
-								>
-									×
-								</button>
-							</div>
-							<input
-								id="productSearch"
-								type="text"
-								value={productSearch}
-								onChange={(e) => {
-									setProductSearch(e.target.value);
-									handleProductSearch(e.target.value);
-									clearFieldError("productSearch");
-								}}
-								onFocus={() => {
-									setIsSearchFocused(true);
-									if (blurTimeout.current) {
-										clearTimeout(blurTimeout.current);
-									}
-									clearFieldError("productSearch");
-								}}
-								onBlur={handleBlur}
-								placeholder="Поиск товаров по названию, артикулу или бренду"
-								className={`${fieldErrors.has("productSearch") ? "error" : ""} ${
-									(isSearchFocused && productSearch.length >= 2) || isSearching ? "activeSearch" : ""
-								} searchInput`}
-								disabled={!canEdit}
-								autoFocus
-							/>
-							{isSearchFocused && isSearching && productSearch && (
-								<div className="searchResults loading">
-									<Loading />
+					{canEdit && (
+						<div className={`addProductZone ${showProductSearch ? "addProductZoneOpen" : ""}`} onClick={() => !showProductSearch && setShowProductSearch(true)}>
+							{!showProductSearch ? (
+								<div className="addProductZonePlaceholder">
+									<span className="addProductZonePlus">+</span>
+									<span className="addProductZoneText">Добавить товар</span>
 								</div>
-							)}
-
-							{isSearchFocused && !isSearching && productSearch && (
-								<div className="searchResults">
-									{searchResults.length > 0 ? (
-										searchResults.map((product) => {
-											if (!product.department) {
-												return null; // Товар без отдела пропускаем, такого быть не должно, но на всякий случай защищаемся.
+							) : (
+								<div className="addProductZoneSearch" onClick={(e) => e.stopPropagation()}>
+									<div className="addProductZoneSearchHeader">
+										<span className="addProductZoneSearchTitle">Поиск товара</span>
+										<button
+											type="button"
+											onClick={() => {
+												setShowProductSearch(false);
+												setProductSearch("");
+												setSearchResults([]);
+												setIsSearchFocused(false);
+												if (blurTimeout.current) {
+													clearTimeout(blurTimeout.current);
+												}
+											}}
+											className="addProductZoneClose"
+										>
+											×
+										</button>
+									</div>
+									<SearchDropdownInput
+										id="productSearch"
+										value={productSearch}
+										onChange={(value) => {
+											setProductSearch(value);
+											handleProductSearch(value);
+											clearFieldError("productSearch");
+										}}
+										onFocus={() => {
+											setIsSearchFocused(true);
+											if (blurTimeout.current) {
+												clearTimeout(blurTimeout.current);
 											}
+											clearFieldError("productSearch");
+										}}
+										onBlur={handleBlur}
+										placeholder="Поиск товаров по названию, артикулу или бренду"
+										inputClassName="searchInput"
+										hasError={fieldErrors.has("productSearch")}
+										isActiveSearch={(isSearchFocused && productSearch.trim().length >= 1) || isSearching}
+										showDropdown={isSearchFocused && Boolean(productSearch)}
+										disabled={!canEdit}
+										autoFocus
+									>
+										{isSearchFocused && isSearching && productSearch && (
+											<div className="searchResults loading">
+												<Loading />
+											</div>
+										)}
 
-											return (
-												<div key={product.id} className={`searchResultItem`} onMouseDown={() => handleProductSelect(product)}>
-													<div className="productInfo">
-														<span className="productTitle">{product.title}</span>
-														<span className="additionalInfoBorderBlock">Артикул: {product.sku}</span>
-														<span className="additionalInfoBorderBlock">Бренд: {product.brand}</span>
-														<span className="additionalInfoBorderBlock">
-															Закупочная стоимость: {product.supplierPrice ? `${product.supplierPrice.toLocaleString()} ₽` : "—"}
-														</span>
-														<span className="additionalInfoBorderBlock">Стоимость для клиента: {product.price.toLocaleString()} ₽</span>
-														<span className="additionalInfoBorderBlock">Отдел: {product.department.name}</span>
-													</div>
-												</div>
-											);
-										})
-									) : (
-										<div className={`searchResultItem`}>Нет результатов</div>
-									)}
+										{isSearchFocused && !isSearching && productSearch && (
+											<div className="searchResults">
+												{searchResults.length > 0 ? (
+													searchResults.map((product) => {
+														if (!product.department) {
+															return null;
+														}
+
+														return (
+															<div key={product.id} className={`searchResultItem`} onMouseDown={() => handleProductSelect(product)}>
+																<div className="productInfo">
+																	<span className="productTitle">{product.title}</span>
+																	<span className="additionalInfoBorderBlock">Артикул: {product.sku}</span>
+																	<span className="additionalInfoBorderBlock">Бренд: {product.brand}</span>
+																	<span className="additionalInfoBorderBlock">
+																		Закупочная стоимость: {product.supplierPrice ? `${product.supplierPrice.toLocaleString()} ₽` : "—"}
+																	</span>
+																	<span className="additionalInfoBorderBlock">Стоимость для клиента: {product.price.toLocaleString()} ₽</span>
+																	<span className="additionalInfoBorderBlock">Отдел: {product.department.name}</span>
+																</div>
+															</div>
+														);
+													})
+												) : (
+													<div className={`searchResultItem`}>Нет результатов</div>
+												)}
+											</div>
+										)}
+									</SearchDropdownInput>
 								</div>
 							)}
 						</div>

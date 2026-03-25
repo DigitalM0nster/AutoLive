@@ -66,6 +66,15 @@ async function getBookingHandler(req: NextRequest, { user, scope, params }: { us
 							id: true,
 							status: true,
 							createdAt: true,
+							finalDeliveryDate: true,
+							contactPhone: true,
+							contactName: true,
+							client: {
+								select: { id: true, first_name: true, last_name: true },
+							},
+							orderItems: {
+								select: { product_price: true, quantity: true },
+							},
 						},
 					},
 				},
@@ -331,6 +340,15 @@ async function updateBookingHandler(req: NextRequest, { user, scope, params }: {
 								id: true,
 								status: true,
 								createdAt: true,
+								finalDeliveryDate: true,
+								contactPhone: true,
+								contactName: true,
+								client: {
+									select: { id: true, first_name: true, last_name: true },
+								},
+								orderItems: {
+									select: { product_price: true, quantity: true },
+								},
 							},
 						},
 					},

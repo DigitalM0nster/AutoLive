@@ -33,7 +33,7 @@ const StatusPaidSection: React.FC<StatusPaidSectionProps> = ({ isActive, formDat
 
 	return (
 		<div className={`statusBlock borderBlock ${isExpanded ? "active" : ""}`}>
-			<div className={`statusHeader`} onClick={toggleExpand}>
+			<div className={`statusHeader statusTonePaid`} onClick={toggleExpand}>
 				<h3>5. Оплачен</h3>
 				{statusDate && <span className={`statusDate`}>Присвоен: {formatDate(statusDate)}</span>}
 			</div>

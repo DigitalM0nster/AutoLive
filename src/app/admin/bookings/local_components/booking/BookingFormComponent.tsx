@@ -7,6 +7,7 @@ import { useAuthStore } from "@/store/authStore";
 import { Booking, CreateBookingRequest, BookingDepartment, User } from "@/lib/types";
 import { showSuccessToast, showErrorToast } from "@/components/ui/toast/ToastProvider";
 import Loading from "@/components/ui/loading/Loading";
+import SearchDropdownInput from "@/components/ui/searchDropdownInput/SearchDropdownInput";
 import CustomSelect from "@/components/ui/customSelect/CustomSelect";
 import DatePickerField from "@/components/ui/datePicker/DatePickerField";
 import FixedActionButtons from "@/components/ui/fixedActionButtons/FixedActionButtons";
@@ -29,6 +30,63 @@ function getOrderStatusText(status: string): string {
 		returned: "Возврат",
 	};
 	return map[status] || status;
+}
+
+type BookingOrderPick = {
+	id: number;
+	status: string;
+	createdAt: string | Date;
+	finalDeliveryDate: string | Date | null;
+	orderTotal: number;
+	contactPhone: string | null;
+	contactName: string | null;
+	client: { id: number; first_name: string | null; last_name: string | null } | null;
+};
+
+function sumOrderItemsForBooking(items: { product_price: number; quantity: number }[]): number {
+	return Math.round(items.reduce((s, i) => s + i.product_price * i.quantity, 0) * 100) / 100;
+}
+
+function orderStatusAllowsClientLinkInBooking(status: string): boolean {
+	return ["confirmed", "booked", "ready", "paid", "completed"].includes(status);
+}
+
+function formatRubBooking(amount: number): string {
+	return new Intl.NumberFormat("ru-RU", { style: "currency", currency: "RUB", maximumFractionDigits: 0 }).format(amount);
+}
+
+function formatOrderDateRu(d: string | Date | null | undefined): string {
+	if (d == null) return "—";
+	const s = d instanceof Date ? d.toISOString() : String(d);
+	const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
+	if (m) return `${m[3]}.${m[2]}.${m[1]}`;
+	return s;
+}
+
+function mapApiOrderToBookingPick(o: {
+	id: number;
+	status: string;
+	createdAt: string | Date;
+	finalDeliveryDate?: string | Date | null;
+	contactPhone?: string | null;
+	contactName?: string | null;
+	orderItems?: { product_price: number; quantity: number }[];
+	client?: { id: number; first_name: string | null; last_name: string | null } | null;
+}): BookingOrderPick {
+	return {
+		id: o.id,
+		status: o.status,
+		createdAt: o.createdAt,
+		finalDeliveryDate: o.finalDeliveryDate ?? null,
+		orderTotal: sumOrderItemsForBooking(o.orderItems || []),
+		contactPhone: o.contactPhone ?? null,
+		contactName: o.contactName ?? null,
+		client: o.client ?? null,
+	};
+}
+
+function clientShortName(c: { first_name: string | null; last_name: string | null }): string {
+	return [c.first_name, c.last_name].filter(Boolean).join(" ").trim() || "—";
 }
 
 export default function BookingFormComponent({ isCreating = true, bookingId, userRole }: BookingFormComponentProps) {
@@ -88,11 +146,11 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 
 	// Состояние для поиска заказа
 	const [orderSearch, setOrderSearch] = useState("");
-	const [orderSearchResults, setOrderSearchResults] = useState<{ id: number; status: string; createdAt: string | Date }[]>([]);
+	const [orderSearchResults, setOrderSearchResults] = useState<BookingOrderPick[]>([]);
 	const [isSearchingOrders, setIsSearchingOrders] = useState(false);
 	const [isOrderSearchFocused, setIsOrderSearchFocused] = useState(false);
-	const [selectedOrder, setSelectedOrder] = useState<{ id: number; status: string; createdAt: string | Date } | null>(null);
-	const [initialSelectedOrder, setInitialSelectedOrder] = useState<{ id: number; status: string; createdAt: string | Date } | null>(null);
+	const [selectedOrder, setSelectedOrder] = useState<BookingOrderPick | null>(null);
+	const [initialSelectedOrder, setInitialSelectedOrder] = useState<BookingOrderPick | null>(null);
 	const orderBlurTimeout = useRef<NodeJS.Timeout | null>(null);
 
 	// Загрузка данных записи (если редактирование)
@@ -157,9 +215,9 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 
 						// Загружаем данные заказа, если он указан
 						if (booking.orderId && booking.order) {
-							const order = booking.order as { id: number; status: string; createdAt: string | Date };
-							setSelectedOrder(order);
-							setInitialSelectedOrder(order);
+							const mapped = mapApiOrderToBookingPick(booking.order as any);
+							setSelectedOrder(mapped);
+							setInitialSelectedOrder(mapped);
 						}
 					}
 				} catch (err) {
@@ -208,13 +266,7 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 			if (response.ok) {
 				const data = await response.json();
 				if (data.orders && data.orders.length > 0) {
-					setOrderSearchResults(
-						data.orders.map((o: any) => ({
-							id: o.id,
-							status: o.status,
-							createdAt: o.createdAt,
-						}))
-					);
+					setOrderSearchResults(data.orders.map((o: any) => mapApiOrderToBookingPick(o)));
 				} else {
 					setOrderSearchResults([]);
 				}
@@ -226,7 +278,7 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 		}
 	};
 
-	const handleOrderSelect = (order: { id: number; status: string; createdAt: string | Date }) => {
+	const handleOrderSelect = (order: BookingOrderPick) => {
 		if (userRole === "manager") {
 			return; // Менеджер не может редактировать
 		}
@@ -551,8 +603,9 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 
 			// Обновляем выбранный заказ, если он был в ответе
 			if (data.booking?.order) {
-				setSelectedOrder(data.booking.order);
-				setInitialSelectedOrder(data.booking.order);
+				const mapped = mapApiOrderToBookingPick(data.booking.order as any);
+				setSelectedOrder(mapped);
+				setInitialSelectedOrder(mapped);
 			}
 
 			// Сбрасываем состояние изменений
@@ -662,20 +715,19 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 							</button>
 						</div>
 					) : (
-						<div className="searchContainer">
-							<input
-								id="clientSearch"
-								type="text"
-								value={clientSearch}
-								onChange={(e) => handleClientManualInput(e.target.value)}
-								onFocus={() => {
-									if (clientBlurTimeout.current) clearTimeout(clientBlurTimeout.current);
-									setIsClientSearchFocused(true);
-								}}
-								onBlur={handleClientBlur}
-								placeholder="Поиск клиента по ФИО, ID или телефону"
-								className={isClientSearchFocused && clientSearch.length >= 2 ? "activeSearch" : ""}
-							/>
+						<SearchDropdownInput
+							id="clientSearch"
+							value={clientSearch}
+							onChange={handleClientManualInput}
+							onFocus={() => {
+								if (clientBlurTimeout.current) clearTimeout(clientBlurTimeout.current);
+								setIsClientSearchFocused(true);
+							}}
+							onBlur={handleClientBlur}
+							placeholder="Поиск клиента по ФИО, ID или телефону"
+							isActiveSearch={isClientSearchFocused && clientSearch.length >= 2}
+							showDropdown={isClientSearchFocused && Boolean(clientSearch)}
+						>
 							{isClientSearchFocused && isSearchingClients && clientSearch && (
 								<div className="searchResults loading">
 									<Loading />
@@ -697,7 +749,7 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 									)}
 								</div>
 							)}
-						</div>
+						</SearchDropdownInput>
 					)}
 				</div>
 
@@ -720,16 +772,38 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 					<div className="formField">
 						<label htmlFor="orderSearch">Заказ</label>
 						{selectedOrder ? (
-							<div className="selectedClient">
-								<span>
-									<Link href={`/admin/orders/${selectedOrder.id}`} className="itemLink" target="_blank">
-										Заказ #{selectedOrder.id} -{" "}
-										{typeof selectedOrder.createdAt === "string"
-											? new Date(selectedOrder.createdAt).toLocaleDateString("ru-RU")
-											: selectedOrder.createdAt.toLocaleDateString("ru-RU")}{" "}
-										({getOrderStatusText(selectedOrder.status)})
+							<div className="selectedClient column">
+								<div>
+									<Link href={`/admin/orders/${selectedOrder.id}`} className="itemLink" target="_blank" onMouseDown={(e) => e.stopPropagation()}>
+										Заказ #{selectedOrder.id}
 									</Link>
-								</span>
+									{" · "}
+									{getOrderStatusText(selectedOrder.status)}
+									{" · создан: "}
+									{formatOrderDateRu(selectedOrder.createdAt)}
+									{selectedOrder.finalDeliveryDate ? ` · доставка: ${formatOrderDateRu(selectedOrder.finalDeliveryDate)}` : ""}
+									{" · "}
+									{formatRubBooking(selectedOrder.orderTotal)}
+								</div>
+								<div>
+									Клиент:{" "}
+									{orderStatusAllowsClientLinkInBooking(selectedOrder.status) && selectedOrder.client ? (
+										<Link
+											href={`/admin/users/${selectedOrder.client.id}`}
+											className="itemLink"
+											target="_blank"
+											onMouseDown={(e) => e.stopPropagation()}
+										>
+											{clientShortName(selectedOrder.client)}
+										</Link>
+									) : (
+										<span>
+											{selectedOrder.contactName?.trim() ||
+												(selectedOrder.client ? clientShortName(selectedOrder.client) : "—")}
+										</span>
+									)}
+								</div>
+								<div>Телефон для связи (заказ): {selectedOrder.contactPhone || "—"}</div>
 								<button
 									type="button"
 									onClick={() => {
@@ -743,20 +817,19 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 								</button>
 							</div>
 						) : (
-							<div className="searchContainer">
-								<input
-									id="orderSearch"
-									type="text"
-									value={orderSearch}
-									onChange={(e) => handleOrderManualInput(e.target.value)}
-									onFocus={() => {
-										if (orderBlurTimeout.current) clearTimeout(orderBlurTimeout.current);
-										setIsOrderSearchFocused(true);
-									}}
-									onBlur={handleOrderBlur}
-									placeholder="Поиск заказа по ID"
-									className={isOrderSearchFocused && orderSearch.length > 0 ? "activeSearch" : ""}
-								/>
+							<SearchDropdownInput
+								id="orderSearch"
+								value={orderSearch}
+								onChange={handleOrderManualInput}
+								onFocus={() => {
+									if (orderBlurTimeout.current) clearTimeout(orderBlurTimeout.current);
+									setIsOrderSearchFocused(true);
+								}}
+								onBlur={handleOrderBlur}
+								placeholder="Поиск заказа по ID"
+								isActiveSearch={isOrderSearchFocused && orderSearch.length > 0}
+								showDropdown={isOrderSearchFocused && Boolean(orderSearch)}
+							>
 								{isOrderSearchFocused && isSearchingOrders && orderSearch && (
 									<div className="searchResults loading">
 										<Loading />
@@ -766,12 +839,42 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 									<div className="searchResults">
 										{orderSearchResults.length > 0 ? (
 											orderSearchResults.map((order) => (
-												<div key={order.id} className="searchResultItem" onMouseDown={() => handleOrderSelect(order)}>
-													Заказ #{order.id} -{" "}
-													{typeof order.createdAt === "string"
-														? new Date(order.createdAt).toLocaleDateString("ru-RU")
-														: order.createdAt.toLocaleDateString("ru-RU")}{" "}
-													({getOrderStatusText(order.status)})
+												<div key={order.id} className="searchResultItem column" onMouseDown={() => handleOrderSelect(order)}>
+													<div>
+														<Link
+															href={`/admin/orders/${order.id}`}
+															className="itemLink"
+															target="_blank"
+															onMouseDown={(e) => e.stopPropagation()}
+														>
+															Заказ #{order.id}
+														</Link>
+														{" · "}
+														{getOrderStatusText(order.status)}
+														{" · создан: "}
+														{formatOrderDateRu(order.createdAt)}
+														{order.finalDeliveryDate ? ` · доставка: ${formatOrderDateRu(order.finalDeliveryDate)}` : ""}
+														{" · "}
+														{formatRubBooking(order.orderTotal)}
+													</div>
+													<div>
+														Клиент:{" "}
+														{orderStatusAllowsClientLinkInBooking(order.status) && order.client ? (
+															<Link
+																href={`/admin/users/${order.client.id}`}
+																className="itemLink"
+																target="_blank"
+																onMouseDown={(e) => e.stopPropagation()}
+															>
+																{clientShortName(order.client)}
+															</Link>
+														) : (
+															<span>
+																{order.contactName?.trim() || (order.client ? clientShortName(order.client) : "—")}
+															</span>
+														)}
+													</div>
+													<div>Телефон (заказ): {order.contactPhone || "—"}</div>
 												</div>
 											))
 										) : (
@@ -779,7 +882,7 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 										)}
 									</div>
 								)}
-							</div>
+							</SearchDropdownInput>
 						)}
 					</div>
 				)}
@@ -814,20 +917,19 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 								</button>
 							</div>
 						) : (
-							<div className="searchContainer">
-								<input
-									id="managerSearch"
-									type="text"
-									value={managerSearch}
-									onChange={(e) => handleManagerManualInput(e.target.value)}
-									onFocus={() => {
-										if (managerBlurTimeout.current) clearTimeout(managerBlurTimeout.current);
-										setIsManagerSearchFocused(true);
-									}}
-									onBlur={handleManagerBlur}
-									placeholder="Поиск менеджера по ФИО, ID или телефону"
-									className={isManagerSearchFocused && managerSearch.length >= 2 ? "activeSearch" : ""}
-								/>
+							<SearchDropdownInput
+								id="managerSearch"
+								value={managerSearch}
+								onChange={handleManagerManualInput}
+								onFocus={() => {
+									if (managerBlurTimeout.current) clearTimeout(managerBlurTimeout.current);
+									setIsManagerSearchFocused(true);
+								}}
+								onBlur={handleManagerBlur}
+								placeholder="Поиск менеджера по ФИО, ID или телефону"
+								isActiveSearch={isManagerSearchFocused && managerSearch.length >= 2}
+								showDropdown={isManagerSearchFocused && Boolean(managerSearch)}
+							>
 								{isManagerSearchFocused && isSearchingManagers && managerSearch && (
 									<div className="searchResults loading">
 										<Loading />
@@ -849,7 +951,7 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 										)}
 									</div>
 								)}
-							</div>
+							</SearchDropdownInput>
 						)}
 					</div>
 				)}

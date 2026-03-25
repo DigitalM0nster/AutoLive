@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Order, User, ProductListItem, OrderStatus, OrderItemClient, OrderFormState, DepartmentForLog } from "@/lib/types";
 import { showSuccessToast, showErrorToast } from "@/components/ui/toast/ToastProvider";
 import Loading from "@/components/ui/loading/Loading";
+import SearchDropdownInput from "@/components/ui/searchDropdownInput/SearchDropdownInput";
 import StatusNewSection from "./statusSections/StatusNewSection";
 import StatusConfirmedSection from "./statusSections/StatusConfirmedSection";
 import StatusBookedSection from "./statusSections/StatusBookedSection";
@@ -19,6 +20,87 @@ type OrderPageProps = {
 	isCreating?: boolean;
 	userRole?: string; // Роль пользователя для определения режима отображения
 };
+
+/** Контекст записи (booking) для отображения в поиске ТО */
+type ToBookingContext = {
+	scheduledDate: string | null;
+	scheduledTime: string | null;
+	contactPhone: string | null;
+	clientPhone: string | null;
+	departmentName: string | null;
+	departmentAddress: string | null;
+};
+
+type ToUserSnippet = {
+	id: number;
+	first_name: string | null;
+	last_name: string | null;
+	role: string;
+	phone?: string | null;
+};
+
+/** Запись ТО из справочника (поиск перед привязкой к заказу) */
+type TechnicalServiceListItem = {
+	id: number;
+	number: string;
+	responsibleUserId?: number | null;
+	responsibleUser?: ToUserSnippet | null;
+	/** Менеджер записи (Booking), если есть связанная/превью запись — не подменяет ответственного ТО */
+	bookingManager?: ToUserSnippet | null;
+	bookingContext?: ToBookingContext | null;
+	contextSource?: "linked_order" | "current_order_preview" | "none";
+	/** Заказ, к которому привязана эта запись ТО (если есть) */
+	linkedOrder?: {
+		id: number;
+		status: string;
+		createdAt: string;
+		finalDeliveryDate: string | null;
+		orderTotal: number;
+		client: { id: number; first_name: string | null; last_name: string | null } | null;
+	} | null;
+};
+
+function formatToRuDate(iso: string | null | undefined): string {
+	if (!iso) return "—";
+	const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso));
+	if (m) return `${m[3]}.${m[2]}.${m[1]}`;
+	return String(iso);
+}
+
+function toUserDisplayName(u: Pick<ToUserSnippet, "first_name" | "last_name"> | null | undefined): string {
+	if (!u) return "";
+	return [u.first_name, u.last_name].filter(Boolean).join(" ").trim() || "—";
+}
+
+/** Ответственный за запись — только в booking; здесь только ответственный ТО из справочника */
+function getTsResponsibleUser(ts: TechnicalServiceListItem): ToUserSnippet | null {
+	return ts.responsibleUser ?? null;
+}
+
+function sumOrderItemsTotal(items: { product_price: number; quantity: number }[]): number {
+	return Math.round(items.reduce((s, i) => s + i.product_price * i.quantity, 0) * 100) / 100;
+}
+
+/** Ссылка на карточку клиента только после подтверждения заказа */
+function orderStatusAllowsClientProfileLink(status: string): boolean {
+	return ["confirmed", "booked", "ready", "paid", "completed"].includes(status);
+}
+
+function formatRub(amount: number): string {
+	return new Intl.NumberFormat("ru-RU", { style: "currency", currency: "RUB", maximumFractionDigits: 0 }).format(amount);
+}
+
+/** Статус записи (booking) для подписи в карточке заказа */
+function bookingStatusLabelRu(status: string): string {
+	const m: Record<string, string> = {
+		scheduled: "Запланирована",
+		confirmed: "Подтверждена",
+		completed: "Выполнена",
+		cancelled: "Отменена",
+		no_show: "Не явился",
+	};
+	return m[status] || status;
+}
 
 export default function OrderComponent({ orderId, isCreating = false, userRole }: OrderPageProps) {
 	const { user } = useAuthStore();
@@ -71,23 +153,21 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 	const [selectedManager, setSelectedManager] = useState<User | null>(null);
 
 	// Состояние для заявки и адреса
-	const [selectedBooking, setSelectedBooking] = useState<{ id: number; scheduledDate: string | Date; scheduledTime: string; status: string; contactPhone: string } | null>(null);
-	const [selectedBookingDepartment, setSelectedBookingDepartment] = useState<{ id: number; name: string | null; address: string; phones: string[]; email: string | null } | null>(null);
+	const [selectedBooking, setSelectedBooking] = useState<NonNullable<Order["booking"]> | null>(null);
+	const [selectedBookingDepartment, setSelectedBookingDepartment] = useState<{ id: number; name: string | null; address: string; phones: string[]; email: string | null } | null>(
+		null,
+	);
 	const [bookingDepartments, setBookingDepartments] = useState<{ id: number; name: string | null; address: string; phones: string[]; email: string | null }[]>([]);
 
-	// Состояние для формы ТО (добавить/редактировать): менеджеры и выше могут менять
-	const [toFormOpen, setToFormOpen] = useState<false | "add" | "edit">(false);
-	const [toFormNumber, setToFormNumber] = useState("");
-	const [toFormResponsibleId, setToFormResponsibleId] = useState("");
-	const [toResponsibleUsers, setToResponsibleUsers] = useState<{ id: number; first_name: string | null; last_name: string | null }[]>([]);
+	// Привязка заказа к записи ТО из справочника (поиск по id/номеру, как у товаров)
+	const [toPanelOpen, setToPanelOpen] = useState(false);
+	const [toSearchQuery, setToSearchQuery] = useState("");
+	const [toSearchResults, setToSearchResults] = useState<TechnicalServiceListItem[]>([]);
+	const [isSearchingTo, setIsSearchingTo] = useState(false);
+	const [toSearchFocused, setToSearchFocused] = useState(false);
+	const [selectedToRecord, setSelectedToRecord] = useState<TechnicalServiceListItem | null>(null);
+	const toSearchBlurTimeout = useRef<NodeJS.Timeout | null>(null);
 	const [isToSaving, setIsToSaving] = useState(false);
-	// Состояние для поиска менеджера ТО
-	const [selectedToResponsible, setSelectedToResponsible] = useState<User | null>(null);
-	const [toResponsibleSearch, setToResponsibleSearch] = useState("");
-	const [toResponsibleSearchResults, setToResponsibleSearchResults] = useState<User[]>([]);
-	const [isSearchingToResponsible, setIsSearchingToResponsible] = useState(false);
-	const [isToResponsibleSearchFocused, setIsToResponsibleSearchFocused] = useState(false);
-	const toResponsibleBlurTimeout = useRef<NodeJS.Timeout | null>(null);
 	// Состояние для дат присвоения статусов
 	const [statusDates, setStatusDates] = useState<Record<OrderStatus, string | null>>({
 		created: null,
@@ -206,9 +286,22 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 	// Очистка timeout при размонтировании
 	useEffect(() => {
 		return () => {
-			if (toResponsibleBlurTimeout.current) clearTimeout(toResponsibleBlurTimeout.current);
+			if (toSearchBlurTimeout.current) clearTimeout(toSearchBlurTimeout.current);
 		};
 	}, []);
+
+	// Переход по ссылке вида /admin/orders/123#orderLinkedTechnicalService — прокрутка к блоку ТО
+	useEffect(() => {
+		if (loading || !orderData) return;
+		if (typeof window === "undefined") return;
+		if (window.location.hash !== "#orderLinkedTechnicalService") return;
+		const el = document.getElementById("orderLinkedTechnicalService");
+		if (el) {
+			requestAnimationFrame(() => {
+				el.scrollIntoView({ behavior: "smooth", block: "start" });
+			});
+		}
+	}, [loading, orderData?.id]);
 
 	// Проверка прав доступа при создании
 	useEffect(() => {
@@ -246,9 +339,10 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 				setOrderData(order);
 				setCurrentStatus(order.status as OrderStatus);
 				setInitialStatus(order.status as OrderStatus);
+				// Сбрасываем baseline: он будет корректно зафиксирован после того,
+				// как все поля формы и связанные состояния обновятся.
 				initialSnapshotRef.current = null;
 				setHasChanges(false);
-				initialSnapshotRef.current = getCurrentSnapshot();
 
 				// Готовим строки товаров и подгружаем отделы
 				const rawItems = (order.orderItems || []).map((item: any) => ({
@@ -320,8 +414,8 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 					clientId: order.clientId?.toString() || "",
 					departmentId: order.departmentId?.toString() || "",
 					managerId: order.managerId?.toString() || "",
-					contactName: "",
-					contactPhone: "",
+					contactName: order.contactName || "",
+					contactPhone: order.contactPhone || "",
 					finalDeliveryDate: order.finalDeliveryDate ? new Date(order.finalDeliveryDate).toISOString() : "",
 					bookedUntil: "",
 					readyUntil: "",
@@ -337,7 +431,6 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 					returnDocumentNumber: "",
 				});
 
-				// Заполняем комментарии из заказа
 				setComments(order.comments || []);
 				setSelectedClient(order.client || null);
 				setSelectedManager(order.manager || null);
@@ -437,23 +530,6 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 		fetchBookingDepartments();
 	}, []);
 
-	// Загрузка списка ответственных для ТО (менеджеры, админы, суперадмины) при открытии формы
-	useEffect(() => {
-		if (!toFormOpen || toResponsibleUsers.length > 0) return;
-		const load = async () => {
-			try {
-				const r = await fetch("/api/users?role=manager&role=admin&role=superadmin&limit=200&allUsers=true", { credentials: "include" });
-				if (r.ok) {
-					const d = await r.json();
-					setToResponsibleUsers(d.users || []);
-				}
-			} catch (e) {
-				console.error("Ошибка загрузки списка для ТО:", e);
-			}
-		};
-		load();
-	}, [toFormOpen, toResponsibleUsers.length]);
-
 	// Устанавливаем отдел пользователя при создании заказа
 	useEffect(() => {
 		if (isCreating && user?.departmentId) {
@@ -526,114 +602,156 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 		}
 	};
 
-	// Поиск менеджера для ТО
-	const handleToResponsibleSearch = async (query: string) => {
-		if (query.length < 2) {
-			setToResponsibleSearchResults([]);
+	// Поиск записей ТО в справочнике
+	const handleToSearchInput = async (value: string) => {
+		setToSearchQuery(value);
+		const q = value.trim();
+		if (q.length < 1) {
+			setToSearchResults([]);
 			return;
 		}
-
+		setIsSearchingTo(true);
 		try {
-			setIsSearchingToResponsible(true);
-			const response = await fetch(`/api/users?search=${encodeURIComponent(query)}&role=manager&role=admin&role=superadmin&limit=10&allUsers=true`, {
-				credentials: "include",
-			});
-
-			if (response.ok) {
-				const data = await response.json();
-				setToResponsibleSearchResults(data.users || []);
+			const params = new URLSearchParams();
+			params.set("search", q);
+			params.set("limit", "20");
+			if (!isCreating && orderId != null && String(orderId).trim() !== "") {
+				params.set("forOrderId", String(orderId));
 			}
-		} catch (error) {
-			console.error("Ошибка поиска менеджеров для ТО:", error);
+			const res = await fetch(`/api/technical-services?${params.toString()}`, { credentials: "include" });
+			if (res.ok) {
+				const d = await res.json();
+				setToSearchResults(d.technicalServices || []);
+			}
+		} catch (e) {
+			console.error("Ошибка поиска ТО:", e);
 		} finally {
-			setIsSearchingToResponsible(false);
+			setIsSearchingTo(false);
 		}
 	};
 
-	const handleToResponsibleSelect = (manager: User) => {
-		setSelectedToResponsible(manager);
-		setToFormResponsibleId(manager.id.toString());
-		setToResponsibleSearch("");
-		setToResponsibleSearchResults([]);
-		setIsToResponsibleSearchFocused(false);
+	const handleToSearchBlur = () => {
+		if (toSearchBlurTimeout.current) clearTimeout(toSearchBlurTimeout.current);
+		toSearchBlurTimeout.current = setTimeout(() => setToSearchFocused(false), 150);
 	};
 
-	const handleToResponsibleBlur = () => {
-		if (toResponsibleBlurTimeout.current) clearTimeout(toResponsibleBlurTimeout.current);
-		toResponsibleBlurTimeout.current = setTimeout(() => setIsToResponsibleSearchFocused(false), 120);
+	const handleToSelectFromList = (item: TechnicalServiceListItem) => {
+		setSelectedToRecord(item);
+		setToSearchQuery(`${item.number} (#${item.id})`);
+		setToSearchResults([]);
+		setToSearchFocused(false);
 	};
 
-	const handleToResponsibleManualInput = (value: string) => {
-		setToResponsibleSearch(value);
-		if (value.length >= 2) {
-			handleToResponsibleSearch(value);
-		} else {
-			setToResponsibleSearchResults([]);
-		}
+	const handleToClearSelection = () => {
+		setSelectedToRecord(null);
+		setToSearchQuery("");
+		setToSearchResults([]);
 	};
 
-	const handleToResponsibleClear = () => {
-		setSelectedToResponsible(null);
-		setToFormResponsibleId("");
-		setToResponsibleSearch("");
-		setToResponsibleSearchResults([]);
-	};
-
-	// ТО: открыть форму добавления
 	const openToAdd = () => {
-		setToFormNumber("");
-		setToFormResponsibleId("");
-		setSelectedToResponsible(null);
-		setToResponsibleSearch("");
-		setToResponsibleSearchResults([]);
-		setToFormOpen("add");
+		setToSearchQuery("");
+		setToSearchResults([]);
+		setSelectedToRecord(null);
+		setToPanelOpen(true);
 	};
 
-	// ТО: открыть форму редактирования
 	const openToEdit = () => {
 		const to = orderData?.technicalService;
-		setToFormNumber(to?.number ?? "");
-		const responsibleId = to?.responsibleUserId?.toString() ?? "";
-		setToFormResponsibleId(responsibleId);
-		// Если есть ответственный в данных заказа, устанавливаем его
-		if (to?.responsibleUser) {
-			setSelectedToResponsible(to.responsibleUser as User);
-		} else {
-			setSelectedToResponsible(null);
-		}
-		setToResponsibleSearch("");
-		setToResponsibleSearchResults([]);
-		setToFormOpen("edit");
+		if (!to) return;
+		const bk = orderData?.booking;
+		const bd = orderData?.bookingDepartment;
+		const scheduledDateStr =
+			bk?.scheduledDate == null
+				? null
+				: typeof bk.scheduledDate === "string"
+					? bk.scheduledDate.slice(0, 10)
+					: new Date(bk.scheduledDate).toISOString().slice(0, 10);
+		setSelectedToRecord({
+			id: to.id,
+			number: to.number,
+			responsibleUserId: to.responsibleUserId ?? null,
+			responsibleUser: to.responsibleUser
+				? {
+						id: to.responsibleUser.id,
+						first_name: to.responsibleUser.first_name,
+						last_name: to.responsibleUser.last_name,
+						role: to.responsibleUser.role,
+						phone: (to.responsibleUser as { phone?: string }).phone,
+					}
+				: null,
+			bookingManager: bk?.manager
+				? {
+						id: bk.manager.id,
+						first_name: bk.manager.first_name,
+						last_name: bk.manager.last_name,
+						role: bk.manager.role,
+						phone: (bk.manager as { phone?: string }).phone,
+					}
+				: null,
+			bookingContext: bk
+				? {
+						scheduledDate: scheduledDateStr,
+						scheduledTime: bk.scheduledTime,
+						contactPhone: bk.contactPhone,
+						clientPhone: orderData?.client?.phone ?? bk.contactPhone,
+						departmentName: bd?.name ?? null,
+						departmentAddress: bd?.address ?? null,
+					}
+				: null,
+			contextSource: "none",
+			linkedOrder: orderData
+				? {
+						id: orderData.id,
+						status: orderData.status,
+						createdAt:
+							typeof orderData.createdAt === "string" ? orderData.createdAt : new Date(orderData.createdAt).toISOString(),
+						finalDeliveryDate: orderData.finalDeliveryDate
+							? typeof orderData.finalDeliveryDate === "string"
+								? orderData.finalDeliveryDate
+								: new Date(orderData.finalDeliveryDate).toISOString()
+							: null,
+						orderTotal: sumOrderItemsTotal(orderData.orderItems || []),
+						client: orderData.client
+							? {
+									id: orderData.client.id,
+									first_name: orderData.client.first_name,
+									last_name: orderData.client.last_name,
+								}
+							: null,
+					}
+				: null,
+		});
+		setToSearchQuery(`${to.number} (#${to.id})`);
+		setToSearchResults([]);
+		setToPanelOpen(true);
 	};
 
-	// ТО: сохранить (создать или обновить)
-	const saveToForm = async () => {
+	const saveToLink = async () => {
 		if (!orderId || isCreating) return;
-		const num = toFormNumber.trim();
-		if (!num) {
-			showErrorToast("Введите номер ТО");
+		if (!selectedToRecord) {
+			showErrorToast("Выберите ТО из списка");
+			return;
+		}
+		if (
+			selectedToRecord.linkedOrder &&
+			String(orderId) !== String(selectedToRecord.linkedOrder.id)
+		) {
+			showErrorToast("Это ТО уже привязано к другому заказу. Отвяжите его там или выберите другое ТО.");
 			return;
 		}
 		setIsToSaving(true);
 		try {
 			const url = `/api/orders/${orderId}/technical-service`;
-			const body = { number: num, responsibleUserId: toFormResponsibleId ? parseInt(toFormResponsibleId, 10) : null };
-			if (toFormOpen === "add") {
-				const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(body) });
-				if (!res.ok) {
-					const err = await res.json().catch(() => ({}));
-					throw new Error(err?.error || "Ошибка создания ТО");
-				}
-				showSuccessToast("ТО добавлено");
-			} else {
-				const res = await fetch(url, { method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(body) });
-				if (!res.ok) {
-					const err = await res.json().catch(() => ({}));
-					throw new Error(err?.error || "Ошибка обновления ТО");
-				}
-				showSuccessToast("ТО обновлено");
+			const body = { technicalServiceId: selectedToRecord.id };
+			const res = await fetch(url, { method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(body) });
+			if (!res.ok) {
+				const err = await res.json().catch(() => ({}));
+				throw new Error(err?.error || "Ошибка привязки ТО");
 			}
-			setToFormOpen(false);
+			showSuccessToast("ТО привязано");
+			setToPanelOpen(false);
+			setSelectedToRecord(null);
+			setToSearchQuery("");
 			await refetchOrder();
 		} catch (e) {
 			showErrorToast(e instanceof Error ? e.message : "Ошибка");
@@ -642,24 +760,266 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 		}
 	};
 
-	// ТО: отмена формы
-	const cancelToForm = () => {
-		setToFormOpen(false);
-		setSelectedToResponsible(null);
-		setToResponsibleSearch("");
-		setToResponsibleSearchResults([]);
+	const cancelToPanel = () => {
+		setToPanelOpen(false);
+		setSelectedToRecord(null);
+		setToSearchQuery("");
+		setToSearchResults([]);
 	};
 
-	// ТО: удалить
-	const deleteTo = async () => {
+	/** Панель выбора ТО из справочника (поиск + сохранить/отмена) — одна разметка для режима «Связать с ТО» и «Сменить ТО». */
+	const renderToLinkTechnicalServicePanel = () => (
+		<div className="infoField toLinkOrderPanel">
+			<span className="infoLabel">Выберите ТО из справочника</span>
+			<p className="toLinkOrderHint">
+				Введите ID или номер ТО. В списке — дата и время записи, отдел, телефоны; ответственный за ТО — из справочника ТО, менеджер записи — из сущности записи. Для
+				текущего заказа при поиске подставляются данные его записи, если к ТО ещё никто не привязан.
+			</p>
+			<div className="toLinkOrderSearchWrap">
+				{selectedToRecord ? (
+					<div className="toLinkOrderSelectedCard">
+						<div className="toLinkOrderSelectedTitle">
+							<strong>#{selectedToRecord.id}</strong> · {selectedToRecord.number}
+						</div>
+						{selectedToRecord.bookingContext && (
+							<div className="toLinkOrderSelectedMeta column">
+								<div>
+									Дата и время: {formatToRuDate(selectedToRecord.bookingContext.scheduledDate)} · {selectedToRecord.bookingContext.scheduledTime || "—"}
+								</div>
+								<div>
+									Отдел:{" "}
+									{selectedToRecord.bookingContext.departmentName || selectedToRecord.bookingContext.departmentAddress
+										? [selectedToRecord.bookingContext.departmentName, selectedToRecord.bookingContext.departmentAddress].filter(Boolean).join(" — ")
+										: "—"}
+								</div>
+								<div>
+									Телефон для записи: {selectedToRecord.bookingContext.contactPhone || "—"}
+									{selectedToRecord.bookingContext.clientPhone &&
+									selectedToRecord.bookingContext.clientPhone !== selectedToRecord.bookingContext.contactPhone ? (
+										<> · клиент: {selectedToRecord.bookingContext.clientPhone}</>
+									) : null}
+								</div>
+							</div>
+						)}
+						{selectedToRecord.contextSource === "current_order_preview" && (
+							<div className="toLinkOrderSelectedMeta">Контекст записи: текущий заказ (ТО ещё ни к кому не привязан)</div>
+						)}
+						{getTsResponsibleUser(selectedToRecord) ? (
+							<div className="toLinkOrderSelectedMeta">
+								Ответственный (ТО):{" "}
+								<Link href={`/admin/users/${getTsResponsibleUser(selectedToRecord)!.id}`} className="itemLink" target="_blank">
+									{toUserDisplayName(getTsResponsibleUser(selectedToRecord))}
+								</Link>
+								{getTsResponsibleUser(selectedToRecord)?.phone ? ` · ${getTsResponsibleUser(selectedToRecord)?.phone}` : ""}
+							</div>
+						) : (
+							<div className="toLinkOrderSelectedMeta">Ответственный по ТО не назначен в справочнике</div>
+						)}
+						{selectedToRecord.bookingManager ? (
+							<div className="toLinkOrderSelectedMeta">
+								Менеджер записи:{" "}
+								<Link href={`/admin/users/${selectedToRecord.bookingManager.id}`} className="itemLink" target="_blank">
+									{toUserDisplayName(selectedToRecord.bookingManager)}
+								</Link>
+								{selectedToRecord.bookingManager.phone ? ` · ${selectedToRecord.bookingManager.phone}` : ""}
+							</div>
+						) : null}
+						{selectedToRecord.linkedOrder && (
+							<div className="toLinkOrderSelectedMeta column">
+								<div>
+									Связанный заказ:{" "}
+									<Link
+										href={`/admin/orders/${selectedToRecord.linkedOrder.id}`}
+										className="itemLink"
+										target="_blank"
+										onMouseDown={(e) => e.stopPropagation()}
+									>
+										#{selectedToRecord.linkedOrder.id}
+									</Link>
+									{" · "}
+									{formatToRuDate(selectedToRecord.linkedOrder.createdAt)}
+									{selectedToRecord.linkedOrder.finalDeliveryDate
+										? ` · доставка: ${formatToRuDate(selectedToRecord.linkedOrder.finalDeliveryDate)}`
+										: ""}
+									{" · "}
+									{formatRub(selectedToRecord.linkedOrder.orderTotal)}
+								</div>
+								<div>
+									Клиент:{" "}
+									{selectedToRecord.linkedOrder.client ? (
+										orderStatusAllowsClientProfileLink(selectedToRecord.linkedOrder.status) ? (
+											<Link
+												href={`/admin/users/${selectedToRecord.linkedOrder.client.id}`}
+												className="itemLink"
+												target="_blank"
+												onMouseDown={(e) => e.stopPropagation()}
+											>
+												{toUserDisplayName(selectedToRecord.linkedOrder.client)}
+											</Link>
+										) : (
+											<span>{toUserDisplayName(selectedToRecord.linkedOrder.client)}</span>
+										)
+									) : (
+										"—"
+									)}
+								</div>
+								{orderId != null && String(orderId) !== String(selectedToRecord.linkedOrder.id) && (
+									<div className="toLinkOrderSelectedMeta">
+										Это ТО уже привязано к заказу #{selectedToRecord.linkedOrder.id}. Сохранить привязку к текущему заказу нельзя — сначала отвяжите ТО в том
+										заказе.
+									</div>
+								)}
+							</div>
+						)}
+						<button type="button" onClick={handleToClearSelection} className="toLinkOrderClearBtn">
+							Выбрать другое ТО
+						</button>
+					</div>
+				) : (
+					<SearchDropdownInput
+						value={toSearchQuery}
+						onChange={handleToSearchInput}
+						onFocus={() => {
+							if (toSearchBlurTimeout.current) clearTimeout(toSearchBlurTimeout.current);
+							setToSearchFocused(true);
+						}}
+						onBlur={handleToSearchBlur}
+						placeholder="ID или номер ТО"
+						inputClassName="formInput"
+						isActiveSearch={toSearchFocused && toSearchQuery.trim().length >= 1}
+						showDropdown={toSearchFocused && Boolean(toSearchQuery.trim())}
+					>
+						{toSearchFocused && isSearchingTo && toSearchQuery.trim() && (
+							<div className="searchResults loading">
+								<Loading />
+							</div>
+						)}
+						{toSearchFocused && toSearchQuery.trim() && !isSearchingTo && (
+							<div className="searchResults">
+								{toSearchResults.length > 0 ? (
+									toSearchResults.map((ts) => {
+										const respTs = getTsResponsibleUser(ts);
+										const ctx = ts.bookingContext;
+										return (
+											<div key={ts.id} className="searchResultItem column" onMouseDown={() => handleToSelectFromList(ts)}>
+												<div>
+													<strong>ТО #{ts.id}</strong> · {ts.number}
+												</div>
+												{ctx ? (
+													<>
+														<div>
+															Дата и время: {formatToRuDate(ctx.scheduledDate)} · {ctx.scheduledTime || "—"}
+														</div>
+														<div>
+															Отдел:{" "}
+															{ctx.departmentName || ctx.departmentAddress
+																? [ctx.departmentName, ctx.departmentAddress].filter(Boolean).join(" — ")
+																: "—"}
+														</div>
+														<div>
+															Тел.: {ctx.contactPhone || "—"}
+															{ctx.clientPhone && ctx.clientPhone !== ctx.contactPhone ? ` · клиент: ${ctx.clientPhone}` : ""}
+														</div>
+													</>
+												) : (
+													<div>Нет данных записи (заказ с этим ТО без записи или ТО не привязан)</div>
+												)}
+												{ts.contextSource === "current_order_preview" && <div>Запись: текущий заказ</div>}
+												<div>
+													Ответственный (ТО): {respTs ? toUserDisplayName(respTs) : "не назначен"}
+													{respTs?.phone ? ` · ${respTs.phone}` : ""}
+												</div>
+												{ts.bookingManager ? (
+													<div>
+														Менеджер записи: {toUserDisplayName(ts.bookingManager)}
+														{ts.bookingManager.phone ? ` · ${ts.bookingManager.phone}` : ""}
+													</div>
+												) : null}
+												{ts.linkedOrder && (
+													<div className="column">
+														<div>
+															Заказ:{" "}
+															<Link
+																href={`/admin/orders/${ts.linkedOrder.id}`}
+																className="itemLink"
+																target="_blank"
+																onMouseDown={(e) => e.stopPropagation()}
+															>
+																#{ts.linkedOrder.id}
+															</Link>
+															{" · создан: "}
+															{formatToRuDate(ts.linkedOrder.createdAt)}
+															{ts.linkedOrder.finalDeliveryDate ? ` · доставка: ${formatToRuDate(ts.linkedOrder.finalDeliveryDate)}` : ""}
+															{" · сумма: "}
+															{formatRub(ts.linkedOrder.orderTotal)}
+														</div>
+														<div>
+															Клиент:{" "}
+															{ts.linkedOrder.client ? (
+																orderStatusAllowsClientProfileLink(ts.linkedOrder.status) ? (
+																	<Link
+																		href={`/admin/users/${ts.linkedOrder.client.id}`}
+																		className="itemLink"
+																		target="_blank"
+																		onMouseDown={(e) => e.stopPropagation()}
+																	>
+																		{toUserDisplayName(ts.linkedOrder.client)}
+																	</Link>
+																) : (
+																	<span>{toUserDisplayName(ts.linkedOrder.client)}</span>
+																)
+															) : (
+																"—"
+															)}
+														</div>
+														{orderId != null && String(orderId) !== String(ts.linkedOrder.id) && (
+															<div>Уже привязано к другому заказу — к этому не привязать.</div>
+														)}
+													</div>
+												)}
+											</div>
+										);
+									})
+								) : (
+									<div className="searchResultItem">Нет записей ТО</div>
+								)}
+							</div>
+						)}
+					</SearchDropdownInput>
+				)}
+			</div>
+			<div className="toLinkOrderActions">
+				<button
+					type="button"
+					onClick={saveToLink}
+					className="takeOrderButton"
+					disabled={
+						isToSaving ||
+						!selectedToRecord ||
+						(selectedToRecord.linkedOrder != null && orderId != null && String(orderId) !== String(selectedToRecord.linkedOrder.id))
+					}
+				>
+					{isToSaving ? "Сохранение…" : "Сохранить"}
+				</button>
+				<button type="button" onClick={cancelToPanel} className="toLinkOrderCancelBtn" disabled={isToSaving}>
+					Отмена
+				</button>
+			</div>
+		</div>
+	);
+
+	const unlinkTo = async () => {
 		if (!orderId || isCreating) return;
-		if (!window.confirm("Удалить связанное ТО?")) return;
+		if (!window.confirm("Отвязать заказ от ТО? Запись ТО в справочнике останется.")) return;
 		setIsToSaving(true);
 		try {
 			const res = await fetch(`/api/orders/${orderId}/technical-service`, { method: "DELETE", credentials: "include" });
-			if (!res.ok) throw new Error("Ошибка удаления ТО");
-			showSuccessToast("ТО удалено");
-			setToFormOpen(false);
+			if (!res.ok) {
+				const err = await res.json().catch(() => ({}));
+				throw new Error(err?.error || "Ошибка отвязки");
+			}
+			showSuccessToast("ТО отвязано");
+			setToPanelOpen(false);
 			await refetchOrder();
 		} catch (e) {
 			showErrorToast(e instanceof Error ? e.message : "Ошибка");
@@ -672,8 +1032,8 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 	const currentDepartment =
 		selectedDepartmentIdValue !== null
 			? departments.find((d) => d.id === selectedDepartmentIdValue) ||
-			  (selectedManager?.department && selectedManager.department.id === selectedDepartmentIdValue ? selectedManager.department : null) ||
-			  (orderData?.department && orderData.department.id === selectedDepartmentIdValue ? orderData.department : null)
+				(selectedManager?.department && selectedManager.department.id === selectedDepartmentIdValue ? selectedManager.department : null) ||
+				(orderData?.department && orderData.department.id === selectedDepartmentIdValue ? orderData.department : null)
 			: orderData?.department || selectedManager?.department || null;
 
 	// Функция для фильтрации менеджеров по отделу
@@ -720,6 +1080,12 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 	};
 
 	useEffect(() => {
+		// Для существующего заказа ждём окончания загрузки, чтобы не ловить ложные изменения
+		// на промежуточных состояниях (до заполнения всех полей формы).
+		if (!isCreating && loading) {
+			return;
+		}
+
 		const snapshot = getCurrentSnapshot();
 		if (!snapshot) return;
 
@@ -730,7 +1096,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 		}
 
 		setHasChanges(snapshot !== initialSnapshotRef.current);
-	}, [formData, comments, orderItems, currentStatus, selectedClient, selectedManager]);
+	}, [formData, comments, orderItems, currentStatus, selectedClient, selectedManager, isCreating, loading]);
 
 	// Флаг: можно ли прямо сейчас редактировать блок статуса "Новый"
 	const createdStatusEditable = canEditStatusField("created");
@@ -1024,6 +1390,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 
 			const fieldStatusIndexMap: Record<string, number> = {
 				orderItems: 0,
+				contactName: 0,
 				contactPhone: 0,
 				clientId: 1,
 				managerId: 1,
@@ -1099,10 +1466,16 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 				}
 			}
 
-			if (formData.contactPhone && managerCanEditFieldForRequest("contactPhone")) {
-				orderData.contactPhone = formData.contactPhone;
-			} else if (!isManager && formData.contactPhone) {
-				orderData.contactPhone = formData.contactPhone;
+			if (managerCanEditFieldForRequest("contactName")) {
+				orderData.contactName = formData.contactName.trim() || null;
+			} else if (!isManager) {
+				orderData.contactName = formData.contactName.trim() || null;
+			}
+
+			if (managerCanEditFieldForRequest("contactPhone")) {
+				orderData.contactPhone = formData.contactPhone.trim() || null;
+			} else if (!isManager) {
+				orderData.contactPhone = formData.contactPhone.trim() || null;
 			}
 
 			if (formData.finalDeliveryDate && managerCanEditFieldForRequest("finalDeliveryDate")) {
@@ -1185,6 +1558,9 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 
 			if (comments.length > 0) {
 				orderData.comments = comments;
+			} else if (!isCreating) {
+				// Если все комментарии удалены и это редактирование существующего заказа — очищаем поле.
+				orderData.comments = [];
 			}
 
 			if (isSuperadminSelf) {
@@ -1281,7 +1657,11 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 	};
 
 	if (loading) {
-		return <Loading />;
+		return (
+			<div className={`tableContent orderComponent`}>
+				<Loading />
+			</div>
+		);
 	}
 
 	if (error) {
@@ -1349,108 +1729,121 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 												<span className={`infoLabel`}>Дата доставки клиенту:</span>
 												<span className={`infoValue`}>{formatDate(orderData.finalDeliveryDate) || "Не указана"}</span>
 											</div>
-											<div className={`infoField`}>
-												<span className={`infoLabel`}>Номер связанного ТО:</span>
-												<span className={`infoValue`}>
-													{orderData.technicalService ? (
-														<>
-															<button 
-																type="button" 
-																onClick={openToEdit} 
-																className="itemLink" 
-																style={{ background: "none", border: "none", padding: 0, cursor: "pointer", textDecoration: "underline" }}
-																disabled={isToSaving}
-															>
-																{orderData.technicalService.number}
-															</button>
-															{orderData.technicalService.responsibleUser && (
-																<>
-																	{" · "}
-																	<Link href={`/admin/users/${orderData.technicalService.responsibleUser.id}`} className="itemLink" target="_blank">
-																		{[orderData.technicalService.responsibleUser.first_name, orderData.technicalService.responsibleUser.last_name].filter(Boolean).join(" ") || "—"}
+											{(() => {
+												const bk = selectedBooking ?? orderData.booking;
+												if (!bk) return null;
+												const dateStr =
+													typeof bk.scheduledDate === "string"
+														? bk.scheduledDate
+														: new Date(bk.scheduledDate).toISOString();
+												return (
+													<div className={`infoField`} id="orderLinkedBooking">
+														<span className={`infoLabel`}>Связанная запись:</span>
+														<span className={`infoValue`}>
+															<div className="column">
+																<div>
+																	<Link href={`/admin/bookings/${bk.id}`} className="itemLink" target="_blank">
+																		Запись #{bk.id}
 																	</Link>
-																</>
+																	{" · "}
+																	{bookingStatusLabelRu(String(bk.status))}
+																	{" · "}
+																	{formatToRuDate(dateStr)} {bk.scheduledTime}
+																</div>
+																<div>Телефон для связи (запись): {bk.contactPhone || "—"}</div>
+																<div>
+																	Клиент записи:{" "}
+																	{bk.client ? (
+																		<Link href={`/admin/users/${bk.client.id}`} className="itemLink" target="_blank">
+																			{[bk.client.first_name, bk.client.last_name].filter(Boolean).join(" ").trim() || "—"} ({bk.client.phone})
+																		</Link>
+																	) : (
+																		"—"
+																	)}
+																</div>
+																<div>
+																	Отдел для записи:{" "}
+																	{bk.bookingDepartment
+																		? [bk.bookingDepartment.name, bk.bookingDepartment.address].filter(Boolean).join(" — ")
+																		: "—"}
+																</div>
+																<div>
+																	Ответственный менеджер записи:{" "}
+																	{bk.manager ? (
+																		<Link href={`/admin/users/${bk.manager.id}`} className="itemLink" target="_blank">
+																			{[bk.manager.first_name, bk.manager.last_name].filter(Boolean).join(" ") || "—"}
+																		</Link>
+																	) : (
+																		"—"
+																	)}
+																	{bk.manager?.phone ? ` · ${bk.manager.phone}` : ""}
+																</div>
+																<div>
+																	Заказ:{" "}
+																	<Link href={`/admin/orders/${orderData.id}`} className="itemLink" target="_blank">
+																		#{orderData.id}
+																	</Link>{" "}
+																	(этот заказ)
+																</div>
+															</div>
+														</span>
+													</div>
+												);
+											})()}
+											<div className={`infoField`} id="orderLinkedTechnicalService">
+												<span className={`infoLabel`}>Связанное ТО:</span>
+												<div className={`infoValue`}>
+													{orderData.technicalService ? (
+														<div className="toLinkedToBlock">
+															<span className="toLinkedToLine">
+																<strong>#{orderData.technicalService.id}</strong>
+																{" · "}
+																{orderData.technicalService.number}
+																{(() => {
+																	const resp = orderData.technicalService.responsibleUser ?? null;
+																	return resp ? (
+																		<>
+																			{" · "}
+																			<Link href={`/admin/users/${resp.id}`} className="itemLink" target="_blank">
+																				{[resp.first_name, resp.last_name].filter(Boolean).join(" ") || "—"}
+																			</Link>
+																		</>
+																	) : (
+																		<span className="toLinkedNoResponsible"> · ответственный не указан</span>
+																	);
+																})()}
+															</span>
+															{(isManager || isAdminOrSuperadmin) && (
+																<div className="toLinkedToActions">
+																	<button type="button" onClick={openToEdit} className="takeOrderButton" disabled={isToSaving}>
+																		Сменить ТО
+																	</button>
+																	<button type="button" onClick={unlinkTo} className="toLinkOrderCancelBtn" disabled={isToSaving}>
+																		Отвязать
+																	</button>
+																</div>
 															)}
-														</>
+														</div>
 													) : (
 														<>
-															{(isManager || isAdminOrSuperadmin) && (
-																<button type="button" onClick={openToAdd} className="takeOrderButton" disabled={isToSaving}>
-																	Связать с ТО
-																</button>
-															)}
+															{(isManager || isAdminOrSuperadmin) &&
+																(!toPanelOpen ? (
+																	<button type="button" onClick={openToAdd} className="takeOrderButton" disabled={isToSaving}>
+																		Связать с ТО
+																	</button>
+																) : (
+																	renderToLinkTechnicalServicePanel()
+																))}
 														</>
 													)}
-												</span>
-											</div>
-											{toFormOpen && (
-												<div className={`infoField`} style={{ flexDirection: "column", alignItems: "flex-start", gap: 8, marginTop: 4 }}>
-													<input
-														type="text"
-														value={toFormNumber}
-														onChange={(e) => setToFormNumber(e.target.value)}
-														placeholder="Номер ТО"
-														className="formInput"
-													/>
-													<div style={{ width: "100%", position: "relative" }}>
-														{selectedToResponsible ? (
-															<div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-																<Link href={`/admin/users/${selectedToResponsible.id}`} className="itemLink" target="_blank">
-																	{selectedToResponsible.first_name} {selectedToResponsible.last_name} ({selectedToResponsible.phone})
-																</Link>
-																<button type="button" onClick={handleToResponsibleClear} style={{ fontSize: "12px", padding: "4px 8px" }}>
-																	Убрать ×
-																</button>
-															</div>
-														) : (
-															<div className={`searchContainer`}>
-																<input
-																	type="text"
-																	value={toResponsibleSearch}
-																	onChange={(e) => handleToResponsibleManualInput(e.target.value)}
-																	onFocus={() => {
-																		if (toResponsibleBlurTimeout.current) clearTimeout(toResponsibleBlurTimeout.current);
-																		setIsToResponsibleSearchFocused(true);
-																	}}
-																	onBlur={handleToResponsibleBlur}
-																	placeholder="Поиск менеджера по имени, ID или телефону"
-																	className={`formInput ${isToResponsibleSearchFocused && toResponsibleSearch.length >= 2 ? "activeSearch" : ""}`}
-																	style={{ width: "100%" }}
-																/>
-																{isToResponsibleSearchFocused && isSearchingToResponsible && toResponsibleSearch && (
-																	<div className="searchResults loading">
-																		<Loading />
-																	</div>
-																)}
-																{isToResponsibleSearchFocused && toResponsibleSearch && !isSearchingToResponsible && (
-																	<div className="searchResults">
-																		{toResponsibleSearchResults.length > 0 ? (
-																			toResponsibleSearchResults.map((manager) => (
-																				<div key={manager.id} className={`searchResultItem`} onMouseDown={() => handleToResponsibleSelect(manager)}>
-																					{manager.first_name} {manager.last_name} - {manager.phone}
-																				</div>
-																			))
-																		) : (
-																			<div className={`searchResultItem`}>Нет результатов</div>
-																		)}
-																	</div>
-																)}
-															</div>
-														)}
-													</div>
-													<div style={{ display: "flex", gap: 8 }}>
-														<button type="button" onClick={saveToForm} className="takeOrderButton" disabled={isToSaving || !toFormNumber.trim()}>
-															{isToSaving ? "Сохранение…" : "Сохранить"}
-														</button>
-														<button type="button" onClick={cancelToForm} disabled={isToSaving}>
-															Отмена
-														</button>
-													</div>
 												</div>
-											)}
+											</div>
 										</>
 									)}
 								</div>
+								{orderData && toPanelOpen && orderData.technicalService && (
+									<div className="infoRow toLinkOrderRow">{renderToLinkTechnicalServicePanel()}</div>
+								)}
 								<div className="infoRow">
 									<div className={`infoField`}>
 										<span className={`infoLabel`}>Клиент:</span>
@@ -1657,7 +2050,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 			</div>
 
 			{/* Фиксированные кнопки для изменений */}
-			{isEditMode && (isCreating || hasChanges) && (
+			{isEditMode && hasChanges && (
 				<div className={`fixedButtons`}>
 					<div className="buttonsBlock">
 						<button onClick={() => router.push("/admin/orders")} className={`secondaryButton`} disabled={isSaving}>

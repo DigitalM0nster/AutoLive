@@ -1,0 +1,67 @@
+.banner {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9980;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  background: #fff;
+  border-top: 1px solid #e8e8e8;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.08);
+}
+
+.textBlock {
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-width: 240px;
+  max-width: 720px;
+}
+
+.title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--site-color-primary, #3d3d3d);
+}
+
+.text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #555;
+}
+
+.policyLink {
+  font-weight: 600;
+  color: var(--site-color-accent, #6a7a12);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.policyLink:hover {
+  color: var(--site-color-primary, #3d3d3d);
+}
+
+.actions {
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.acceptButton {
+  padding: 12px 22px;
+  border-radius: 10px;
+  border: none;
+  background: var(--site-color-accent, #b0cb1f);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.acceptButton:hover {
+  filter: brightness(0.95);
+}/*# sourceMappingURL=CookieConsent.module.css.map */

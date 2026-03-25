@@ -190,6 +190,8 @@ model ServiceKitLog {
 model Order {
     id                  Int         @id @default(autoincrement()) @map("id")
     comments            String[]    @map("comments")
+    contactName         String?     @map("contact_name") @db.VarChar(255)
+    contactPhone        String?     @map("contact_phone") @db.VarChar(255)
     status              OrderStatus @default(created) @map("status")
     createdAt           DateTime    @default(now()) @map("created_at") @db.Timestamp(0)
     updatedAt           DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
@@ -202,6 +204,7 @@ model Order {
     createdBy           Int?        @map("created_by") // Кто создал заказ (админ/менеджер/пользователь). Для публичной заявки может быть null
     bookingId           Int?        @unique @map("booking_id") // Связь с заявкой (опционально, один-к-одному)
     bookingDepartmentId Int?        @map("booking_department_id") // Адрес доставки (опционально)
+    technicalServiceId  Int?        @unique @map("technical_service_id") // Связь с записью ТО из справочника (один заказ — одно ТО)
 
     // Связи
     manager           User?              @relation("ManagerOrders", fields: [managerId], references: [id])
@@ -210,23 +213,22 @@ model Order {
     creator           User?              @relation("CreatedOrders", fields: [createdBy], references: [id])
     booking           Booking?           @relation("OrderBooking", fields: [bookingId], references: [id])
     bookingDepartment BookingDepartment? @relation("OrderBookingDepartment", fields: [bookingDepartmentId], references: [id])
-    technicalService  TechnicalService?  @relation("OrderTO")
+    technicalService  TechnicalService?  @relation(fields: [technicalServiceId], references: [id], onDelete: SetNull)
     orderItems        OrderItem[]
     orderLogs         OrderLog[]
 
     @@map("order")
 }
 
-// Связанное ТО (техническое обслуживание): номер, ответственный; один заказ — одно ТО
+// ТО (техобслуживание): справочная запись (номер, ответственный). Заказы ссылаются на неё через Order.technicalServiceId
 model TechnicalService {
     id                Int      @id @default(autoincrement()) @map("id")
     number            String   @map("number") @db.VarChar(255) // Номер ТО
-    orderId           Int?     @unique @map("order_id") // Связь с заказом (один-к-одному)
     responsibleUserId Int?     @map("responsible_user_id") // Ответственный за ТО
     createdAt         DateTime @default(now()) @map("created_at") @db.Timestamp(0)
     updatedAt         DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
 
-    order           Order? @relation("OrderTO", fields: [orderId], references: [id], onDelete: Cascade)
+    order           Order?
     responsibleUser User?  @relation("TechnicalServiceResponsible", fields: [responsibleUserId], references: [id], onDelete: SetNull)
 
     @@map("technical_service")

@@ -765,13 +765,13 @@ export default function AllOrdersTable() {
 					<tbody className={styles.tableBody}>
 						{loading ? (
 							<tr>
-								<td colSpan={6} className={styles.loadingCell}>
+								<td colSpan={7} className={styles.loadingCell}>
 									<Loading />
 								</td>
 							</tr>
 						) : orders.length === 0 ? (
 							<tr>
-								<td colSpan={6} className={styles.emptyCell}>
+								<td colSpan={7} className={styles.emptyCell}>
 									{statusFilter !== "all" || dateFilter.from || dateFilter.to || managerSearch || clientSearch || departmentFilter !== "all" || idSearch
 										? "Заказы не найдены"
 										: "Нет заказов"}
@@ -782,15 +782,22 @@ export default function AllOrdersTable() {
 								<tr key={order.id} className={styles.tableRow}>
 									<td className={styles.tableCell}>{formatDate(order.createdAt)}</td>
 									<td className={`${styles.tableCell} idCell`}>
-										<div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-											<span>{order.id}</span>
-											<button className="viewButton" onClick={() => router.push(`/admin/orders/${order.id}`)}>
-												Перейти
-											</button>
+										<div className="orderListIdCell">
+											<div className="orderListIdRow">
+												<span>{order.id}</span>
+												<button type="button" className="viewButton" onClick={() => router.push(`/admin/orders/${order.id}`)}>
+													Перейти
+												</button>
+											</div>
+											{order.technicalService?.number ? (
+												<Link className="itemLink orderListToLink" href={`/admin/orders/${order.id}#orderLinkedTechnicalService`}>
+													ТО {order.technicalService.number}
+												</Link>
+											) : null}
 										</div>
 									</td>
 									<td className={styles.tableCell}>
-										<span className={`${styles.statusBadge} ${styles[getStatusColor(order.status)]}`}>{getStatusText(order.status)}</span>
+										<span className={`orderStatusBadge ${getStatusColor(order.status)}`}>{getStatusText(order.status)}</span>
 									</td>
 									<td className={styles.tableCell}>{renderDepartmentBlock(order)}</td>
 									<td className={styles.tableCell}>{renderManagerBlock(order)}</td>

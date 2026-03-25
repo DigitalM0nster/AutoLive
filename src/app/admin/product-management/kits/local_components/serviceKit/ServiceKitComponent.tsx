@@ -9,6 +9,7 @@ import Loading from "@/components/ui/loading/Loading";
 import ConfirmPopup from "@/components/ui/confirmPopup/ConfirmPopup";
 import ImageUpload from "@/components/ui/imageUpload/ImageUpload";
 import FixedActionButtons from "@/components/ui/fixedActionButtons/FixedActionButtons";
+import SearchDropdownInput from "@/components/ui/searchDropdownInput/SearchDropdownInput";
 import styles from "./ServiceKitComponent.module.scss";
 
 type ServiceKitPageProps = {
@@ -145,10 +146,7 @@ export default function ServiceKitComponent({ kitId, isCreating = false, userRol
 
 		try {
 			setIsSearching(true);
-			const response = await fetch(
-				`/api/products?search=${encodeURIComponent(q)}&limit=${SEARCH_PAGE_SIZE}&page=${page}`,
-				{ credentials: "include" },
-			);
+			const response = await fetch(`/api/products?search=${encodeURIComponent(q)}&limit=${SEARCH_PAGE_SIZE}&page=${page}`, { credentials: "include" });
 
 			if (response.ok) {
 				const data = await response.json();
@@ -594,44 +592,47 @@ export default function ServiceKitComponent({ kitId, isCreating = false, userRol
 							{kitItems.length === 0 ? (
 								<div className="emptyState">Товары не добавлены</div>
 							) : (
-								<div className={`${styles.kitItemsList} kitItemsList`}>
+								<div className="productItemsList">
 									{kitItems.map((item, index) => (
-										<div key={item.productId} className={`${styles.kitItemCard} kitItem`}>
-											<div className={styles.kitItemMain}>
-												<span className={styles.kitItemIndex}>№{index + 1}</span>
-												<div className={styles.kitItemImageWrap}>
+										<div key={item.productId} className="productItemCard productItem">
+											<div className="productItemMain">
+												<span className="productItemIndex">№{index + 1}</span>
+												<div className="productItemImageWrap">
 													{item.product.image ? (
-														<img src={item.product.image} alt={item.product.title} className={styles.kitItemImage} loading="lazy" />
+														<img src={item.product.image} alt={item.product.title} className="productItemImage" loading="lazy" />
 													) : (
-														<div className={styles.kitItemNoImage}>Нет фото</div>
+														<div className="productItemNoImage">Нет фото</div>
 													)}
 												</div>
-												<div className={styles.kitItemDetails}>
-													<div className={styles.kitItemTitle}>{item.product.title}</div>
-													<div className={styles.kitItemMeta}>
-														<span className={styles.kitItemMetaRow}><span className={styles.kitItemLabel}>Артикул:</span> {item.product.sku}</span>
+												<div className="productItemDetails">
+													<div className="productItemTitle">{item.product.title}</div>
+													<div className="productItemMeta">
+														<span className="productItemMetaRow">
+															<span className="productItemLabel">Артикул:</span> {item.product.sku}
+														</span>
 														{item.product.brand && (
-															<span className={styles.kitItemMetaRow}><span className={styles.kitItemLabel}>Бренд:</span> {item.product.brand}</span>
+															<span className="productItemMetaRow">
+																<span className="productItemLabel">Бренд:</span> {item.product.brand}
+															</span>
 														)}
-														<span className={styles.kitItemMetaRow}><span className={styles.kitItemLabel}>Цена:</span> {typeof item.product.price === "number" ? `${item.product.price.toLocaleString("ru-RU")} ₽` : "—"}</span>
+														<span className="productItemMetaRow">
+															<span className="productItemLabel">Цена:</span>{" "}
+															{typeof item.product.price === "number" ? `${item.product.price.toLocaleString("ru-RU")} ₽` : "—"}
+														</span>
 													</div>
 												</div>
 												{canEdit && (
-													<button
-														type="button"
-														onClick={() => handleRemoveProduct(item.productId)}
-														className={styles.removeProductButton}
-													>
+													<button type="button" onClick={() => handleRemoveProduct(item.productId)} className="removeProductButton">
 														Удалить товар
 													</button>
 												)}
 											</div>
 											{/* Управление аналогами */}
-											<div className={`${styles.analogsBlock} kitItemAnalogs`}>
-												<div className={`${styles.analogsHeader} analogsHeader`}>
-													<div className={styles.analogsTitleGroup}>
-														<span className={styles.analogBadge}>Аналоги</span>
-														<span className={styles.analogsCount}>({item.analogProductIds.length})</span>
+											<div className="analogsBlock productItemAnalogs">
+												<div className="analogsHeader">
+													<div className="analogsTitleGroup">
+														<span className="analogBadge">Аналоги</span>
+														<span className="analogsCount">({item.analogProductIds.length})</span>
 													</div>
 												</div>
 
@@ -639,37 +640,44 @@ export default function ServiceKitComponent({ kitId, isCreating = false, userRol
 												{item.analogProductIds.length === 0 ? (
 													<div className="emptyState small">Аналоги не добавлены</div>
 												) : (
-													<div className={`${styles.analogsList} analogsList`}>
+													<div className="analogsList">
 														{item.analogProductIds.map((analogId) => {
 															const analogProduct = analogProductsData.get(analogId);
 															return (
-																<div key={analogId} className={`${styles.analogItem} analogItem`}>
+																<div key={analogId} className="analogItem">
 																	{analogProduct ? (
 																		<>
-																			<div className={styles.analogItemImageWrap}>
+																			<div className="analogItemImageWrap">
 																				{analogProduct.image ? (
-																					<img src={analogProduct.image} alt={analogProduct.title} className={styles.analogItemImage} loading="lazy" />
+																					<img
+																						src={analogProduct.image}
+																						alt={analogProduct.title}
+																						className="analogItemImage"
+																						loading="lazy"
+																					/>
 																				) : (
-																					<div className={styles.analogItemNoImage}>—</div>
+																					<div className="analogItemNoImage">—</div>
 																				)}
 																			</div>
-																			<div className={styles.analogItemDetails}>
-																				<div className={styles.analogItemTitle}>{analogProduct.title}</div>
-																				<div className={styles.analogItemMeta}>
+																			<div className="analogItemDetails">
+																				<div className="analogItemTitle">{analogProduct.title}</div>
+																				<div className="analogItemMeta">
 																					{analogProduct.sku && <span>Арт. {analogProduct.sku}</span>}
 																					{analogProduct.brand && <span>{analogProduct.brand}</span>}
-																					{typeof analogProduct.price === "number" && <span>{analogProduct.price.toLocaleString("ru-RU")} ₽</span>}
+																					{typeof analogProduct.price === "number" && (
+																						<span>{analogProduct.price.toLocaleString("ru-RU")} ₽</span>
+																					)}
 																				</div>
 																			</div>
 																		</>
 																	) : (
-																		<span className={styles.analogItemLoading}>Товар ID: {analogId} (загрузка…)</span>
+																		<span className="analogItemLoading">Товар ID: {analogId} (загрузка…)</span>
 																	)}
 																	{canEdit && (
 																		<button
 																			type="button"
 																			onClick={() => handleRemoveAnalog(item.productId, analogId)}
-																			className={styles.analogItemRemove}
+																			className="analogItemRemove"
 																		>
 																			Удалить из аналогов
 																		</button>
@@ -681,7 +689,7 @@ export default function ServiceKitComponent({ kitId, isCreating = false, userRol
 												)}
 
 												{canEdit && !analogSearchStates.get(item.productId)?.isOpen && (
-													<div className={styles.analogsActions}>
+													<div className="analogsActions">
 														<button
 															type="button"
 															onClick={() => {
@@ -698,7 +706,7 @@ export default function ServiceKitComponent({ kitId, isCreating = false, userRol
 																	return newMap;
 																});
 															}}
-															className={styles.analogAddButton}
+															className="analogAddButton"
 														>
 															+ Добавить аналог
 														</button>
@@ -732,11 +740,10 @@ export default function ServiceKitComponent({ kitId, isCreating = false, userRol
 																×
 															</button>
 														</div>
-														<input
-															type="text"
+														<SearchDropdownInput
+															withContainer={false}
 															value={analogSearchStates.get(item.productId)?.query || ""}
-															onChange={(e) => {
-																const query = e.target.value;
+															onChange={(query) => {
 																setAnalogSearchStates((prev) => {
 																	const newMap = new Map(prev);
 																	const state = newMap.get(item.productId) || {
@@ -767,7 +774,12 @@ export default function ServiceKitComponent({ kitId, isCreating = false, userRol
 																});
 															}}
 															placeholder="Поиск товаров по названию, артикулу или бренду"
-															className="searchInput"
+															inputClassName="searchInput"
+															showDropdown={
+																Boolean(analogSearchStates.get(item.productId)?.isSearching) ||
+																(Boolean(analogSearchStates.get(item.productId)?.isFocused) &&
+																	(analogSearchStates.get(item.productId)?.query || "").length >= 2)
+															}
 															autoFocus
 														/>
 														{analogSearchStates.get(item.productId)?.isSearching && (
@@ -797,7 +809,9 @@ export default function ServiceKitComponent({ kitId, isCreating = false, userRol
 																					<div className={styles.searchResultItemLine2}>
 																						{product.sku && <span>Арт. {product.sku}</span>}
 																						{product.brand && <span>{product.brand}</span>}
-																						{typeof product.price === "number" && <span>{product.price.toLocaleString("ru-RU")} ₽</span>}
+																						{typeof product.price === "number" && (
+																							<span>{product.price.toLocaleString("ru-RU")} ₽</span>
+																						)}
 																					</div>
 																				</div>
 																			))
@@ -813,19 +827,16 @@ export default function ServiceKitComponent({ kitId, isCreating = false, userRol
 							)}
 							{/* Пунктирная зона «+ Добавить товар»: при клике открывается поиск внутри */}
 							{canEdit && (
-								<div
-									className={`${styles.addProductZone} ${isAddZoneOpen ? styles.addProductZoneOpen : ""}`}
-									onClick={() => !isAddZoneOpen && setIsAddZoneOpen(true)}
-								>
+								<div className={`addProductZone ${isAddZoneOpen ? "addProductZoneOpen" : ""}`} onClick={() => !isAddZoneOpen && setIsAddZoneOpen(true)}>
 									{!isAddZoneOpen ? (
-										<div className={styles.addProductZonePlaceholder}>
-											<span className={styles.addProductZonePlus}>+</span>
-											<span className={styles.addProductZoneText}>Добавить товар</span>
+										<div className="addProductZonePlaceholder">
+											<span className="addProductZonePlus">+</span>
+											<span className="addProductZoneText">Добавить товар</span>
 										</div>
 									) : (
-										<div className={styles.addProductZoneSearch} onClick={(e) => e.stopPropagation()}>
-											<div className={styles.addProductZoneSearchHeader}>
-												<span className={styles.addProductZoneSearchTitle}>Поиск товара</span>
+										<div className="addProductZoneSearch" onClick={(e) => e.stopPropagation()}>
+											<div className="addProductZoneSearchHeader">
+												<span className="addProductZoneSearchTitle">Поиск товара</span>
 												<button
 													type="button"
 													onClick={() => {
@@ -836,22 +847,23 @@ export default function ServiceKitComponent({ kitId, isCreating = false, userRol
 														setSearchPage(1);
 														setIsSearchFocused(false);
 													}}
-													className={styles.addProductZoneClose}
+													className="addProductZoneClose"
 													aria-label="Закрыть"
 												>
 													×
 												</button>
 											</div>
-											<input
-												type="text"
+											<SearchDropdownInput
+												withContainer={false}
 												value={productSearch}
-												onChange={(e) => {
-													setProductSearch(e.target.value);
-													handleProductSearch(e.target.value);
+												onChange={(value) => {
+													setProductSearch(value);
+													handleProductSearch(value);
 												}}
 												onFocus={() => setIsSearchFocused(true)}
 												placeholder="По названию, артикулу или бренду"
-												className="searchInput"
+												inputClassName="searchInput"
+												showDropdown={isSearching || (isSearchFocused && productSearch.trim().length >= 1)}
 												autoFocus
 											/>
 											{isSearching && (
@@ -860,52 +872,55 @@ export default function ServiceKitComponent({ kitId, isCreating = false, userRol
 												</div>
 											)}
 											{!isSearching && isSearchFocused && productSearch.trim().length >= 1 && (
-												<div className={styles.searchResultsBlock}>
-													<div className="searchResults">
-														{searchResults.length === 0 ? (
-															<div className="searchResultItem">Товары не найдены</div>
-														) : (
-															<>
-																{searchResults
-																	.filter((product) => !kitItems.some((it) => it.productId === product.id))
-																	.map((product) => (
-																		<div key={product.id} className={`searchResultItem ${styles.searchResultItemRich}`} onClick={() => handleProductSelect(product)}>
-																			<div className={styles.searchResultItemLine1}>{product.title}</div>
-																			<div className={styles.searchResultItemLine2}>
-																				{product.sku && <span>Арт. {product.sku}</span>}
-																				{product.brand && <span>{product.brand}</span>}
-																				{typeof product.price === "number" && <span>{product.price.toLocaleString("ru-RU")} ₽</span>}
-																			</div>
-																		</div>
-																	))}
-																{searchTotal > 0 && (
-																	<div className={styles.searchResultsFooter}>
-																		<div className={styles.searchResultsPagination}>
-																			<button
-																				type="button"
-																				onClick={() => goToSearchPage(searchPage - 1)}
-																				disabled={isSearching || searchPage <= 1}
-																				className={styles.searchResultsPageBtn}
-																			>
-																				← Предыдущая
-																			</button>
-																			<span className={styles.searchResultsPageInfo}>
-																				Страница {searchPage} из {Math.max(1, Math.ceil(searchTotal / SEARCH_PAGE_SIZE))} (всего {searchTotal.toLocaleString("ru-RU")})
-																			</span>
-																			<button
-																				type="button"
-																				onClick={() => goToSearchPage(searchPage + 1)}
-																				disabled={isSearching || searchPage >= Math.ceil(searchTotal / SEARCH_PAGE_SIZE)}
-																				className={styles.searchResultsPageBtn}
-																			>
-																				Следующая →
-																			</button>
+												<div className="searchResults">
+													{searchResults.length === 0 ? (
+														<div className="searchResultItem">Товары не найдены</div>
+													) : (
+														<>
+															{searchResults
+																.filter((product) => !kitItems.some((it) => it.productId === product.id))
+																.map((product) => (
+																	<div
+																		key={product.id}
+																		className={`searchResultItem ${styles.searchResultItemRich}`}
+																		onClick={() => handleProductSelect(product)}
+																	>
+																		<div className={styles.searchResultItemLine1}>{product.title}</div>
+																		<div className={styles.searchResultItemLine2}>
+																			{product.sku && <span>Арт. {product.sku}</span>}
+																			{product.brand && <span>{product.brand}</span>}
+																			{typeof product.price === "number" && <span>{product.price.toLocaleString("ru-RU")} ₽</span>}
 																		</div>
 																	</div>
-																)}
-															</>
-														)}
-													</div>
+																))}
+															{searchTotal > 0 && (
+																<div className={styles.searchResultsFooter}>
+																	<div className={styles.searchResultsPagination}>
+																		<button
+																			type="button"
+																			onClick={() => goToSearchPage(searchPage - 1)}
+																			disabled={isSearching || searchPage <= 1}
+																			className={styles.searchResultsPageBtn}
+																		>
+																			← Предыдущая
+																		</button>
+																		<span className={styles.searchResultsPageInfo}>
+																			Страница {searchPage} из {Math.max(1, Math.ceil(searchTotal / SEARCH_PAGE_SIZE))} (всего{" "}
+																			{searchTotal.toLocaleString("ru-RU")})
+																		</span>
+																		<button
+																			type="button"
+																			onClick={() => goToSearchPage(searchPage + 1)}
+																			disabled={isSearching || searchPage >= Math.ceil(searchTotal / SEARCH_PAGE_SIZE)}
+																			className={styles.searchResultsPageBtn}
+																		>
+																			Следующая →
+																		</button>
+																	</div>
+																</div>
+															)}
+														</>
+													)}
 												</div>
 											)}
 										</div>

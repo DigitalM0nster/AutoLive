@@ -231,6 +231,19 @@
   color: #b0cb1f;
 }
 
+.formHint {
+  font-size: 14px;
+  line-height: 1.45;
+  color: #555;
+  margin: 0;
+}
+
+.consentBlock {
+  margin-top: 8px;
+  margin-bottom: 4px;
+  width: 100%;
+}
+
 @media (max-width: 768px) {
   .cartContainer {
     padding: 10px;

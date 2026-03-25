@@ -150,6 +150,15 @@
   transition: 0.3s ease-in-out;
 }
 
+.cartIcon {
+  color: var(--site-color-accent, #b0cb1f);
+}
+.cartIcon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 .cartAnimating {
   animation: cartBounce 0.5s ease-in-out;
 }

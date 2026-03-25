@@ -47,6 +47,11 @@
   font-size: 30px;
   font-weight: 600;
 }
+.popup .consentBlock {
+  width: 100%;
+  max-width: 320px;
+  align-self: center;
+}
 .popup form.inputsBlock,
 .popup .inputsBlock {
   display: flex;

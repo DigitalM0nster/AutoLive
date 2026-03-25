@@ -5,6 +5,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import styles from "./styles.module.scss";
 import Loading from "@/components/ui/loading/Loading";
+import SearchDropdownInput from "@/components/ui/searchDropdownInput/SearchDropdownInput";
 
 interface SearchInputProps {
 	onSearch: (query: string) => void;
@@ -20,7 +21,6 @@ export default function SearchInput({ onSearch, onResultClick }: SearchInputProp
 	const [maxSecondColumnWidth, setMaxSecondColumnWidth] = useState(0);
 
 	const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-	const searchInputRef = useRef<HTMLInputElement>(null);
 	const resultsRef = useRef<HTMLDivElement>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
 
@@ -119,16 +119,15 @@ export default function SearchInput({ onSearch, onResultClick }: SearchInputProp
 	return (
 		<div ref={containerRef} className={styles.searchBlock}>
 			<div className={styles.searchInputContainer}>
-				<input
-					ref={searchInputRef}
-					type="text"
-					placeholder="Поиск по названию, артикулу, бренду или категории..."
+				<SearchDropdownInput
+					withContainer={false}
 					value={searchQuery}
-					onChange={(e) => handleSearchChange(e.target.value)}
+					onChange={handleSearchChange}
 					onFocus={handleFocus}
 					onBlur={handleBlur}
-					className={styles.searchInput}
-					autoComplete="off"
+					placeholder="Поиск по названию, артикулу, бренду или категории..."
+					inputClassName={styles.searchInput}
+					showDropdown={showSearchResults || searchLoading}
 				/>
 
 				{showSearchResults && searchResults.length > 0 && (

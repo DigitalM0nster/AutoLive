@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Loading from "@/components/ui/loading/Loading";
+import SearchDropdownInput from "@/components/ui/searchDropdownInput/SearchDropdownInput";
 import DatePickerField from "@/components/ui/datePicker/DatePickerField";
 import datePickerFieldStyles from "@/components/ui/datePicker/DatePickerField.module.scss";
 import { showErrorToast } from "@/components/ui/toast/ToastProvider";
@@ -27,8 +28,8 @@ type StatusConfirmedSectionProps = {
 	orderData: Order | null;
 	currentStatus: string;
 	statusDate?: string | null;
-	selectedBooking: { id: number; scheduledDate: string | Date; scheduledTime: string; status: string; contactPhone: string } | null;
-	setSelectedBooking: React.Dispatch<React.SetStateAction<{ id: number; scheduledDate: string | Date; scheduledTime: string; status: string; contactPhone: string } | null>>;
+	selectedBooking: NonNullable<Order["booking"]> | null;
+	setSelectedBooking: React.Dispatch<React.SetStateAction<NonNullable<Order["booking"]> | null>>;
 	selectedBookingDepartment: { id: number; name: string | null; address: string; phones: string[]; email: string | null } | null;
 	setSelectedBookingDepartment: React.Dispatch<React.SetStateAction<{ id: number; name: string | null; address: string; phones: string[]; email: string | null } | null>>;
 	bookingDepartments: { id: number; name: string | null; address: string; phones: string[]; email: string | null }[];
@@ -87,7 +88,7 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 	const [isManagerSearchFocused, setIsManagerSearchFocused] = useState(false);
 	const [isBookingSearchFocused, setIsBookingSearchFocused] = useState(false);
 	const [bookingSearch, setBookingSearch] = useState("");
-	const [bookingSearchResults, setBookingSearchResults] = useState<{ id: number; scheduledDate: string | Date; scheduledTime: string; status: string; contactPhone: string }[]>([]);
+	const [bookingSearchResults, setBookingSearchResults] = useState<NonNullable<Order["booking"]>[]>([]);
 	const [isSearchingBookings, setIsSearchingBookings] = useState(false);
 	const [collapsedItems, setCollapsedItems] = useState<Set<string>>(new Set());
 
@@ -331,7 +332,10 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 							scheduledTime: b.scheduledTime,
 							status: b.status,
 							contactPhone: b.contactPhone,
-						}))
+							client: b.client ?? null,
+							manager: b.manager ?? null,
+							bookingDepartment: b.bookingDepartment ?? null,
+						})) as NonNullable<Order["booking"]>[],
 					);
 				} else {
 					setBookingSearchResults([]);
@@ -344,7 +348,7 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 		}
 	};
 
-	const handleBookingSelect = (booking: { id: number; scheduledDate: string | Date; scheduledTime: string; status: string; contactPhone: string }) => {
+	const handleBookingSelect = (booking: NonNullable<Order["booking"]>) => {
 		if (!canEdit) {
 			return;
 		}
@@ -449,7 +453,7 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 
 	return (
 		<div className={`statusBlock borderBlock ${isExpanded ? "active" : ""}`}>
-			<div className={`statusHeader`} onClick={toggleExpand}>
+			<div className={`statusHeader statusToneConfirmed`} onClick={toggleExpand}>
 				<h3>2. Подтверждённый</h3>
 				{statusDate && <span className={`statusDate`}>Присвоен: {formatDate(statusDate)}</span>}
 			</div>
@@ -482,22 +486,22 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 							)}
 						</div>
 						{!selectedClient && (
-							<div className={`searchContainer`}>
-								<input
-									id="clientSearch"
-									type="text"
-									value={clientSearch}
-									onChange={(e) => handleClientManualInput(e.target.value)}
-									onFocus={() => {
-										if (clientBlurTimeout.current) clearTimeout(clientBlurTimeout.current);
-										setIsClientSearchFocused(true);
-										clearFieldError("clientSearch");
-									}}
-									onBlur={handleClientBlur}
-									placeholder="Поиск клиента по имени или телефону"
-									className={`${fieldErrors.has("clientSearch") ? "error" : ""} ${isClientSearchFocused && clientSearch.length >= 2 ? "activeSearch" : ""}`}
-									disabled={!canEdit}
-								/>
+							<SearchDropdownInput
+								id="clientSearch"
+								value={clientSearch}
+								onChange={handleClientManualInput}
+								onFocus={() => {
+									if (clientBlurTimeout.current) clearTimeout(clientBlurTimeout.current);
+									setIsClientSearchFocused(true);
+									clearFieldError("clientSearch");
+								}}
+								onBlur={handleClientBlur}
+								placeholder="Поиск клиента по имени или телефону"
+								hasError={fieldErrors.has("clientSearch")}
+								isActiveSearch={isClientSearchFocused && clientSearch.length >= 2}
+								showDropdown={isClientSearchFocused && Boolean(clientSearch)}
+								disabled={!canEdit}
+							>
 								{isClientSearchFocused && isSearchingClients && clientSearch && (
 									<div className="searchResults loading">
 										<Loading />
@@ -517,7 +521,7 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 										)}
 									</div>
 								)}
-							</div>
+							</SearchDropdownInput>
 						)}
 					</div>
 				</div>
@@ -551,26 +555,26 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 							)}
 						</div>
 						{!selectedManager && (
-							<div className={`searchContainer`}>
-								<input
-									id="managerSearch"
-									type="text"
-									value={managerSearch}
-									onChange={(e) => handleManagerManualInput(e.target.value)}
-									onFocus={() => {
-										if (managerBlurTimeout.current) clearTimeout(managerBlurTimeout.current);
-										setIsManagerSearchFocused(true);
-										clearFieldError("managerSearch");
-									}}
-									onBlur={handleManagerBlur}
-									placeholder={
-										formData.departmentId
-											? `Поиск менеджера отдела "${departments.find((d) => d.id.toString() === formData.departmentId)?.name || ""}"`
-											: "Поиск менеджера по имени или телефону"
-									}
-									className={`${fieldErrors.has("managerSearch") ? "error" : ""} ${isManagerSearchFocused && managerSearch.length >= 2 ? "activeSearch" : ""}`}
-									disabled={userRole === "manager" || !canEdit}
-								/>
+							<SearchDropdownInput
+								id="managerSearch"
+								value={managerSearch}
+								onChange={handleManagerManualInput}
+								onFocus={() => {
+									if (managerBlurTimeout.current) clearTimeout(managerBlurTimeout.current);
+									setIsManagerSearchFocused(true);
+									clearFieldError("managerSearch");
+								}}
+								onBlur={handleManagerBlur}
+								placeholder={
+									formData.departmentId
+										? `Поиск менеджера отдела "${departments.find((d) => d.id.toString() === formData.departmentId)?.name || ""}"`
+										: "Поиск менеджера по имени или телефону"
+								}
+								hasError={fieldErrors.has("managerSearch")}
+								isActiveSearch={isManagerSearchFocused && managerSearch.length >= 2}
+								showDropdown={isManagerSearchFocused && Boolean(managerSearch)}
+								disabled={userRole === "manager" || !canEdit}
+							>
 								{isManagerSearchFocused && isSearchingManagers && managerSearch && (
 									<div className="searchResults loading">
 										<Loading />
@@ -591,7 +595,7 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 										)}
 									</div>
 								)}
-							</div>
+							</SearchDropdownInput>
 						)}
 						{userRole === "manager" && <p className="helpText">Менеджер всегда назначается ответственным автоматически.</p>}
 						{userRole === "superadmin" && user && (!selectedManager || selectedManager.id !== user.id) && canEdit && (
@@ -647,11 +651,11 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 				{orderItems.length > 0 && (
 					<div className={`formField`}>
 						<label>Список товаров</label>
-						<div className={`orderItemsList${canEdit ? " editable" : " readonly"}`}>
+						<div className={`productItemsList${canEdit ? " editable" : " readonly"}`}>
 							{orderItems.map((item, index) => {
 								const isExpanded = collapsedItems.has(item.product_sku);
 								return (
-									<div key={index} className={`orderItem borderBlock${canEdit ? " editable" : " readonly"}${isExpanded ? " active" : ""}`}>
+									<div key={index} className={`productItem borderBlock${canEdit ? " editable" : " readonly"}${isExpanded ? " active" : ""}`}>
 										<span className="itemTitle" onClick={(e) => toggleItemVisibility(item.product_sku, e)}>
 											{item.productId ? (
 												<Link href={`/admin/product-management/products/${item.productId}`} className="itemLink" target="_blank">
@@ -854,22 +858,22 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 							)}
 						</div>
 						{!selectedBooking && (
-							<div className={`searchContainer`}>
-								<input
-									id="bookingSearch"
-									type="text"
-									value={bookingSearch}
-									onChange={(e) => handleBookingManualInput(e.target.value)}
-									onFocus={() => {
-										if (bookingBlurTimeout.current) clearTimeout(bookingBlurTimeout.current);
-										setIsBookingSearchFocused(true);
-										clearFieldError("bookingSearch");
-									}}
-									onBlur={handleBookingBlur}
-									placeholder="Поиск заявки по ID"
-									className={`${fieldErrors.has("bookingSearch") ? "error" : ""} ${isBookingSearchFocused && bookingSearch.length > 0 ? "activeSearch" : ""}`}
-									disabled={!canEdit}
-								/>
+							<SearchDropdownInput
+								id="bookingSearch"
+								value={bookingSearch}
+								onChange={handleBookingManualInput}
+								onFocus={() => {
+									if (bookingBlurTimeout.current) clearTimeout(bookingBlurTimeout.current);
+									setIsBookingSearchFocused(true);
+									clearFieldError("bookingSearch");
+								}}
+								onBlur={handleBookingBlur}
+								placeholder="Поиск заявки по ID"
+								hasError={fieldErrors.has("bookingSearch")}
+								isActiveSearch={isBookingSearchFocused && bookingSearch.length > 0}
+								showDropdown={isBookingSearchFocused && Boolean(bookingSearch)}
+								disabled={!canEdit}
+							>
 								{isBookingSearchFocused && isSearchingBookings && bookingSearch && (
 									<div className="searchResults loading">
 										<Loading />
@@ -889,7 +893,7 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 										)}
 									</div>
 								)}
-							</div>
+							</SearchDropdownInput>
 						)}
 					</div>
 				</div>

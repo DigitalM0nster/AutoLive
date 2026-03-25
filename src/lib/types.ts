@@ -491,6 +491,8 @@ export type OrderStatus = "created" | "confirmed" | "booked" | "ready" | "paid" 
 export type Order = {
 	id: number;
 	comments: string[];
+	contactName?: string | null;
+	contactPhone?: string | null;
 	status: OrderStatus;
 	createdAt: string | Date;
 	updatedAt: string | Date;
@@ -532,17 +534,39 @@ export type Order = {
 		scheduledTime: string;
 		status: BookingStatus;
 		contactPhone: string;
+		/** Менеджер записи (часто заполнен, когда в карточке ТО нет ответственного) */
+		manager?: {
+			id: number;
+			first_name: string | null;
+			last_name: string | null;
+			role: string;
+			phone?: string | null;
+		} | null;
+		/** Клиент, указанный в записи */
+		client?: {
+			id: number;
+			first_name: string | null;
+			last_name: string | null;
+			phone: string;
+		} | null;
+		/** Отдел для записи (не путать с bookingDepartment заказа — адрес доставки) */
+		bookingDepartment?: {
+			id: number;
+			name: string | null;
+			address: string;
+			phones: string[];
+			emails: string[];
+		} | null;
 	} | null;
 	bookingDepartment?: BookingDepartment | null;
 	technicalService?: TechnicalService | null;
 	orderItems: OrderItem[];
 };
 
-// Связанное ТО (техническое обслуживание): номер, ответственный
+// Связанное ТО (техническое обслуживание): запись из справочника, ответственный из карточки ТО
 export type TechnicalService = {
 	id: number;
 	number: string;
-	orderId?: number | null;
 	responsibleUserId?: number | null;
 	createdAt: string | Date;
 	updatedAt: string | Date;
@@ -551,6 +575,7 @@ export type TechnicalService = {
 		first_name: string | null;
 		last_name: string | null;
 		role: string;
+		phone?: string | null;
 	} | null;
 };
 
@@ -615,6 +640,7 @@ export type CreateOrderRequest = {
 		vinCode?: string; // VIN-код автомобиля
 	}[];
 	// Поля для статусов заказа
+	contactName?: string;
 	contactPhone?: string; // 1. Новый - контактный телефон
 	bookedUntil?: string; // 3. Забронирован - забронирован до
 	readyUntil?: string; // 4. Готов к выдаче - отложен до
@@ -636,6 +662,8 @@ export type CreateOrderRequest = {
 // Тип для обновления заказа
 export type UpdateOrderRequest = {
 	comments?: string[];
+	contactName?: string | null;
+	contactPhone?: string | null;
 	status?: OrderStatus;
 	managerId?: number | null; // Назначение/снятие менеджера
 	departmentId?: number | null;
@@ -749,6 +777,11 @@ export type Booking = {
 		id: number;
 		status: OrderStatus;
 		createdAt: string | Date;
+		finalDeliveryDate?: string | Date | null;
+		contactPhone?: string | null;
+		contactName?: string | null;
+		client?: { id: number; first_name: string | null; last_name: string | null } | null;
+		orderItems?: { product_price: number; quantity: number }[];
 	} | null;
 };
 

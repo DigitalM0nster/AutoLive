@@ -7,6 +7,7 @@ import CONFIG from "@/lib/config";
 import styles from "./SitePreloader.module.scss";
 
 type Phase = "loading" | "hiding" | "done";
+const PRELOADER_MAX_WAIT_MS = 5000;
 
 /**
  * Первый экран загрузки: ждём настройки сайта (цвета, лого) и сессию пользователя,
@@ -19,9 +20,19 @@ export default function SitePreloader({ children }: { children: ReactNode }) {
 	useEffect(() => {
 		let cancelled = false;
 
+		const withTimeout = async (promise: Promise<unknown>, timeoutMs: number) => {
+			return await Promise.race([
+				promise,
+				new Promise((resolve) => {
+					window.setTimeout(resolve, timeoutMs);
+				}),
+			]);
+		};
+
 		const run = async () => {
 			try {
-				await Promise.all([useAuthStore.getState().initAuth(), getSiteSettings()]);
+				// Не держим прелоадер бесконечно, если сеть "подвисла".
+				await withTimeout(Promise.all([useAuthStore.getState().initAuth(), getSiteSettings()]), PRELOADER_MAX_WAIT_MS);
 			} catch {
 				/* сеть/401 — всё равно показываем сайт */
 			}

@@ -33,7 +33,7 @@ const StatusReadySection: React.FC<StatusReadySectionProps> = ({ isActive, formD
 
 	return (
 		<div className={`statusBlock borderBlock ${isExpanded ? "active" : ""}`}>
-			<div className={`statusHeader`} onClick={toggleExpand}>
+			<div className={`statusHeader statusToneReady`} onClick={toggleExpand}>
 				<h3>4. Готов к выдаче</h3>
 				{statusDate && <span className={`statusDate`}>Присвоен: {formatDate(statusDate)}</span>}
 			</div>

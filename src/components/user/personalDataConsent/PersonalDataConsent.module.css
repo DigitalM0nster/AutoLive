@@ -1,0 +1,42 @@
+.wrap {
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.row {
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.checkbox {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.label {
+  font-size: 14px;
+  line-height: 1.45;
+  color: #444;
+  cursor: pointer;
+}
+
+.link {
+  font-weight: 600;
+  color: var(--site-color-accent, #6a7a12);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.link:hover {
+  color: var(--site-color-primary, #3d3d3d);
+}
+
+.errorText {
+  font-size: 13px;
+  color: #b00020;
+  margin-top: 4px;
+}/*# sourceMappingURL=PersonalDataConsent.module.css.map */

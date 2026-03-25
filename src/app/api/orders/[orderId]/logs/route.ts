@@ -4,9 +4,21 @@ import { withPermission } from "@/middleware/permissionMiddleware";
 import { OrderLogResponse } from "@/lib/types";
 
 // Получение логов конкретного заказа
-async function getOrderLogsHandler(req: NextRequest, { user, scope }: { user: any; scope: "all" | "department" | "own" }) {
+async function getOrderLogsHandler(
+	req: NextRequest,
+	{
+		user,
+		scope,
+		params,
+	}: {
+		user: any;
+		scope: "all" | "department" | "own";
+		params: Promise<{ orderId: string }> | { orderId: string };
+	}
+) {
 	try {
-		const orderId = parseInt(req.url.split("/").slice(-3, -1)[0]); // Извлекаем orderId из URL
+		const resolvedParams = params instanceof Promise ? await params : params;
+		const orderId = parseInt(resolvedParams.orderId, 10);
 		const { searchParams } = new URL(req.url);
 
 		// Параметры пагинации

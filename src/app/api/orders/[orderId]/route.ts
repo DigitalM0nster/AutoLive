@@ -102,12 +102,16 @@ async function getOrderHandler(req: NextRequest, { user, scope, params }: { user
 				},
 				orderItems: true,
 				booking: {
-					select: {
-						id: true,
-						scheduledDate: true,
-						scheduledTime: true,
-						status: true,
-						contactPhone: true,
+					include: {
+						client: {
+							select: { id: true, first_name: true, last_name: true, phone: true },
+						},
+						manager: {
+							select: { id: true, first_name: true, last_name: true, role: true, phone: true },
+						},
+						bookingDepartment: {
+							select: { id: true, name: true, address: true, phones: true, emails: true },
+						},
 					},
 				},
 				bookingDepartment: {
@@ -127,7 +131,7 @@ async function getOrderHandler(req: NextRequest, { user, scope, params }: { user
 						number: true,
 						responsibleUserId: true,
 						responsibleUser: {
-							select: { id: true, first_name: true, last_name: true, role: true },
+							select: { id: true, first_name: true, last_name: true, role: true, phone: true },
 						},
 						createdAt: true,
 						updatedAt: true,
@@ -160,6 +164,9 @@ async function getOrderHandler(req: NextRequest, { user, scope, params }: { user
 			...order,
 			statusChangeDate,
 		} as Order;
+
+		// Ответственный за запись — только в сущности Booking (order.booking.manager).
+		// Ответственный за ТО в справочнике — только technicalService.responsibleUser (не подменяем менеджером записи).
 
 		const response: OrderResponse = {
 			order: orderWithStatusDate,
@@ -346,6 +353,8 @@ async function updateOrderHandler(req: NextRequest, { user, scope, params }: { u
 			const updateData: any = {};
 
 			if (body.comments !== undefined) updateData.comments = body.comments;
+			if (body.contactName !== undefined) updateData.contactName = body.contactName?.trim() || null;
+			if (body.contactPhone !== undefined) updateData.contactPhone = body.contactPhone?.trim() || null;
 			if (body.status !== undefined) {
 				updateData.status = body.status;
 				if (body.status === "confirmed" && currentOrder.status !== "confirmed") {
@@ -463,14 +472,26 @@ async function updateOrderHandler(req: NextRequest, { user, scope, params }: { u
 						},
 					},
 					orderItems: true,
-					booking: { select: { id: true, scheduledDate: true, scheduledTime: true, status: true, contactPhone: true } },
+					booking: {
+						include: {
+							client: {
+								select: { id: true, first_name: true, last_name: true, phone: true },
+							},
+							manager: {
+								select: { id: true, first_name: true, last_name: true, role: true, phone: true },
+							},
+							bookingDepartment: {
+								select: { id: true, name: true, address: true, phones: true, emails: true },
+							},
+						},
+					},
 					bookingDepartment: { select: { id: true, name: true, address: true, phones: true, emails: true, createdAt: true, updatedAt: true } },
 				technicalService: {
 					select: {
 						id: true,
 						number: true,
 						responsibleUserId: true,
-						responsibleUser: { select: { id: true, first_name: true, last_name: true, role: true } },
+						responsibleUser: { select: { id: true, first_name: true, last_name: true, role: true, phone: true } },
 						createdAt: true,
 						updatedAt: true,
 					},
@@ -600,8 +621,10 @@ async function updateOrderHandler(req: NextRequest, { user, scope, params }: { u
 			return order;
 		});
 
+		const orderOut = updatedOrder as Order;
+
 		const response: OrderResponse = {
-			order: updatedOrder as Order,
+			order: orderOut,
 		};
 
 		return NextResponse.json(response);

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withPermission } from "@/middleware/permissionMiddleware";
 
-// Вспомогательная: проверка доступа к заказу. view_orders у менеджеров/админов — scope "all", доступ к любому заказу.
 function buildOrderWhere(orderId: number, scope: string, fullUser: { id: number; departmentId: number | null }) {
 	if (scope === "all") return { id: orderId };
 	if (scope === "department") {
@@ -14,8 +13,8 @@ function buildOrderWhere(orderId: number, scope: string, fullUser: { id: number;
 	return { id: orderId };
 }
 
-// POST — создать ТО для заказа (если у заказа ещё нет ТО)
-async function createHandler(req: NextRequest, { user, scope }: { user: any; scope: "all" | "department" | "own" }) {
+/** Привязать заказ к записи ТО из справочника (или сменить привязку) */
+async function linkHandler(req: NextRequest, { user, scope }: { user: { id: number }; scope: "all" | "department" | "own" }) {
 	try {
 		const segments = req.nextUrl.pathname.split("/");
 		const orderId = parseInt(segments[segments.length - 2], 10);
@@ -24,14 +23,13 @@ async function createHandler(req: NextRequest, { user, scope }: { user: any; sco
 		}
 
 		const body = await req.json();
-		const number = typeof body.number === "string" ? body.number.trim() : "";
-		if (!number) {
-			return NextResponse.json({ error: "Номер ТО обязателен" }, { status: 400 });
+		const technicalServiceIdRaw = body.technicalServiceId;
+		if (technicalServiceIdRaw === undefined || technicalServiceIdRaw === null) {
+			return NextResponse.json({ error: "Укажите technicalServiceId" }, { status: 400 });
 		}
-
-		const responsibleUserId = body.responsibleUserId != null ? (body.responsibleUserId === "" ? null : parseInt(String(body.responsibleUserId), 10)) : null;
-		if (responsibleUserId !== null && isNaN(responsibleUserId)) {
-			return NextResponse.json({ error: "Некорректный ID ответственного" }, { status: 400 });
+		const technicalServiceId = parseInt(String(technicalServiceIdRaw), 10);
+		if (isNaN(technicalServiceId)) {
+			return NextResponse.json({ error: "Некорректный ID ТО" }, { status: 400 });
 		}
 
 		const fullUser = await prisma.user.findUnique({
@@ -50,37 +48,49 @@ async function createHandler(req: NextRequest, { user, scope }: { user: any; sco
 		if (!order) {
 			return NextResponse.json({ error: "Заказ не найден или нет доступа" }, { status: 404 });
 		}
-		if (order.technicalService) {
-			return NextResponse.json({ error: "У заказа уже есть связанное ТО. Сначала удалите его." }, { status: 409 });
+
+		const ts = await prisma.technicalService.findUnique({
+			where: { id: technicalServiceId },
+			select: { id: true },
+		});
+		if (!ts) {
+			return NextResponse.json({ error: "Запись ТО не найдена" }, { status: 404 });
 		}
 
-		if (responsibleUserId != null) {
-			const exists = await prisma.user.findUnique({ where: { id: responsibleUserId }, select: { id: true } });
-			if (!exists) {
-				return NextResponse.json({ error: "Ответственный не найден" }, { status: 400 });
-			}
-		}
-
-		const to = await prisma.technicalService.create({
-			data: {
-				number,
-				orderId,
-				responsibleUserId,
+		const other = await prisma.order.findFirst({
+			where: {
+				technicalServiceId: technicalServiceId,
+				NOT: { id: orderId },
 			},
+			select: { id: true },
+		});
+		if (other) {
+			return NextResponse.json({ error: "Это ТО уже привязано к другому заказу" }, { status: 409 });
+		}
+
+		const updated = await prisma.order.update({
+			where: { id: orderId },
+			data: { technicalServiceId: technicalServiceId },
 			include: {
-				responsibleUser: { select: { id: true, first_name: true, last_name: true, role: true } },
+				technicalService: {
+					include: {
+						responsibleUser: {
+							select: { id: true, first_name: true, last_name: true, role: true, phone: true },
+						},
+					},
+				},
 			},
 		});
 
-		return NextResponse.json({ technicalService: to });
+		return NextResponse.json({ order: updated, technicalService: updated.technicalService });
 	} catch (e) {
-		console.error("TechnicalService create:", e);
+		console.error("TechnicalService link:", e);
 		return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
 	}
 }
 
-// PATCH — изменить ТО заказа
-async function updateHandler(req: NextRequest, { user, scope }: { user: any; scope: "all" | "department" | "own" }) {
+/** Отвязать заказ от ТО (запись ТО в справочнике не удаляется) */
+async function unlinkHandler(req: NextRequest, { user, scope }: { user: { id: number }; scope: "all" | "department" | "own" }) {
 	try {
 		const segments = req.nextUrl.pathname.split("/");
 		const orderId = parseInt(segments[segments.length - 2], 10);
@@ -99,89 +109,30 @@ async function updateHandler(req: NextRequest, { user, scope }: { user: any; sco
 		const whereOrder = buildOrderWhere(orderId, scope, fullUser);
 		const order = await prisma.order.findFirst({
 			where: whereOrder,
-			include: { technicalService: { select: { id: true, number: true } } },
+			select: { id: true, technicalServiceId: true },
 		});
-		if (!order || !order.technicalService) {
-			return NextResponse.json({ error: "Заказ или связанное ТО не найдены" }, { status: 404 });
+		if (!order) {
+			return NextResponse.json({ error: "Заказ не найден или нет доступа" }, { status: 404 });
+		}
+		if (!order.technicalServiceId) {
+			return NextResponse.json({ error: "У заказа нет привязанного ТО" }, { status: 400 });
 		}
 
-		const body = await req.json();
-		const data: { number?: string; responsibleUserId?: number | null } = {};
-
-		if (body.number !== undefined) {
-			const number = typeof body.number === "string" ? body.number.trim() : "";
-			data.number = number || order.technicalService.number || "";
-		}
-		if (body.responsibleUserId !== undefined) {
-			const v = body.responsibleUserId;
-			if (v === null || v === "") {
-				data.responsibleUserId = null;
-			} else {
-				const id = parseInt(String(v), 10);
-				if (!isNaN(id)) {
-					const u = await prisma.user.findUnique({ where: { id }, select: { id: true } });
-					if (!u) return NextResponse.json({ error: "Ответственный не найден" }, { status: 400 });
-					data.responsibleUserId = id;
-				}
-			}
-		}
-
-		const to = await prisma.technicalService.update({
-			where: { id: order.technicalService.id },
-			data,
-			include: {
-				responsibleUser: { select: { id: true, first_name: true, last_name: true, role: true } },
-			},
-		});
-
-		return NextResponse.json({ technicalService: to });
-	} catch (e) {
-		console.error("TechnicalService update:", e);
-		return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
-	}
-}
-
-// DELETE — удалить ТО у заказа
-async function deleteHandler(req: NextRequest, { user, scope }: { user: any; scope: "all" | "department" | "own" }) {
-	try {
-		const segments = req.nextUrl.pathname.split("/");
-		const orderId = parseInt(segments[segments.length - 2], 10);
-		if (isNaN(orderId)) {
-			return NextResponse.json({ error: "Неверный ID заказа" }, { status: 400 });
-		}
-
-		const fullUser = await prisma.user.findUnique({
-			where: { id: user.id },
-			select: { id: true, departmentId: true },
-		});
-		if (!fullUser) {
-			return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });
-		}
-
-		const whereOrder = buildOrderWhere(orderId, scope, fullUser);
-		const order = await prisma.order.findFirst({
-			where: whereOrder,
-			include: { technicalService: { select: { id: true } } },
-		});
-		if (!order || !order.technicalService) {
-			return NextResponse.json({ error: "Заказ или связанное ТО не найдены" }, { status: 404 });
-		}
-
-		await prisma.technicalService.delete({
-			where: { id: order.technicalService.id },
+		await prisma.order.update({
+			where: { id: orderId },
+			data: { technicalServiceId: null },
 		});
 
 		return NextResponse.json({ success: true });
 	} catch (e) {
-		console.error("TechnicalService delete:", e);
+		console.error("TechnicalService unlink:", e);
 		return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
 	}
 }
 
-// Права: view_orders — у менеджеров и выше scope "all", можно добавлять/редактировать/удалять ТО у любого заказа
 const PERMISSION = "view_orders" as const;
 const ROLES = ["superadmin", "admin", "manager"] as const;
 
-export const POST = withPermission(createHandler, PERMISSION, [...ROLES]);
-export const PATCH = withPermission(updateHandler, PERMISSION, [...ROLES]);
-export const DELETE = withPermission(deleteHandler, PERMISSION, [...ROLES]);
+export const POST = withPermission(linkHandler, PERMISSION, [...ROLES]);
+export const PATCH = withPermission(linkHandler, PERMISSION, [...ROLES]);
+export const DELETE = withPermission(unlinkHandler, PERMISSION, [...ROLES]);

@@ -504,6 +504,8 @@ async function createOrderHandler(req: NextRequest, { user, scope }: { user: any
 		// Собираем данные для создания заказа
 		const orderDataToCreate: any = {
 			comments: [],
+			contactName: body.contactName?.trim() || null,
+			contactPhone: body.contactPhone?.trim() || null,
 			status,
 			clientId: body.clientId || null,
 			managerId: resolvedManagerId,
