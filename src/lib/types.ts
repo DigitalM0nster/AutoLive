@@ -559,24 +559,7 @@ export type Order = {
 		} | null;
 	} | null;
 	bookingDepartment?: BookingDepartment | null;
-	technicalService?: TechnicalService | null;
 	orderItems: OrderItem[];
-};
-
-// Связанное ТО (техническое обслуживание): запись из справочника, ответственный из карточки ТО
-export type TechnicalService = {
-	id: number;
-	number: string;
-	responsibleUserId?: number | null;
-	createdAt: string | Date;
-	updatedAt: string | Date;
-	responsibleUser?: {
-		id: number;
-		first_name: string | null;
-		last_name: string | null;
-		role: string;
-		phone?: string | null;
-	} | null;
 };
 
 export type OrderItem = {

@@ -7,7 +7,6 @@ import Link from "next/link";
 import { Order, User, ProductListItem, OrderStatus, OrderItemClient, OrderFormState, DepartmentForLog } from "@/lib/types";
 import { showSuccessToast, showErrorToast } from "@/components/ui/toast/ToastProvider";
 import Loading from "@/components/ui/loading/Loading";
-import SearchDropdownInput from "@/components/ui/searchDropdownInput/SearchDropdownInput";
 import StatusNewSection from "./statusSections/StatusNewSection";
 import StatusConfirmedSection from "./statusSections/StatusConfirmedSection";
 import StatusBookedSection from "./statusSections/StatusBookedSection";
@@ -21,73 +20,11 @@ type OrderPageProps = {
 	userRole?: string; // Роль пользователя для определения режима отображения
 };
 
-/** Контекст записи (booking) для отображения в поиске ТО */
-type ToBookingContext = {
-	scheduledDate: string | null;
-	scheduledTime: string | null;
-	contactPhone: string | null;
-	clientPhone: string | null;
-	departmentName: string | null;
-	departmentAddress: string | null;
-};
-
-type ToUserSnippet = {
-	id: number;
-	first_name: string | null;
-	last_name: string | null;
-	role: string;
-	phone?: string | null;
-};
-
-/** Запись ТО из справочника (поиск перед привязкой к заказу) */
-type TechnicalServiceListItem = {
-	id: number;
-	number: string;
-	responsibleUserId?: number | null;
-	responsibleUser?: ToUserSnippet | null;
-	/** Менеджер записи (Booking), если есть связанная/превью запись — не подменяет ответственного ТО */
-	bookingManager?: ToUserSnippet | null;
-	bookingContext?: ToBookingContext | null;
-	contextSource?: "linked_order" | "current_order_preview" | "none";
-	/** Заказ, к которому привязана эта запись ТО (если есть) */
-	linkedOrder?: {
-		id: number;
-		status: string;
-		createdAt: string;
-		finalDeliveryDate: string | null;
-		orderTotal: number;
-		client: { id: number; first_name: string | null; last_name: string | null } | null;
-	} | null;
-};
-
 function formatToRuDate(iso: string | null | undefined): string {
 	if (!iso) return "—";
 	const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso));
 	if (m) return `${m[3]}.${m[2]}.${m[1]}`;
 	return String(iso);
-}
-
-function toUserDisplayName(u: Pick<ToUserSnippet, "first_name" | "last_name"> | null | undefined): string {
-	if (!u) return "";
-	return [u.first_name, u.last_name].filter(Boolean).join(" ").trim() || "—";
-}
-
-/** Ответственный за запись — только в booking; здесь только ответственный ТО из справочника */
-function getTsResponsibleUser(ts: TechnicalServiceListItem): ToUserSnippet | null {
-	return ts.responsibleUser ?? null;
-}
-
-function sumOrderItemsTotal(items: { product_price: number; quantity: number }[]): number {
-	return Math.round(items.reduce((s, i) => s + i.product_price * i.quantity, 0) * 100) / 100;
-}
-
-/** Ссылка на карточку клиента только после подтверждения заказа */
-function orderStatusAllowsClientProfileLink(status: string): boolean {
-	return ["confirmed", "booked", "ready", "paid", "completed"].includes(status);
-}
-
-function formatRub(amount: number): string {
-	return new Intl.NumberFormat("ru-RU", { style: "currency", currency: "RUB", maximumFractionDigits: 0 }).format(amount);
 }
 
 /** Статус записи (booking) для подписи в карточке заказа */
@@ -159,15 +96,6 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 	);
 	const [bookingDepartments, setBookingDepartments] = useState<{ id: number; name: string | null; address: string; phones: string[]; email: string | null }[]>([]);
 
-	// Привязка заказа к записи ТО из справочника (поиск по id/номеру, как у товаров)
-	const [toPanelOpen, setToPanelOpen] = useState(false);
-	const [toSearchQuery, setToSearchQuery] = useState("");
-	const [toSearchResults, setToSearchResults] = useState<TechnicalServiceListItem[]>([]);
-	const [isSearchingTo, setIsSearchingTo] = useState(false);
-	const [toSearchFocused, setToSearchFocused] = useState(false);
-	const [selectedToRecord, setSelectedToRecord] = useState<TechnicalServiceListItem | null>(null);
-	const toSearchBlurTimeout = useRef<NodeJS.Timeout | null>(null);
-	const [isToSaving, setIsToSaving] = useState(false);
 	// Состояние для дат присвоения статусов
 	const [statusDates, setStatusDates] = useState<Record<OrderStatus, string | null>>({
 		created: null,
@@ -179,6 +107,16 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 		returned: null,
 	});
 	const orderTotal = useMemo(() => orderItems.reduce((total, item) => total + item.product_price * item.quantity, 0), [orderItems]);
+
+	/** Клиент заказа и клиент связанной записи (booking) — разные */
+	const orderBookingClientMismatch = useMemo(() => {
+		if (!orderData) return false;
+		const orderClientId = selectedClient?.id ?? orderData.clientId ?? orderData.client?.id ?? null;
+		const bk = selectedBooking ?? orderData.booking;
+		const bookingClientId = bk?.client?.id ?? null;
+		if (orderClientId == null || bookingClientId == null) return false;
+		return orderClientId !== bookingClientId;
+	}, [orderData, selectedClient, selectedBooking]);
 
 	const isAdminOrSuperadmin = userRole === "superadmin" || userRole === "admin";
 	const isManager = userRole === "manager";
@@ -283,19 +221,12 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 		return false;
 	};
 
-	// Очистка timeout при размонтировании
-	useEffect(() => {
-		return () => {
-			if (toSearchBlurTimeout.current) clearTimeout(toSearchBlurTimeout.current);
-		};
-	}, []);
-
-	// Переход по ссылке вида /admin/orders/123#orderLinkedTechnicalService — прокрутка к блоку ТО
+	// Прокрутка к блоку связанной записи по якорю #orderLinkedBooking
 	useEffect(() => {
 		if (loading || !orderData) return;
 		if (typeof window === "undefined") return;
-		if (window.location.hash !== "#orderLinkedTechnicalService") return;
-		const el = document.getElementById("orderLinkedTechnicalService");
+		if (window.location.hash !== "#orderLinkedBooking") return;
+		const el = document.getElementById("orderLinkedBooking");
 		if (el) {
 			requestAnimationFrame(() => {
 				el.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -585,446 +516,6 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 				return "7. Возврат";
 			default:
 				return status || "Не указан";
-		}
-	};
-
-	// Перезагрузка заказа после изменений ТО
-	const refetchOrder = async () => {
-		if (!orderId || isCreating) return;
-		try {
-			const res = await fetch(`/api/orders/${orderId}`, { credentials: "include" });
-			if (res.ok) {
-				const d = await res.json();
-				setOrderData(d.order || null);
-			}
-		} catch (e) {
-			console.error("Ошибка перезагрузки заказа:", e);
-		}
-	};
-
-	// Поиск записей ТО в справочнике
-	const handleToSearchInput = async (value: string) => {
-		setToSearchQuery(value);
-		const q = value.trim();
-		if (q.length < 1) {
-			setToSearchResults([]);
-			return;
-		}
-		setIsSearchingTo(true);
-		try {
-			const params = new URLSearchParams();
-			params.set("search", q);
-			params.set("limit", "20");
-			if (!isCreating && orderId != null && String(orderId).trim() !== "") {
-				params.set("forOrderId", String(orderId));
-			}
-			const res = await fetch(`/api/technical-services?${params.toString()}`, { credentials: "include" });
-			if (res.ok) {
-				const d = await res.json();
-				setToSearchResults(d.technicalServices || []);
-			}
-		} catch (e) {
-			console.error("Ошибка поиска ТО:", e);
-		} finally {
-			setIsSearchingTo(false);
-		}
-	};
-
-	const handleToSearchBlur = () => {
-		if (toSearchBlurTimeout.current) clearTimeout(toSearchBlurTimeout.current);
-		toSearchBlurTimeout.current = setTimeout(() => setToSearchFocused(false), 150);
-	};
-
-	const handleToSelectFromList = (item: TechnicalServiceListItem) => {
-		setSelectedToRecord(item);
-		setToSearchQuery(`${item.number} (#${item.id})`);
-		setToSearchResults([]);
-		setToSearchFocused(false);
-	};
-
-	const handleToClearSelection = () => {
-		setSelectedToRecord(null);
-		setToSearchQuery("");
-		setToSearchResults([]);
-	};
-
-	const openToAdd = () => {
-		setToSearchQuery("");
-		setToSearchResults([]);
-		setSelectedToRecord(null);
-		setToPanelOpen(true);
-	};
-
-	const openToEdit = () => {
-		const to = orderData?.technicalService;
-		if (!to) return;
-		const bk = orderData?.booking;
-		const bd = orderData?.bookingDepartment;
-		const scheduledDateStr =
-			bk?.scheduledDate == null
-				? null
-				: typeof bk.scheduledDate === "string"
-					? bk.scheduledDate.slice(0, 10)
-					: new Date(bk.scheduledDate).toISOString().slice(0, 10);
-		setSelectedToRecord({
-			id: to.id,
-			number: to.number,
-			responsibleUserId: to.responsibleUserId ?? null,
-			responsibleUser: to.responsibleUser
-				? {
-						id: to.responsibleUser.id,
-						first_name: to.responsibleUser.first_name,
-						last_name: to.responsibleUser.last_name,
-						role: to.responsibleUser.role,
-						phone: (to.responsibleUser as { phone?: string }).phone,
-					}
-				: null,
-			bookingManager: bk?.manager
-				? {
-						id: bk.manager.id,
-						first_name: bk.manager.first_name,
-						last_name: bk.manager.last_name,
-						role: bk.manager.role,
-						phone: (bk.manager as { phone?: string }).phone,
-					}
-				: null,
-			bookingContext: bk
-				? {
-						scheduledDate: scheduledDateStr,
-						scheduledTime: bk.scheduledTime,
-						contactPhone: bk.contactPhone,
-						clientPhone: orderData?.client?.phone ?? bk.contactPhone,
-						departmentName: bd?.name ?? null,
-						departmentAddress: bd?.address ?? null,
-					}
-				: null,
-			contextSource: "none",
-			linkedOrder: orderData
-				? {
-						id: orderData.id,
-						status: orderData.status,
-						createdAt:
-							typeof orderData.createdAt === "string" ? orderData.createdAt : new Date(orderData.createdAt).toISOString(),
-						finalDeliveryDate: orderData.finalDeliveryDate
-							? typeof orderData.finalDeliveryDate === "string"
-								? orderData.finalDeliveryDate
-								: new Date(orderData.finalDeliveryDate).toISOString()
-							: null,
-						orderTotal: sumOrderItemsTotal(orderData.orderItems || []),
-						client: orderData.client
-							? {
-									id: orderData.client.id,
-									first_name: orderData.client.first_name,
-									last_name: orderData.client.last_name,
-								}
-							: null,
-					}
-				: null,
-		});
-		setToSearchQuery(`${to.number} (#${to.id})`);
-		setToSearchResults([]);
-		setToPanelOpen(true);
-	};
-
-	const saveToLink = async () => {
-		if (!orderId || isCreating) return;
-		if (!selectedToRecord) {
-			showErrorToast("Выберите ТО из списка");
-			return;
-		}
-		if (
-			selectedToRecord.linkedOrder &&
-			String(orderId) !== String(selectedToRecord.linkedOrder.id)
-		) {
-			showErrorToast("Это ТО уже привязано к другому заказу. Отвяжите его там или выберите другое ТО.");
-			return;
-		}
-		setIsToSaving(true);
-		try {
-			const url = `/api/orders/${orderId}/technical-service`;
-			const body = { technicalServiceId: selectedToRecord.id };
-			const res = await fetch(url, { method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(body) });
-			if (!res.ok) {
-				const err = await res.json().catch(() => ({}));
-				throw new Error(err?.error || "Ошибка привязки ТО");
-			}
-			showSuccessToast("ТО привязано");
-			setToPanelOpen(false);
-			setSelectedToRecord(null);
-			setToSearchQuery("");
-			await refetchOrder();
-		} catch (e) {
-			showErrorToast(e instanceof Error ? e.message : "Ошибка");
-		} finally {
-			setIsToSaving(false);
-		}
-	};
-
-	const cancelToPanel = () => {
-		setToPanelOpen(false);
-		setSelectedToRecord(null);
-		setToSearchQuery("");
-		setToSearchResults([]);
-	};
-
-	/** Панель выбора ТО из справочника (поиск + сохранить/отмена) — одна разметка для режима «Связать с ТО» и «Сменить ТО». */
-	const renderToLinkTechnicalServicePanel = () => (
-		<div className="infoField toLinkOrderPanel">
-			<span className="infoLabel">Выберите ТО из справочника</span>
-			<p className="toLinkOrderHint">
-				Введите ID или номер ТО. В списке — дата и время записи, отдел, телефоны; ответственный за ТО — из справочника ТО, менеджер записи — из сущности записи. Для
-				текущего заказа при поиске подставляются данные его записи, если к ТО ещё никто не привязан.
-			</p>
-			<div className="toLinkOrderSearchWrap">
-				{selectedToRecord ? (
-					<div className="toLinkOrderSelectedCard">
-						<div className="toLinkOrderSelectedTitle">
-							<strong>#{selectedToRecord.id}</strong> · {selectedToRecord.number}
-						</div>
-						{selectedToRecord.bookingContext && (
-							<div className="toLinkOrderSelectedMeta column">
-								<div>
-									Дата и время: {formatToRuDate(selectedToRecord.bookingContext.scheduledDate)} · {selectedToRecord.bookingContext.scheduledTime || "—"}
-								</div>
-								<div>
-									Отдел:{" "}
-									{selectedToRecord.bookingContext.departmentName || selectedToRecord.bookingContext.departmentAddress
-										? [selectedToRecord.bookingContext.departmentName, selectedToRecord.bookingContext.departmentAddress].filter(Boolean).join(" — ")
-										: "—"}
-								</div>
-								<div>
-									Телефон для записи: {selectedToRecord.bookingContext.contactPhone || "—"}
-									{selectedToRecord.bookingContext.clientPhone &&
-									selectedToRecord.bookingContext.clientPhone !== selectedToRecord.bookingContext.contactPhone ? (
-										<> · клиент: {selectedToRecord.bookingContext.clientPhone}</>
-									) : null}
-								</div>
-							</div>
-						)}
-						{selectedToRecord.contextSource === "current_order_preview" && (
-							<div className="toLinkOrderSelectedMeta">Контекст записи: текущий заказ (ТО ещё ни к кому не привязан)</div>
-						)}
-						{getTsResponsibleUser(selectedToRecord) ? (
-							<div className="toLinkOrderSelectedMeta">
-								Ответственный (ТО):{" "}
-								<Link href={`/admin/users/${getTsResponsibleUser(selectedToRecord)!.id}`} className="itemLink" target="_blank">
-									{toUserDisplayName(getTsResponsibleUser(selectedToRecord))}
-								</Link>
-								{getTsResponsibleUser(selectedToRecord)?.phone ? ` · ${getTsResponsibleUser(selectedToRecord)?.phone}` : ""}
-							</div>
-						) : (
-							<div className="toLinkOrderSelectedMeta">Ответственный по ТО не назначен в справочнике</div>
-						)}
-						{selectedToRecord.bookingManager ? (
-							<div className="toLinkOrderSelectedMeta">
-								Менеджер записи:{" "}
-								<Link href={`/admin/users/${selectedToRecord.bookingManager.id}`} className="itemLink" target="_blank">
-									{toUserDisplayName(selectedToRecord.bookingManager)}
-								</Link>
-								{selectedToRecord.bookingManager.phone ? ` · ${selectedToRecord.bookingManager.phone}` : ""}
-							</div>
-						) : null}
-						{selectedToRecord.linkedOrder && (
-							<div className="toLinkOrderSelectedMeta column">
-								<div>
-									Связанный заказ:{" "}
-									<Link
-										href={`/admin/orders/${selectedToRecord.linkedOrder.id}`}
-										className="itemLink"
-										target="_blank"
-										onMouseDown={(e) => e.stopPropagation()}
-									>
-										#{selectedToRecord.linkedOrder.id}
-									</Link>
-									{" · "}
-									{formatToRuDate(selectedToRecord.linkedOrder.createdAt)}
-									{selectedToRecord.linkedOrder.finalDeliveryDate
-										? ` · доставка: ${formatToRuDate(selectedToRecord.linkedOrder.finalDeliveryDate)}`
-										: ""}
-									{" · "}
-									{formatRub(selectedToRecord.linkedOrder.orderTotal)}
-								</div>
-								<div>
-									Клиент:{" "}
-									{selectedToRecord.linkedOrder.client ? (
-										orderStatusAllowsClientProfileLink(selectedToRecord.linkedOrder.status) ? (
-											<Link
-												href={`/admin/users/${selectedToRecord.linkedOrder.client.id}`}
-												className="itemLink"
-												target="_blank"
-												onMouseDown={(e) => e.stopPropagation()}
-											>
-												{toUserDisplayName(selectedToRecord.linkedOrder.client)}
-											</Link>
-										) : (
-											<span>{toUserDisplayName(selectedToRecord.linkedOrder.client)}</span>
-										)
-									) : (
-										"—"
-									)}
-								</div>
-								{orderId != null && String(orderId) !== String(selectedToRecord.linkedOrder.id) && (
-									<div className="toLinkOrderSelectedMeta">
-										Это ТО уже привязано к заказу #{selectedToRecord.linkedOrder.id}. Сохранить привязку к текущему заказу нельзя — сначала отвяжите ТО в том
-										заказе.
-									</div>
-								)}
-							</div>
-						)}
-						<button type="button" onClick={handleToClearSelection} className="toLinkOrderClearBtn">
-							Выбрать другое ТО
-						</button>
-					</div>
-				) : (
-					<SearchDropdownInput
-						value={toSearchQuery}
-						onChange={handleToSearchInput}
-						onFocus={() => {
-							if (toSearchBlurTimeout.current) clearTimeout(toSearchBlurTimeout.current);
-							setToSearchFocused(true);
-						}}
-						onBlur={handleToSearchBlur}
-						placeholder="ID или номер ТО"
-						inputClassName="formInput"
-						isActiveSearch={toSearchFocused && toSearchQuery.trim().length >= 1}
-						showDropdown={toSearchFocused && Boolean(toSearchQuery.trim())}
-					>
-						{toSearchFocused && isSearchingTo && toSearchQuery.trim() && (
-							<div className="searchResults loading">
-								<Loading />
-							</div>
-						)}
-						{toSearchFocused && toSearchQuery.trim() && !isSearchingTo && (
-							<div className="searchResults">
-								{toSearchResults.length > 0 ? (
-									toSearchResults.map((ts) => {
-										const respTs = getTsResponsibleUser(ts);
-										const ctx = ts.bookingContext;
-										return (
-											<div key={ts.id} className="searchResultItem column" onMouseDown={() => handleToSelectFromList(ts)}>
-												<div>
-													<strong>ТО #{ts.id}</strong> · {ts.number}
-												</div>
-												{ctx ? (
-													<>
-														<div>
-															Дата и время: {formatToRuDate(ctx.scheduledDate)} · {ctx.scheduledTime || "—"}
-														</div>
-														<div>
-															Отдел:{" "}
-															{ctx.departmentName || ctx.departmentAddress
-																? [ctx.departmentName, ctx.departmentAddress].filter(Boolean).join(" — ")
-																: "—"}
-														</div>
-														<div>
-															Тел.: {ctx.contactPhone || "—"}
-															{ctx.clientPhone && ctx.clientPhone !== ctx.contactPhone ? ` · клиент: ${ctx.clientPhone}` : ""}
-														</div>
-													</>
-												) : (
-													<div>Нет данных записи (заказ с этим ТО без записи или ТО не привязан)</div>
-												)}
-												{ts.contextSource === "current_order_preview" && <div>Запись: текущий заказ</div>}
-												<div>
-													Ответственный (ТО): {respTs ? toUserDisplayName(respTs) : "не назначен"}
-													{respTs?.phone ? ` · ${respTs.phone}` : ""}
-												</div>
-												{ts.bookingManager ? (
-													<div>
-														Менеджер записи: {toUserDisplayName(ts.bookingManager)}
-														{ts.bookingManager.phone ? ` · ${ts.bookingManager.phone}` : ""}
-													</div>
-												) : null}
-												{ts.linkedOrder && (
-													<div className="column">
-														<div>
-															Заказ:{" "}
-															<Link
-																href={`/admin/orders/${ts.linkedOrder.id}`}
-																className="itemLink"
-																target="_blank"
-																onMouseDown={(e) => e.stopPropagation()}
-															>
-																#{ts.linkedOrder.id}
-															</Link>
-															{" · создан: "}
-															{formatToRuDate(ts.linkedOrder.createdAt)}
-															{ts.linkedOrder.finalDeliveryDate ? ` · доставка: ${formatToRuDate(ts.linkedOrder.finalDeliveryDate)}` : ""}
-															{" · сумма: "}
-															{formatRub(ts.linkedOrder.orderTotal)}
-														</div>
-														<div>
-															Клиент:{" "}
-															{ts.linkedOrder.client ? (
-																orderStatusAllowsClientProfileLink(ts.linkedOrder.status) ? (
-																	<Link
-																		href={`/admin/users/${ts.linkedOrder.client.id}`}
-																		className="itemLink"
-																		target="_blank"
-																		onMouseDown={(e) => e.stopPropagation()}
-																	>
-																		{toUserDisplayName(ts.linkedOrder.client)}
-																	</Link>
-																) : (
-																	<span>{toUserDisplayName(ts.linkedOrder.client)}</span>
-																)
-															) : (
-																"—"
-															)}
-														</div>
-														{orderId != null && String(orderId) !== String(ts.linkedOrder.id) && (
-															<div>Уже привязано к другому заказу — к этому не привязать.</div>
-														)}
-													</div>
-												)}
-											</div>
-										);
-									})
-								) : (
-									<div className="searchResultItem">Нет записей ТО</div>
-								)}
-							</div>
-						)}
-					</SearchDropdownInput>
-				)}
-			</div>
-			<div className="toLinkOrderActions">
-				<button
-					type="button"
-					onClick={saveToLink}
-					className="takeOrderButton"
-					disabled={
-						isToSaving ||
-						!selectedToRecord ||
-						(selectedToRecord.linkedOrder != null && orderId != null && String(orderId) !== String(selectedToRecord.linkedOrder.id))
-					}
-				>
-					{isToSaving ? "Сохранение…" : "Сохранить"}
-				</button>
-				<button type="button" onClick={cancelToPanel} className="toLinkOrderCancelBtn" disabled={isToSaving}>
-					Отмена
-				</button>
-			</div>
-		</div>
-	);
-
-	const unlinkTo = async () => {
-		if (!orderId || isCreating) return;
-		if (!window.confirm("Отвязать заказ от ТО? Запись ТО в справочнике останется.")) return;
-		setIsToSaving(true);
-		try {
-			const res = await fetch(`/api/orders/${orderId}/technical-service`, { method: "DELETE", credentials: "include" });
-			if (!res.ok) {
-				const err = await res.json().catch(() => ({}));
-				throw new Error(err?.error || "Ошибка отвязки");
-			}
-			showSuccessToast("ТО отвязано");
-			setToPanelOpen(false);
-			await refetchOrder();
-		} catch (e) {
-			showErrorToast(e instanceof Error ? e.message : "Ошибка");
-		} finally {
-			setIsToSaving(false);
 		}
 	};
 
@@ -1684,6 +1175,14 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 					{(orderData || isCreating) && (
 						<div className={`orderMainInfo`}>
 							<div className={`orderInfoFields`}>
+								{orderData && orderBookingClientMismatch && (
+									<div className="infoRow" role="alert">
+										<div className="infoField column">
+											<strong>Предупреждение:</strong> у заказа и у связанной записи (booking) указаны{" "}
+											<strong>разные клиенты</strong>. Проверьте данные перед сохранением или связыванием.
+										</div>
+									</div>
+								)}
 								<div className="infoRow">
 									{orderData && (
 										<>
@@ -1790,60 +1289,9 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 													</div>
 												);
 											})()}
-											<div className={`infoField`} id="orderLinkedTechnicalService">
-												<span className={`infoLabel`}>Связанное ТО:</span>
-												<div className={`infoValue`}>
-													{orderData.technicalService ? (
-														<div className="toLinkedToBlock">
-															<span className="toLinkedToLine">
-																<strong>#{orderData.technicalService.id}</strong>
-																{" · "}
-																{orderData.technicalService.number}
-																{(() => {
-																	const resp = orderData.technicalService.responsibleUser ?? null;
-																	return resp ? (
-																		<>
-																			{" · "}
-																			<Link href={`/admin/users/${resp.id}`} className="itemLink" target="_blank">
-																				{[resp.first_name, resp.last_name].filter(Boolean).join(" ") || "—"}
-																			</Link>
-																		</>
-																	) : (
-																		<span className="toLinkedNoResponsible"> · ответственный не указан</span>
-																	);
-																})()}
-															</span>
-															{(isManager || isAdminOrSuperadmin) && (
-																<div className="toLinkedToActions">
-																	<button type="button" onClick={openToEdit} className="takeOrderButton" disabled={isToSaving}>
-																		Сменить ТО
-																	</button>
-																	<button type="button" onClick={unlinkTo} className="toLinkOrderCancelBtn" disabled={isToSaving}>
-																		Отвязать
-																	</button>
-																</div>
-															)}
-														</div>
-													) : (
-														<>
-															{(isManager || isAdminOrSuperadmin) &&
-																(!toPanelOpen ? (
-																	<button type="button" onClick={openToAdd} className="takeOrderButton" disabled={isToSaving}>
-																		Связать с ТО
-																	</button>
-																) : (
-																	renderToLinkTechnicalServicePanel()
-																))}
-														</>
-													)}
-												</div>
-											</div>
 										</>
 									)}
 								</div>
-								{orderData && toPanelOpen && orderData.technicalService && (
-									<div className="infoRow toLinkOrderRow">{renderToLinkTechnicalServicePanel()}</div>
-								)}
 								<div className="infoRow">
 									<div className={`infoField`}>
 										<span className={`infoLabel`}>Клиент:</span>

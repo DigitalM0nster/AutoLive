@@ -789,9 +789,9 @@ export default function AllOrdersTable() {
 													Перейти
 												</button>
 											</div>
-											{order.technicalService?.number ? (
-												<Link className="itemLink orderListToLink" href={`/admin/orders/${order.id}#orderLinkedTechnicalService`}>
-													ТО {order.technicalService.number}
+											{order.booking ? (
+												<Link className="itemLink orderListToLink" href={`/admin/orders/${order.id}#orderLinkedBooking`}>
+													Запись #{order.booking.id}
 												</Link>
 											) : null}
 										</div>

@@ -204,18 +204,6 @@ async function getOrdersHandler(req: NextRequest, { user, scope }: { user: any; 
 								updatedAt: true,
 							},
 						},
-						technicalService: {
-							select: {
-								id: true,
-								number: true,
-								responsibleUserId: true,
-								createdAt: true,
-								updatedAt: true,
-								responsibleUser: {
-									select: { id: true, first_name: true, last_name: true, role: true },
-								},
-							},
-						},
 					},
 					orderBy: { createdAt: "desc" },
 					skip,

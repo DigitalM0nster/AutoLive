@@ -125,18 +125,6 @@ async function getOrderHandler(req: NextRequest, { user, scope, params }: { user
 						updatedAt: true,
 					},
 				},
-				technicalService: {
-					select: {
-						id: true,
-						number: true,
-						responsibleUserId: true,
-						responsibleUser: {
-							select: { id: true, first_name: true, last_name: true, role: true, phone: true },
-						},
-						createdAt: true,
-						updatedAt: true,
-					},
-				},
 			},
 		});
 
@@ -164,9 +152,6 @@ async function getOrderHandler(req: NextRequest, { user, scope, params }: { user
 			...order,
 			statusChangeDate,
 		} as Order;
-
-		// Ответственный за запись — только в сущности Booking (order.booking.manager).
-		// Ответственный за ТО в справочнике — только technicalService.responsibleUser (не подменяем менеджером записи).
 
 		const response: OrderResponse = {
 			order: orderWithStatusDate,
@@ -486,16 +471,6 @@ async function updateOrderHandler(req: NextRequest, { user, scope, params }: { u
 						},
 					},
 					bookingDepartment: { select: { id: true, name: true, address: true, phones: true, emails: true, createdAt: true, updatedAt: true } },
-				technicalService: {
-					select: {
-						id: true,
-						number: true,
-						responsibleUserId: true,
-						responsibleUser: { select: { id: true, first_name: true, last_name: true, role: true, phone: true } },
-						createdAt: true,
-						updatedAt: true,
-					},
-				},
 				},
 			});
 

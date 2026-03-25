@@ -98,23 +98,6 @@ export async function getFullOrderSnapshot(orderId: number) {
 						updatedAt: true,
 					},
 				},
-				technicalService: {
-					select: {
-						id: true,
-						number: true,
-						responsibleUserId: true,
-						responsibleUser: {
-							select: {
-								id: true,
-								first_name: true,
-								last_name: true,
-								role: true,
-							},
-						},
-						createdAt: true,
-						updatedAt: true,
-					},
-				},
 			},
 		});
 
@@ -145,7 +128,6 @@ export async function getFullOrderSnapshot(orderId: number) {
 			orderItems: order.orderItems,
 			booking: order.booking,
 			bookingDepartment: order.bookingDepartment,
-			technicalService: order.technicalService,
 		};
 	} catch (error) {
 		console.error("Ошибка при получении полного снапшота заказа:", error);

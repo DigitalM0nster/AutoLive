@@ -25,7 +25,6 @@ model User {
     createdOrders                Order[]            @relation("CreatedOrders")
     clientBookings               Booking[]          @relation("ClientBookings")
     managerBookings              Booking[]          @relation("ManagerBookings")
-    technicalServicesResponsible TechnicalService[] @relation("TechnicalServiceResponsible")
 
     @@map("user")
 }
@@ -202,9 +201,8 @@ model Order {
     departmentId        Int?        @map("department_id") // Опциональное поле - для заказов от пользователей может быть null
     clientId            Int?        @map("client_id") // Опциональное поле - для заказов созданных админом может быть null
     createdBy           Int?        @map("created_by") // Кто создал заказ (админ/менеджер/пользователь). Для публичной заявки может быть null
-    bookingId           Int?        @unique @map("booking_id") // Связь с заявкой (опционально, один-к-одному)
+    bookingId           Int?        @unique @map("booking_id") // Связь с полноценной записью клиента (booking), один-к-одному
     bookingDepartmentId Int?        @map("booking_department_id") // Адрес доставки (опционально)
-    technicalServiceId  Int?        @unique @map("technical_service_id") // Связь с записью ТО из справочника (один заказ — одно ТО)
 
     // Связи
     manager           User?              @relation("ManagerOrders", fields: [managerId], references: [id])
@@ -213,25 +211,10 @@ model Order {
     creator           User?              @relation("CreatedOrders", fields: [createdBy], references: [id])
     booking           Booking?           @relation("OrderBooking", fields: [bookingId], references: [id])
     bookingDepartment BookingDepartment? @relation("OrderBookingDepartment", fields: [bookingDepartmentId], references: [id])
-    technicalService  TechnicalService?  @relation(fields: [technicalServiceId], references: [id], onDelete: SetNull)
     orderItems        OrderItem[]
     orderLogs         OrderLog[]
 
     @@map("order")
-}
-
-// ТО (техобслуживание): справочная запись (номер, ответственный). Заказы ссылаются на неё через Order.technicalServiceId
-model TechnicalService {
-    id                Int      @id @default(autoincrement()) @map("id")
-    number            String   @map("number") @db.VarChar(255) // Номер ТО
-    responsibleUserId Int?     @map("responsible_user_id") // Ответственный за ТО
-    createdAt         DateTime @default(now()) @map("created_at") @db.Timestamp(0)
-    updatedAt         DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
-
-    order           Order?
-    responsibleUser User?  @relation("TechnicalServiceResponsible", fields: [responsibleUserId], references: [id], onDelete: SetNull)
-
-    @@map("technical_service")
 }
 
 model OrderItem {
