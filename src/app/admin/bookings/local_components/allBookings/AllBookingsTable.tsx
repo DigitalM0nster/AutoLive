@@ -654,7 +654,7 @@ export default function AllBookingsTable() {
 											<div className="textBlock">{booking.id}</div>
 										</td>
 										<td className="tableCell">
-											<div className={`statusBadge textBlock ${getStatusColor(booking.status)}`}>{getStatusText(booking.status)}</div>
+											<span className={`orderStatusBadge ${getStatusColor(booking.status)}`}>{getStatusText(booking.status)}</span>
 										</td>
 										<td className="tableCell">
 											<div className="textBlock">{booking.bookingDepartment?.name || "—"}</div>
