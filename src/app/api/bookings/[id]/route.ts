@@ -170,6 +170,16 @@ async function updateBookingHandler(req: NextRequest, { user, scope, params }: {
 			}
 		}
 
+		// Связь с заказом: заказ должен существовать
+		if (body.orderId !== undefined && body.orderId !== null) {
+			const orderRow = await withDbRetry(async () =>
+				prisma.order.findUnique({ where: { id: body.orderId as number }, select: { id: true } }),
+			);
+			if (!orderRow) {
+				return NextResponse.json({ error: "Заказ с таким ID не найден" }, { status: 400 });
+			}
+		}
+
 		// Обрабатываем клиента: либо используем существующий clientId, либо сохраняем данные незарегистрированного клиента
 		let finalClientId: number | null = null;
 		let guestClientName: string | undefined = undefined;
@@ -295,6 +305,40 @@ async function updateBookingHandler(req: NextRequest, { user, scope, params }: {
 					}
 
 					updateData.notes = bookingNotes || null;
+				}
+
+				// Синхронизация order.booking_id ↔ booking.order_id (как при обновлении заказа)
+				if (body.orderId !== undefined) {
+					const newOid = body.orderId;
+					const oldOid = currentBooking.orderId ?? null;
+
+					if (oldOid !== null && oldOid !== newOid) {
+						await tx.order.update({
+							where: { id: oldOid },
+							data: { bookingId: null },
+						});
+					}
+
+					if (newOid !== null) {
+						const ord = await tx.order.findUnique({
+							where: { id: newOid },
+							select: { id: true, bookingId: true },
+						});
+						if (!ord) {
+							throw new Error("ORDER_NOT_FOUND");
+						}
+						const prevBk = ord.bookingId;
+						if (prevBk !== null && prevBk !== id) {
+							await tx.booking.update({
+								where: { id: prevBk },
+								data: { orderId: null },
+							});
+						}
+						await tx.order.update({
+							where: { id: newOid },
+							data: { bookingId: id },
+						});
+					}
 				}
 
 				// Обновляем запись
@@ -646,6 +690,14 @@ async function deleteBookingHandler(req: NextRequest, { user, scope, params }: {
 						adminSnapshot: adminSnapshot as any,
 					},
 				});
+
+				// Снимаем ссылку на запись с заказа (дублирующее поле order.booking_id)
+				if (deletedBookingSnapshot.orderId) {
+					await tx.order.update({
+						where: { id: deletedBookingSnapshot.orderId },
+						data: { bookingId: null },
+					});
+				}
 
 				// Теперь удаляем запись (логи уже созданы)
 				await tx.booking.delete({

@@ -301,16 +301,6 @@ export default function AllOrdersTable() {
 		}
 	};
 
-	const handleDepartmentChange = async (orderId: number, departmentId: string) => {
-		// Здесь будет API для изменения отдела заказа
-		console.log(`Изменение отдела заказа ${orderId} на ${departmentId}`);
-	};
-
-	const handleClientChange = async (orderId: number, clientId: string) => {
-		// Здесь будет API для изменения клиента заказа
-		console.log(`Изменение клиента заказа ${orderId} на ${clientId}`);
-	};
-
 	// Функция для форматирования даты
 	const formatDateFromString = (dateString: string): string => {
 		if (!dateString) return "дд.мм.гггг";
@@ -644,8 +634,8 @@ export default function AllOrdersTable() {
 					params.append("sortOrder", sortOrder);
 				}
 
-				const response = await fetch(`/api/orders?${params}`);
-				const data: OrderResponse = await response.json();
+				const listRes = await fetch(`/api/orders?${params}`);
+				const data: OrderResponse = await listRes.json();
 				setOrders(data.orders || []);
 				setTotal(data.total || 0);
 			} else {
@@ -684,8 +674,8 @@ export default function AllOrdersTable() {
 					params.append("sortOrder", sortOrder);
 				}
 
-				const response = await fetch(`/api/orders?${params}`);
-				const data: OrderResponse = await response.json();
+				const listRes = await fetch(`/api/orders?${params}`);
+				const data: OrderResponse = await listRes.json();
 				setOrders(data.orders || []);
 				setTotal(data.total || 0);
 			} else {
@@ -789,11 +779,6 @@ export default function AllOrdersTable() {
 													Перейти
 												</button>
 											</div>
-											{order.booking ? (
-												<Link className="itemLink orderListToLink" href={`/admin/orders/${order.id}#orderLinkedBooking`}>
-													Запись #{order.booking.id}
-												</Link>
-											) : null}
 										</div>
 									</td>
 									<td className={styles.tableCell}>

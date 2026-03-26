@@ -33,6 +33,9 @@ type StatusConfirmedSectionProps = {
 	selectedBookingDepartment: { id: number; name: string | null; address: string; phones: string[]; email: string | null } | null;
 	setSelectedBookingDepartment: React.Dispatch<React.SetStateAction<{ id: number; name: string | null; address: string; phones: string[]; email: string | null } | null>>;
 	bookingDepartments: { id: number; name: string | null; address: string; phones: string[]; email: string | null }[];
+	pickupPoints: { id: number; name: string | null; address: string; phones: string[]; email: string | null }[];
+	selectedPickupPoint: { id: number; name: string | null; address: string; phones: string[]; email: string | null } | null;
+	setSelectedPickupPoint: React.Dispatch<React.SetStateAction<{ id: number; name: string | null; address: string; phones: string[]; email: string | null } | null>>;
 };
 
 const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
@@ -61,6 +64,9 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 	selectedBookingDepartment,
 	setSelectedBookingDepartment,
 	bookingDepartments,
+	pickupPoints,
+	selectedPickupPoint,
+	setSelectedPickupPoint,
 }) => {
 	const formatDate = (value?: string | Date | null) => {
 		if (!value) return "";
@@ -378,19 +384,42 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 		clearFieldError("bookingSearch");
 	};
 
-	const handleBookingDepartmentSelect = (departmentId: string) => {
+	/** Адрес доставки: отдел для записей или пункт выдачи (взаимоисключающие) */
+	const handleDeliveryAddressSelect = (raw: string) => {
 		if (!canEdit) {
 			return;
 		}
 
-		const department = bookingDepartments.find((d) => d.id.toString() === departmentId);
-		if (department) {
-			setSelectedBookingDepartment(department);
-		} else {
+		if (!raw) {
 			setSelectedBookingDepartment(null);
+			setSelectedPickupPoint(null);
+			clearFieldError("bookingDepartmentId");
+			return;
 		}
-		clearFieldError("bookingDepartmentId");
+
+		if (raw.startsWith("bd-")) {
+			const id = parseInt(raw.slice(3), 10);
+			const department = bookingDepartments.find((d) => d.id === id);
+			setSelectedPickupPoint(null);
+			setSelectedBookingDepartment(department ?? null);
+			clearFieldError("bookingDepartmentId");
+			return;
+		}
+
+		if (raw.startsWith("pp-")) {
+			const id = parseInt(raw.slice(3), 10);
+			const point = pickupPoints.find((p) => p.id === id);
+			setSelectedBookingDepartment(null);
+			setSelectedPickupPoint(point ?? null);
+			clearFieldError("bookingDepartmentId");
+		}
 	};
+
+	const deliverySelectValue = selectedPickupPoint
+		? `pp-${selectedPickupPoint.id}`
+		: selectedBookingDepartment
+			? `bd-${selectedBookingDepartment.id}`
+			: "";
 
 	const handleRemoveProduct = (sku: string) => {
 		if (!canEdit) {
@@ -898,15 +927,19 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 					</div>
 				</div>
 
-				{/* Поле для выбора адреса */}
+				{/* Поле для выбора адреса: отделы для записей или пункты выдачи */}
 				<div className="formRow">
 					<div className={`formField`}>
-						<label htmlFor="bookingDepartmentId">Адрес доставки</label>
+						<label htmlFor="deliveryAddressSelect">Адрес доставки</label>
 						<div className={`selectedClient`}>
 							<span>
-								{selectedBookingDepartment ? (
+								{selectedPickupPoint ? (
 									<>
-										{selectedBookingDepartment.name || "Адрес"} - {selectedBookingDepartment.address}
+										Пункт выдачи: {selectedPickupPoint.name || "Без названия"} — {selectedPickupPoint.address}
+									</>
+								) : selectedBookingDepartment ? (
+									<>
+										Адрес для записей: {selectedBookingDepartment.name || "Адрес"} — {selectedBookingDepartment.address}
 									</>
 								) : (
 									"Не указан"
@@ -914,20 +947,33 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 							</span>
 						</div>
 						<select
-							id="bookingDepartmentId"
-							name="bookingDepartmentId"
-							value={selectedBookingDepartment?.id.toString() || ""}
-							onChange={(e) => handleBookingDepartmentSelect(e.target.value)}
+							id="deliveryAddressSelect"
+							name="deliveryAddress"
+							value={deliverySelectValue}
+							onChange={(e) => handleDeliveryAddressSelect(e.target.value)}
 							onFocus={() => clearFieldError("bookingDepartmentId")}
 							className={fieldErrors.has("bookingDepartmentId") ? "error" : ""}
 							disabled={!canEdit}
 						>
 							<option value="">— Не выбран —</option>
-							{bookingDepartments.map((dept) => (
-								<option key={dept.id} value={dept.id}>
-									{dept.name || "Адрес"} - {dept.address}
-								</option>
-							))}
+							{bookingDepartments.length > 0 && (
+								<optgroup label="Адреса для записей">
+									{bookingDepartments.map((dept) => (
+										<option key={`bd-${dept.id}`} value={`bd-${dept.id}`}>
+											{dept.name || "Адрес"} — {dept.address}
+										</option>
+									))}
+								</optgroup>
+							)}
+							{pickupPoints.length > 0 && (
+								<optgroup label="Пункты выдачи">
+									{pickupPoints.map((pt) => (
+										<option key={`pp-${pt.id}`} value={`pp-${pt.id}`}>
+											{pt.name || "Пункт"} — {pt.address}
+										</option>
+									))}
+								</optgroup>
+							)}
 						</select>
 					</div>
 				</div>

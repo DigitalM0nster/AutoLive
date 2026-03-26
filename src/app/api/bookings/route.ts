@@ -243,6 +243,15 @@ async function createBookingHandler(req: NextRequest, { user }: { user: any }) {
 			}
 		}
 
+		if (body.orderId !== undefined && body.orderId !== null) {
+			const orderRow = await withDbRetry(async () =>
+				prisma.order.findUnique({ where: { id: body.orderId as number }, select: { id: true } }),
+			);
+			if (!orderRow) {
+				return NextResponse.json({ error: "Заказ с таким ID не найден" }, { status: 400 });
+			}
+		}
+
 		// Валидация телефона для связи
 		if (!body.contactPhone || body.contactPhone.trim() === "") {
 			return NextResponse.json({ error: "Телефон для связи обязателен" }, { status: 400 });
@@ -357,6 +366,25 @@ async function createBookingHandler(req: NextRequest, { user }: { user: any }) {
 							},
 						},
 					});
+
+					// Дублирующее поле order.booking_id — как при обновлении заказа/записи
+					if (body.orderId) {
+						const oid = body.orderId as number;
+						const ord = await tx.order.findUnique({
+							where: { id: oid },
+							select: { id: true, bookingId: true },
+						});
+						if (ord?.bookingId) {
+							await tx.booking.update({
+								where: { id: ord.bookingId },
+								data: { orderId: null },
+							});
+						}
+						await tx.order.update({
+							where: { id: oid },
+							data: { bookingId: newBooking.id },
+						});
+					}
 
 					// Получаем менеджера для снапшота (если назначен)
 					let managerSnapshot: ManagerSnapshotForBookingLog | undefined = undefined;

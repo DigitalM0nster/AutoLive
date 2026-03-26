@@ -66,10 +66,16 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
 		};
 	}, []);
 
-	// Обновление выбранной опции при изменении значения извне
+	// Синхронизация с value / списком опций.
+	// Важно: родитель часто передаёт новый массив options на каждом рендере (.map без useMemo).
+	// Без сравнения по value/label получался бесконечный цикл: setState → рендер → новый options → снова effect.
 	useEffect(() => {
-		const option = options.find((option) => option.value === value);
-		setSelectedOption(option || null);
+		const option = options.find((o) => o.value === value) ?? null;
+		setSelectedOption((prev) => {
+			if (prev === null && option === null) return prev;
+			if (prev !== null && option !== null && prev.value === option.value && prev.label === option.label) return prev;
+			return option;
+		});
 	}, [value, options]);
 
 	// Обработчик изменения поиска

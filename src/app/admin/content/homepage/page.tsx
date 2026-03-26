@@ -451,14 +451,14 @@ export default function AdminHomepageContent() {
 
 								<div className={`formField ${styles.formField}`}>
 									<label htmlFor="orderButtonText">
-										Текст кнопки &quot;Оставить заказ&quot; *<span className={styles.labelHint}>(кнопка для открытия формы заказа)</span>
+										Текст кнопки &quot;Оставить заявку&quot; *<span className={styles.labelHint}>(кнопка для открытия формы заказа)</span>
 									</label>
 									<input
 										type="text"
 										id="orderButtonText"
 										value={data.orderButtonText}
 										onChange={(e) => setData({ ...data, orderButtonText: e.target.value })}
-										placeholder="Оставить заказ"
+										placeholder="Оставить заявку"
 									/>
 								</div>
 							</div>
@@ -476,7 +476,7 @@ export default function AdminHomepageContent() {
 									id="formSubmitButtonText"
 									value={data.formSubmitButtonText}
 									onChange={(e) => setData({ ...data, formSubmitButtonText: e.target.value })}
-									placeholder="Оставить заказ"
+									placeholder="Оставить заявку"
 								/>
 							</div>
 

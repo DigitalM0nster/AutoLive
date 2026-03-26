@@ -125,6 +125,15 @@ async function getOrderHandler(req: NextRequest, { user, scope, params }: { user
 						updatedAt: true,
 					},
 				},
+				deliveryPickupPoint: {
+					select: {
+						id: true,
+						name: true,
+						address: true,
+						phones: true,
+						emails: true,
+					},
+				},
 			},
 		});
 
@@ -329,6 +338,49 @@ async function updateOrderHandler(req: NextRequest, { user, scope, params }: { u
 			}
 		}
 
+		// Связь заказа с записью (booking): проверка до транзакции
+		if (body.bookingId !== undefined && body.bookingId !== null) {
+			const bookingRow = await prisma.booking.findUnique({
+				where: { id: body.bookingId },
+				select: { id: true },
+			});
+			if (!bookingRow) {
+				return NextResponse.json({ error: "Запись с таким ID не найдена" }, { status: 400 });
+			}
+			const conflictOrder = await prisma.order.findFirst({
+				where: { bookingId: body.bookingId, id: { not: orderId } },
+				select: { id: true },
+			});
+			if (conflictOrder) {
+				return NextResponse.json(
+					{ error: `Эта запись уже привязана к заказу №${conflictOrder.id}` },
+					{ status: 400 },
+				);
+			}
+		}
+
+		// Адрес доставки: нельзя одновременно отдел для записей и пункт выдачи
+		const bdIn = body.bookingDepartmentId;
+		const ppIn = body.deliveryPickupPointId;
+		if (bdIn !== undefined && ppIn !== undefined && bdIn !== null && ppIn !== null) {
+			return NextResponse.json(
+				{ error: "Укажите либо адрес отдела записи, либо пункт выдачи, не оба сразу" },
+				{ status: 400 },
+			);
+		}
+		if (ppIn !== undefined && ppIn !== null) {
+			const ppRow = await prisma.pickupPoint.findUnique({ where: { id: ppIn }, select: { id: true } });
+			if (!ppRow) {
+				return NextResponse.json({ error: "Пункт выдачи не найден" }, { status: 400 });
+			}
+		}
+		if (bdIn !== undefined && bdIn !== null) {
+			const bdRow = await prisma.bookingDepartment.findUnique({ where: { id: bdIn }, select: { id: true } });
+			if (!bdRow) {
+				return NextResponse.json({ error: "Адрес отдела записи не найден" }, { status: 400 });
+			}
+		}
+
 		// Сохраняем снапшот заказа ДО изменений для улучшенного логирования
 		const orderSnapshotBefore = await getFullOrderSnapshot(orderId);
 
@@ -377,9 +429,30 @@ async function updateOrderHandler(req: NextRequest, { user, scope, params }: { u
 				updateData.bookingId = body.bookingId;
 			}
 
-			// Обновляем адрес доставки
+			// Адрес доставки: отдел для записей и пункт выдачи взаимоисключающие
 			if (body.bookingDepartmentId !== undefined) {
 				updateData.bookingDepartmentId = body.bookingDepartmentId;
+				if (body.bookingDepartmentId !== null) {
+					updateData.deliveryPickupPointId = null;
+				}
+			}
+			if (body.deliveryPickupPointId !== undefined) {
+				updateData.deliveryPickupPointId = body.deliveryPickupPointId;
+				if (body.deliveryPickupPointId !== null) {
+					updateData.bookingDepartmentId = null;
+				}
+			}
+
+			// Синхронизация booking.order_id с полем order.booking_id (дублирующая колонка в БД)
+			if (body.bookingId !== undefined) {
+				const newBookingId = body.bookingId;
+				const oldBookingId = currentOrder.bookingId ?? null;
+				if (oldBookingId !== null && oldBookingId !== newBookingId) {
+					await tx.booking.update({
+						where: { id: oldBookingId },
+						data: { orderId: null },
+					});
+				}
 			}
 
 			// Обновляем товары заказа, если они были переданы
@@ -471,8 +544,17 @@ async function updateOrderHandler(req: NextRequest, { user, scope, params }: { u
 						},
 					},
 					bookingDepartment: { select: { id: true, name: true, address: true, phones: true, emails: true, createdAt: true, updatedAt: true } },
+					deliveryPickupPoint: { select: { id: true, name: true, address: true, phones: true, emails: true } },
 				},
 			});
+
+			// Дублирующее поле booking.order_id — для экрана записи и логов
+			if (body.bookingId !== undefined && body.bookingId !== null) {
+				await tx.booking.update({
+					where: { id: body.bookingId },
+					data: { orderId: orderId },
+				});
+			}
 
 			// Создаем лог изменения с улучшенными снапшотами
 			let action = "update";
@@ -504,6 +586,7 @@ async function updateOrderHandler(req: NextRequest, { user, scope, params }: { u
 				finalDeliveryDate: (order as any).finalDeliveryDate ?? null,
 				bookingId: order.bookingId,
 				bookingDepartmentId: (order as any).bookingDepartmentId ?? null,
+				deliveryPickupPointId: (order as any).deliveryPickupPointId ?? null,
 			};
 
 			// Подготавливаем снапшот менеджера (если назначен)
@@ -523,7 +606,7 @@ async function updateOrderHandler(req: NextRequest, { user, scope, params }: { u
 				};
 			}
 
-			// Подготавливаем снапшот отдела доставки (если есть)
+			// Снапшот адреса доставки: отдел для записей или пункт выдачи
 			let departmentSnapshot = null;
 			if (order.bookingDepartment) {
 				departmentSnapshot = {
@@ -532,6 +615,15 @@ async function updateOrderHandler(req: NextRequest, { user, scope, params }: { u
 					address: order.bookingDepartment.address,
 					phones: order.bookingDepartment.phones,
 					emails: order.bookingDepartment.emails,
+				};
+			} else if ((order as any).deliveryPickupPoint) {
+				const pp = (order as any).deliveryPickupPoint;
+				departmentSnapshot = {
+					id: pp.id,
+					name: pp.name,
+					address: pp.address,
+					phones: pp.phones,
+					emails: pp.emails,
 				};
 			}
 
@@ -577,6 +669,7 @@ async function updateOrderHandler(req: NextRequest, { user, scope, params }: { u
 						creator: order.creator,
 						booking: order.booking,
 						bookingDepartment: order.bookingDepartment,
+						deliveryPickupPoint: (order as any).deliveryPickupPoint ?? null,
 					} as any,
 					adminSnapshot: {
 						id: fullUser.id,

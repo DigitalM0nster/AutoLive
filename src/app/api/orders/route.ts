@@ -489,6 +489,27 @@ async function createOrderHandler(req: NextRequest, { user, scope }: { user: any
 		const status = body.status ?? "created";
 		const confirmationDate = status === "confirmed" ? new Date() : null;
 
+		const deliveryBd = body.bookingDepartmentId ?? null;
+		const deliveryPp = body.deliveryPickupPointId ?? null;
+		if (deliveryBd != null && deliveryPp != null) {
+			return NextResponse.json(
+				{ error: "Укажите либо адрес отдела записи, либо пункт выдачи, не оба сразу" },
+				{ status: 400 },
+			);
+		}
+		if (deliveryPp != null) {
+			const ppExists = await prisma.pickupPoint.findUnique({ where: { id: deliveryPp }, select: { id: true } });
+			if (!ppExists) {
+				return NextResponse.json({ error: "Пункт выдачи не найден" }, { status: 400 });
+			}
+		}
+		if (deliveryBd != null) {
+			const bdExists = await prisma.bookingDepartment.findUnique({ where: { id: deliveryBd }, select: { id: true } });
+			if (!bdExists) {
+				return NextResponse.json({ error: "Адрес отдела записи не найден" }, { status: 400 });
+			}
+		}
+
 		// Собираем данные для создания заказа
 		const orderDataToCreate: any = {
 			comments: [],
@@ -502,7 +523,8 @@ async function createOrderHandler(req: NextRequest, { user, scope }: { user: any
 			finalDeliveryDate,
 			confirmationDate,
 			bookingId: body.bookingId ?? null, // Связь с заявкой
-			bookingDepartmentId: body.bookingDepartmentId ?? null, // Адрес доставки
+			bookingDepartmentId: deliveryPp != null ? null : deliveryBd,
+			deliveryPickupPointId: deliveryBd != null ? null : deliveryPp,
 			// Поле assignedAt остается null для свободных заказов
 		};
 
@@ -555,6 +577,20 @@ async function createOrderHandler(req: NextRequest, { user, scope }: { user: any
 						},
 					},
 					orderItems: true,
+					bookingDepartment: {
+						select: {
+							id: true,
+							name: true,
+							address: true,
+							phones: true,
+							emails: true,
+							createdAt: true,
+							updatedAt: true,
+						},
+					},
+					deliveryPickupPoint: {
+						select: { id: true, name: true, address: true, phones: true, emails: true },
+					},
 				},
 			});
 
@@ -585,6 +621,7 @@ async function createOrderHandler(req: NextRequest, { user, scope }: { user: any
 				finalDeliveryDate: (newOrder as any).finalDeliveryDate ?? null,
 				bookingId: (newOrder as any).bookingId ?? null,
 				bookingDepartmentId: (newOrder as any).bookingDepartmentId ?? null,
+				deliveryPickupPointId: (newOrder as any).deliveryPickupPointId ?? null,
 			};
 
 			// Создаем лог создания заказа
@@ -647,6 +684,8 @@ async function createOrderHandler(req: NextRequest, { user, scope }: { user: any
 						department: newOrder.department,
 						client: newOrder.client,
 						creator: newOrder.creator,
+						bookingDepartment: (newOrder as any).bookingDepartment ?? null,
+						deliveryPickupPoint: (newOrder as any).deliveryPickupPoint ?? null,
 					} as any,
 					adminSnapshot: {
 						id: fullUser.id,

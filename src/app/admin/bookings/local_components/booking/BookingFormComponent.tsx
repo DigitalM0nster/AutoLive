@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuthStore } from "@/store/authStore";
@@ -8,6 +8,7 @@ import { Booking, CreateBookingRequest, BookingDepartment, User } from "@/lib/ty
 import { showSuccessToast, showErrorToast } from "@/components/ui/toast/ToastProvider";
 import Loading from "@/components/ui/loading/Loading";
 import SearchDropdownInput from "@/components/ui/searchDropdownInput/SearchDropdownInput";
+import LinkedRelationCard from "@/components/admin/linkedRelationCard/LinkedRelationCard";
 import CustomSelect from "@/components/ui/customSelect/CustomSelect";
 import DatePickerField from "@/components/ui/datePicker/DatePickerField";
 import FixedActionButtons from "@/components/ui/fixedActionButtons/FixedActionButtons";
@@ -45,10 +46,6 @@ type BookingOrderPick = {
 
 function sumOrderItemsForBooking(items: { product_price: number; quantity: number }[]): number {
 	return Math.round(items.reduce((s, i) => s + i.product_price * i.quantity, 0) * 100) / 100;
-}
-
-function orderStatusAllowsClientLinkInBooking(status: string): boolean {
-	return ["confirmed", "booked", "ready", "paid", "completed"].includes(status);
 }
 
 function formatRubBooking(amount: number): string {
@@ -89,6 +86,177 @@ function clientShortName(c: { first_name: string | null; last_name: string | nul
 	return [c.first_name, c.last_name].filter(Boolean).join(" ").trim() || "—";
 }
 
+/** Строка контакта в карточке привязанного заказа: телефон + ссылка на ЛК клиента, если есть user */
+function orderPickContactLine(order: BookingOrderPick) {
+	return (
+		<>
+			Тел.: {order.contactPhone || "—"}
+			{order.client?.id ? (
+				<>
+					{" · "}
+					<Link href={`/admin/users/${order.client.id}`} className="itemLink" target="_blank">
+						{clientShortName(order.client)}
+					</Link>
+				</>
+			) : order.contactName ? (
+				` · ${order.contactName}`
+			) : null}
+		</>
+	);
+}
+
+function bookingStatusLabelRu(status: string): string {
+	const m: Record<string, string> = {
+		scheduled: "Запланирована",
+		confirmed: "Подтверждена",
+		completed: "Выполнена",
+		cancelled: "Отменена",
+		no_show: "Не явился",
+	};
+	return m[status] || status;
+}
+
+function formatBookingDateTime(value?: string | Date | null): string {
+	if (!value) return "—";
+	const date = new Date(value);
+	if (isNaN(date.getTime())) return "—";
+	const day = String(date.getDate()).padStart(2, "0");
+	const month = String(date.getMonth() + 1).padStart(2, "0");
+	const year = date.getFullYear();
+	const hours = String(date.getHours()).padStart(2, "0");
+	const minutes = String(date.getMinutes()).padStart(2, "0");
+	return `${day}.${month}.${year} ${hours}:${minutes}`;
+}
+
+/** Панель поиска заказа для привязки к записи (аналог «Связь с записью» в заказе) */
+function OrderLinkSearchBlock(props: {
+	hintText?: string;
+	orderLinkQuery: string;
+	handleOrderLinkInput: (v: string) => void;
+	orderLinkFocused: boolean;
+	setOrderLinkFocused: (v: boolean) => void;
+	orderLinkBlurTimeout: React.MutableRefObject<ReturnType<typeof setTimeout> | null>;
+	handleOrderLinkBlur: () => void;
+	orderLinkLoading: boolean;
+	orderLinkResults: BookingOrderPick[];
+	handleSelectOrderFromLink: (row: BookingOrderPick) => void;
+	selectedOrderForLink: BookingOrderPick | null;
+	clearOrderLinkSelection: () => void;
+	onConfirmOrderPick: () => void;
+	confirmOrderPickLabel: string;
+	cancelOrderLinkPanel: () => void;
+	isOrderLinkSaving: boolean;
+}) {
+	const {
+		hintText = "Введите ID заказа — в списке заказы без другой записи или уже привязанные к этой.",
+		orderLinkQuery,
+		handleOrderLinkInput,
+		orderLinkFocused,
+		setOrderLinkFocused,
+		orderLinkBlurTimeout,
+		handleOrderLinkBlur,
+		orderLinkLoading,
+		orderLinkResults,
+		handleSelectOrderFromLink,
+		selectedOrderForLink,
+		clearOrderLinkSelection,
+		onConfirmOrderPick,
+		confirmOrderPickLabel,
+		cancelOrderLinkPanel,
+		isOrderLinkSaving,
+	} = props;
+
+	return (
+		<div className="column bookingLinkInlineSearch">
+			<p className="bookingLinkHint">{hintText}</p>
+			<div className="toLinkOrderSearchWrap">
+				{selectedOrderForLink ? (
+					<div className="bookingLinkSelectedCard">
+						<div className="bookingLinkSelectedTitle">
+							<span>Заказ #{selectedOrderForLink.id}</span>
+							<span className="bookingLinkPickStatus">{getOrderStatusText(selectedOrderForLink.status)}</span>
+						</div>
+						<div className="bookingLinkSelectedMeta">
+							Создан: {formatOrderDateRu(selectedOrderForLink.createdAt)}
+							{selectedOrderForLink.finalDeliveryDate ? ` · доставка: ${formatOrderDateRu(selectedOrderForLink.finalDeliveryDate)}` : ""}
+							{" · "}
+							{formatRubBooking(selectedOrderForLink.orderTotal)}
+						</div>
+						<div className="bookingLinkSelectedMeta">
+							Тел.: {selectedOrderForLink.contactPhone || "—"}
+							{selectedOrderForLink.client
+								? ` · ${clientShortName(selectedOrderForLink.client)}`
+								: selectedOrderForLink.contactName
+									? ` · ${selectedOrderForLink.contactName}`
+									: ""}
+						</div>
+						<button type="button" onClick={clearOrderLinkSelection} className="ghostButton">
+							Другой заказ
+						</button>
+					</div>
+				) : (
+					<div className={`searchInput ${orderLinkFocused && orderLinkQuery.trim() ? "searching" : ""}`}>
+						<SearchDropdownInput
+							value={orderLinkQuery}
+							onChange={handleOrderLinkInput}
+							onFocus={() => {
+								if (orderLinkBlurTimeout.current) clearTimeout(orderLinkBlurTimeout.current);
+								setOrderLinkFocused(true);
+							}}
+							onBlur={handleOrderLinkBlur}
+							placeholder="ID заказа"
+							inputClassName="searchInput"
+							isActiveSearch={orderLinkFocused && orderLinkQuery.trim().length >= 1}
+							showDropdown={orderLinkFocused && Boolean(orderLinkQuery.trim())}
+						>
+							{orderLinkFocused && orderLinkLoading && orderLinkQuery.trim() && (
+								<div className="searchResults bookingLinkDropdown loading">
+									<Loading />
+								</div>
+							)}
+							{orderLinkFocused && orderLinkQuery.trim() && !orderLinkLoading && (
+								<div className="searchResults bookingLinkDropdown">
+									{orderLinkResults.length > 0 ? (
+										orderLinkResults.map((row) => (
+											<div
+												key={row.id}
+												className="searchResultItem bookingLinkPick"
+												onMouseDown={() => handleSelectOrderFromLink(row)}
+											>
+												<div className="bookingLinkPickTop">
+													<span className="bookingLinkPickId">#{row.id}</span>
+													<span className="bookingLinkPickWhen">{getOrderStatusText(row.status)}</span>
+													<span className="bookingLinkPickStatus">{formatOrderDateRu(row.createdAt)}</span>
+												</div>
+												<div className="bookingLinkPickRow">{formatRubBooking(row.orderTotal)}</div>
+											</div>
+										))
+									) : (
+										<div className="bookingLinkPickEmpty">Нет подходящих заказов с таким номером</div>
+									)}
+								</div>
+							)}
+						</SearchDropdownInput>
+					</div>
+				)}
+			</div>
+			<div className="bookingLinkActions">
+				<button
+					type="button"
+					onClick={onConfirmOrderPick}
+					className="primaryButton"
+					disabled={isOrderLinkSaving || !selectedOrderForLink}
+				>
+					{isOrderLinkSaving ? "Сохранение…" : confirmOrderPickLabel}
+				</button>
+				<button type="button" onClick={cancelOrderLinkPanel} className="secondaryButton" disabled={isOrderLinkSaving}>
+					Отмена
+				</button>
+			</div>
+		</div>
+	);
+}
+
 export default function BookingFormComponent({ isCreating = true, bookingId, userRole }: BookingFormComponentProps) {
 	const router = useRouter();
 	const { user } = useAuthStore();
@@ -96,6 +264,8 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 	const [saving, setSaving] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [hasChanges, setHasChanges] = useState(false); // Состояние для отслеживания изменений
+	/** Полная запись с сервера — для шапки (краткая сводка) */
+	const [bookingRecord, setBookingRecord] = useState<Booking | null>(null);
 
 	// Состояние формы
 	const [formData, setFormData] = useState<CreateBookingRequest>({
@@ -144,14 +314,19 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 	const [initialSelectedManager, setInitialSelectedManager] = useState<User | null>(null);
 	const managerBlurTimeout = useRef<NodeJS.Timeout | null>(null);
 
-	// Состояние для поиска заказа
-	const [orderSearch, setOrderSearch] = useState("");
-	const [orderSearchResults, setOrderSearchResults] = useState<BookingOrderPick[]>([]);
-	const [isSearchingOrders, setIsSearchingOrders] = useState(false);
-	const [isOrderSearchFocused, setIsOrderSearchFocused] = useState(false);
+	// Связь с заказом (шапка + сохранение)
 	const [selectedOrder, setSelectedOrder] = useState<BookingOrderPick | null>(null);
 	const [initialSelectedOrder, setInitialSelectedOrder] = useState<BookingOrderPick | null>(null);
-	const orderBlurTimeout = useRef<NodeJS.Timeout | null>(null);
+	const [orderLinkPanelOpen, setOrderLinkPanelOpen] = useState(false);
+	const [orderLinkQuery, setOrderLinkQuery] = useState("");
+	const [orderLinkFocused, setOrderLinkFocused] = useState(false);
+	const [orderLinkLoading, setOrderLinkLoading] = useState(false);
+	const [orderLinkResults, setOrderLinkResults] = useState<BookingOrderPick[]>([]);
+	const [selectedOrderForLink, setSelectedOrderForLink] = useState<BookingOrderPick | null>(null);
+	const [isOrderLinkSaving, setIsOrderLinkSaving] = useState(false);
+	const orderLinkBlurTimeout = useRef<NodeJS.Timeout | null>(null);
+
+	const canManageOrderLink = userRole !== "manager";
 
 	// Загрузка данных записи (если редактирование)
 	useEffect(() => {
@@ -166,6 +341,7 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 					const data = await res.json();
 					if (data.booking) {
 						const booking = data.booking as Booking;
+						setBookingRecord(booking);
 
 						// Извлекаем имя незарегистрированного клиента из notes
 						let guestName = "";
@@ -239,8 +415,8 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 			if (clientBlurTimeout.current) {
 				clearTimeout(clientBlurTimeout.current);
 			}
-			if (orderBlurTimeout.current) {
-				clearTimeout(orderBlurTimeout.current);
+			if (orderLinkBlurTimeout.current) {
+				clearTimeout(orderLinkBlurTimeout.current);
 			}
 			if (managerBlurTimeout.current) {
 				clearTimeout(managerBlurTimeout.current);
@@ -248,66 +424,158 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 		};
 	}, []);
 
-	// Поиск заказов
-	const handleOrderSearch = async (query: string) => {
-		// Поиск по ID заказа
-		const orderId = parseInt(query);
-		if (isNaN(orderId)) {
-			setOrderSearchResults([]);
+	const openOrderLinkPanel = () => {
+		if (!canManageOrderLink) return;
+		setOrderLinkPanelOpen(true);
+		setOrderLinkQuery("");
+		setOrderLinkResults([]);
+		setSelectedOrderForLink(null);
+		setOrderLinkFocused(false);
+	};
+
+	const cancelOrderLinkPanel = () => {
+		setOrderLinkPanelOpen(false);
+		setOrderLinkQuery("");
+		setOrderLinkResults([]);
+		setSelectedOrderForLink(null);
+		setOrderLinkFocused(false);
+	};
+
+	const clearOrderLinkSelection = () => {
+		setSelectedOrderForLink(null);
+		setOrderLinkQuery("");
+		setOrderLinkResults([]);
+	};
+
+	const handleOrderLinkBlur = () => {
+		if (orderLinkBlurTimeout.current) clearTimeout(orderLinkBlurTimeout.current);
+		orderLinkBlurTimeout.current = setTimeout(() => setOrderLinkFocused(false), 120);
+	};
+
+	const runOrderLinkSearch = async (value: string) => {
+		const q = value.trim();
+		if (q.length < 1 || !/^\d/.test(q)) {
+			setOrderLinkResults([]);
 			return;
 		}
-
+		setOrderLinkLoading(true);
 		try {
-			setIsSearchingOrders(true);
-			const response = await fetch(`/api/orders?idSearch=${orderId}&limit=10`, {
-				credentials: "include",
-			});
+			const params = new URLSearchParams();
+			params.set("q", q);
+			if (!isCreating && bookingId != null && String(bookingId).trim() !== "") {
+				params.set("forBookingId", String(bookingId));
+			}
+			const res = await fetch(`/api/orders/search-for-booking?${params.toString()}`, { credentials: "include" });
+			if (res.ok) {
+				const data = await res.json();
+				const list = Array.isArray(data.orders) ? data.orders : [];
+				setOrderLinkResults(list.map((o: any) => mapApiOrderToBookingPick(o)));
+			} else {
+				setOrderLinkResults([]);
+			}
+		} catch (e) {
+			console.error("runOrderLinkSearch:", e);
+			setOrderLinkResults([]);
+		} finally {
+			setOrderLinkLoading(false);
+		}
+	};
 
-			if (response.ok) {
-				const data = await response.json();
-				if (data.orders && data.orders.length > 0) {
-					setOrderSearchResults(data.orders.map((o: any) => mapApiOrderToBookingPick(o)));
-				} else {
-					setOrderSearchResults([]);
+	const handleOrderLinkInput = (v: string) => {
+		setOrderLinkQuery(v);
+		if (v.trim() !== "") {
+			void runOrderLinkSearch(v);
+		} else {
+			setOrderLinkResults([]);
+		}
+	};
+
+	const handleSelectOrderFromLink = (row: BookingOrderPick) => {
+		setSelectedOrderForLink(row);
+	};
+
+	/** При создании записи: выбранный заказ попадёт в тело POST вместе с формой */
+	const applyOrderDraftOnCreate = () => {
+		if (!selectedOrderForLink) return;
+		setSelectedOrder(selectedOrderForLink);
+		cancelOrderLinkPanel();
+	};
+
+	const saveOrderLinkToBooking = async () => {
+		if (!selectedOrderForLink || !bookingId || isCreating) return;
+		setIsOrderLinkSaving(true);
+		try {
+			const res = await fetch(`/api/bookings/${bookingId}`, {
+				method: "PUT",
+				credentials: "include",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ orderId: selectedOrderForLink.id }),
+			});
+			const raw = await res.text();
+			let data: { error?: string; booking?: Booking } | null = null;
+			try {
+				data = raw ? JSON.parse(raw) : null;
+			} catch {
+				data = null;
+			}
+			if (!res.ok) {
+				throw new Error(data?.error || "Не удалось сохранить связь с заказом");
+			}
+			showSuccessToast("Запись связана с заказом");
+			cancelOrderLinkPanel();
+			if (data?.booking) {
+				setBookingRecord(data.booking);
+				if (data.booking.order) {
+					const mapped = mapApiOrderToBookingPick(data.booking.order as any);
+					setSelectedOrder(mapped);
+					setInitialSelectedOrder(mapped);
 				}
 			}
-		} catch (error) {
-			console.error("Ошибка поиска заказов:", error);
+			setHasChanges(false);
+		} catch (e) {
+			showErrorToast(e instanceof Error ? e.message : "Ошибка");
 		} finally {
-			setIsSearchingOrders(false);
+			setIsOrderLinkSaving(false);
 		}
 	};
 
-	const handleOrderSelect = (order: BookingOrderPick) => {
-		if (userRole === "manager") {
-			return; // Менеджер не может редактировать
+	const unlinkOrderFromBooking = async () => {
+		if (!bookingId || isCreating) return;
+		if (!window.confirm("Отвязать заказ от этой записи? Сам заказ останется в системе.")) return;
+		setIsOrderLinkSaving(true);
+		try {
+			const res = await fetch(`/api/bookings/${bookingId}`, {
+				method: "PUT",
+				credentials: "include",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ orderId: null }),
+			});
+			const raw = await res.text();
+			let data: { error?: string; booking?: Booking } | null = null;
+			try {
+				data = raw ? JSON.parse(raw) : null;
+			} catch {
+				data = null;
+			}
+			if (!res.ok) {
+				throw new Error(data?.error || "Не удалось отвязать заказ");
+			}
+			showSuccessToast("Связь с заказом снята");
+			cancelOrderLinkPanel();
+			if (data?.booking) {
+				setBookingRecord(data.booking);
+			}
+			setSelectedOrder(null);
+			setInitialSelectedOrder(null);
+			setHasChanges(false);
+		} catch (e) {
+			showErrorToast(e instanceof Error ? e.message : "Ошибка");
+		} finally {
+			setIsOrderLinkSaving(false);
 		}
-
-		setSelectedOrder(order);
-		setOrderSearch("");
-		setOrderSearchResults([]);
-		setIsOrderSearchFocused(false);
 	};
 
-	const handleOrderBlur = () => {
-		if (orderBlurTimeout.current) clearTimeout(orderBlurTimeout.current);
-		orderBlurTimeout.current = setTimeout(() => setIsOrderSearchFocused(false), 120);
-	};
-
-	const handleOrderManualInput = (value: string) => {
-		if (userRole === "manager") {
-			return; // Менеджер не может редактировать
-		}
-
-		setOrderSearch(value);
-		if (value.trim() !== "") {
-			handleOrderSearch(value);
-		} else {
-			setOrderSearchResults([]);
-		}
-	};
-
-	// Загрузка данных для селектов
+	// Загрузка данных для селектов (не зависит от user — иначе лишние запросы при смене ссылки на user в сторе)
 	useEffect(() => {
 		const fetchSelectData = async () => {
 			try {
@@ -325,7 +593,7 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 		};
 
 		fetchSelectData();
-	}, [user]);
+	}, []);
 
 	// Автоматическое назначение менеджера при создании записи, если пользователь - менеджер
 	useEffect(() => {
@@ -358,11 +626,15 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 		setHasChanges(hasFormChanges);
 	}, [formData, initialFormData, isCreating, selectedOrder, initialSelectedOrder, selectedManager, initialSelectedManager]);
 
-	// Опции для селектов
-	const departmentOptions = bookingDepartments.map((dept) => ({
-		value: dept.id.toString(),
-		label: dept.name || `Адрес #${dept.id}`,
-	}));
+	// Опции для селектов (стабильная ссылка, чтобы не дёргать лишние обновления в CustomSelect)
+	const departmentOptions = useMemo(
+		() =>
+			bookingDepartments.map((dept) => ({
+				value: dept.id.toString(),
+				label: dept.name || `Адрес #${dept.id}`,
+			})),
+		[bookingDepartments],
+	);
 
 	// Функции для поиска клиента
 	const handleClientSearch = async (query: string) => {
@@ -568,6 +840,7 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 				notes: formData.notes || undefined,
 				// Имя клиента (отправляем только если клиент не выбран)
 				clientName: !formData.clientId && formData.clientName ? formData.clientName : undefined,
+				orderId: canManageOrderLink ? (selectedOrder?.id ?? null) : undefined,
 			};
 
 			let response;
@@ -601,11 +874,17 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 			const data = await response.json();
 			showSuccessToast(isCreating ? "Запись успешно создана" : "Запись успешно обновлена");
 
-			// Обновляем выбранный заказ, если он был в ответе
+			// Синхронизируем выбранный заказ с ответом API
 			if (data.booking?.order) {
 				const mapped = mapApiOrderToBookingPick(data.booking.order as any);
 				setSelectedOrder(mapped);
 				setInitialSelectedOrder(mapped);
+			} else if (data.booking) {
+				setSelectedOrder(null);
+				setInitialSelectedOrder(null);
+			}
+			if (data.booking) {
+				setBookingRecord(data.booking as Booking);
 			}
 
 			// Сбрасываем состояние изменений
@@ -650,8 +929,7 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 			setManagerSearchResults([]);
 			// Восстанавливаем выбранный заказ
 			setSelectedOrder(initialSelectedOrder);
-			setOrderSearch("");
-			setOrderSearchResults([]);
+			cancelOrderLinkPanel();
 			setHasChanges(false);
 		} else {
 			// При создании просто перенаправляем
@@ -668,6 +946,327 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 			<div className={`formContainer`}>
 				<div className={`formHeader`}>
 					<h2>{isCreating ? "Создание записи" : `Запись #${bookingId}`}</h2>
+					{isCreating ? (
+						<div className="orderMainInfo">
+							<div className="orderInfoFields">
+								<div className="infoRow">
+									<div className="infoField column">
+										<p className="toLinkOrderHint">
+											После сохранения здесь отобразится краткая сводка по записи. Заказ можно указать сразу (необязательно) или привязать позже.
+										</p>
+									</div>
+								</div>
+								{canManageOrderLink && (
+									<div className="infoRow">
+										<div className={`infoField infoFieldBookingLink column`}>
+											<span className="infoLabel">Связь с заказом</span>
+											<div className="infoValue column">
+												{!orderLinkPanelOpen ? (
+													selectedOrder ? (
+														<LinkedRelationCard
+															title={
+																<>
+																	<Link href={`/admin/orders/${selectedOrder.id}`} className="itemLink" target="_blank">
+																		Заказ #{selectedOrder.id}
+																	</Link>
+																	<span className="bookingLinkPickStatus">{getOrderStatusText(selectedOrder.status)}</span>
+																</>
+															}
+															metaLines={[
+																{
+																	label: "Сумма и даты:",
+																	value: (
+																		<>
+																			{formatRubBooking(selectedOrder.orderTotal)}
+																			{" · создан: "}
+																			{formatOrderDateRu(selectedOrder.createdAt)}
+																			{selectedOrder.finalDeliveryDate
+																				? ` · доставка: ${formatOrderDateRu(selectedOrder.finalDeliveryDate)}`
+																				: ""}
+																		</>
+																	),
+																},
+																{
+																	label: "Контакт:",
+																	value: orderPickContactLine(selectedOrder),
+																},
+															]}
+															actions={
+																<>
+																	<button type="button" className="primaryButton" onClick={openOrderLinkPanel}>
+																		Другой заказ
+																	</button>
+																	<button
+																		type="button"
+																		className="secondaryButton"
+																		onClick={() => {
+																			setSelectedOrder(null);
+																		}}
+																	>
+																		Убрать
+																	</button>
+																</>
+															}
+														/>
+													) : (
+														<>
+															<span className="toLinkOrderHint">Не выбран.</span>
+															<button type="button" onClick={openOrderLinkPanel} className="primaryButton">
+																Указать заказ
+															</button>
+														</>
+													)
+												) : (
+													<>
+														{selectedOrder ? (
+															<LinkedRelationCard
+																title={
+																	<>
+																		<Link href={`/admin/orders/${selectedOrder.id}`} className="itemLink" target="_blank">
+																			Заказ #{selectedOrder.id}
+																		</Link>
+																		<span className="bookingLinkPickStatus">{getOrderStatusText(selectedOrder.status)}</span>
+																	</>
+																}
+																metaLines={[
+																	{
+																		label: "Сумма и даты:",
+																		value: (
+																			<>
+																				{formatRubBooking(selectedOrder.orderTotal)}
+																				{" · создан: "}
+																				{formatOrderDateRu(selectedOrder.createdAt)}
+																				{selectedOrder.finalDeliveryDate
+																					? ` · доставка: ${formatOrderDateRu(selectedOrder.finalDeliveryDate)}`
+																					: ""}
+																			</>
+																		),
+																	},
+																	{
+																		label: "Контакт:",
+																		value: orderPickContactLine(selectedOrder),
+																	},
+																]}
+															/>
+														) : null}
+														<OrderLinkSearchBlock
+															hintText={
+																selectedOrder
+																	? "Укажите ID другого заказа — в списке заказы без другой записи или уже привязанные к этой."
+																	: undefined
+															}
+															orderLinkQuery={orderLinkQuery}
+															handleOrderLinkInput={handleOrderLinkInput}
+															orderLinkFocused={orderLinkFocused}
+															setOrderLinkFocused={setOrderLinkFocused}
+															orderLinkBlurTimeout={orderLinkBlurTimeout}
+															handleOrderLinkBlur={handleOrderLinkBlur}
+															orderLinkLoading={orderLinkLoading}
+															orderLinkResults={orderLinkResults}
+															handleSelectOrderFromLink={handleSelectOrderFromLink}
+															selectedOrderForLink={selectedOrderForLink}
+															clearOrderLinkSelection={clearOrderLinkSelection}
+															onConfirmOrderPick={applyOrderDraftOnCreate}
+															confirmOrderPickLabel="Указать заказ"
+															cancelOrderLinkPanel={cancelOrderLinkPanel}
+															isOrderLinkSaving={false}
+														/>
+													</>
+												)}
+											</div>
+										</div>
+									</div>
+								)}
+							</div>
+						</div>
+					) : (
+						bookingRecord && (
+							<div className="orderMainInfo">
+								<div className="orderInfoFields">
+									<div className="infoRow">
+										<div className="infoField">
+											<span className="infoLabel">Дата и время записи:</span>
+											<span className="infoValue">
+												{formatOrderDateRu(bookingRecord.scheduledDate)} {bookingRecord.scheduledTime}
+											</span>
+										</div>
+										<div className="infoField">
+											<span className="infoLabel">Статус:</span>
+											<span className="infoValue">{bookingStatusLabelRu(String(bookingRecord.status))}</span>
+										</div>
+										<div className="infoField">
+											<span className="infoLabel">Создана:</span>
+											<span className="infoValue">{formatBookingDateTime(bookingRecord.createdAt)}</span>
+										</div>
+									</div>
+									<div className="infoRow">
+										<div className="infoField">
+											<span className="infoLabel">Отдел (адрес):</span>
+											<span className="infoValue">
+												{bookingRecord.bookingDepartment
+													? [bookingRecord.bookingDepartment.name, bookingRecord.bookingDepartment.address].filter(Boolean).join(" — ")
+													: "—"}
+											</span>
+										</div>
+										<div className="infoField">
+											<span className="infoLabel">Клиент:</span>
+											<span className="infoValue">
+												{(() => {
+													const c = selectedClient || bookingRecord.client;
+													if (!c) return "—";
+													const name = [c.first_name, c.last_name].filter(Boolean).join(" ").trim() || c.phone;
+													return (
+														<Link href={`/admin/users/${c.id}`} className="itemLink" target="_blank">
+															{name}
+														</Link>
+													);
+												})()}
+											</span>
+										</div>
+										<div className="infoField">
+											<span className="infoLabel">Ответственный:</span>
+											<span className="infoValue">
+												{(() => {
+													const m = selectedManager || bookingRecord.manager;
+													if (!m) return "—";
+													const name = [m.first_name, m.last_name].filter(Boolean).join(" ").trim() || "—";
+													return (
+														<Link href={`/admin/users/${m.id}`} className="itemLink" target="_blank">
+															{name}
+														</Link>
+													);
+												})()}
+											</span>
+										</div>
+									</div>
+									<div className="infoRow">
+										<div className="infoField">
+											<span className="infoLabel">Телефон для связи:</span>
+											<span className="infoValue">{bookingRecord.contactPhone || "—"}</span>
+										</div>
+									</div>
+									<div className="infoRow">
+										<div className={`infoField infoFieldBookingLink column`} id="bookingLinkedOrder">
+											<span className="infoLabel">Связь с заказом</span>
+											<div className="infoValue column">
+												{!selectedOrder ? (
+													<div className="column">
+														{!canManageOrderLink ? (
+															<span className="toLinkOrderHint">Заказ не привязан.</span>
+														) : !orderLinkPanelOpen ? (
+															<>
+																<span className="toLinkOrderHint">Заказ не привязан.</span>
+																<button
+																	type="button"
+																	onClick={openOrderLinkPanel}
+																	className="primaryButton"
+																	disabled={isOrderLinkSaving}
+																>
+																	Связать с заказом
+																</button>
+															</>
+														) : (
+															<OrderLinkSearchBlock
+																orderLinkQuery={orderLinkQuery}
+																handleOrderLinkInput={handleOrderLinkInput}
+																orderLinkFocused={orderLinkFocused}
+																setOrderLinkFocused={setOrderLinkFocused}
+																orderLinkBlurTimeout={orderLinkBlurTimeout}
+																handleOrderLinkBlur={handleOrderLinkBlur}
+																orderLinkLoading={orderLinkLoading}
+																orderLinkResults={orderLinkResults}
+																handleSelectOrderFromLink={handleSelectOrderFromLink}
+																selectedOrderForLink={selectedOrderForLink}
+																clearOrderLinkSelection={clearOrderLinkSelection}
+																onConfirmOrderPick={saveOrderLinkToBooking}
+																confirmOrderPickLabel="Сохранить связь"
+																cancelOrderLinkPanel={cancelOrderLinkPanel}
+																isOrderLinkSaving={isOrderLinkSaving}
+															/>
+														)}
+													</div>
+												) : (
+													<div className="column">
+														<LinkedRelationCard
+															title={
+																<>
+																	<Link href={`/admin/orders/${selectedOrder.id}`} className="itemLink" target="_blank">
+																		Заказ #{selectedOrder.id}
+																	</Link>
+																	<span className="bookingLinkPickStatus">{getOrderStatusText(selectedOrder.status)}</span>
+																</>
+															}
+															metaLines={[
+																{
+																	label: "Сумма и даты:",
+																	value: (
+																		<>
+																			{formatRubBooking(selectedOrder.orderTotal)}
+																			{" · создан: "}
+																			{formatOrderDateRu(selectedOrder.createdAt)}
+																			{selectedOrder.finalDeliveryDate
+																				? ` · доставка: ${formatOrderDateRu(selectedOrder.finalDeliveryDate)}`
+																				: ""}
+																		</>
+																	),
+																},
+																{
+																	label: "Контакт:",
+																	value: orderPickContactLine(selectedOrder),
+																},
+															]}
+															actions={
+																canManageOrderLink && !orderLinkPanelOpen ? (
+																	<>
+																		<button
+																			type="button"
+																			className="primaryButton"
+																			onClick={openOrderLinkPanel}
+																			disabled={isOrderLinkSaving}
+																		>
+																			Сменить заказ
+																		</button>
+																		<button
+																			type="button"
+																			className="secondaryButton"
+																			onClick={unlinkOrderFromBooking}
+																			disabled={isOrderLinkSaving}
+																		>
+																			Отвязать
+																		</button>
+																	</>
+																) : null
+															}
+														/>
+														{orderLinkPanelOpen && canManageOrderLink ? (
+															<OrderLinkSearchBlock
+																hintText="Укажите ID другого заказа — в списке заказы без другой записи или уже привязанные к этой."
+																orderLinkQuery={orderLinkQuery}
+																handleOrderLinkInput={handleOrderLinkInput}
+																orderLinkFocused={orderLinkFocused}
+																setOrderLinkFocused={setOrderLinkFocused}
+																orderLinkBlurTimeout={orderLinkBlurTimeout}
+																handleOrderLinkBlur={handleOrderLinkBlur}
+																orderLinkLoading={orderLinkLoading}
+																orderLinkResults={orderLinkResults}
+																handleSelectOrderFromLink={handleSelectOrderFromLink}
+																selectedOrderForLink={selectedOrderForLink}
+																clearOrderLinkSelection={clearOrderLinkSelection}
+																onConfirmOrderPick={saveOrderLinkToBooking}
+																confirmOrderPickLabel="Сохранить связь"
+																cancelOrderLinkPanel={cancelOrderLinkPanel}
+																isOrderLinkSaving={isOrderLinkSaving}
+															/>
+														) : null}
+													</div>
+												)}
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						)
+					)}
 				</div>
 				<div className="formFields">
 				{/* Дата записи */}
@@ -766,126 +1365,6 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 					/>
 					<small style={{ color: "#666", fontSize: "12px", marginTop: "5px", display: "block" }}>Обязательное поле для связи с клиентом</small>
 				</div>
-
-				{/* Заказ */}
-				{userRole !== "manager" && (
-					<div className="formField">
-						<label htmlFor="orderSearch">Заказ</label>
-						{selectedOrder ? (
-							<div className="selectedClient column">
-								<div>
-									<Link href={`/admin/orders/${selectedOrder.id}`} className="itemLink" target="_blank" onMouseDown={(e) => e.stopPropagation()}>
-										Заказ #{selectedOrder.id}
-									</Link>
-									{" · "}
-									{getOrderStatusText(selectedOrder.status)}
-									{" · создан: "}
-									{formatOrderDateRu(selectedOrder.createdAt)}
-									{selectedOrder.finalDeliveryDate ? ` · доставка: ${formatOrderDateRu(selectedOrder.finalDeliveryDate)}` : ""}
-									{" · "}
-									{formatRubBooking(selectedOrder.orderTotal)}
-								</div>
-								<div>
-									Клиент:{" "}
-									{orderStatusAllowsClientLinkInBooking(selectedOrder.status) && selectedOrder.client ? (
-										<Link
-											href={`/admin/users/${selectedOrder.client.id}`}
-											className="itemLink"
-											target="_blank"
-											onMouseDown={(e) => e.stopPropagation()}
-										>
-											{clientShortName(selectedOrder.client)}
-										</Link>
-									) : (
-										<span>
-											{selectedOrder.contactName?.trim() ||
-												(selectedOrder.client ? clientShortName(selectedOrder.client) : "—")}
-										</span>
-									)}
-								</div>
-								<div>Телефон для связи (заказ): {selectedOrder.contactPhone || "—"}</div>
-								<button
-									type="button"
-									onClick={() => {
-										setSelectedOrder(null);
-										setOrderSearch("");
-										setOrderSearchResults([]);
-									}}
-									className="removeButton"
-								>
-									Убрать заказ ×
-								</button>
-							</div>
-						) : (
-							<SearchDropdownInput
-								id="orderSearch"
-								value={orderSearch}
-								onChange={handleOrderManualInput}
-								onFocus={() => {
-									if (orderBlurTimeout.current) clearTimeout(orderBlurTimeout.current);
-									setIsOrderSearchFocused(true);
-								}}
-								onBlur={handleOrderBlur}
-								placeholder="Поиск заказа по ID"
-								isActiveSearch={isOrderSearchFocused && orderSearch.length > 0}
-								showDropdown={isOrderSearchFocused && Boolean(orderSearch)}
-							>
-								{isOrderSearchFocused && isSearchingOrders && orderSearch && (
-									<div className="searchResults loading">
-										<Loading />
-									</div>
-								)}
-								{isOrderSearchFocused && orderSearch && !isSearchingOrders && (
-									<div className="searchResults">
-										{orderSearchResults.length > 0 ? (
-											orderSearchResults.map((order) => (
-												<div key={order.id} className="searchResultItem column" onMouseDown={() => handleOrderSelect(order)}>
-													<div>
-														<Link
-															href={`/admin/orders/${order.id}`}
-															className="itemLink"
-															target="_blank"
-															onMouseDown={(e) => e.stopPropagation()}
-														>
-															Заказ #{order.id}
-														</Link>
-														{" · "}
-														{getOrderStatusText(order.status)}
-														{" · создан: "}
-														{formatOrderDateRu(order.createdAt)}
-														{order.finalDeliveryDate ? ` · доставка: ${formatOrderDateRu(order.finalDeliveryDate)}` : ""}
-														{" · "}
-														{formatRubBooking(order.orderTotal)}
-													</div>
-													<div>
-														Клиент:{" "}
-														{orderStatusAllowsClientLinkInBooking(order.status) && order.client ? (
-															<Link
-																href={`/admin/users/${order.client.id}`}
-																className="itemLink"
-																target="_blank"
-																onMouseDown={(e) => e.stopPropagation()}
-															>
-																{clientShortName(order.client)}
-															</Link>
-														) : (
-															<span>
-																{order.contactName?.trim() || (order.client ? clientShortName(order.client) : "—")}
-															</span>
-														)}
-													</div>
-													<div>Телефон (заказ): {order.contactPhone || "—"}</div>
-												</div>
-											))
-										) : (
-											<div className="searchResultItem">Нет результатов</div>
-										)}
-									</div>
-								)}
-							</SearchDropdownInput>
-						)}
-					</div>
-				)}
 
 				{/* Имя клиента (только для незарегистрированного клиента) */}
 				{!selectedClient && (

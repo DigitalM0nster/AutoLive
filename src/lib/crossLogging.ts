@@ -98,6 +98,15 @@ export async function getFullOrderSnapshot(orderId: number) {
 						updatedAt: true,
 					},
 				},
+				deliveryPickupPoint: {
+					select: {
+						id: true,
+						name: true,
+						address: true,
+						phones: true,
+						emails: true,
+					},
+				},
 			},
 		});
 
@@ -120,6 +129,7 @@ export async function getFullOrderSnapshot(orderId: number) {
 			createdBy: order.createdBy,
 			bookingId: order.bookingId,
 			bookingDepartmentId: order.bookingDepartmentId,
+			deliveryPickupPointId: order.deliveryPickupPointId,
 			// Связанные данные
 			client: order.client,
 			manager: order.manager,
@@ -128,6 +138,7 @@ export async function getFullOrderSnapshot(orderId: number) {
 			orderItems: order.orderItems,
 			booking: order.booking,
 			bookingDepartment: order.bookingDepartment,
+			deliveryPickupPoint: order.deliveryPickupPoint,
 		};
 	} catch (error) {
 		console.error("Ошибка при получении полного снапшота заказа:", error);

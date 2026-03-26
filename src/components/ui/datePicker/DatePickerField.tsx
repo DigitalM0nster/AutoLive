@@ -17,9 +17,6 @@ interface DatePickerFieldProps {
 export default function DatePickerField({ label, value, onChange, placeholder = "Выберите дату", className = "", disabled = false, onFocus }: DatePickerFieldProps) {
 	const [isOpen, setIsOpen] = useState(false);
 
-	// Отладочная информация для проверки класса error
-	console.log(`🗓️ DatePickerField "${label}": className="${className}", hasError=${className.includes("error")}`);
-
 	// Функция для форматирования даты для отображения
 	const formatDisplayDate = (dateString: string): string => {
 		if (!dateString) return "";

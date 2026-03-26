@@ -1,12 +1,14 @@
 // src/lib/adminRoutesMeta.ts
 
-import { Building2, LucideIcon, Users, ShoppingCart, Wrench, FileText, Package, PackageCheck, ClipboardList, ListOrdered, MapPin } from "lucide-react";
+import { Building2, LucideIcon, Users, ShoppingCart, FileText, Package, PackageCheck, ClipboardList, ListOrdered, MapPin, Globe } from "lucide-react";
 
 export type AdminRouteMeta = {
 	label: string;
 	icon?: LucideIcon;
 	description?: string;
 	bg?: string;
+	/** Если задан, карточка на дашборде ведёт сюда вместо `/admin/{ключ}` */
+	href?: string;
 };
 
 export const adminRoutesMeta: Record<string, AdminRouteMeta> = {
@@ -52,6 +54,13 @@ export const adminRoutesMeta: Record<string, AdminRouteMeta> = {
 		label: "Заказы",
 		icon: ShoppingCart,
 		bg: "blue",
+	},
+	"homepage-requests": {
+		label: "Заявки с главной",
+		icon: Globe,
+		description: "Форма «Оставить заявку» на главной странице",
+		bg: "red",
+		href: "/admin/homepage-requests",
 	},
 	content: {
 		label: "Контент сайта",

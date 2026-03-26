@@ -5,6 +5,7 @@ import styles from "@/components/user/loginPopup/styles.module.scss";
 import { useUiStore } from "@/store/uiStore";
 import { HomepageContentData, FormField, CustomFieldSubType } from "@/app/api/homepage-content/route";
 import PersonalDataConsent from "@/components/user/personalDataConsent/PersonalDataConsent";
+import { formFieldsToPartDefs, validateHomepageRequestValues } from "@/lib/homepageRequestFormShared";
 
 export default function OrderPopup() {
 	const { isActiveOrderPopup, deactivateOrderPopup, homepageFormData } = useUiStore();
@@ -68,34 +69,37 @@ export default function OrderPopup() {
 		}
 		setConsentShowError(false);
 
-		// Валидация обязательных полей
-		for (const field of homepageFormData.formFields) {
-			if (field.required) {
-				if (field.type === "custom") {
-					// Для кастомного поля проверяем, что заполнено хотя бы одно из двух подполей
-					const firstValue = formValues[`field-${field.id}_1`];
-					const secondValue = formValues[`field-${field.id}_2`];
-					if (!firstValue && !secondValue) {
-						alert(`Поле "${field.placeholder}" обязательно для заполнения (заполните хотя бы одно из двух полей)`);
-						return;
-					}
-				} else {
-					if (!formValues[field.id]) {
-						alert(`Поле "${field.placeholder}" обязательно для заполнения`);
-						return;
-					}
-				}
-			}
+		const getValue = (key: string) => formValues[key] ?? null;
+		const check = validateHomepageRequestValues(homepageFormData.formFields, getValue);
+		if (!check.ok) {
+			alert(check.message);
+			return;
 		}
 
 		setSubmitting(true);
 		try {
-			// TODO: отправка на API — передавать personal_data_consent: true в теле запроса
-			// Пока просто показываем сообщение об успехе
+			const fd = new FormData();
+			fd.append("personal_data_consent", "true");
+			const defs = formFieldsToPartDefs(homepageFormData.formFields);
+			for (const d of defs) {
+				const v = formValues[d.key];
+				if (d.partType === "file") {
+					if (v instanceof File) fd.append(d.key, v);
+				} else {
+					fd.append(d.key, typeof v === "string" ? v : "");
+				}
+			}
+
+			const res = await fetch("/api/homepage-requests", { method: "POST", body: fd });
+			const data = await res.json().catch(() => ({}));
+			if (!res.ok) {
+				alert(typeof data.error === "string" ? data.error : "Ошибка отправки заявки. Попробуйте позже.");
+				return;
+			}
 			alert("Заявка отправлена! Мы свяжемся с вами по телефону.");
 			setFormValues({});
 			deactivateOrderPopup();
-		} catch (error) {
+		} catch {
 			alert("Ошибка отправки заявки. Попробуйте позже.");
 		} finally {
 			setSubmitting(false);
@@ -106,7 +110,7 @@ export default function OrderPopup() {
 	const formData: HomepageContentData = homepageFormData || {
 		firstBlockTitle: "Выбрать запчасти с менеджером:",
 		callButtonText: "Позвонить в магазин",
-		orderButtonText: "Оставить заказ",
+		orderButtonText: "Оставить заявку",
 		formFields: [
 			{
 				id: "1",
@@ -147,15 +151,7 @@ export default function OrderPopup() {
 		const value = formValues[subFieldId] || "";
 
 		if (subFieldType === "file") {
-			return (
-				<input
-					key={subFieldId}
-					type="file"
-					accept="image/*"
-					onChange={(e) => handleInputChange(subFieldId, e)}
-					placeholder={placeholder}
-				/>
-			);
+			return <input key={subFieldId} type="file" accept="image/*" onChange={(e) => handleInputChange(subFieldId, e)} placeholder={placeholder} />;
 		}
 
 		if (subFieldType === "textarea") {
@@ -192,19 +188,9 @@ export default function OrderPopup() {
 			// Кастомное поле - два поля с выбором типов
 			return (
 				<div key={field.id} className={styles.inputGroup}>
-					{renderCustomSubField(
-						field.firstFieldType || "text",
-						field.firstFieldPlaceholder || "",
-						fieldId,
-						1
-					)}
+					{renderCustomSubField(field.firstFieldType || "text", field.firstFieldPlaceholder || "", fieldId, 1)}
 					<div className="orText">{field.separatorText || "или"}</div>
-					{renderCustomSubField(
-						field.secondFieldType || "file",
-						field.secondFieldPlaceholder || "",
-						fieldId,
-						2
-					)}
+					{renderCustomSubField(field.secondFieldType || "file", field.secondFieldPlaceholder || "", fieldId, 2)}
 				</div>
 			);
 		}
@@ -226,15 +212,7 @@ export default function OrderPopup() {
 		}
 
 		if (field.type === "file") {
-			return (
-				<input
-					key={field.id}
-					type="file"
-					accept="image/*"
-					onChange={(e) => handleInputChange(field.id, e)}
-					required={field.required}
-				/>
-			);
+			return <input key={field.id} type="file" accept="image/*" onChange={(e) => handleInputChange(field.id, e)} required={field.required} />;
 		}
 
 		return (

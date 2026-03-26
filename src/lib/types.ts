@@ -504,7 +504,8 @@ export type Order = {
 	departmentId?: number | null;
 	clientId?: number | null;
 	bookingId?: number | null; // Связь с заявкой
-	bookingDepartmentId?: number | null; // Адрес доставки
+	bookingDepartmentId?: number | null; // Адрес доставки (отдел для записей)
+	deliveryPickupPointId?: number | null; // Адрес доставки (пункт выдачи; взаимоисключающе с bookingDepartmentId)
 	createdBy?: number | null;
 	// Связи
 	manager?: {
@@ -559,6 +560,14 @@ export type Order = {
 		} | null;
 	} | null;
 	bookingDepartment?: BookingDepartment | null;
+	/** Пункт выдачи как адрес доставки заказа */
+	deliveryPickupPoint?: {
+		id: number;
+		name: string | null;
+		address: string;
+		phones: string[];
+		emails: string[];
+	} | null;
 	orderItems: OrderItem[];
 };
 
@@ -610,7 +619,8 @@ export type CreateOrderRequest = {
 	managerId?: number; // Ответственный менеджер
 	departmentId?: number; // Для заказов созданных админом (только для суперадмина)
 	bookingId?: number | null; // Связь с заявкой
-	bookingDepartmentId?: number | null; // Адрес доставки
+	bookingDepartmentId?: number | null; // Адрес доставки (отдел для записей)
+	deliveryPickupPointId?: number | null; // Пункт выдачи
 	orderItems: {
 		product_sku: string;
 		product_title: string;
@@ -652,7 +662,8 @@ export type UpdateOrderRequest = {
 	departmentId?: number | null;
 	finalDeliveryDate?: string | null;
 	bookingId?: number | null; // Связь с заявкой
-	bookingDepartmentId?: number | null; // Адрес доставки
+	bookingDepartmentId?: number | null; // Адрес доставки (отдел для записей)
+	deliveryPickupPointId?: number | null; // Пункт выдачи
 	orderItems?: {
 		product_sku: string;
 		product_title: string;

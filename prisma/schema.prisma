@@ -201,8 +201,9 @@ model Order {
     departmentId        Int?        @map("department_id") // Опциональное поле - для заказов от пользователей может быть null
     clientId            Int?        @map("client_id") // Опциональное поле - для заказов созданных админом может быть null
     createdBy           Int?        @map("created_by") // Кто создал заказ (админ/менеджер/пользователь). Для публичной заявки может быть null
-    bookingId           Int?        @unique @map("booking_id") // Связь с полноценной записью клиента (booking), один-к-одному
-    bookingDepartmentId Int?        @map("booking_department_id") // Адрес доставки (опционально)
+    bookingId               Int? @unique @map("booking_id") // Связь с полноценной записью клиента (booking), один-к-одному
+    bookingDepartmentId     Int? @map("booking_department_id") // Адрес доставки: отдел для записей (опционально)
+    deliveryPickupPointId   Int? @map("delivery_pickup_point_id") // Адрес доставки: пункт выдачи (взаимоисключающе с bookingDepartmentId)
 
     // Связи
     manager           User?              @relation("ManagerOrders", fields: [managerId], references: [id])
@@ -210,8 +211,9 @@ model Order {
     client            User?              @relation("ClientOrders", fields: [clientId], references: [id])
     creator           User?              @relation("CreatedOrders", fields: [createdBy], references: [id])
     booking           Booking?           @relation("OrderBooking", fields: [bookingId], references: [id])
-    bookingDepartment BookingDepartment? @relation("OrderBookingDepartment", fields: [bookingDepartmentId], references: [id])
-    orderItems        OrderItem[]
+    bookingDepartment   BookingDepartment? @relation("OrderBookingDepartment", fields: [bookingDepartmentId], references: [id])
+    deliveryPickupPoint PickupPoint?         @relation(fields: [deliveryPickupPointId], references: [id])
+    orderItems          OrderItem[]
     orderLogs         OrderLog[]
 
     @@map("order")
@@ -446,6 +448,11 @@ enum Role {
     client
 }
 
+enum HomepageRequestStatus {
+    new
+    processed
+}
+
 enum UserStatus {
     unverified
     verified
@@ -557,7 +564,18 @@ model BookingLog {
     @@map("booking_log")
 }
 
-// Контент главной страницы
+// Заявки с главной (форма «Оставить заявку»; не заказы из корзины и не записи на ТО)
+model HomepageRequest {
+    id        Int                   @id @default(autoincrement()) @map("id")
+    createdAt DateTime              @default(now()) @map("created_at") @db.Timestamp(0)
+    updatedAt DateTime              @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
+    status    HomepageRequestStatus @default(new) @map("status")
+    payload   Json                  @map("payload") // массив полей: ключ, подпись, значение и/или url файла
+
+    @@map("homepage_request")
+}
+
+// Контент главной страницы (тексты и схема полей формы заявки)
 model HomepageContent {
     id                  Int      @id @default(autoincrement()) @map("id")
     firstBlockTitle     String   @default("Выбрать запчасти с менеджером:") @map("first_block_title") @db.VarChar(255)
@@ -667,6 +685,7 @@ model PickupPoint {
     updatedAt           DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
 
     pickupPointLogs PickupPointLog[]
+    orders            Order[]
 
     @@map("pickup_point")
 }

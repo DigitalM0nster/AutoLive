@@ -1,18 +1,11 @@
-import Link from "next/link";
 import OrderLogsComponent from "../local_components/orderLogs/OrderLogsComponent";
+import OrdersTabs from "../local_components/OrdersTabs";
 
 export default function OrdersLogsPage() {
 	return (
 		<div className="screenContent">
 			<div className="tableContainer">
-				<div className="tabsContainer">
-					<Link href="/admin/orders" className="tabButton">
-						Список заказов
-					</Link>
-					<Link href="/admin/orders/logs" className="tabButton active">
-						История изменений
-					</Link>
-				</div>
+				<OrdersTabs />
 				<OrderLogsComponent />
 			</div>
 		</div>

@@ -25,7 +25,7 @@ export default function RequestPopup({ requestPopupActive, handleCloseRequestPop
 						<input id="fileUpload" type="file" accept="image/*" style={{ display: "none" }} onChange={handleFileChange} />
 					</div>
 					<div className={`button ${styles.button}`} onClick={() => handleRequestSubmit(file)}>
-						Оставить заказ
+						Оставить заявку
 					</div>
 				</div>
 				<div className={styles.closeIcon} onClick={handleCloseRequestPopup}>
