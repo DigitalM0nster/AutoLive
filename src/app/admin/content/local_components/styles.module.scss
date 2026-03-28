@@ -38,6 +38,13 @@
 	}
 }
 
+// Ошибка сохранения: невалидный id поля (редко)
+.fieldValidationCard {
+	outline: 2px solid var(--red-color, #c62828);
+	outline-offset: 2px;
+	border-radius: 12px;
+}
+
 // Заголовок поля с номером
 .fieldHeader {
 	display: flex;
@@ -462,4 +469,66 @@
 		border: 1px solid var(--grey2-color);
 		border-radius: 8px;
 	}
+}
+
+// Подвал: превью иконок в редакторе
+.footerIconPickerRow {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	flex-wrap: wrap;
+	margin-bottom: 12px;
+}
+
+.footerIconCurrentPreview {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 52px;
+	height: 52px;
+	flex-shrink: 0;
+	border: 1px solid var(--light-grey2-color);
+	border-radius: 10px;
+	background: var(--white-color);
+	color: var(--text-color);
+}
+
+.footerIconSelect {
+	flex: 1;
+	min-width: 200px;
+}
+
+.footerIconLegend {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px 16px;
+	padding: 12px;
+	border-radius: 10px;
+	background: var(--light-grey-color);
+	border: 1px solid var(--light-grey2-color);
+}
+
+.footerIconLegendItem {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 13px;
+	color: var(--text-color);
+}
+
+.footerIconLegendGlyph {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 36px;
+	height: 36px;
+	flex-shrink: 0;
+	border-radius: 8px;
+	background: var(--white-color);
+	border: 1px solid var(--light-grey2-color);
+	color: var(--text-color);
+}
+
+.footerIconLegendLabel {
+	line-height: 1.3;
 }

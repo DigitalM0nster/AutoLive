@@ -109,6 +109,7 @@ export default function OrderPopup() {
 	// Используем данные из store или дефолтные значения
 	const formData: HomepageContentData = homepageFormData || {
 		firstBlockTitle: "Выбрать запчасти с менеджером:",
+		secondBlockTitle: "Выбрать запчасти самостоятельно:",
 		callButtonText: "Позвонить в магазин",
 		orderButtonText: "Оставить заявку",
 		formFields: [
@@ -185,11 +186,11 @@ export default function OrderPopup() {
 		const value = formValues[field.id] || "";
 
 		if (field.type === "custom") {
-			// Кастомное поле - два поля с выбором типов
+			const sep = (field.separatorText || "").trim();
 			return (
 				<div key={field.id} className={styles.inputGroup}>
 					{renderCustomSubField(field.firstFieldType || "text", field.firstFieldPlaceholder || "", fieldId, 1)}
-					<div className="orText">{field.separatorText || "или"}</div>
+					{sep ? <div className="orText">{sep}</div> : null}
 					{renderCustomSubField(field.secondFieldType || "file", field.secondFieldPlaceholder || "", fieldId, 2)}
 				</div>
 			);

@@ -1,5 +1,6 @@
 // src\lib\types.ts
 import { Prisma } from "@prisma/client";
+import type { OrderCommentWire } from "@/lib/orderComments";
 
 export type Role = "superadmin" | "admin" | "manager" | "client";
 export type Department = {
@@ -33,7 +34,7 @@ export type User = {
 	status: string;
 	orders: {
 		id: number;
-		comments: string[];
+		comments: Prisma.JsonValue;
 		status: string;
 		createdAt: string;
 	}[];
@@ -490,7 +491,8 @@ export type OrderStatus = "created" | "confirmed" | "booked" | "ready" | "paid" 
 
 export type Order = {
 	id: number;
-	comments: string[];
+	/** JSON-массив комментариев в БД; на клиенте — parseOrderCommentsFromDb */
+	comments: Prisma.JsonValue;
 	contactName?: string | null;
 	contactPhone?: string | null;
 	status: OrderStatus;
@@ -648,22 +650,35 @@ export type CreateOrderRequest = {
 	returnPaymentDate?: string; // 7. Возврат - дата возврата денежных средств
 	returnDocumentNumber?: string; // 7. Возврат - номер документа возврата средств
 	finalDeliveryDate?: string; // 2. Подтвержденный - финальная дата поставки клиенту
-	comments?: string[]; // Комментарии
+	comments?: OrderCommentWire[];
 	status?: OrderStatus;
 };
 
 // Тип для обновления заказа
 export type UpdateOrderRequest = {
-	comments?: string[];
+	comments?: OrderCommentWire[];
 	contactName?: string | null;
 	contactPhone?: string | null;
 	status?: OrderStatus;
+	clientId?: number | null;
 	managerId?: number | null; // Назначение/снятие менеджера
 	departmentId?: number | null;
 	finalDeliveryDate?: string | null;
 	bookingId?: number | null; // Связь с заявкой
 	bookingDepartmentId?: number | null; // Адрес доставки (отдел для записей)
 	deliveryPickupPointId?: number | null; // Пункт выдачи
+	bookedUntil?: string | null;
+	readyUntil?: string | null;
+	prepaymentAmount?: number | null;
+	prepaymentDate?: string | null;
+	paymentDate?: string | null;
+	orderAmount?: number | null;
+	completionDate?: string | null;
+	returnReason?: string | null;
+	returnDate?: string | null;
+	returnAmount?: number | null;
+	returnPaymentDate?: string | null;
+	returnDocumentNumber?: string | null;
 	orderItems?: {
 		product_sku: string;
 		product_title: string;

@@ -42,9 +42,14 @@ const StatusReturnedSection: React.FC<StatusReturnedSectionProps> = ({ isActive,
 					<label>Причина возврата позиции</label>
 					<textarea
 						value={formData.returnReason}
-						onChange={(e) => setFormData((prev) => ({ ...prev, returnReason: e.target.value }))}
+						onChange={(e) => {
+							setFormData((prev) => ({ ...prev, returnReason: e.target.value }));
+							clearFieldError("returnReason");
+						}}
+						onFocus={() => clearFieldError("returnReason")}
 						placeholder="Укажите причину возврата"
 						rows={3}
+						className={fieldErrors.has("returnReason") ? "error" : ""}
 						disabled={!canEdit}
 					/>
 				</div>
@@ -67,10 +72,15 @@ const StatusReturnedSection: React.FC<StatusReturnedSectionProps> = ({ isActive,
 						<input
 							type="number"
 							value={formData.returnAmount}
-							onChange={(e) => setFormData((prev) => ({ ...prev, returnAmount: e.target.value }))}
+							onChange={(e) => {
+								setFormData((prev) => ({ ...prev, returnAmount: e.target.value }));
+								clearFieldError("returnAmount");
+							}}
+							onFocus={() => clearFieldError("returnAmount")}
 							placeholder="0.00"
 							step="0.01"
 							min="0"
+							className={fieldErrors.has("returnAmount") ? "error" : ""}
 							disabled={!canEdit}
 						/>
 					</div>
@@ -94,8 +104,13 @@ const StatusReturnedSection: React.FC<StatusReturnedSectionProps> = ({ isActive,
 						<input
 							type="text"
 							value={formData.returnDocumentNumber}
-							onChange={(e) => setFormData((prev) => ({ ...prev, returnDocumentNumber: e.target.value }))}
+							onChange={(e) => {
+								setFormData((prev) => ({ ...prev, returnDocumentNumber: e.target.value }));
+								clearFieldError("returnDocumentNumber");
+							}}
+							onFocus={() => clearFieldError("returnDocumentNumber")}
 							placeholder="Номер документа"
+							className={fieldErrors.has("returnDocumentNumber") ? "error" : ""}
 							disabled={!canEdit}
 						/>
 					</div>

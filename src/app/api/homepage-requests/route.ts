@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
 		if (!Array.isArray(formFieldsRaw)) {
 			return NextResponse.json({ error: "Некорректная конфигурация формы" }, { status: 500 });
 		}
-		const fields = formFieldsRaw as FormField[];
+		const fields = formFieldsRaw as unknown as FormField[];
 
 		const get = (key: string) => formData.get(key);
 		const val = validateHomepageRequestValues(fields, get);

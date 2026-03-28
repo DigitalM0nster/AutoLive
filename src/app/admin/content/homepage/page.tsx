@@ -3,13 +3,13 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
 import Link from "next/link";
 import styles from "../local_components/styles.module.scss";
-import { HomepageContentData, FormField, FormFieldType, CustomFieldSubType } from "@/app/api/homepage-content/route";
-import { Trash2, Plus, GripVertical } from "lucide-react";
+import { HomepageContentData, FormField } from "@/app/api/homepage-content/route";
+import { Plus } from "lucide-react";
 import { DndContext, closestCenter, DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
-import { SortableContext, arrayMove, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+import { SortableContext, arrayMove, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import FixedActionButtons from "@/components/ui/fixedActionButtons/FixedActionButtons";
+import HomepageSortableField from "./local_components/HomepageSortableField";
 
 export default function AdminHomepageContent() {
 	const [loading, setLoading] = useState(true);
@@ -17,6 +17,8 @@ export default function AdminHomepageContent() {
 	const [data, setData] = useState<HomepageContentData | null>(null);
 	const [initialData, setInitialData] = useState<HomepageContentData | null>(null); // Исходные данные для отслеживания изменений
 	const [error, setError] = useState<string | null>(null);
+	/** Подсветка полей формы после отказа API: fieldId → список ключей (placeholder, type, …) */
+	const [fieldSaveIssues, setFieldSaveIssues] = useState<Record<string, string[]>>({});
 	const [hasChanges, setHasChanges] = useState(false);
 	const scrollPositionRef = useRef<number | null>(null);
 	const shouldRestoreScrollRef = useRef<boolean>(false);
@@ -33,9 +35,9 @@ export default function AdminHomepageContent() {
 			return;
 		}
 
-		// Сравниваем данные
 		const hasDataChanges =
 			data.firstBlockTitle !== initialData.firstBlockTitle ||
+			data.secondBlockTitle !== initialData.secondBlockTitle ||
 			data.callButtonText !== initialData.callButtonText ||
 			data.orderButtonText !== initialData.orderButtonText ||
 			data.formSubmitButtonText !== initialData.formSubmitButtonText ||
@@ -44,7 +46,7 @@ export default function AdminHomepageContent() {
 		setHasChanges(hasDataChanges);
 	}, [data, initialData]);
 
-	// Восстанавливаем позицию скролла после обновления DOM
+	// Восстанавливаем позицию скролла после перетаскивания полей
 	useLayoutEffect(() => {
 		if (shouldRestoreScrollRef.current && scrollPositionRef.current !== null) {
 			window.scrollTo({
@@ -66,6 +68,7 @@ export default function AdminHomepageContent() {
 			const content = await response.json();
 			setData(content);
 			setInitialData(JSON.parse(JSON.stringify(content))); // Глубокая копия для сравнения
+			setFieldSaveIssues({});
 		} catch (err) {
 			setError(err instanceof Error ? err.message : "Ошибка загрузки");
 		} finally {
@@ -90,17 +93,29 @@ export default function AdminHomepageContent() {
 			});
 
 			if (!response.ok) {
-				const errorData = await response.json();
+				const errorData = (await response.json()) as {
+					error?: string;
+					fieldId?: string | null;
+					issues?: string[];
+				};
+				if (errorData.fieldId && errorData.issues && errorData.issues.length > 0) {
+					setFieldSaveIssues({ [errorData.fieldId]: errorData.issues });
+					requestAnimationFrame(() => {
+						const el = document.querySelector(`[data-homepage-field-id="${CSS.escape(String(errorData.fieldId))}"]`);
+						el?.scrollIntoView({ behavior: "smooth", block: "center" });
+					});
+				} else {
+					setFieldSaveIssues({});
+				}
 				throw new Error(errorData.error || "Ошибка сохранения");
 			}
 
-			// Синхронизируем "текущие" и "исходные" данные из одного источника.
-			// Это убирает ложный hasChanges, если бэкенд нормализует данные (например trim).
 			const savedData = await response.json();
 			const normalizedSavedData = JSON.parse(JSON.stringify(savedData)) as HomepageContentData;
 			setData(normalizedSavedData);
 			setInitialData(normalizedSavedData);
 			setHasChanges(false);
+			setFieldSaveIssues({});
 
 			alert("Данные успешно сохранены!");
 		} catch (err) {
@@ -112,9 +127,9 @@ export default function AdminHomepageContent() {
 
 	const handleCancel = () => {
 		if (!initialData) return;
-		// Возвращаем данные к исходным значениям
 		setData(JSON.parse(JSON.stringify(initialData)));
 		setHasChanges(false);
+		setFieldSaveIssues({});
 	};
 
 	const addFormField = () => {
@@ -145,13 +160,19 @@ export default function AdminHomepageContent() {
 	const updateFormField = (fieldId: string, updates: Partial<FormField>) => {
 		if (!data) return;
 
+		setFieldSaveIssues((prev) => {
+			if (!prev[fieldId]) return prev;
+			const next = { ...prev };
+			delete next[fieldId];
+			return next;
+		});
+
 		setData({
 			...data,
 			formFields: data.formFields.map((f) => (f.id === fieldId ? { ...f, ...updates } : f)),
 		});
 	};
 
-	// Обработчик перетаскивания полей
 	const handleDragEnd = (event: DragEndEvent) => {
 		if (!data) return;
 
@@ -160,7 +181,6 @@ export default function AdminHomepageContent() {
 			return;
 		}
 
-		// Сохраняем текущую позицию скролла перед обновлением состояния
 		scrollPositionRef.current = window.scrollY || document.documentElement.scrollTop;
 		shouldRestoreScrollRef.current = true;
 
@@ -176,192 +196,13 @@ export default function AdminHomepageContent() {
 		}
 	};
 
-	// Настройка сенсоров для drag and drop
 	const sensors = useSensors(
 		useSensor(PointerSensor, {
 			activationConstraint: {
-				distance: 8, // Минимальное расстояние для начала перетаскивания
+				distance: 8,
 			},
 		}),
 	);
-
-	// Компонент для сортируемого поля формы
-	const SortableFormField = ({ field, index }: { field: FormField; index: number }) => {
-		const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: field.id });
-		const elementRef = React.useRef<HTMLDivElement>(null);
-		const originalHeightRef = React.useRef<number | null>(null);
-
-		// Сохраняем оригинальную высоту при начале перетаскивания
-		React.useEffect(() => {
-			if (isDragging && elementRef.current && !originalHeightRef.current) {
-				originalHeightRef.current = elementRef.current.offsetHeight;
-			} else if (!isDragging) {
-				originalHeightRef.current = null;
-			}
-		}, [isDragging]);
-
-		const dragStyle: React.CSSProperties = {
-			transform: CSS.Transform.toString(transform),
-			transition,
-			opacity: isDragging ? 0.6 : 1,
-			...(isDragging && originalHeightRef.current ? { height: `${originalHeightRef.current}px` } : {}),
-		};
-
-		return (
-			<div
-				ref={(node) => {
-					setNodeRef(node);
-					if (node) {
-						(elementRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
-					}
-				}}
-				style={dragStyle}
-				className={`borderBlock ${styles.sortableFieldContainer} ${isDragging ? styles.isDragging : ""}`}
-			>
-				<div className={styles.fieldHeader}>
-					<div {...attributes} {...listeners} className="dragHandle" title="Перетащить для изменения порядка">
-						<GripVertical size={16} />
-					</div>
-					Поле {index + 1}
-				</div>
-				<button type="button" onClick={() => removeFormField(field.id)} className="deleteButton">
-					× Удалить поле
-				</button>
-
-				<div className="formRow">
-					<div className={`formField ${styles.formField}`}>
-						<label className={styles.checkboxLabel}>
-							<input
-								type="checkbox"
-								checked={field.required}
-								onChange={(e) => updateFormField(field.id, { required: e.target.checked })}
-								className={styles.checkboxInput}
-							/>
-							Обязательное поле
-						</label>
-					</div>
-				</div>
-				<div className="formRow">
-					<div className={`formField ${styles.formField}`}>
-						<label htmlFor={`field-type-${field.id}`}>Тип поля *</label>
-						<select
-							id={`field-type-${field.id}`}
-							value={field.type}
-							onChange={(e) => {
-								const newType = e.target.value as FormFieldType;
-								const updates: Partial<FormField> = { type: newType };
-								// Если тип не custom, удаляем специфичные поля кастомного типа
-								if (newType !== "custom") {
-									updates.firstFieldType = undefined;
-									updates.firstFieldPlaceholder = undefined;
-									updates.secondFieldType = undefined;
-									updates.secondFieldPlaceholder = undefined;
-									updates.separatorText = undefined;
-								} else {
-									// Если переключились на custom, добавляем дефолтные значения
-									updates.firstFieldType = field.firstFieldType || "text";
-									updates.firstFieldPlaceholder = field.firstFieldPlaceholder || "";
-									updates.secondFieldType = field.secondFieldType || "file";
-									updates.secondFieldPlaceholder = field.secondFieldPlaceholder || "";
-									updates.separatorText = field.separatorText || "или";
-								}
-								updateFormField(field.id, updates);
-							}}
-						>
-							<option value="text">Текст</option>
-							<option value="phone">Телефон</option>
-							<option value="textarea">Многострочный текст</option>
-							<option value="file">Файл</option>
-							<option value="custom">Кастомное (два поля на выбор)</option>
-						</select>
-					</div>
-
-					<div className={`formField ${styles.formField}`}>
-						<label htmlFor={`field-placeholder-${field.id}`}>Placeholder (описание поля) *</label>
-						<input
-							type="text"
-							id={`field-placeholder-${field.id}`}
-							value={field.placeholder}
-							onChange={(e) => updateFormField(field.id, { placeholder: e.target.value })}
-							placeholder="Например: Наименование детали"
-						/>
-					</div>
-				</div>
-
-				{/* Дополнительные поля для кастомного типа */}
-				{field.type === "custom" && (
-					<div className="formRow">
-						<div className={`borderBlock ${styles.fieldItem}`}>
-							<div className={styles.fieldItemTitle}>Первое поле</div>
-							<div className={`formField ${styles.formField}`}>
-								<label htmlFor={`field-firstFieldType-${field.id}`}>Тип первого поля *</label>
-								<select
-									id={`field-firstFieldType-${field.id}`}
-									value={field.firstFieldType || "text"}
-									onChange={(e) => updateFormField(field.id, { firstFieldType: e.target.value as CustomFieldSubType })}
-								>
-									<option value="text">Текст</option>
-									<option value="phone">Телефон</option>
-									<option value="textarea">Многострочный текст</option>
-									<option value="file">Файл</option>
-								</select>
-							</div>
-
-							<div className={`formField ${styles.formField}`}>
-								<label htmlFor={`field-firstFieldPlaceholder-${field.id}`}>Placeholder первого поля *</label>
-								<input
-									type="text"
-									id={`field-firstFieldPlaceholder-${field.id}`}
-									value={field.firstFieldPlaceholder || ""}
-									onChange={(e) => updateFormField(field.id, { firstFieldPlaceholder: e.target.value })}
-									placeholder="Например: Vin код"
-								/>
-							</div>
-						</div>
-
-						<div className={`borderBlock ${styles.fieldItem}`}>
-							<div className={styles.fieldItemTitle}>Второе поле</div>
-							<div className={`formField ${styles.formField}`}>
-								<label htmlFor={`field-secondFieldType-${field.id}`}>Тип второго поля *</label>
-								<select
-									id={`field-secondFieldType-${field.id}`}
-									value={field.secondFieldType || "file"}
-									onChange={(e) => updateFormField(field.id, { secondFieldType: e.target.value as CustomFieldSubType })}
-								>
-									<option value="text">Текст</option>
-									<option value="phone">Телефон</option>
-									<option value="textarea">Многострочный текст</option>
-									<option value="file">Файл</option>
-								</select>
-							</div>
-
-							<div className={`formField ${styles.formField}`}>
-								<label htmlFor={`field-secondFieldPlaceholder-${field.id}`}>Placeholder второго поля *</label>
-								<input
-									type="text"
-									id={`field-secondFieldPlaceholder-${field.id}`}
-									value={field.secondFieldPlaceholder || ""}
-									onChange={(e) => updateFormField(field.id, { secondFieldPlaceholder: e.target.value })}
-									placeholder="Например: Приложите фото"
-								/>
-							</div>
-						</div>
-
-						<div className={`formField ${styles.formField}`}>
-							<label htmlFor={`field-separatorText-${field.id}`}>Текст между полями *</label>
-							<input
-								type="text"
-								id={`field-separatorText-${field.id}`}
-								value={field.separatorText || ""}
-								onChange={(e) => updateFormField(field.id, { separatorText: e.target.value })}
-								placeholder="Например: или, и"
-							/>
-						</div>
-					</div>
-				)}
-			</div>
-		);
-	};
 
 	if (loading) {
 		return (
@@ -421,17 +262,26 @@ export default function AdminHomepageContent() {
 					<div className={`formFields ${styles.formFields}`}>
 						{error && <div className={styles.errorBlock}>{error}</div>}
 
-						{/* Заголовок первого блока */}
 						<div className="formSection borderBlock">
-							<h3 className="formSectionTitle">Первый блок (видеоблок)</h3>
+							<h3 className="formSectionTitle">Блоки главной страницы</h3>
 							<div className={`formField ${styles.formField}`}>
-								<label htmlFor="firstBlockTitle">Заголовок первого блока *</label>
+								<label htmlFor="firstBlockTitle">Заголовок первого блока (видео, менеджер) *</label>
 								<input
 									type="text"
 									id="firstBlockTitle"
 									value={data.firstBlockTitle}
 									onChange={(e) => setData({ ...data, firstBlockTitle: e.target.value })}
 									placeholder="Выбрать запчасти с менеджером:"
+								/>
+							</div>
+							<div className={`formField ${styles.formField}`}>
+								<label htmlFor="secondBlockTitle">Заголовок второго блока (карточки разделов) *</label>
+								<input
+									type="text"
+									id="secondBlockTitle"
+									value={data.secondBlockTitle}
+									onChange={(e) => setData({ ...data, secondBlockTitle: e.target.value })}
+									placeholder="Выбрать запчасти самостоятельно:"
 								/>
 							</div>
 
@@ -464,11 +314,9 @@ export default function AdminHomepageContent() {
 							</div>
 						</div>
 
-						{/* Форма обратной связи */}
 						<div className="formSection borderBlock">
 							<h3 className="formSectionTitle">Форма обратной связи</h3>
 
-							{/* Текст кнопки отправки формы */}
 							<div className={`formField ${styles.formField}`}>
 								<label htmlFor="formSubmitButtonText">Текст кнопки отправки формы *</label>
 								<input
@@ -480,7 +328,6 @@ export default function AdminHomepageContent() {
 								/>
 							</div>
 
-							{/* Список полей формы с drag and drop */}
 							<DndContext
 								sensors={sensors}
 								collisionDetection={closestCenter}
@@ -491,7 +338,14 @@ export default function AdminHomepageContent() {
 								<SortableContext items={data.formFields.map((f) => f.id)} strategy={verticalListSortingStrategy}>
 									<div className={styles.fieldsListContainer}>
 										{data.formFields.map((field, index) => (
-											<SortableFormField key={field.id} field={field} index={index} />
+											<HomepageSortableField
+												key={field.id}
+												field={field}
+												index={index}
+												onRemove={removeFormField}
+												onUpdate={updateFormField}
+												validationIssues={fieldSaveIssues[field.id]}
+											/>
 										))}
 
 										{data.formFields.length === 0 && (
@@ -503,7 +357,6 @@ export default function AdminHomepageContent() {
 								</SortableContext>
 							</DndContext>
 
-							{/* Кнопка добавления поля - внизу после всех полей */}
 							<button type="button" onClick={addFormField} className={`button ${styles.addFieldButton}`}>
 								<Plus size={16} />
 								Добавить поле
@@ -513,7 +366,6 @@ export default function AdminHomepageContent() {
 				</div>
 			</div>
 
-			{/* Фиксированные кнопки для сохранения/отмены */}
 			{hasChanges && <FixedActionButtons onCancel={handleCancel} onSave={handleSave} isSaving={saving} saveText="Сохранить изменения" />}
 		</div>
 	);

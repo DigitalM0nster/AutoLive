@@ -117,6 +117,8 @@ export async function getFullOrderSnapshot(orderId: number) {
 		return {
 			id: order.id,
 			comments: order.comments,
+			contactName: order.contactName,
+			contactPhone: order.contactPhone,
 			status: order.status,
 			createdAt: order.createdAt,
 			updatedAt: order.updatedAt,

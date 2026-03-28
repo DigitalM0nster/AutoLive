@@ -2969,9 +2969,13 @@ span.oldName:after {
   max-width: 100%;
   min-width: 0;
 }
+.productComponent .orderMainInfo .bookingLinkInlineSearch .toLinkOrderSearchWrap .searchContainer input.searchInput,
 .productComponent .orderMainInfo .bookingLinkInlineSearch .toLinkOrderSearchWrap .searchContainer input.formInput,
+.orderComponent .orderMainInfo .bookingLinkInlineSearch .toLinkOrderSearchWrap .searchContainer input.searchInput,
 .orderComponent .orderMainInfo .bookingLinkInlineSearch .toLinkOrderSearchWrap .searchContainer input.formInput,
+.bookingComponent .orderMainInfo .bookingLinkInlineSearch .toLinkOrderSearchWrap .searchContainer input.searchInput,
 .bookingComponent .orderMainInfo .bookingLinkInlineSearch .toLinkOrderSearchWrap .searchContainer input.formInput,
+.contentComponent .orderMainInfo .bookingLinkInlineSearch .toLinkOrderSearchWrap .searchContainer input.searchInput,
 .contentComponent .orderMainInfo .bookingLinkInlineSearch .toLinkOrderSearchWrap .searchContainer input.formInput {
   width: 100%;
   max-width: 100%;

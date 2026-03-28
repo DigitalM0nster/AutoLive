@@ -26,6 +26,8 @@ export interface FormField {
 export interface HomepageContentData {
 	id?: number;
 	firstBlockTitle: string;
+	/** Заголовок блока «самостоятельно» (карточки категорий) */
+	secondBlockTitle: string;
 	callButtonText: string;
 	orderButtonText: string;
 	formFields: FormField[];
@@ -45,6 +47,7 @@ export async function GET(request: NextRequest) {
 		if (!content) {
 			const defaultContent: HomepageContentData = {
 				firstBlockTitle: "",
+				secondBlockTitle: "Выбрать запчасти самостоятельно:",
 				callButtonText: "",
 				orderButtonText: "",
 				formFields: [
@@ -89,6 +92,7 @@ export async function GET(request: NextRequest) {
 		const response: HomepageContentData = {
 			id: content.id,
 			firstBlockTitle: content.firstBlockTitle,
+			secondBlockTitle: content.secondBlockTitle,
 			callButtonText: content.callButtonText,
 			orderButtonText: content.orderButtonText,
 			formFields: formFields,
@@ -108,26 +112,92 @@ export const POST = withPermission(
 	async (req: NextRequest, { user }) => {
 		try {
 			const body: HomepageContentData = await req.json();
+			const secondBlockTitle =
+				typeof body.secondBlockTitle === "string"
+					? body.secondBlockTitle.trim()
+					: "Выбрать запчасти самостоятельно:";
 
 			if (!Array.isArray(body.formFields)) {
 				return NextResponse.json({ error: "Поля формы должны быть массивом" }, { status: 400 });
 			}
 
-			// Валидация полей формы
-			for (const field of body.formFields) {
-				if (!field.id || !field.type || !field.placeholder) {
-					return NextResponse.json({ error: "Каждое поле формы должно иметь id, type и placeholder" }, { status: 400 });
+			/** Ответ 400 с текстом для человека и данными для подсветки поля в админке */
+			const rejectField = (
+				i: number,
+				field: FormField | undefined,
+				message: string,
+				issues: string[],
+			) =>
+				NextResponse.json(
+					{
+						error: message,
+						fieldIndex: i,
+						fieldId: field?.id ?? null,
+						issues,
+					},
+					{ status: 400 },
+				);
+
+			// Валидация полей формы (пустая строка в НАЗВАНИИ после trim — отдельное сообщение)
+			for (let i = 0; i < body.formFields.length; i++) {
+				const field = body.formFields[i] as FormField | undefined;
+				const n = i + 1;
+				const idStr = field && typeof field.id === "string" ? field.id.trim() : "";
+				if (!field || !idStr) {
+					return rejectField(
+						i,
+						field,
+						`Поле ${n}: отсутствует или пустой внутренний идентификатор. Удалите поле и добавьте снова, либо обновите страницу.`,
+						["id"],
+					);
+				}
+				if (!field.type || typeof field.type !== "string") {
+					return rejectField(i, field, `Поле ${n} (id «${idStr}»): не выбран тип поля.`, ["type"]);
+				}
+				const ph = typeof field.placeholder === "string" ? field.placeholder.trim() : "";
+				if (!ph) {
+					return rejectField(
+						i,
+						field,
+						`Поле ${n} (id «${idStr}»): заполните НАЗВАНИЕ — подпись поля для посетителей сайта (поле не может быть пустым).`,
+						["placeholder"],
+					);
 				}
 
 				if (field.type === "custom") {
-					if (!field.firstFieldType || !field.secondFieldType) {
-						return NextResponse.json({ error: "Кастомное поле должно иметь firstFieldType и secondFieldType" }, { status: 400 });
+					if (!field.firstFieldType) {
+						return rejectField(
+							i,
+							field,
+							`Поле ${n} (id «${idStr}», настраиваемое): выберите тип первого подполя.`,
+							["firstFieldType"],
+						);
 					}
-					if (!field.firstFieldPlaceholder || !field.secondFieldPlaceholder) {
-						return NextResponse.json({ error: "Кастомное поле должно иметь firstFieldPlaceholder и secondFieldPlaceholder" }, { status: 400 });
+					if (!field.secondFieldType) {
+						return rejectField(
+							i,
+							field,
+							`Поле ${n} (id «${idStr}», настраиваемое): выберите тип второго подполя.`,
+							["secondFieldType"],
+						);
 					}
-					if (!field.separatorText) {
-						return NextResponse.json({ error: "Кастомное поле должно иметь separatorText" }, { status: 400 });
+					const fp = typeof field.firstFieldPlaceholder === "string" ? field.firstFieldPlaceholder.trim() : "";
+					const sp = typeof field.secondFieldPlaceholder === "string" ? field.secondFieldPlaceholder.trim() : "";
+					if (!fp) {
+						return rejectField(
+							i,
+							field,
+							`Поле ${n} (id «${idStr}», настраиваемое): заполните НАЗВАНИЕ первого подполя.`,
+							["firstFieldPlaceholder"],
+						);
+					}
+					if (!sp) {
+						return rejectField(
+							i,
+							field,
+							`Поле ${n} (id «${idStr}», настраиваемое): заполните НАЗВАНИЕ второго подполя.`,
+							["secondFieldPlaceholder"],
+						);
 					}
 				}
 			}
@@ -143,6 +213,7 @@ export const POST = withPermission(
 						where: { id: existing.id },
 						data: {
 							firstBlockTitle: body.firstBlockTitle.trim(),
+							secondBlockTitle: secondBlockTitle,
 							callButtonText: body.callButtonText.trim(),
 							orderButtonText: body.orderButtonText.trim(),
 							formFields: body.formFields as any,
@@ -154,6 +225,7 @@ export const POST = withPermission(
 					return await prisma.homepageContent.create({
 						data: {
 							firstBlockTitle: body.firstBlockTitle.trim(),
+							secondBlockTitle: secondBlockTitle,
 							callButtonText: body.callButtonText.trim(),
 							orderButtonText: body.orderButtonText.trim(),
 							formFields: body.formFields as any,
@@ -166,6 +238,7 @@ export const POST = withPermission(
 			return NextResponse.json({
 				id: result.id,
 				firstBlockTitle: result.firstBlockTitle,
+				secondBlockTitle: result.secondBlockTitle,
 				callButtonText: result.callButtonText,
 				orderButtonText: result.orderButtonText,
 				formFields: result.formFields,

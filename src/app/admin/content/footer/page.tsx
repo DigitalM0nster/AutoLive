@@ -16,6 +16,7 @@ import {
 	createEmptyFooterDocument,
 	parseFooterContactBlocks,
 } from "@/lib/footerDisplay";
+import { FooterLucideIcon } from "@/lib/footerLucideIcons";
 
 /** Раздел «Юридические документы» в меню контента — единое место настройки файлов для подвала и страниц политик */
 const LEGAL_DOCUMENTS_ADMIN_HREF = "/admin/content/legal-documents";
@@ -222,17 +223,33 @@ export default function AdminFooterContentPage() {
 									<div className="formRow">
 										<div className={`formField ${styles.formField}`}>
 											<label htmlFor={`footer-block-icon-${block.id}`}>Иконка</label>
-											<select
-												id={`footer-block-icon-${block.id}`}
-												value={block.icon}
-												onChange={(e) => updateBlock(bi, { icon: e.target.value as FooterIconKey })}
-											>
+											<div className={styles.footerIconPickerRow}>
+												<div className={styles.footerIconCurrentPreview} title="Как на сайте">
+													<FooterLucideIcon icon={block.icon} size={32} strokeWidth={1.5} />
+												</div>
+												<select
+													id={`footer-block-icon-${block.id}`}
+													value={block.icon}
+													onChange={(e) => updateBlock(bi, { icon: e.target.value as FooterIconKey })}
+													className={styles.footerIconSelect}
+												>
+													{FOOTER_ICON_OPTIONS.map((opt) => (
+														<option key={opt.value} value={opt.value}>
+															{opt.label}
+														</option>
+													))}
+												</select>
+											</div>
+											<div className={styles.footerIconLegend} aria-hidden>
 												{FOOTER_ICON_OPTIONS.map((opt) => (
-													<option key={opt.value} value={opt.value}>
-														{opt.label}
-													</option>
+													<div key={opt.value} className={styles.footerIconLegendItem}>
+														<span className={styles.footerIconLegendGlyph}>
+															<FooterLucideIcon icon={opt.value} size={22} strokeWidth={1.5} />
+														</span>
+														<span className={styles.footerIconLegendLabel}>{opt.label}</span>
+													</div>
 												))}
-											</select>
+											</div>
 										</div>
 									</div>
 									<div className="formRow">

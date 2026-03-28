@@ -2,8 +2,10 @@ import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Loading from "@/components/ui/loading/Loading";
 import SearchDropdownInput from "@/components/ui/searchDropdownInput/SearchDropdownInput";
+import DatePickerField from "@/components/ui/datePicker/DatePickerField";
+import datePickerFieldStyles from "@/components/ui/datePicker/DatePickerField.module.scss";
 import { showErrorToast } from "@/components/ui/toast/ToastProvider";
-import { OrderFormState, OrderItemClient, ProductListItem } from "@/lib/types";
+import { Order, OrderFormState, OrderItemClient, ProductListItem } from "@/lib/types";
 
 type StatusNewSectionProps = {
 	isActive: boolean;
@@ -15,7 +17,23 @@ type StatusNewSectionProps = {
 	fieldErrors: Set<string>;
 	clearFieldError: (field: string) => void;
 	canEdit: boolean;
+	/** Позиции заказа (у менеджера только в статусе «Новый») */
+	canEditOrderItems: boolean;
+	/** Связанная запись и адрес доставки: доступны также на «Подтверждён» у менеджера */
+	canEditLinkedAndDelivery: boolean;
 	statusDate?: string | null;
+	selectedBooking: NonNullable<Order["booking"]> | null;
+	setSelectedBooking: React.Dispatch<React.SetStateAction<NonNullable<Order["booking"]> | null>>;
+	selectedBookingDepartment: { id: number; name: string | null; address: string; phones: string[]; email: string | null } | null;
+	setSelectedBookingDepartment: React.Dispatch<
+		React.SetStateAction<{ id: number; name: string | null; address: string; phones: string[]; email: string | null } | null>
+	>;
+	bookingDepartments: { id: number; name: string | null; address: string; phones: string[]; email: string | null }[];
+	pickupPoints: { id: number; name: string | null; address: string; phones: string[]; email: string | null }[];
+	selectedPickupPoint: { id: number; name: string | null; address: string; phones: string[]; email: string | null } | null;
+	setSelectedPickupPoint: React.Dispatch<
+		React.SetStateAction<{ id: number; name: string | null; address: string; phones: string[]; email: string | null } | null>
+	>;
 };
 
 export default function StatusNewSection({
@@ -28,7 +46,17 @@ export default function StatusNewSection({
 	fieldErrors,
 	clearFieldError,
 	canEdit,
+	canEditOrderItems,
+	canEditLinkedAndDelivery,
 	statusDate,
+	selectedBooking,
+	setSelectedBooking,
+	selectedBookingDepartment,
+	setSelectedBookingDepartment,
+	bookingDepartments,
+	pickupPoints,
+	selectedPickupPoint,
+	setSelectedPickupPoint,
 }: StatusNewSectionProps) {
 	const [productSearch, setProductSearch] = useState("");
 	const [searchResults, setSearchResults] = useState<ProductListItem[]>([]);
@@ -38,10 +66,19 @@ export default function StatusNewSection({
 	const [collapsedItems, setCollapsedItems] = useState<Set<string>>(new Set());
 	const blurTimeout = useRef<NodeJS.Timeout | null>(null);
 
+	const bookingBlurTimeout = useRef<NodeJS.Timeout | null>(null);
+	const [isBookingSearchFocused, setIsBookingSearchFocused] = useState(false);
+	const [bookingSearch, setBookingSearch] = useState("");
+	const [bookingSearchResults, setBookingSearchResults] = useState<NonNullable<Order["booking"]>[]>([]);
+	const [isSearchingBookings, setIsSearchingBookings] = useState(false);
+
 	useEffect(() => {
 		return () => {
 			if (blurTimeout.current) {
 				clearTimeout(blurTimeout.current);
+			}
+			if (bookingBlurTimeout.current) {
+				clearTimeout(bookingBlurTimeout.current);
 			}
 		};
 	}, []);
@@ -71,7 +108,7 @@ export default function StatusNewSection({
 	};
 
 	const handleProductSelect = (product: ProductListItem) => {
-		if (!canEdit) {
+		if (!canEditOrderItems) {
 			return;
 		}
 
@@ -130,7 +167,7 @@ export default function StatusNewSection({
 	};
 
 	const handleRemoveProduct = (sku: string) => {
-		if (!canEdit) {
+		if (!canEditOrderItems) {
 			return;
 		}
 
@@ -138,7 +175,7 @@ export default function StatusNewSection({
 	};
 
 	const handleQuantityChange = (sku: string, quantity: number) => {
-		if (!canEdit) {
+		if (!canEditOrderItems) {
 			return;
 		}
 
@@ -151,7 +188,7 @@ export default function StatusNewSection({
 	};
 
 	const handleProductFieldChange = (productSku: string, field: keyof OrderItemClient, value: string) => {
-		if (!canEdit) {
+		if (!canEditOrderItems) {
 			return;
 		}
 
@@ -189,6 +226,111 @@ export default function StatusNewSection({
 		blurTimeout.current = setTimeout(() => setIsSearchFocused(false), 120);
 	};
 
+	const handleBookingSearch = async (query: string) => {
+		const bookingId = parseInt(query, 10);
+		if (Number.isNaN(bookingId)) {
+			setBookingSearchResults([]);
+			return;
+		}
+
+		try {
+			setIsSearchingBookings(true);
+			const response = await fetch(`/api/bookings?idSearch=${bookingId}&limit=10`, {
+				credentials: "include",
+			});
+
+			if (response.ok) {
+				const data = await response.json();
+				if (data.bookings && data.bookings.length > 0) {
+					setBookingSearchResults(
+						data.bookings.map((b: Record<string, unknown>) => ({
+							id: b.id,
+							scheduledDate: b.scheduledDate,
+							scheduledTime: b.scheduledTime,
+							status: b.status,
+							contactPhone: b.contactPhone,
+							client: b.client ?? null,
+							manager: b.manager ?? null,
+							bookingDepartment: b.bookingDepartment ?? null,
+						})) as NonNullable<Order["booking"]>[],
+					);
+				} else {
+					setBookingSearchResults([]);
+				}
+			}
+		} catch (error) {
+			console.error("Ошибка поиска записей:", error);
+		} finally {
+			setIsSearchingBookings(false);
+		}
+	};
+
+	const handleBookingSelect = (booking: NonNullable<Order["booking"]>) => {
+		if (!canEditLinkedAndDelivery) {
+			return;
+		}
+
+		setSelectedBooking(booking);
+		setBookingSearch("");
+		setBookingSearchResults([]);
+		setIsBookingSearchFocused(false);
+	};
+
+	const handleBookingBlur = () => {
+		if (bookingBlurTimeout.current) clearTimeout(bookingBlurTimeout.current);
+		bookingBlurTimeout.current = setTimeout(() => setIsBookingSearchFocused(false), 120);
+	};
+
+	const handleBookingManualInput = (value: string) => {
+		if (!canEditLinkedAndDelivery) {
+			return;
+		}
+
+		setBookingSearch(value);
+		if (value.trim() !== "") {
+			void handleBookingSearch(value);
+		} else {
+			setBookingSearchResults([]);
+		}
+		clearFieldError("bookingSearch");
+	};
+
+	const handleDeliveryAddressSelect = (raw: string) => {
+		if (!canEditLinkedAndDelivery) {
+			return;
+		}
+
+		if (!raw) {
+			setSelectedBookingDepartment(null);
+			setSelectedPickupPoint(null);
+			clearFieldError("bookingDepartmentId");
+			return;
+		}
+
+		if (raw.startsWith("bd-")) {
+			const id = parseInt(raw.slice(3), 10);
+			const department = bookingDepartments.find((d) => d.id === id);
+			setSelectedPickupPoint(null);
+			setSelectedBookingDepartment(department ?? null);
+			clearFieldError("bookingDepartmentId");
+			return;
+		}
+
+		if (raw.startsWith("pp-")) {
+			const id = parseInt(raw.slice(3), 10);
+			const point = pickupPoints.find((p) => p.id === id);
+			setSelectedBookingDepartment(null);
+			setSelectedPickupPoint(point ?? null);
+			clearFieldError("bookingDepartmentId");
+		}
+	};
+
+	const deliverySelectValue = selectedPickupPoint
+		? `pp-${selectedPickupPoint.id}`
+		: selectedBookingDepartment
+			? `bd-${selectedBookingDepartment.id}`
+			: "";
+
 	const formatPhoneNumber = (value: string): string => {
 		const phoneNumber = value.replace(/\D/g, "");
 
@@ -211,6 +353,10 @@ export default function StatusNewSection({
 	};
 
 	const [isExpanded, setIsExpanded] = useState(isActive);
+
+	useEffect(() => {
+		setIsExpanded(isActive);
+	}, [isActive]);
 
 	const toggleExpand = () => {
 		setIsExpanded(!isExpanded);
@@ -271,15 +417,147 @@ export default function StatusNewSection({
 					</div>
 				</>
 
-				{/* Список товаров в заказе */}
+				<div className="formRow" id="orderLinkedBookingForm">
+					<div className={`formField`}>
+						<label htmlFor="linkedBookingSearchNew">Связанная запись</label>
+						<div className={`selectedClient`}>
+							<span>
+								{selectedBooking ? (
+									<Link href={`/admin/bookings/${selectedBooking.id}`} className="itemLink" target="_blank">
+										Запись #{selectedBooking.id} —{" "}
+										{typeof selectedBooking.scheduledDate === "string"
+											? new Date(selectedBooking.scheduledDate).toLocaleDateString("ru-RU")
+											: selectedBooking.scheduledDate.toLocaleDateString("ru-RU")}{" "}
+										{selectedBooking.scheduledTime}
+									</Link>
+								) : (
+									"Не указана"
+								)}
+							</span>
+							{selectedBooking && canEditLinkedAndDelivery && (
+								<button
+									type="button"
+									onClick={() => {
+										setSelectedBooking(null);
+										setBookingSearch("");
+										clearFieldError("bookingSearch");
+									}}
+									className={`removeButton`}
+								>
+									Сбросить ×
+								</button>
+							)}
+						</div>
+						{!selectedBooking && (
+							<SearchDropdownInput
+								id="linkedBookingSearchNew"
+								value={bookingSearch}
+								onChange={handleBookingManualInput}
+								onFocus={() => {
+									if (bookingBlurTimeout.current) clearTimeout(bookingBlurTimeout.current);
+									setIsBookingSearchFocused(true);
+									clearFieldError("bookingSearch");
+								}}
+								onBlur={handleBookingBlur}
+								placeholder="Поиск записи по числовому ID"
+								hasError={fieldErrors.has("bookingSearch")}
+								isActiveSearch={isBookingSearchFocused && bookingSearch.length > 0}
+								showDropdown={isBookingSearchFocused && Boolean(bookingSearch)}
+								disabled={!canEditLinkedAndDelivery}
+							>
+								{isBookingSearchFocused && isSearchingBookings && bookingSearch && (
+									<div className="searchResults loading">
+										<Loading />
+									</div>
+								)}
+
+								{isBookingSearchFocused && bookingSearch && !isSearchingBookings && (
+									<div className="searchResults">
+										{bookingSearchResults.length > 0 ? (
+											bookingSearchResults.map((booking) => (
+												<div key={booking.id} className={`searchResultItem`} onMouseDown={() => handleBookingSelect(booking)}>
+													Запись #{booking.id} —{" "}
+													{typeof booking.scheduledDate === "string"
+														? new Date(booking.scheduledDate).toLocaleDateString("ru-RU")
+														: booking.scheduledDate.toLocaleDateString("ru-RU")}{" "}
+													{booking.scheduledTime}
+												</div>
+											))
+										) : (
+											<div className={`searchResultItem`}>Нет результатов</div>
+										)}
+									</div>
+								)}
+							</SearchDropdownInput>
+						)}
+					</div>
+				</div>
+
+				<div className="formRow">
+					<div className={`formField`}>
+						<label htmlFor="deliveryAddressSelectNew">Адрес доставки</label>
+						<div className={`selectedClient`}>
+							<span>
+								{selectedPickupPoint ? (
+									<>
+										Пункт выдачи: {selectedPickupPoint.name || "Без названия"} — {selectedPickupPoint.address}
+									</>
+								) : selectedBookingDepartment ? (
+									<>
+										Адрес для записей: {selectedBookingDepartment.name || "Адрес"} — {selectedBookingDepartment.address}
+									</>
+								) : (
+									"Не указан"
+								)}
+							</span>
+						</div>
+						<select
+							id="deliveryAddressSelectNew"
+							name="deliveryAddressNew"
+							value={deliverySelectValue}
+							onChange={(e) => handleDeliveryAddressSelect(e.target.value)}
+							onFocus={() => clearFieldError("bookingDepartmentId")}
+							className={fieldErrors.has("bookingDepartmentId") ? "error" : ""}
+							disabled={!canEditLinkedAndDelivery}
+						>
+							<option value="">— Не выбран —</option>
+							{bookingDepartments.length > 0 && (
+								<optgroup label="Адреса для записей">
+									{bookingDepartments.map((dept) => (
+										<option key={`bd-${dept.id}`} value={`bd-${dept.id}`}>
+											{dept.name || "Адрес"} — {dept.address}
+										</option>
+									))}
+								</optgroup>
+							)}
+							{pickupPoints.length > 0 && (
+								<optgroup label="Пункты выдачи">
+									{pickupPoints.map((pt) => (
+										<option key={`pp-${pt.id}`} value={`pp-${pt.id}`}>
+											{pt.name || "Пункт"} — {pt.address}
+										</option>
+									))}
+								</optgroup>
+							)}
+						</select>
+					</div>
+				</div>
+
+				{/* Список товаров только для активного шага «Новый» — иначе дублируется блок «Подтверждён» */}
+				{isActive && (
 				<div className={`formField`}>
 					<div>Товары в заказе ({orderItems.length})</div>
-					<div className={`productItemsList${canEdit ? "" : " readonly"}`}>
+					<div className="productItemsList">
 						{orderItems.map((item, index) => {
 							const isExpanded = collapsedItems.has(item.product_sku);
+							const skuKey = `supplierDeliveryDate_${item.product_sku}`;
+							const lineReadonly = !canEditOrderItems;
 							return (
-								<div key={index} className={`productItem borderBlock${canEdit ? "" : " readonly"}${isExpanded ? " active" : ""}`}>
-									<div className="productItemMain" onClick={(e) => toggleItemVisibility(item.product_sku, e)}>
+								<div key={index} className={`productItem borderBlock${isExpanded ? " active" : ""}`}>
+									<div
+										className={`productItemMain${lineReadonly ? " productItemReadonlySegment" : ""}`}
+										onClick={(e) => toggleItemVisibility(item.product_sku, e)}
+									>
 										<span className="productItemIndex">№{index + 1}</span>
 										<div className="productItemImageWrap">
 											{item.product_image ? (
@@ -336,11 +614,36 @@ export default function StatusNewSection({
 													handleRemoveProduct(item.product_sku);
 												}}
 												className="removeProductButton"
-												disabled={!canEdit}
+												disabled={!canEditOrderItems}
 											>
 												Удалить товар из заказа ×
 											</button>
 										</div>
+									</div>
+									<div
+										className={`formField${lineReadonly ? " productItemReadonlySegment" : ""}`}
+										onClick={(e) => e.stopPropagation()}
+										onKeyDown={(e) => e.stopPropagation()}
+										role="presentation"
+									>
+										<DatePickerField
+											label="Дата поставки поставщиком"
+											value={item.supplierDeliveryDate || ""}
+											onChange={(date) => {
+												handleProductFieldChange(item.product_sku, "supplierDeliveryDate", date || "");
+												clearFieldError("supplierDeliveryDate");
+												clearFieldError(skuKey);
+											}}
+											onFocus={() => {
+												clearFieldError("supplierDeliveryDate");
+												clearFieldError(skuKey);
+											}}
+											placeholder="Необязательно"
+											className={
+												fieldErrors.has("supplierDeliveryDate") || fieldErrors.has(skuKey) ? `${datePickerFieldStyles.error}` : ""
+											}
+											disabled={!canEditOrderItems}
+										/>
 									</div>
 									<div className="analogsBlock productItemAnalogs">
 										<div
@@ -369,7 +672,7 @@ export default function StatusNewSection({
 												{isExpanded ? "Свернуть" : "Развернуть"}
 											</button>
 										</div>
-										<div className="itemInfoBlock">
+										<div className={`itemInfoBlock${lineReadonly ? " productItemReadonlySegment" : ""}`}>
 										<div className="formField formFieldGroup">
 											<div className="formField">
 												<div className="formFieldTitle">Данные о товаре</div>
@@ -398,18 +701,26 @@ export default function StatusNewSection({
 												<input
 													type="text"
 													value={item.carModel || ""}
-													onChange={(e) => handleProductFieldChange(item.product_sku, "carModel", e.target.value)}
+													onChange={(e) => {
+														handleProductFieldChange(item.product_sku, "carModel", e.target.value);
+														clearFieldError(`carModel_${item.product_sku}`);
+													}}
+													onFocus={() => clearFieldError(`carModel_${item.product_sku}`)}
 													placeholder="Модель автомобиля"
-													className="textInput"
-													disabled={!canEdit}
+													className={`textInput${fieldErrors.has(`carModel_${item.product_sku}`) ? " error" : ""}`}
+													disabled={!canEditOrderItems}
 												/>
 												<input
 													type="text"
 													value={item.vinCode || ""}
-													onChange={(e) => handleProductFieldChange(item.product_sku, "vinCode", e.target.value)}
+													onChange={(e) => {
+														handleProductFieldChange(item.product_sku, "vinCode", e.target.value);
+														clearFieldError(`vinCode_${item.product_sku}`);
+													}}
+													onFocus={() => clearFieldError(`vinCode_${item.product_sku}`)}
 													placeholder="VIN-код"
-													className="textInput"
-													disabled={!canEdit}
+													className={`textInput${fieldErrors.has(`vinCode_${item.product_sku}`) ? " error" : ""}`}
+													disabled={!canEditOrderItems}
 												/>
 											</div>
 										</div>
@@ -422,7 +733,7 @@ export default function StatusNewSection({
 														type="button"
 														onClick={() => handleQuantityChange(item.product_sku, item.quantity - 1)}
 														className="quantityButton"
-														disabled={!canEdit}
+														disabled={!canEditOrderItems}
 													>
 														-
 													</button>
@@ -432,13 +743,13 @@ export default function StatusNewSection({
 														onChange={(e) => handleQuantityChange(item.product_sku, parseInt(e.target.value) || 0)}
 														min="1"
 														className="quantityInput"
-														disabled={!canEdit}
+														disabled={!canEditOrderItems}
 													/>
 													<button
 														type="button"
 														onClick={() => handleQuantityChange(item.product_sku, item.quantity + 1)}
 														className="quantityButton"
-														disabled={!canEdit}
+														disabled={!canEditOrderItems}
 													>
 														+
 													</button>
@@ -460,7 +771,13 @@ export default function StatusNewSection({
 							);
 						})}
 					</div>
-					{canEdit && (
+					<div className="orderTotal">
+						<div className="totalRow">
+							<span className="totalLabel">Общая сумма заказа:</span>
+							<span className="totalAmount">{orderTotal.toLocaleString()} ₽</span>
+						</div>
+					</div>
+					{canEditOrderItems && (
 						<div className={`addProductZone ${showProductSearch ? "addProductZoneOpen" : ""}`} onClick={() => !showProductSearch && setShowProductSearch(true)}>
 							{!showProductSearch ? (
 								<div className="addProductZonePlaceholder">
@@ -508,7 +825,7 @@ export default function StatusNewSection({
 										hasError={fieldErrors.has("productSearch")}
 										isActiveSearch={(isSearchFocused && productSearch.trim().length >= 1) || isSearching}
 										showDropdown={isSearchFocused && Boolean(productSearch)}
-										disabled={!canEdit}
+										disabled={!canEditOrderItems}
 										autoFocus
 									>
 										{isSearchFocused && isSearching && productSearch && (
@@ -551,15 +868,7 @@ export default function StatusNewSection({
 						</div>
 					)}
 				</div>
-				<div className="formField">
-					{/* Общая сумма заказа */}
-					<div className="orderTotal">
-						<div className="totalRow">
-							<span className="totalLabel">Общая сумма заказа:</span>
-							<span className="totalAmount">{orderTotal.toLocaleString()} ₽</span>
-						</div>
-					</div>
-				</div>
+				)}
 			</div>
 		</div>
 	);

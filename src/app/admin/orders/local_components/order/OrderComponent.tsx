@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import Link from "next/link";
 import { Order, User, ProductListItem, OrderStatus, OrderItemClient, OrderFormState, DepartmentForLog } from "@/lib/types";
+import { validateOrderMergedStateForStatus } from "@/lib/orderStatusValidation";
 import { showSuccessToast, showErrorToast } from "@/components/ui/toast/ToastProvider";
 import Loading from "@/components/ui/loading/Loading";
 import SearchDropdownInput from "@/components/ui/searchDropdownInput/SearchDropdownInput";
@@ -16,6 +17,10 @@ import StatusReadySection from "./statusSections/StatusReadySection";
 import StatusPaidSection from "./statusSections/StatusPaidSection";
 import StatusCompletedSection from "./statusSections/StatusCompletedSection";
 import StatusReturnedSection from "./statusSections/StatusReturnedSection";
+import OrderCommentsSection from "./OrderCommentsSection";
+import type { OrderCommentEntry } from "@/lib/orderComments";
+import { parseOrderCommentsFromDb, toCommentWires } from "@/lib/orderComments";
+
 type OrderPageProps = {
 	orderId?: string | number; // Если не указан, значит создаем новый заказ
 	isCreating?: boolean;
@@ -133,19 +138,13 @@ function BookingLinkSearchBlock(props: {
 								? [selectedBookingForLink.bookingDepartment.name, selectedBookingForLink.bookingDepartment.address].filter(Boolean).join(" — ")
 								: "—"}
 						</div>
-						{selectedBookingForLink.notes ? (
-							<div className="bookingLinkSelectedMeta">{truncateText(selectedBookingForLink.notes, 120)}</div>
-						) : null}
+						{selectedBookingForLink.notes ? <div className="bookingLinkSelectedMeta">{truncateText(selectedBookingForLink.notes, 120)}</div> : null}
 						<button type="button" onClick={clearBookingLinkSelection} className="ghostButton">
 							Другая запись
 						</button>
 					</div>
 				) : (
-					<div
-						className={`searchInput ${
-							bookingSearchFocused && bookingSearchQuery.trim() ? "searching" : ""
-						}`}
-					>
+					<div className={`searchInput ${bookingSearchFocused && bookingSearchQuery.trim() ? "searching" : ""}`}>
 						<SearchDropdownInput
 							value={bookingSearchQuery}
 							onChange={handleBookingSearchInput}
@@ -168,21 +167,11 @@ function BookingLinkSearchBlock(props: {
 								<div className="searchResults bookingLinkDropdown">
 									{bookingSearchResults.length > 0 ? (
 										bookingSearchResults.map((row) => {
-											const when = formatToRuDate(
-												typeof row.scheduledDate === "string"
-													? row.scheduledDate
-													: new Date(row.scheduledDate).toISOString(),
-											);
-											const dept = row.bookingDepartment
-												? [row.bookingDepartment.name, row.bookingDepartment.address].filter(Boolean).join(" — ")
-												: "—";
+											const when = formatToRuDate(typeof row.scheduledDate === "string" ? row.scheduledDate : new Date(row.scheduledDate).toISOString());
+											const dept = row.bookingDepartment ? [row.bookingDepartment.name, row.bookingDepartment.address].filter(Boolean).join(" — ") : "—";
 											const clientLine = [bookingClientShortName(row.client), row.contactPhone].filter(Boolean).join(" · ");
 											return (
-												<div
-													key={row.id}
-													className="searchResultItem bookingLinkPick"
-													onMouseDown={() => handleSelectBookingFromSearch(row)}
-												>
+												<div key={row.id} className="searchResultItem bookingLinkPick" onMouseDown={() => handleSelectBookingFromSearch(row)}>
 													<div className="bookingLinkPickTop">
 														<span className="bookingLinkPickId">#{row.id}</span>
 														<span className="bookingLinkPickWhen">
@@ -205,12 +194,7 @@ function BookingLinkSearchBlock(props: {
 				)}
 			</div>
 			<div className="bookingLinkActions">
-				<button
-					type="button"
-					onClick={saveBookingLinkToOrder}
-					className="primaryButton"
-					disabled={isBookingLinkSaving || !selectedBookingForLink}
-				>
+				<button type="button" onClick={saveBookingLinkToOrder} className="primaryButton" disabled={isBookingLinkSaving || !selectedBookingForLink}>
 					{isBookingLinkSaving ? "Сохранение…" : "Сохранить связь"}
 				</button>
 				<button type="button" onClick={cancelBookingLinkPanel} className="secondaryButton" disabled={isBookingLinkSaving}>
@@ -221,22 +205,11 @@ function BookingLinkSearchBlock(props: {
 	);
 }
 
-export default function OrderComponent({ orderId, isCreating = false, userRole }: OrderPageProps) {
-	const { user } = useAuthStore();
-	const router = useRouter();
-	const [orderData, setOrderData] = useState<Order | null>(null);
-	const [loading, setLoading] = useState(!isCreating);
-	const [error, setError] = useState<string | null>(null);
-	const [isSaving, setIsSaving] = useState(false);
-	const [hasChanges, setHasChanges] = useState(false);
-	const initialSnapshotRef = useRef<string | null>(null);
-
-	// Состояние для формы создания/редактирования заказа
-	const [formData, setFormData] = useState<OrderFormState>({
+function createEmptyOrderFormState(): OrderFormState {
+	return {
 		clientId: "",
 		departmentId: "",
 		managerId: "",
-		// Поля для статусов
 		contactName: "",
 		contactPhone: "",
 		finalDeliveryDate: "",
@@ -252,11 +225,26 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 		returnAmount: "",
 		returnPaymentDate: "",
 		returnDocumentNumber: "",
-	});
+	};
+}
 
-	// Состояние для комментариев (массив)
-	const [comments, setComments] = useState<string[]>([]);
-	const [newComment, setNewComment] = useState("");
+export default function OrderComponent({ orderId, isCreating = false, userRole }: OrderPageProps) {
+	const { user } = useAuthStore();
+	const router = useRouter();
+	const [orderData, setOrderData] = useState<Order | null>(null);
+	const [loading, setLoading] = useState(!isCreating);
+	const [error, setError] = useState<string | null>(null);
+	const [isSaving, setIsSaving] = useState(false);
+	const [isReverting, setIsReverting] = useState(false);
+	const [hasChanges, setHasChanges] = useState(false);
+	const initialSnapshotRef = useRef<string | null>(null);
+
+	// Состояние для формы создания/редактирования заказа
+	const [formData, setFormData] = useState<OrderFormState>(() => createEmptyOrderFormState());
+
+	const [comments, setComments] = useState<OrderCommentEntry[]>([]);
+	const [commentAddOpen, setCommentAddOpen] = useState(false);
+	const [commentDraft, setCommentDraft] = useState("");
 	const [currentStatus, setCurrentStatus] = useState<OrderStatus>("created");
 	const [initialStatus, setInitialStatus] = useState<OrderStatus>("created");
 	const [fieldErrors, setFieldErrors] = useState<Set<string>>(new Set());
@@ -313,8 +301,23 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 		return orderClientId !== bookingClientId;
 	}, [orderData, selectedClient, selectedBooking]);
 
-	const isAdminOrSuperadmin = userRole === "superadmin" || userRole === "admin";
+	const isSuperadminUser = userRole === "superadmin";
+	const isAdminUser = userRole === "admin";
+	const isAdminOrSuperadmin = isSuperadminUser || isAdminUser;
 	const isManager = userRole === "manager";
+
+	/** Админ редактирует заказ только если отдел заказа совпадает с отделом админа (суперадмин — всегда) */
+	const adminEditsThisOrder = useMemo(() => {
+		if (!isAdminUser || user?.departmentId == null) return false;
+		const fromForm = formData.departmentId ? parseInt(formData.departmentId, 10) : NaN;
+		const resolved = orderData?.departmentId ?? (Number.isFinite(fromForm) ? fromForm : null);
+		if (isCreating) {
+			return !formData.departmentId || (Number.isFinite(fromForm) && fromForm === user.departmentId);
+		}
+		return resolved != null && resolved === user.departmentId;
+	}, [isAdminUser, user?.departmentId, isCreating, formData.departmentId, orderData?.departmentId]);
+
+	const canEditAsPrivileged = isSuperadminUser || adminEditsThisOrder;
 
 	// Проверяем, является ли менеджер ответственным за заказ
 	// Используем useMemo для пересчета при изменении зависимостей
@@ -344,17 +347,22 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 		return !!orderData;
 	}, [isCreating, isAdminOrSuperadmin, orderData]);
 
-	// Менеджер может редактировать только если он ответственный за заказ (или создает новый)
-	// Админы и суперадмины могут редактировать всегда
-	const isEditMode = isAdminOrSuperadmin || isManagerResponsible;
+	// Менеджер — только ответственный; админ — только заказ своего отдела; суперадмин — всегда
+	const isEditMode = canEditAsPrivileged || isManagerResponsible;
+
+	/** Позиции заказа: суперадмин/админ отдела — всегда при isEditMode; менеджер — в «Новом» и при подготовке к подтверждению (в БД ещё «Новый») */
+	const canEditOrderItems =
+		isEditMode &&
+		(canEditAsPrivileged ||
+			(isManager &&
+				(currentStatus === "created" || (currentStatus === "confirmed" && initialStatus === "created"))));
 	const isViewMode = !isEditMode && hasAccessToOrder; // Режим просмотра только если есть доступ, но нет прав на редактирование
 	/** Привязка записи (ТО) к заказу: только у существующего заказа и в режиме редактирования */
 	const canManageBookingLink = isEditMode && !isCreating;
 
 	// Функция для определения доступных статусов для менеджера
 	const getAvailableStatuses = (currentStatus: string) => {
-		if (isAdminOrSuperadmin) {
-			// Админы и суперадмины могут ставить любой статус
+		if (canEditAsPrivileged) {
 			return ["created", "confirmed", "booked", "ready", "paid", "completed", "returned"];
 		}
 
@@ -387,8 +395,8 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 			return false;
 		}
 
-		// Поля предыдущих статусов закрыты для менеджеров и прочих ролей, кроме админа/суперадмина
-		if (!isAdminOrSuperadmin && fieldIndex < currentIndex) {
+		// Поля предыдущих статусов закрыты без прав суперадмина / админа своего отдела
+		if (!canEditAsPrivileged && fieldIndex < currentIndex) {
 			return false;
 		}
 
@@ -410,8 +418,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 			return statusName === currentStatus;
 		}
 
-		// Админ и суперадмин могут заполнять текущий статус и подготовить данные для будущего, но прошлое остаётся закрытым
-		if (isAdminOrSuperadmin) {
+		if (canEditAsPrivileged) {
 			return true;
 		}
 
@@ -447,187 +454,6 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 			router.push("/admin/orders");
 		}
 	}, [isCreating, isEditMode, userRole, router]);
-
-	// Загрузка данных заказа (только при редактировании)
-	useEffect(() => {
-		const fetchOrderData = async () => {
-			if (isCreating) return; // Не загружаем данные если создаем новый заказ
-
-			try {
-				setLoading(true);
-				const response = await fetch(`/api/orders/${orderId}`, {
-					method: "GET",
-					credentials: "include",
-				});
-
-				if (!response.ok) {
-					let message = "Ошибка при загрузке данных заказа";
-					try {
-						const errorData = await response.json();
-						if (errorData?.error) message = errorData.error;
-					} catch {}
-					setError(message);
-					setLoading(false);
-					return;
-				}
-
-				const data = await response.json();
-				const order = data.order;
-				setOrderData(order);
-				setCurrentStatus(order.status as OrderStatus);
-				setInitialStatus(order.status as OrderStatus);
-				// Сбрасываем baseline: он будет корректно зафиксирован после того,
-				// как все поля формы и связанные состояния обновятся.
-				initialSnapshotRef.current = null;
-				setHasChanges(false);
-
-				// Готовим строки товаров и подгружаем отделы
-				const rawItems = (order.orderItems || []).map((item: any) => ({
-					product_sku: item.product_sku,
-					product_title: item.product_title,
-					product_price: item.product_price,
-					product_brand: item.product_brand,
-					product_image: item.product_image,
-					quantity: item.quantity,
-					supplierDeliveryDate: item.supplierDeliveryDate || "",
-					carModel: item.carModel || "",
-					vinCode: item.vinCode || "",
-					department: item.department || null,
-				}));
-
-				const productsBySku = new Map<string, { department: { id: number; name: string } | null; productId?: number }>();
-				const itemsWithDepartments: OrderItemClient[] = [];
-
-				for (const item of rawItems) {
-					let productInfo = productsBySku.get(item.product_sku);
-
-					if (!productInfo) {
-						productInfo = { department: item.department ?? null, productId: undefined };
-						productsBySku.set(item.product_sku, productInfo);
-					}
-
-					if (productInfo.productId === undefined) {
-						try {
-							const productResponse = await fetch(`/api/products?search=${encodeURIComponent(item.product_sku)}&limit=1`, {
-								credentials: "include",
-							});
-
-							if (productResponse.ok) {
-								const productData = await productResponse.json();
-								const product: ProductListItem | undefined = productData?.products?.[0];
-								productInfo = {
-									department: product?.department ?? productInfo?.department ?? item.department ?? null,
-									productId: product?.id,
-								};
-								productsBySku.set(item.product_sku, productInfo);
-							} else {
-								productsBySku.set(item.product_sku, productInfo);
-							}
-						} catch (fetchError) {
-							console.error(`Не удалось получить данные товара ${item.product_sku}:`, fetchError);
-							productsBySku.set(item.product_sku, productInfo);
-						}
-					}
-
-					productInfo = productsBySku.get(item.product_sku) ?? { department: item.department ?? null, productId: undefined };
-					const department = productInfo.department ?? item.department ?? null;
-
-					if (!department || !department.id) {
-						showErrorToast(`У товара ${item.product_title} (${item.product_sku}) отсутствует отдел. Пожалуйста, проверьте карточку товара.`);
-						continue;
-					}
-
-					itemsWithDepartments.push({
-						...item,
-						department,
-						productId: productInfo.productId,
-					});
-				}
-
-				setOrderItems(itemsWithDepartments);
-
-				// Заполняем форму данными заказа
-				setFormData({
-					clientId: order.clientId?.toString() || "",
-					departmentId: order.departmentId?.toString() || "",
-					managerId: order.managerId?.toString() || "",
-					contactName: order.contactName || "",
-					contactPhone: order.contactPhone || "",
-					finalDeliveryDate: order.finalDeliveryDate ? new Date(order.finalDeliveryDate).toISOString() : "",
-					bookedUntil: "",
-					readyUntil: "",
-					prepaymentAmount: "",
-					prepaymentDate: "",
-					paymentDate: "",
-					orderAmount: "",
-					completionDate: "",
-					returnReason: "",
-					returnDate: "",
-					returnAmount: "",
-					returnPaymentDate: "",
-					returnDocumentNumber: "",
-				});
-
-				setComments(order.comments || []);
-				setSelectedClient(order.client || null);
-				setSelectedManager(order.manager || null);
-				// Заполняем заявку и адрес
-				setSelectedBooking(order.booking || null);
-				applyDeliveryTargetsFromOrder(order);
-
-				// Загружаем логи заказа для получения дат присвоения статусов
-				try {
-					const logsResponse = await fetch(`/api/orders/${orderId}/logs?limit=1000`, {
-						credentials: "include",
-					});
-
-					if (logsResponse.ok) {
-						const logsData = await logsResponse.json();
-						const logs = logsData.data || [];
-
-						// Вычисляем дату первого присвоения каждого статуса
-						const statusDatesMap: Record<OrderStatus, string | null> = {
-							created: null,
-							confirmed: null,
-							booked: null,
-							ready: null,
-							paid: null,
-							completed: null,
-							returned: null,
-						};
-
-						// Проходим по логам в обратном порядке (от старых к новым) и находим первое присвоение каждого статуса
-						const statusChangeLogs = logs.filter((log: any) => log.action === "status_change" && log.orderSnapshot?.status).reverse(); // Переворачиваем, чтобы идти от старых к новым
-
-						statusChangeLogs.forEach((log: any) => {
-							const status = log.orderSnapshot?.status as OrderStatus;
-							if (status && !statusDatesMap[status]) {
-								// Сохраняем первую дату присвоения этого статуса
-								statusDatesMap[status] = log.createdAt;
-							}
-						});
-
-						// Если заказ создан, но нет лога изменения статуса, используем дату создания заказа
-						if (!statusDatesMap.created && order.createdAt) {
-							statusDatesMap.created = typeof order.createdAt === "string" ? order.createdAt : order.createdAt.toISOString();
-						}
-
-						setStatusDates(statusDatesMap);
-					}
-				} catch (logsError) {
-					console.error("Ошибка загрузки логов заказа:", logsError);
-					// Не прерываем загрузку, если логи не загрузились
-				}
-			} catch (err) {
-				console.error("Ошибка загрузки заказа:", err);
-				setError(err instanceof Error ? err.message : "Неизвестная ошибка");
-			} finally {
-				setLoading(false);
-			}
-		};
-
-		fetchOrderData();
-	}, [orderId, isCreating]);
 
 	// Загрузка отделов
 	useEffect(() => {
@@ -764,6 +590,185 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 		setSelectedPickupPoint(null);
 		applyBookingDepartmentFromOrder(o.bookingDepartment);
 	};
+
+	/** Заполняет форму, комментарии и связи из объекта заказа (после GET или сброса) */
+	const hydrateEditorFromOrder = (order: Order) => {
+		setFormData({
+			clientId: order.clientId?.toString() || "",
+			departmentId: order.departmentId?.toString() || "",
+			managerId: order.managerId?.toString() || "",
+			contactName: order.contactName || "",
+			contactPhone: order.contactPhone || "",
+			finalDeliveryDate: order.finalDeliveryDate ? new Date(order.finalDeliveryDate).toISOString() : "",
+			bookedUntil: "",
+			readyUntil: "",
+			prepaymentAmount: "",
+			prepaymentDate: "",
+			paymentDate: "",
+			orderAmount: "",
+			completionDate: "",
+			returnReason: "",
+			returnDate: "",
+			returnAmount: "",
+			returnPaymentDate: "",
+			returnDocumentNumber: "",
+		});
+		setComments(parseOrderCommentsFromDb(order.comments));
+		setCommentAddOpen(false);
+		setCommentDraft("");
+		setSelectedClient((order.client ?? null) as User | null);
+		setSelectedManager((order.manager ?? null) as User | null);
+		setSelectedBooking(order.booking || null);
+		applyDeliveryTargetsFromOrder(order);
+	};
+
+	/** Полная перезагрузка редактора с API (первая загрузка и «Отмена» у существующего заказа) */
+	const loadOrderEditorFromApiRef = useRef<(() => Promise<void>) | null>(null);
+
+	const loadOrderEditorFromApi = async () => {
+		if (isCreating) return;
+
+		try {
+			setLoading(true);
+			setError("");
+			const response = await fetch(`/api/orders/${orderId}`, {
+				method: "GET",
+				credentials: "include",
+			});
+
+			if (!response.ok) {
+				let message = "Ошибка при загрузке данных заказа";
+				try {
+					const errorData = await response.json();
+					if (errorData?.error) message = errorData.error;
+				} catch {}
+				setError(message);
+				return;
+			}
+
+			const data = await response.json();
+			const order = data.order as Order;
+			setOrderData(order);
+			setCurrentStatus(order.status as OrderStatus);
+			setInitialStatus(order.status as OrderStatus);
+			initialSnapshotRef.current = null;
+			setHasChanges(false);
+
+			const rawItems = (order.orderItems || []).map((item: any) => ({
+				product_sku: item.product_sku,
+				product_title: item.product_title,
+				product_price: item.product_price,
+				product_brand: item.product_brand,
+				product_image: item.product_image,
+				quantity: item.quantity,
+				supplierDeliveryDate: item.supplierDeliveryDate || "",
+				carModel: item.carModel || "",
+				vinCode: item.vinCode || "",
+				department: item.department || null,
+			}));
+
+			const productsBySku = new Map<string, { department: { id: number; name: string } | null; productId?: number }>();
+			const itemsWithDepartments: OrderItemClient[] = [];
+
+			for (const item of rawItems) {
+				let productInfo = productsBySku.get(item.product_sku);
+
+				if (!productInfo) {
+					productInfo = { department: item.department ?? null, productId: undefined };
+					productsBySku.set(item.product_sku, productInfo);
+				}
+
+				if (productInfo.productId === undefined) {
+					try {
+						const productResponse = await fetch(`/api/products?search=${encodeURIComponent(item.product_sku)}&limit=1`, {
+							credentials: "include",
+						});
+
+						if (productResponse.ok) {
+							const productData = await productResponse.json();
+							const product: ProductListItem | undefined = productData?.products?.[0];
+							productInfo = {
+								department: product?.department ?? productInfo?.department ?? item.department ?? null,
+								productId: product?.id,
+							};
+							productsBySku.set(item.product_sku, productInfo);
+						} else {
+							productsBySku.set(item.product_sku, productInfo);
+						}
+					} catch (fetchError) {
+						console.error(`Не удалось получить данные товара ${item.product_sku}:`, fetchError);
+						productsBySku.set(item.product_sku, productInfo);
+					}
+				}
+
+				productInfo = productsBySku.get(item.product_sku) ?? { department: item.department ?? null, productId: undefined };
+				const department = productInfo.department ?? item.department ?? null;
+
+				if (!department || !department.id) {
+					showErrorToast(`У товара ${item.product_title} (${item.product_sku}) отсутствует отдел. Пожалуйста, проверьте карточку товара.`);
+					continue;
+				}
+
+				itemsWithDepartments.push({
+					...item,
+					department,
+					productId: productInfo.productId,
+				});
+			}
+
+			setOrderItems(itemsWithDepartments);
+			hydrateEditorFromOrder(order);
+
+			try {
+				const logsResponse = await fetch(`/api/orders/${orderId}/logs?limit=1000`, {
+					credentials: "include",
+				});
+
+				if (logsResponse.ok) {
+					const logsData = await logsResponse.json();
+					const logs = logsData.data || [];
+
+					const statusDatesMap: Record<OrderStatus, string | null> = {
+						created: null,
+						confirmed: null,
+						booked: null,
+						ready: null,
+						paid: null,
+						completed: null,
+						returned: null,
+					};
+
+					const statusChangeLogs = logs.filter((log: any) => log.action === "status_change" && log.orderSnapshot?.status).reverse();
+
+					statusChangeLogs.forEach((log: any) => {
+						const status = log.orderSnapshot?.status as OrderStatus;
+						if (status && !statusDatesMap[status]) {
+							statusDatesMap[status] = log.createdAt;
+						}
+					});
+
+					if (!statusDatesMap.created && order.createdAt) {
+						statusDatesMap.created = typeof order.createdAt === "string" ? order.createdAt : order.createdAt.toISOString();
+					}
+
+					setStatusDates(statusDatesMap);
+				}
+			} catch (logsError) {
+				console.error("Ошибка загрузки логов заказа:", logsError);
+			}
+		} catch (err) {
+			console.error("Ошибка загрузки заказа:", err);
+			setError(err instanceof Error ? err.message : "Неизвестная ошибка");
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	loadOrderEditorFromApiRef.current = loadOrderEditorFromApi;
+
+	useEffect(() => {
+		void loadOrderEditorFromApiRef.current?.();
+	}, [orderId, isCreating]);
 
 	const refetchOrderFromApi = async () => {
 		if (!orderId || isCreating) return;
@@ -976,7 +981,10 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 				returnPaymentDate: formData.returnPaymentDate,
 				returnDocumentNumber: formData.returnDocumentNumber,
 				comments,
+				commentDraft: commentDraft.trim(),
+				commentAddOpen,
 				status: currentStatus,
+				bookingId: selectedBooking?.id ?? null,
 				bookingDepartmentId: selectedBookingDepartment?.id ?? null,
 				deliveryPickupPointId: selectedPickupPoint?.id ?? null,
 				orderItems: orderItems.map((item) => ({
@@ -1015,34 +1023,45 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 		}
 
 		setHasChanges(snapshot !== initialSnapshotRef.current);
-	}, [formData, comments, orderItems, currentStatus, selectedClient, selectedManager, selectedBookingDepartment, selectedPickupPoint, isCreating, loading]);
+	}, [
+		formData,
+		comments,
+		commentDraft,
+		commentAddOpen,
+		orderItems,
+		currentStatus,
+		selectedClient,
+		selectedManager,
+		selectedBooking,
+		selectedBookingDepartment,
+		selectedPickupPoint,
+		isCreating,
+		loading,
+	]);
 
 	// Флаг: можно ли прямо сейчас редактировать блок статуса "Новый"
 	const createdStatusEditable = canEditStatusField("created");
 	const confirmedStatusEditable = canEditStatusField("confirmed");
+
+	/** Даты поставщика в блоке «Подтверждён»: привилегированные — всегда; менеджер — пока заказ в БД не подтверждён и открыт шаг «Подтверждён» */
+	const canEditSupplierDeliveryDates =
+		isEditMode &&
+		(canEditAsPrivileged ||
+			(isManager && isManagerResponsible && initialStatus === "created" && currentStatus === "confirmed"));
 	const bookedStatusEditable = canEditStatusField("booked");
 	const readyStatusEditable = canEditStatusField("ready");
 	const paidStatusEditable = canEditStatusField("paid");
 	const completedStatusEditable = canEditStatusField("completed");
 	const returnedStatusEditable = canEditStatusField("returned");
 
-	// Добавление комментария
-	const addComment = () => {
-		if (newComment.trim()) {
-			setComments((prev) => [...prev, newComment.trim()]);
-			setNewComment("");
-		}
-	};
-
-	// Редактирование комментария
-	const editComment = (index: number, newText: string) => {
-		setComments((prev) => prev.map((comment, i) => (i === index ? newText : comment)));
-	};
-
-	// Удаление комментария
-	const deleteComment = (index: number) => {
-		setComments((prev) => prev.filter((_, i) => i !== index));
-	};
+	/** Позиции в блоке «Новый» — только при статусе «Новый» (после смены статуса — только в «Подтверждён» и далее, без двойного редактирования). */
+	const canEditOrderItemsInNewBlock =
+		canEditOrderItems && currentStatus === "created" && (isEditMode ? createdStatusEditable : false);
+	/** В блоке подтверждения: админ/суперадмин правят состав без привязки к «раскрытому» шагу; менеджер — по прежним правилам */
+	const canEditOrderItemsInConfirmedBlock =
+		isEditMode &&
+		currentStatus !== "created" &&
+		(canEditAsPrivileged || (canEditOrderItems && confirmedStatusEditable));
 
 	// Функция для очистки ошибок поля
 	const clearFieldError = (fieldName: string) => {
@@ -1053,151 +1072,51 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 		});
 	};
 
-	// Функция валидации полей для статуса
+	// Функция валидации полей для статуса (цепочка от «Нового» до выбранного статуса)
 	const validateStatusFields = (status: OrderStatus): { isValid: boolean; missingFields: string[]; errorFields: string[] } => {
-		const missingFields: string[] = [];
-		const errorFields: string[] = [];
+		const isSuperadminSelfResponsible = Boolean(userRole === "superadmin" && user && selectedManager && selectedManager.id === user.id);
+		const managerDepartmentId = selectedManager?.department?.id ?? selectedManager?.departmentId ?? null;
+		const departmentNumeric = formData.departmentId ? parseInt(formData.departmentId, 10) : NaN;
+		const departmentIdNum = Number.isNaN(departmentNumeric) ? null : departmentNumeric;
 
-		console.log("🔍 Валидация для статуса:", status);
-		console.log("📊 Текущие данные:", {
+		const issues = validateOrderMergedStateForStatus({
+			targetStatus: status,
+			isSuperadminSelfResponsible,
+			clientId: selectedClient?.id ?? null,
+			contactName: formData.contactName,
 			contactPhone: formData.contactPhone,
-			departmentId: formData.departmentId,
-			selectedClient: selectedClient ? `${selectedClient.first_name} ${selectedClient.last_name}` : null,
-			selectedManager: selectedManager ? `${selectedManager.first_name} ${selectedManager.last_name}` : null,
-			orderItemsCount: orderItems.length,
+			departmentId: departmentIdNum,
+			managerId: selectedManager?.id ?? null,
+			managerDepartmentId,
+			orderItems: orderItems.map((item) => ({
+				product_sku: item.product_sku,
+				supplierDeliveryDate: item.supplierDeliveryDate,
+				carModel: item.carModel,
+				vinCode: item.vinCode,
+			})),
+			finalDeliveryDate: formData.finalDeliveryDate || null,
+			bookingId: selectedBooking?.id ?? null,
+			bookingDepartmentId: selectedBookingDepartment?.id ?? null,
+			deliveryPickupPointId: selectedPickupPoint?.id ?? null,
+			bookedUntil: formData.bookedUntil,
+			readyUntil: formData.readyUntil,
+			prepaymentAmount: formData.prepaymentAmount,
+			prepaymentDate: formData.prepaymentDate,
+			paymentDate: formData.paymentDate,
+			orderAmount: formData.orderAmount,
+			completionDate: formData.completionDate,
+			returnReason: formData.returnReason,
+			returnDate: formData.returnDate,
+			returnAmount: formData.returnAmount,
+			returnPaymentDate: formData.returnPaymentDate,
+			returnDocumentNumber: formData.returnDocumentNumber,
 		});
 
-		const isSuperadminSelfResponsible = userRole === "superadmin" && user && selectedManager && selectedManager.id === user.id;
-
-		// Проверяем ВСЕ статусы от "created" до текущего статуса
-		const statusOrder = ["created", "confirmed", "booked", "ready", "paid", "completed", "returned"];
-		const currentStatusIndex = statusOrder.indexOf(status);
-
-		// 1. Новый - контакты либо выбранный клиент, и состав заказа (всегда проверяем)
-		if (currentStatusIndex >= 0) {
-			// Если клиент ещё не выбран, требуем имя и телефон
-			if (!selectedClient) {
-				if (!formData.contactName.trim()) {
-					missingFields.push("Имя клиента (лида)");
-					errorFields.push("contactName");
-				}
-				if (!formData.contactPhone.trim()) {
-					missingFields.push("Контактный телефон");
-					errorFields.push("contactPhone");
-				}
-			}
-			if (orderItems.length === 0) {
-				missingFields.push("Состав заказа");
-				errorFields.push("productSearch");
-			}
-		}
-
-		// 2. Подтвержденный - клиент, ответственный, отдел, дата согласования, дата поставки поставщиком
-		if (currentStatusIndex >= 1) {
-			if (!selectedClient) {
-				missingFields.push("Клиент");
-				errorFields.push("clientSearch");
-			}
-			if (!formData.departmentId && !isSuperadminSelfResponsible) {
-				missingFields.push("Отдел");
-				errorFields.push("departmentId");
-			}
-			if (isSuperadminSelfResponsible && formData.departmentId) {
-				missingFields.push("При назначении себя ответственным отдел должен быть пустым");
-				errorFields.push("departmentId");
-			}
-			if (!selectedManager) {
-				missingFields.push("Ответственный менеджер");
-				errorFields.push("managerSearch");
-			} else if (formData.departmentId) {
-				const managerDepartmentId = selectedManager.department?.id ?? selectedManager.departmentId ?? null;
-				if (managerDepartmentId !== parseInt(formData.departmentId, 10)) {
-					missingFields.push("Ответственный менеджер должен быть из выбранного отдела");
-					errorFields.push("managerSearch");
-				}
-			}
-			// Проверяем, что у всех товаров заполнена дата поставки поставщиком
-			const itemsWithoutSupplierDate = orderItems.filter((item) => !item.supplierDeliveryDate);
-			if (itemsWithoutSupplierDate.length > 0) {
-				missingFields.push("Дата поставки поставщиком");
-				errorFields.push("supplierDeliveryDate");
-			}
-		}
-
-		// 3. Забронирован - забронирован до
-		if (currentStatusIndex >= 2) {
-			if (!formData.bookedUntil) {
-				missingFields.push("Забронирован до");
-				errorFields.push("bookedUntil");
-			}
-		}
-
-		// 4. Готов к выдаче - отложен до, сумма предоплаты, дата внесения предоплаты
-		if (currentStatusIndex >= 3) {
-			if (!formData.readyUntil) {
-				missingFields.push("Отложен до");
-				errorFields.push("readyUntil");
-			}
-			if (!formData.prepaymentAmount || parseFloat(formData.prepaymentAmount) <= 0) {
-				missingFields.push("Сумма предоплаты");
-				errorFields.push("prepaymentAmount");
-			}
-			if (!formData.prepaymentDate) {
-				missingFields.push("Дата внесения предоплаты");
-				errorFields.push("prepaymentDate");
-			}
-		}
-
-		// 5. Оплачен - дата внесения оплаты, сумма заказа
-		if (currentStatusIndex >= 4) {
-			if (!formData.paymentDate) {
-				missingFields.push("Дата внесения оплаты");
-				errorFields.push("paymentDate");
-			}
-			if (!formData.orderAmount || parseFloat(formData.orderAmount) <= 0) {
-				missingFields.push("Сумма заказа");
-				errorFields.push("orderAmount");
-			}
-		}
-
-		// 6. Выполнен - дата выполнения
-		if (currentStatusIndex >= 5) {
-			if (!formData.completionDate) {
-				missingFields.push("Дата выполнения");
-				errorFields.push("completionDate");
-			}
-		}
-
-		// 7. Возврат - все поля возврата
-		if (currentStatusIndex >= 6) {
-			if (!formData.returnReason) {
-				missingFields.push("Причина возврата позиции");
-				errorFields.push("returnReason");
-			}
-			if (!formData.returnDate) {
-				missingFields.push("Дата возврата позиции");
-				errorFields.push("returnDate");
-			}
-			if (!formData.returnAmount || parseFloat(formData.returnAmount) <= 0) {
-				missingFields.push("Сумма возврата");
-				errorFields.push("returnAmount");
-			}
-			if (!formData.returnPaymentDate) {
-				missingFields.push("Дата возврата денежных средств");
-				errorFields.push("returnPaymentDate");
-			}
-			if (!formData.returnDocumentNumber) {
-				missingFields.push("Номер документа возврата средств");
-				errorFields.push("returnDocumentNumber");
-			}
-		}
-
-		console.log("❌ Найдены ошибки:", missingFields);
-		console.log("🎯 Поля с ошибками:", errorFields);
-		console.log("✅ Валидность:", missingFields.length === 0);
+		const missingFields = issues.map((i) => i.message);
+		const errorFields = issues.map((i) => i.field);
 
 		return {
-			isValid: missingFields.length === 0,
+			isValid: issues.length === 0,
 			missingFields,
 			errorFields,
 		};
@@ -1285,6 +1204,55 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 		}
 	};
 
+	/** Сброс всех правок: создание — пустая форма; редактирование — повторная загрузка с сервера */
+	const handleFixedCancel = async () => {
+		if (isCreating) {
+			setFormData(() => {
+				const empty = createEmptyOrderFormState();
+				if (user?.departmentId) {
+					return { ...empty, departmentId: user.departmentId.toString() };
+				}
+				return empty;
+			});
+			setComments([]);
+			setCommentAddOpen(false);
+			setCommentDraft("");
+			setOrderItems([]);
+			setCurrentStatus("created");
+			setInitialStatus("created");
+			setSelectedClient(null);
+			setSelectedBooking(null);
+			setSelectedBookingDepartment(null);
+			setSelectedPickupPoint(null);
+			setStatusDates({
+				created: null,
+				confirmed: null,
+				booked: null,
+				ready: null,
+				paid: null,
+				completed: null,
+				returned: null,
+			});
+			setFieldErrors(new Set());
+			cancelBookingLinkPanel();
+			initialSnapshotRef.current = null;
+			setHasChanges(false);
+			if (user?.role === "manager" || user?.role === "admin") {
+				setSelectedManager(user as User);
+			} else {
+				setSelectedManager(null);
+			}
+			return;
+		}
+
+		setIsReverting(true);
+		try {
+			await loadOrderEditorFromApiRef.current?.();
+		} finally {
+			setIsReverting(false);
+		}
+	};
+
 	// Сохранение заказа
 	const handleSave = async () => {
 		try {
@@ -1293,9 +1261,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 
 			// Валидируем поля для текущего статуса
 			const validation = validateStatusFields(currentStatus);
-			console.log("💾 Результат валидации:", validation);
 			if (!validation.isValid) {
-				console.log("🚫 Устанавливаем ошибки полей:", validation.errorFields);
 				setFieldErrors(new Set(validation.errorFields));
 				showErrorToast(`Необходимо заполнить: ${validation.missingFields.join(", ")}`);
 				return;
@@ -1316,6 +1282,8 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 				departmentId: 1,
 				finalDeliveryDate: 1,
 				bookingDepartmentId: 1,
+				bookingSearch: 1,
+				supplierDeliveryDate: 1,
 				bookedUntil: 2,
 				readyUntil: 3,
 				prepaymentAmount: 3,
@@ -1347,7 +1315,8 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 
 				if (initialStatus === "created") {
 					if (fieldIndex === 0) {
-						return currentStatus === "created";
+						// Позиции и даты поставщика: «Новый» или черновик «Подтверждён» (ещё не сохранили подтверждение в БД)
+						return currentStatus === "created" || currentStatus === "confirmed";
 					}
 					return fieldIndex > initialIndex && fieldIndex === currentIndexForRequest;
 				}
@@ -1476,11 +1445,21 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 				orderData.returnDocumentNumber = formData.returnDocumentNumber;
 			}
 
-			if (comments.length > 0) {
-				orderData.comments = comments;
-			} else if (!isCreating) {
-				// Если все комментарии удалены и это редактирование существующего заказа — очищаем поле.
-				orderData.comments = [];
+			const draftTrim = commentDraft.trim();
+			let commentWires = toCommentWires(comments);
+			if (draftTrim) {
+				const newId =
+					typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+						? crypto.randomUUID()
+						: `c_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+				commentWires = [...commentWires, { id: newId, text: draftTrim }];
+			}
+			if (isCreating) {
+				if (commentWires.length > 0) {
+					orderData.comments = commentWires;
+				}
+			} else {
+				orderData.comments = commentWires;
 			}
 
 			if (isSuperadminSelf) {
@@ -1501,10 +1480,13 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 				}
 			}
 
-			// Адрес доставки: отдел для записей или пункт выдачи (как у «Подтверждённого» — индекс 1)
-			if (!isManager || managerCanEditFieldForRequest("bookingDepartmentId")) {
+			// Связанная запись и адрес: менеджер — «Новый»/«Подтверждён»; админ/суперадмин — в любом статусе
+			const managerCanEditBookingLinkFields =
+				!isManager || isCreating || currentStatus === "created" || currentStatus === "confirmed";
+			if (managerCanEditBookingLinkFields) {
 				orderData.bookingDepartmentId = selectedPickupPoint ? null : (selectedBookingDepartment?.id ?? null);
 				orderData.deliveryPickupPointId = selectedBookingDepartment ? null : (selectedPickupPoint?.id ?? null);
+				orderData.bookingId = selectedBooking?.id ?? null;
 			}
 
 			let response;
@@ -1559,14 +1541,17 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 			} else {
 				// Обновляем данные заказа
 				if (data?.order) {
-					setOrderData(data.order);
-					if (data.order.status) {
-						setCurrentStatus(data.order.status as OrderStatus);
-						setInitialStatus(data.order.status as OrderStatus);
+					const saved = data.order as Order;
+					setOrderData(saved);
+					if (saved.status) {
+						setCurrentStatus(saved.status as OrderStatus);
+						setInitialStatus(saved.status as OrderStatus);
 					}
-					// Обновляем заявку и адрес
-					setSelectedBooking(data.order.booking || null);
-					applyDeliveryTargetsFromOrder(data.order);
+					setSelectedBooking(saved.booking || null);
+					applyDeliveryTargetsFromOrder(saved);
+					setComments(parseOrderCommentsFromDb(saved.comments));
+					setCommentAddOpen(false);
+					setCommentDraft("");
 					initialSnapshotRef.current = null;
 					setHasChanges(false);
 				} else {
@@ -1613,8 +1598,8 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 								{orderData && orderBookingClientMismatch && (
 									<div className="infoRow" role="alert">
 										<div className="infoField column">
-											<strong>Предупреждение:</strong> у заказа и у связанной записи (booking) указаны{" "}
-											<strong>разные клиенты</strong>. Проверьте данные перед сохранением или связыванием.
+											<strong>Предупреждение:</strong> у заказа и у связанной записи (booking) указаны <strong>разные клиенты</strong>. Проверьте данные перед
+											сохранением или связыванием.
 										</div>
 									</div>
 								)}
@@ -1734,9 +1719,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 											<span className={`infoLabel`}>Связь с записью</span>
 											<div className={`infoValue column`}>
 												{isCreating ? (
-													<p className="toLinkOrderHint">
-														После сохранения заказа здесь можно связать запись с заказом: поиск по числовому ID записи.
-													</p>
+													<p className="toLinkOrderHint">После сохранения заказа здесь можно связать запись с заказом: поиск по числовому ID записи.</p>
 												) : (
 													(() => {
 														const bk = selectedBooking ?? orderData?.booking;
@@ -1778,10 +1761,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 																</div>
 															);
 														}
-														const dateStr =
-															typeof bk.scheduledDate === "string"
-																? bk.scheduledDate
-																: new Date(bk.scheduledDate).toISOString();
+														const dateStr = typeof bk.scheduledDate === "string" ? bk.scheduledDate : new Date(bk.scheduledDate).toISOString();
 														const bookingTitle = (
 															<>
 																<Link href={`/admin/bookings/${bk.id}`} className="itemLink" target="_blank">
@@ -1800,13 +1780,8 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 																		{bk.client?.id ? (
 																			<>
 																				{" · "}
-																				<Link
-																					href={`/admin/users/${bk.client.id}`}
-																					className="itemLink"
-																					target="_blank"
-																				>
-																					{[bk.client.first_name, bk.client.last_name].filter(Boolean).join(" ").trim() ||
-																						"Клиент"}
+																				<Link href={`/admin/users/${bk.client.id}`} className="itemLink" target="_blank">
+																					{[bk.client.first_name, bk.client.last_name].filter(Boolean).join(" ").trim() || "Клиент"}
 																				</Link>
 																			</>
 																		) : null}
@@ -1823,12 +1798,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 														const bookingActions =
 															canManageBookingLink && !bookingLinkPanelOpen ? (
 																<>
-																	<button
-																		type="button"
-																		className="primaryButton"
-																		onClick={openBookingLinkPanel}
-																		disabled={isBookingLinkSaving}
-																	>
+																	<button type="button" className="primaryButton" onClick={openBookingLinkPanel} disabled={isBookingLinkSaving}>
 																		Сменить запись
 																	</button>
 																	<button
@@ -1890,7 +1860,17 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 							fieldErrors={fieldErrors}
 							clearFieldError={clearFieldError}
 							canEdit={isEditMode ? createdStatusEditable : false}
+							canEditOrderItems={canEditOrderItemsInNewBlock}
+							canEditLinkedAndDelivery={isEditMode && (createdStatusEditable || confirmedStatusEditable)}
 							statusDate={statusDates.created}
+							selectedBooking={selectedBooking}
+							setSelectedBooking={setSelectedBooking}
+							selectedBookingDepartment={selectedBookingDepartment}
+							setSelectedBookingDepartment={setSelectedBookingDepartment}
+							bookingDepartments={bookingDepartments}
+							pickupPoints={pickupPoints}
+							selectedPickupPoint={selectedPickupPoint}
+							setSelectedPickupPoint={setSelectedPickupPoint}
 						/>
 
 						{/* 2. Подтвержденный - Клиент, ответственный, состав заказа, дата согласования */}
@@ -1906,6 +1886,8 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 							fieldErrors={fieldErrors}
 							clearFieldError={clearFieldError}
 							canEdit={isEditMode ? confirmedStatusEditable : false}
+							canEditOrderItems={canEditOrderItemsInConfirmedBlock}
+							canEditSupplierDeliveryDates={canEditSupplierDeliveryDates}
 							userRole={userRole}
 							user={user}
 							departments={departments}
@@ -1915,14 +1897,6 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 							orderData={orderData}
 							currentStatus={currentStatus}
 							statusDate={statusDates.confirmed}
-							selectedBooking={selectedBooking}
-							setSelectedBooking={setSelectedBooking}
-							selectedBookingDepartment={selectedBookingDepartment}
-							setSelectedBookingDepartment={setSelectedBookingDepartment}
-							bookingDepartments={bookingDepartments}
-							pickupPoints={pickupPoints}
-							selectedPickupPoint={selectedPickupPoint}
-							setSelectedPickupPoint={setSelectedPickupPoint}
 						/>
 
 						{/* 3. Забронирован - Забронирован до */}
@@ -1980,31 +1954,16 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 							statusDate={statusDates.returned}
 						/>
 
-						{/* Комментарии */}
-						<div className={`formField`}>
-							<label>Комментарии</label>
-							<div className={`commentsContainer`}>
-								{comments.map((comment, index) => (
-									<div key={index} className={`commentItem`}>
-										<input type="text" value={comment} onChange={(e) => editComment(index, e.target.value)} placeholder="Комментарий" disabled={!isEditMode} />
-										{isEditMode && (
-											<button type="button" onClick={() => deleteComment(index)} className={`removeButton`}>
-												Удалить
-											</button>
-										)}
-									</div>
-								))}
-
-								{isEditMode && (
-									<div className={`addCommentContainer`}>
-										<input type="text" value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Добавить комментарий" />
-										<button type="button" onClick={addComment} className={`addButton`}>
-											Добавить
-										</button>
-									</div>
-								)}
-							</div>
-						</div>
+						<OrderCommentsSection
+							comments={comments}
+							onCommentsChange={setComments}
+							canEdit={isEditMode}
+							isSuperadmin={userRole === "superadmin"}
+							commentAddOpen={commentAddOpen}
+							onCommentAddOpenChange={setCommentAddOpen}
+							commentDraft={commentDraft}
+							onCommentDraftChange={setCommentDraft}
+						/>
 					</div>
 				)}
 
@@ -2019,10 +1978,10 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 			{isEditMode && hasChanges && (
 				<div className={`fixedButtons`}>
 					<div className="buttonsBlock">
-						<button onClick={() => router.push("/admin/orders")} className={`secondaryButton`} disabled={isSaving}>
-							Отмена
+						<button type="button" onClick={() => void handleFixedCancel()} className={`secondaryButton`} disabled={isSaving || isReverting}>
+							{isReverting ? "Сброс…" : "Отмена"}
 						</button>
-						<button onClick={handleSave} className={`primaryButton`} disabled={isSaving || orderItems.length === 0}>
+						<button type="button" onClick={() => void handleSave()} className={`primaryButton`} disabled={isSaving || isReverting || orderItems.length === 0}>
 							{isSaving ? "Сохранение..." : isCreating ? "Создать заказ" : "Сохранить изменения"}
 						</button>
 					</div>

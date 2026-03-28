@@ -4249,15 +4249,12 @@ span {
 	flex-direction: column;
 	gap: 16px;
 
+	// Раньше здесь был opacity на всю карточку — перенесено на .productItemReadonlySegment (только неактивные фрагменты)
 	&.readonly {
 		.productItem,
 		.orderItem {
-			opacity: 0.7;
-			background-color: #f8f9fa;
-			border: 1px solid #e9ecef;
-
 			.itemFields {
-				display: none; // Скрываем поля редактирования
+				display: none;
 			}
 
 			.quantityControls {
@@ -4265,7 +4262,6 @@ span {
 					pointer-events: none;
 					display: none;
 				}
-				// display: none; // Скрываем контролы количества
 			}
 		}
 	}
@@ -4283,6 +4279,11 @@ span {
 			}
 		}
 	}
+}
+
+// Приглушение только для частей карточки, которые нельзя редактировать (не вся позиция целиком)
+.productItemReadonlySegment {
+	opacity: 0.7;
 }
 
 .productItem,

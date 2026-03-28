@@ -6,6 +6,8 @@ import styles from "./styles.module.scss";
 import OrderPopupButton from "@/components/user/orderPopup/OrderPopupButton";
 import { HomepageContentData } from "@/app/api/homepage-content/route";
 
+const DEFAULT_SECOND_BLOCK_TITLE = "Выбрать запчасти самостоятельно:";
+
 export default function HomePageClient() {
 	const [content, setContent] = useState<HomepageContentData | null>(null);
 	const [loading, setLoading] = useState(true);
@@ -48,7 +50,7 @@ export default function HomePageClient() {
 				</div>
 
 				<div className={styles.block}>
-					<div className={styles.blockName}>Выбрать запчасти самостоятельно:</div>
+					<div className={styles.blockName}>{DEFAULT_SECOND_BLOCK_TITLE}</div>
 					<div className={styles.blockContent}>
 						<div className={styles.pagesBlock}>
 							{[
@@ -102,9 +104,10 @@ export default function HomePageClient() {
 				</div>
 			</div>
 
-			{/* 🔹 Выбрать запчасти самостоятельно */}
 			<div className={styles.block}>
-				<div className={styles.blockName}>Выбрать запчасти самостоятельно:</div>
+				<div className={styles.blockName}>
+					{content.secondBlockTitle?.trim() ? content.secondBlockTitle.trim() : DEFAULT_SECOND_BLOCK_TITLE}
+				</div>
 				<div className={styles.blockContent}>
 					<div className={styles.pagesBlock}>
 						{[

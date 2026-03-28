@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Building2, FileText, Headphones, MapPin, Phone, ShoppingCart, Wrench, type LucideIcon } from "lucide-react";
+import { MapPin } from "lucide-react";
 import styles from "./styles.module.scss";
 import {
 	defaultFooterContentDisplay,
@@ -10,18 +10,8 @@ import {
 	footerBlockIsVisible,
 	footerPhoneToTelHref,
 	type FooterContentData,
-	type FooterIconKey,
 } from "@/lib/footerDisplay";
-
-const FOOTER_ICONS: Record<FooterIconKey, LucideIcon> = {
-	mapPin: MapPin,
-	wrench: Wrench,
-	phone: Phone,
-	building2: Building2,
-	shoppingCart: ShoppingCart,
-	fileText: FileText,
-	headphones: Headphones,
-};
+import { FOOTER_LUCIDE_BY_KEY } from "@/lib/footerLucideIcons";
 
 export default function Footer() {
 	const router = useRouter();
@@ -87,7 +77,7 @@ export default function Footer() {
 								)}
 
 								{visibleBlocks.map((block) => {
-									const Icon = FOOTER_ICONS[block.icon] ?? MapPin;
+									const Icon = FOOTER_LUCIDE_BY_KEY[block.icon] ?? MapPin;
 									return (
 										<div key={block.id} className={styles.contactItem}>
 											<div className={styles.iconGroup}>

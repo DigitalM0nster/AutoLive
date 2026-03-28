@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { getOrderCommentsCount } from "@/lib/orderComments";
 
 // Типы для разных сущностей
 type EntityType = "user" | "department" | "product" | "order" | "category";
@@ -317,7 +318,7 @@ async function getFullOrderData(orderId: number) {
 			// Статистика
 			statistics: {
 				has_manager: !!order.managerId,
-				has_comments: order.comments.length > 0,
+				has_comments: getOrderCommentsCount(order.comments),
 				days_since_creation: Math.floor((Date.now() - new Date(order.createdAt).getTime()) / (1000 * 60 * 60 * 24)),
 			},
 		};

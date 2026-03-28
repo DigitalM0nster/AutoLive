@@ -69,22 +69,52 @@ export async function POST(req: NextRequest) {
 		const order = await prisma.$transaction(async (tx) => {
 			// Формируем структурированные комментарии с данными незарегистрированного клиента
 			// Используем формат, аналогичный бронированиям, для единообразия
-			const guestInfoComments: string[] = [];
-			guestInfoComments.push("--- Данные незарегистрированного клиента ---");
-			guestInfoComments.push(`Имя: ${rawName}`);
-			guestInfoComments.push(`Телефон: ${normalizedPhone}`);
-			guestInfoComments.push("---");
+			const guestBlock = [
+				"--- Данные незарегистрированного клиента ---",
+				`Имя: ${rawName}`,
+				`Телефон: ${normalizedPhone}`,
+				"---",
+			].join("\n");
+
+			const guestCommentId = crypto.randomUUID();
+			const guestCommentsJson =
+				linkedClientId != null
+					? [
+							{
+								id: guestCommentId,
+								text: guestBlock,
+								authorId: linkedClientId,
+								authorSnapshot: {
+									id: linkedClientId,
+									first_name: rawName,
+									last_name: null,
+									middle_name: null,
+									phone: normalizedPhone,
+									role: "client",
+									department: null,
+								},
+								createdAt: new Date().toISOString(),
+							},
+						]
+					: [
+							{
+								id: guestCommentId,
+								text: guestBlock,
+								authorId: null,
+								authorSnapshot: null,
+								createdAt: new Date().toISOString(),
+							},
+						];
 
 			const newOrder = await tx.order.create({
 				data: {
-					// Сохраняем контактные данные в комментариях (удобно менеджеру в любом случае)
-					comments: guestInfoComments,
+					comments: guestCommentsJson,
 					status: "created",
 					clientId: linkedClientId,
 					managerId: null,
 					departmentId: departmentId,
 					createdBy: linkedClientId ?? undefined, // если оформил залогиненный клиент — фиксируем
-				} as any,
+				},
 			});
 
 			await tx.orderItem.createMany({

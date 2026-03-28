@@ -188,7 +188,8 @@ model ServiceKitLog {
 
 model Order {
     id                  Int         @id @default(autoincrement()) @map("id")
-    comments            String[]    @map("comments")
+    /// Массив объектов: id, text, authorId, authorSnapshot, createdAt (исторически могли быть строки — см. parseOrderCommentsFromDb)
+    comments            Json        @default("[]") @map("comments")
     contactName         String?     @map("contact_name") @db.VarChar(255)
     contactPhone        String?     @map("contact_phone") @db.VarChar(255)
     status              OrderStatus @default(created) @map("status")
@@ -579,6 +580,7 @@ model HomepageRequest {
 model HomepageContent {
     id                  Int      @id @default(autoincrement()) @map("id")
     firstBlockTitle     String   @default("Выбрать запчасти с менеджером:") @map("first_block_title") @db.VarChar(255)
+    secondBlockTitle    String   @default("Выбрать запчасти самостоятельно:") @map("second_block_title") @db.VarChar(255)
     callButtonText      String   @default("Позвонить в магазин") @map("call_button_text") @db.VarChar(255)
     orderButtonText     String   @default("Оставить заказ") @map("order_button_text") @db.VarChar(255)
     formFields          Json     @default("[]") @map("form_fields") // Массив полей формы

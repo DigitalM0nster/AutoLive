@@ -3,8 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { withPermission } from "@/middleware/permissionMiddleware";
-import { OrderResponse, CreateOrderRequest } from "@/lib/types";
+import { OrderResponse, CreateOrderRequest, OrderStatus } from "@/lib/types";
+import { validateOrderMergedStateForStatus } from "@/lib/orderStatusValidation";
 import { withDbRetry } from "@/lib/utils";
+import { mergeOrderCommentsOnCreate } from "@/lib/orderComments";
 
 // Получение списка заказов с фильтрацией по ролям
 async function getOrdersHandler(req: NextRequest, { user, scope }: { user: any; scope: "all" | "department" | "own" }) {
@@ -510,9 +512,52 @@ async function createOrderHandler(req: NextRequest, { user, scope }: { user: any
 			}
 		}
 
+		const targetCreateStatus = (body.status ?? "created") as OrderStatus;
+		const mergedDeptForValidation = isSuperadminSelf ? null : (departmentId ?? null);
+		const createStatusIssues = validateOrderMergedStateForStatus({
+			targetStatus: targetCreateStatus,
+			isSuperadminSelfResponsible: isSuperadminSelf,
+			clientId: body.clientId ?? null,
+			contactName: body.contactName,
+			contactPhone: body.contactPhone,
+			departmentId: mergedDeptForValidation,
+			managerId: resolvedManagerId,
+			managerDepartmentId: responsibleUser?.departmentId ?? null,
+			orderItems: body.orderItems.map((item) => ({
+				product_sku: item.product_sku,
+				supplierDeliveryDate: item.supplierDeliveryDate,
+				carModel: item.carModel,
+				vinCode: item.vinCode,
+			})),
+			finalDeliveryDate: body.finalDeliveryDate ?? null,
+			bookingId: body.bookingId ?? null,
+			bookingDepartmentId: deliveryBd,
+			deliveryPickupPointId: deliveryPp,
+			bookedUntil: body.bookedUntil,
+			readyUntil: body.readyUntil,
+			prepaymentAmount: body.prepaymentAmount,
+			prepaymentDate: body.prepaymentDate,
+			paymentDate: body.paymentDate,
+			orderAmount: body.orderAmount,
+			completionDate: body.completionDate,
+			returnReason: body.returnReason,
+			returnDate: body.returnDate,
+			returnAmount: body.returnAmount,
+			returnPaymentDate: body.returnPaymentDate,
+			returnDocumentNumber: body.returnDocumentNumber,
+		});
+		if (createStatusIssues.length > 0) {
+			return NextResponse.json({ error: createStatusIssues.map((i) => i.message).join(" ") }, { status: 400 });
+		}
+
+		const initialComments =
+			body.comments !== undefined && Array.isArray(body.comments) && body.comments.length > 0
+				? mergeOrderCommentsOnCreate(body.comments, fullUser)
+				: [];
+
 		// Собираем данные для создания заказа
 		const orderDataToCreate: any = {
-			comments: [],
+			comments: initialComments,
 			contactName: body.contactName?.trim() || null,
 			contactPhone: body.contactPhone?.trim() || null,
 			status,

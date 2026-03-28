@@ -57,10 +57,15 @@ const StatusReadySection: React.FC<StatusReadySectionProps> = ({ isActive, formD
 						<input
 							type="number"
 							value={formData.prepaymentAmount}
-							onChange={(e) => setFormData((prev) => ({ ...prev, prepaymentAmount: e.target.value }))}
+							onChange={(e) => {
+								setFormData((prev) => ({ ...prev, prepaymentAmount: e.target.value }));
+								clearFieldError("prepaymentAmount");
+							}}
+							onFocus={() => clearFieldError("prepaymentAmount")}
 							placeholder="0.00"
 							step="0.01"
 							min="0"
+							className={fieldErrors.has("prepaymentAmount") ? "error" : ""}
 							disabled={!canEdit}
 						/>
 					</div>

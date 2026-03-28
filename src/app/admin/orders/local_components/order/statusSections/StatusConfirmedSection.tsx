@@ -19,6 +19,10 @@ type StatusConfirmedSectionProps = {
 	fieldErrors: Set<string>;
 	clearFieldError: (field: string) => void;
 	canEdit: boolean;
+	/** Позиции заказа (состав, количество и т.д.) */
+	canEditOrderItems: boolean;
+	/** Дата поставки поставщиком: шире, чем полный состав (менеджер до сохранения «Подтверждён»; админ/суперадмин всегда) */
+	canEditSupplierDeliveryDates: boolean;
 	userRole?: string;
 	user: User | null;
 	departments: DepartmentForLog[];
@@ -28,14 +32,6 @@ type StatusConfirmedSectionProps = {
 	orderData: Order | null;
 	currentStatus: string;
 	statusDate?: string | null;
-	selectedBooking: NonNullable<Order["booking"]> | null;
-	setSelectedBooking: React.Dispatch<React.SetStateAction<NonNullable<Order["booking"]> | null>>;
-	selectedBookingDepartment: { id: number; name: string | null; address: string; phones: string[]; email: string | null } | null;
-	setSelectedBookingDepartment: React.Dispatch<React.SetStateAction<{ id: number; name: string | null; address: string; phones: string[]; email: string | null } | null>>;
-	bookingDepartments: { id: number; name: string | null; address: string; phones: string[]; email: string | null }[];
-	pickupPoints: { id: number; name: string | null; address: string; phones: string[]; email: string | null }[];
-	selectedPickupPoint: { id: number; name: string | null; address: string; phones: string[]; email: string | null } | null;
-	setSelectedPickupPoint: React.Dispatch<React.SetStateAction<{ id: number; name: string | null; address: string; phones: string[]; email: string | null } | null>>;
 };
 
 const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
@@ -50,6 +46,8 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 	fieldErrors,
 	clearFieldError,
 	canEdit,
+	canEditOrderItems,
+	canEditSupplierDeliveryDates,
 	userRole,
 	user,
 	departments,
@@ -59,14 +57,6 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 	orderData,
 	currentStatus,
 	statusDate,
-	selectedBooking,
-	setSelectedBooking,
-	selectedBookingDepartment,
-	setSelectedBookingDepartment,
-	bookingDepartments,
-	pickupPoints,
-	selectedPickupPoint,
-	setSelectedPickupPoint,
 }) => {
 	const formatDate = (value?: string | Date | null) => {
 		if (!value) return "";
@@ -89,20 +79,14 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 
 	const clientBlurTimeout = useRef<NodeJS.Timeout | null>(null);
 	const managerBlurTimeout = useRef<NodeJS.Timeout | null>(null);
-	const bookingBlurTimeout = useRef<NodeJS.Timeout | null>(null);
 	const [isClientSearchFocused, setIsClientSearchFocused] = useState(false);
 	const [isManagerSearchFocused, setIsManagerSearchFocused] = useState(false);
-	const [isBookingSearchFocused, setIsBookingSearchFocused] = useState(false);
-	const [bookingSearch, setBookingSearch] = useState("");
-	const [bookingSearchResults, setBookingSearchResults] = useState<NonNullable<Order["booking"]>[]>([]);
-	const [isSearchingBookings, setIsSearchingBookings] = useState(false);
 	const [collapsedItems, setCollapsedItems] = useState<Set<string>>(new Set());
 
 	useEffect(() => {
 		return () => {
 			if (clientBlurTimeout.current) clearTimeout(clientBlurTimeout.current);
 			if (managerBlurTimeout.current) clearTimeout(managerBlurTimeout.current);
-			if (bookingBlurTimeout.current) clearTimeout(bookingBlurTimeout.current);
 		};
 	}, []);
 
@@ -313,116 +297,8 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 		clearFieldError("clientSearch");
 	};
 
-	// Поиск заявок
-	const handleBookingSearch = async (query: string) => {
-		// Поиск по ID заявки
-		const bookingId = parseInt(query);
-		if (isNaN(bookingId)) {
-			setBookingSearchResults([]);
-			return;
-		}
-
-		try {
-			setIsSearchingBookings(true);
-			const response = await fetch(`/api/bookings?idSearch=${bookingId}&limit=10`, {
-				credentials: "include",
-			});
-
-			if (response.ok) {
-				const data = await response.json();
-				if (data.bookings && data.bookings.length > 0) {
-					setBookingSearchResults(
-						data.bookings.map((b: any) => ({
-							id: b.id,
-							scheduledDate: b.scheduledDate,
-							scheduledTime: b.scheduledTime,
-							status: b.status,
-							contactPhone: b.contactPhone,
-							client: b.client ?? null,
-							manager: b.manager ?? null,
-							bookingDepartment: b.bookingDepartment ?? null,
-						})) as NonNullable<Order["booking"]>[],
-					);
-				} else {
-					setBookingSearchResults([]);
-				}
-			}
-		} catch (error) {
-			console.error("Ошибка поиска заявок:", error);
-		} finally {
-			setIsSearchingBookings(false);
-		}
-	};
-
-	const handleBookingSelect = (booking: NonNullable<Order["booking"]>) => {
-		if (!canEdit) {
-			return;
-		}
-
-		setSelectedBooking(booking);
-		setBookingSearch("");
-		setBookingSearchResults([]);
-		setIsBookingSearchFocused(false);
-	};
-
-	const handleBookingBlur = () => {
-		if (bookingBlurTimeout.current) clearTimeout(bookingBlurTimeout.current);
-		bookingBlurTimeout.current = setTimeout(() => setIsBookingSearchFocused(false), 120);
-	};
-
-	const handleBookingManualInput = (value: string) => {
-		if (!canEdit) {
-			return;
-		}
-
-		setBookingSearch(value);
-		if (value.trim() !== "") {
-			handleBookingSearch(value);
-		} else {
-			setBookingSearchResults([]);
-		}
-		clearFieldError("bookingSearch");
-	};
-
-	/** Адрес доставки: отдел для записей или пункт выдачи (взаимоисключающие) */
-	const handleDeliveryAddressSelect = (raw: string) => {
-		if (!canEdit) {
-			return;
-		}
-
-		if (!raw) {
-			setSelectedBookingDepartment(null);
-			setSelectedPickupPoint(null);
-			clearFieldError("bookingDepartmentId");
-			return;
-		}
-
-		if (raw.startsWith("bd-")) {
-			const id = parseInt(raw.slice(3), 10);
-			const department = bookingDepartments.find((d) => d.id === id);
-			setSelectedPickupPoint(null);
-			setSelectedBookingDepartment(department ?? null);
-			clearFieldError("bookingDepartmentId");
-			return;
-		}
-
-		if (raw.startsWith("pp-")) {
-			const id = parseInt(raw.slice(3), 10);
-			const point = pickupPoints.find((p) => p.id === id);
-			setSelectedBookingDepartment(null);
-			setSelectedPickupPoint(point ?? null);
-			clearFieldError("bookingDepartmentId");
-		}
-	};
-
-	const deliverySelectValue = selectedPickupPoint
-		? `pp-${selectedPickupPoint.id}`
-		: selectedBookingDepartment
-			? `bd-${selectedBookingDepartment.id}`
-			: "";
-
 	const handleRemoveProduct = (sku: string) => {
-		if (!canEdit) {
+		if (!canEditOrderItems) {
 			return;
 		}
 
@@ -454,7 +330,7 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 	};
 
 	const handleQuantityChange = (sku: string, quantity: number) => {
-		if (!canEdit) {
+		if (!canEditOrderItems) {
 			return;
 		}
 
@@ -467,7 +343,9 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 	};
 
 	const handleProductFieldChange = (productSku: string, field: keyof OrderItemClient, value: string) => {
-		if (!canEdit) {
+		const allow =
+			field === "supplierDeliveryDate" ? canEditSupplierDeliveryDates : canEditOrderItems;
+		if (!allow) {
 			return;
 		}
 
@@ -475,6 +353,10 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 	};
 
 	const [isExpanded, setIsExpanded] = useState(isActive);
+
+	useEffect(() => {
+		setIsExpanded(isActive);
+	}, [isActive]);
 
 	const toggleExpand = () => {
 		setIsExpanded(!isExpanded);
@@ -677,23 +559,123 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 					</div>
 				</div>
 
-				{orderItems.length > 0 && (
-					<div className={`formField`}>
-						<label>Список товаров</label>
-						<div className={`productItemsList${canEdit ? " editable" : " readonly"}`}>
-							{orderItems.map((item, index) => {
-								const isExpanded = collapsedItems.has(item.product_sku);
-								return (
-									<div key={index} className={`productItem borderBlock${canEdit ? " editable" : " readonly"}${isExpanded ? " active" : ""}`}>
-										<span className="itemTitle" onClick={(e) => toggleItemVisibility(item.product_sku, e)}>
-											{item.productId ? (
-												<Link href={`/admin/product-management/products/${item.productId}`} className="itemLink" target="_blank">
-													{item.product_title}
-												</Link>
-											) : (
-												item.product_title
-											)}
+				<div className={`formField`}>
+					<div>Товары в заказе ({orderItems.length})</div>
+					<div className="productItemsList">
+						{orderItems.map((item, index) => {
+							const isExpanded = collapsedItems.has(item.product_sku);
+							const skuKey = `supplierDeliveryDate_${item.product_sku}`;
+							const lineMainReadonly = !canEditOrderItems;
+							const dateRowReadonly = !canEditSupplierDeliveryDates;
+							return (
+								<div key={index} className={`productItem borderBlock${isExpanded ? " active" : ""}`}>
+										<div
+											className={`productItemMain${lineMainReadonly ? " productItemReadonlySegment" : ""}`}
+											onClick={(e) => toggleItemVisibility(item.product_sku, e)}
+										>
+											<span className="productItemIndex">№{index + 1}</span>
+											<div className="productItemImageWrap">
+												{item.product_image ? (
+													<img src={item.product_image} alt={item.product_title} className="productItemImage" loading="lazy" />
+												) : (
+													<div className="productItemNoImage">Нет фото</div>
+												)}
+											</div>
+											<div className="productItemDetails">
+												<div className="productItemTitleText productItemTitleRow">
+													{item.productId ? (
+														<Link href={`/admin/product-management/products/${item.productId}`} className="itemLink" target="_blank">
+															{item.product_title}
+														</Link>
+													) : (
+														item.product_title
+													)}
+													<span className="productItemQtyBadge" title={`Количество: ${item.quantity}`}>
+														x{item.quantity}
+													</span>
+													<span className="productItemTotalBadge" title="Общая стоимость позиции">
+														{(item.product_price * item.quantity).toLocaleString("ru-RU")} ₽
+													</span>
+												</div>
+												<div className="productItemMeta">
+													<div className="productItemMetaLine">
+														<span className="productItemMetaRow">
+															<span className="productItemLabel">Артикул:</span> {item.product_sku}
+														</span>
+														{item.product_brand && (
+															<span className="productItemMetaRow">
+																<span className="productItemLabel">Бренд:</span> {item.product_brand}
+															</span>
+														)}
+														<span className="productItemMetaRow">
+															<span className="productItemLabel">Цена за 1шт:</span> {item.product_price.toLocaleString("ru-RU")} ₽
+														</span>
+													</div>
+													<div className="productItemMetaLine">
+														<span className="productItemMetaRow">
+															<span className="productItemLabel">Отдел:</span> {item.department?.name || "Не указана"}
+														</span>
+														<span className="productItemMetaRow">
+															<span className="productItemLabel">Модель авто:</span> {item.carModel?.trim() ? item.carModel : "Не указана"}
+														</span>
+													</div>
+												</div>
+											</div>
 											<div className="buttonsBlock">
+												<button
+													type="button"
+													onClick={(e) => {
+														e.stopPropagation();
+														handleRemoveProduct(item.product_sku);
+													}}
+													className="removeProductButton"
+													disabled={!canEditOrderItems}
+												>
+													Удалить товар из заказа ×
+												</button>
+											</div>
+										</div>
+										<div
+											className={`formField${dateRowReadonly ? " productItemReadonlySegment" : ""}`}
+											onClick={(e) => e.stopPropagation()}
+											onKeyDown={(e) => e.stopPropagation()}
+											role="presentation"
+										>
+											<DatePickerField
+												label="Дата поставки поставщиком"
+												value={item.supplierDeliveryDate || ""}
+												onChange={(date) => {
+													handleProductFieldChange(item.product_sku, "supplierDeliveryDate", date || "");
+													clearFieldError("supplierDeliveryDate");
+													clearFieldError(skuKey);
+												}}
+												onFocus={() => {
+													clearFieldError("supplierDeliveryDate");
+													clearFieldError(skuKey);
+												}}
+												placeholder="Выберите дату поставки"
+												className={
+													fieldErrors.has("supplierDeliveryDate") || fieldErrors.has(skuKey) ? `${datePickerFieldStyles.error}` : ""
+												}
+												disabled={!canEditSupplierDeliveryDates}
+											/>
+										</div>
+										<div className="analogsBlock productItemAnalogs">
+											<div
+												className="analogsHeader"
+												onClick={(e) => toggleItemVisibility(item.product_sku, e)}
+												role="button"
+												tabIndex={0}
+												onKeyDown={(e) => {
+													if (e.key === "Enter" || e.key === " ") {
+														e.preventDefault();
+														toggleItemVisibility(item.product_sku);
+													}
+												}}
+											>
+												<div className="analogsTitleGroup">
+													<span className="productItemInfoTitle">Подробная информация</span>
+												</div>
 												<button
 													type="button"
 													onClick={(e) => {
@@ -705,111 +687,101 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 													{isExpanded ? "Свернуть" : "Развернуть"}
 												</button>
 											</div>
-										</span>
-										<div className="itemInfoBlock">
-											<div className="formField formFieldGroup">
-												<div className="formField">
-													<div className="formFieldTitle">Данные о товаре</div>
-													<div className="formFieldInfo">
-														<div className="itemInfoFields">
-															<div className="infoField">
-																<span className="infoLabel">Артикул:</span>
-																<div className="text">{item.product_sku}</div>
-															</div>
-															<div className="infoField">
-																<span className="infoLabel">Бренд:</span>
-																<div className="text">{item.product_brand}</div>
-															</div>
-															<div className="infoField">
-																<span className="infoLabel">Отдел:</span>
-																<div className="text">
-																	<Link href={`/admin/departments/${item.department.id}`} className="itemLink" target="_blank">
-																		{item.department.name}
-																	</Link>
+											<div className={`itemInfoBlock${lineMainReadonly ? " productItemReadonlySegment" : ""}`}>
+												<div className="formField formFieldGroup">
+													<div className="formField">
+														<div className="formFieldTitle">Данные о товаре</div>
+														<div className="formFieldInfo">
+															<div className="itemInfoFields">
+																<div className="infoField">
+																	<span className="infoLabel">Артикул:</span>
+																	<div className="text">{item.product_sku}</div>
+																</div>
+																<div className="infoField">
+																	<span className="infoLabel">Бренд:</span>
+																	<div className="text">{item.product_brand}</div>
+																</div>
+																<div className="infoField">
+																	<span className="infoLabel">Отдел:</span>
+																	<div className="text">
+																		{item.department?.id ? (
+																			<Link href={`/admin/departments/${item.department.id}`} className="itemLink" target="_blank">
+																				{item.department.name}
+																			</Link>
+																		) : (
+																			"—"
+																		)}
+																	</div>
 																</div>
 															</div>
 														</div>
 													</div>
-												</div>
-												<div className="formField">
-													<div className="formFieldTitle">Товар для автомобиля</div>
-													<div className="formFieldInfo column">
+													<div className="formField">
 														<input
 															type="text"
 															value={item.carModel || ""}
-															onChange={(e) => handleProductFieldChange(item.product_sku, "carModel", e.target.value)}
+															onChange={(e) => {
+																handleProductFieldChange(item.product_sku, "carModel", e.target.value);
+																clearFieldError(`carModel_${item.product_sku}`);
+															}}
+															onFocus={() => clearFieldError(`carModel_${item.product_sku}`)}
 															placeholder="Модель автомобиля"
-															className="textInput"
-															disabled={!canEdit}
+															className={`textInput${fieldErrors.has(`carModel_${item.product_sku}`) ? " error" : ""}`}
+															disabled={!canEditOrderItems}
 														/>
 														<input
 															type="text"
 															value={item.vinCode || ""}
-															onChange={(e) => handleProductFieldChange(item.product_sku, "vinCode", e.target.value)}
-															placeholder="VIN-код"
-															className="textInput"
-															disabled={!canEdit}
-														/>
-													</div>
-												</div>
-											</div>
-
-											<div className="formField formFieldGroup">
-												<div className="formField">
-													<div className="formFieldTitle">Количество</div>
-													<div className="quantityControls">
-														<button
-															type="button"
-															onClick={() => handleQuantityChange(item.product_sku, item.quantity - 1)}
-															className="quantityButton"
-															disabled={!canEdit}
-														>
-															-
-														</button>
-														<input
-															type="number"
-															value={item.quantity}
-															onChange={(e) => handleQuantityChange(item.product_sku, parseInt(e.target.value) || 0)}
-															min="1"
-															className="quantityInput"
-															disabled={!canEdit}
-														/>
-														<button
-															type="button"
-															onClick={() => handleQuantityChange(item.product_sku, item.quantity + 1)}
-															className="quantityButton"
-															disabled={!canEdit}
-														>
-															+
-														</button>
-													</div>
-												</div>
-												<div className="formField">
-													<label>Цена за ед.</label>
-													<input type="text" value={`${item.product_price} ₽`} disabled className="priceInput" />
-												</div>
-											</div>
-											<div className="formField">
-												<label>Сумма</label>
-												<input type="text" value={`${(item.product_price * item.quantity).toLocaleString()} ₽`} disabled className="totalInput" />
-											</div>
-
-											<div className="itemFields">
-												<div className="formRow">
-													<div className="formField">
-														<DatePickerField
-															label="Дата поставки поставщиком"
-															value={item.supplierDeliveryDate || ""}
-															onChange={(date) => {
-																handleProductFieldChange(item.product_sku, "supplierDeliveryDate", date || "");
-																clearFieldError("supplierDeliveryDate");
+															onChange={(e) => {
+																handleProductFieldChange(item.product_sku, "vinCode", e.target.value);
+																clearFieldError(`vinCode_${item.product_sku}`);
 															}}
-															onFocus={() => clearFieldError("supplierDeliveryDate")}
-															placeholder="Выберите дату поставки"
-															className={fieldErrors.has("supplierDeliveryDate") ? `${datePickerFieldStyles.error}` : ""}
-															disabled={!canEdit}
+															onFocus={() => clearFieldError(`vinCode_${item.product_sku}`)}
+															placeholder="VIN-код"
+															className={`textInput${fieldErrors.has(`vinCode_${item.product_sku}`) ? " error" : ""}`}
+															disabled={!canEditOrderItems}
 														/>
 													</div>
+												</div>
+
+												<div className="formField formFieldGroup">
+													<div className="formField">
+														<div className="formFieldTitle">Количество</div>
+														<div className="quantityControls">
+															<button
+																type="button"
+																onClick={() => handleQuantityChange(item.product_sku, item.quantity - 1)}
+																className="quantityButton"
+																disabled={!canEditOrderItems}
+															>
+																-
+															</button>
+															<input
+																type="number"
+																value={item.quantity}
+																onChange={(e) => handleQuantityChange(item.product_sku, parseInt(e.target.value) || 0)}
+																min="1"
+																className="quantityInput"
+																disabled={!canEditOrderItems}
+															/>
+															<button
+																type="button"
+																onClick={() => handleQuantityChange(item.product_sku, item.quantity + 1)}
+																className="quantityButton"
+																disabled={!canEditOrderItems}
+															>
+																+
+															</button>
+														</div>
+													</div>
+													<div className="formField">
+														<label>Цена за ед.</label>
+														<input type="text" value={`${item.product_price} ₽`} disabled className="priceInput" />
+													</div>
+												</div>
+												<div className="formField">
+													<label>Сумма</label>
+													<input type="text" value={`${(item.product_price * item.quantity).toLocaleString()} ₽`} disabled className="totalInput" />
 												</div>
 											</div>
 										</div>
@@ -817,17 +789,13 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 								);
 							})}
 						</div>
-					</div>
-				)}
-
-				<div className="formField">
-					<div className="orderTotal">
-						<div className="totalRow">
-							<span className="totalLabel">Общая сумма заказа:</span>
-							<span className="totalAmount">{orderTotal.toLocaleString()} ₽</span>
+						<div className="orderTotal">
+							<div className="totalRow">
+								<span className="totalLabel">Общая сумма заказа:</span>
+								<span className="totalAmount">{orderTotal.toLocaleString()} ₽</span>
+							</div>
 						</div>
 					</div>
-				</div>
 
 				<div className="formRow">
 					<div className={`formField`}>
@@ -837,6 +805,9 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 							onChange={(date) => {
 								setFormData((prev) => ({ ...prev, finalDeliveryDate: date }));
 								clearFieldError("finalDeliveryDate");
+								for (const it of orderItems) {
+									clearFieldError(`supplierDeliveryDate_${it.product_sku}`);
+								}
 							}}
 							placeholder="Выберите финальную дату поставки"
 							className={fieldErrors.has("finalDeliveryDate") ? `${datePickerFieldStyles.error}` : ""}
@@ -855,126 +826,6 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 								? "Будет установлена после сохранения"
 								: "Не указана"}
 						</div>
-					</div>
-				</div>
-
-				{/* Поле для выбора заявки */}
-				<div className="formRow">
-					<div className={`formField`}>
-						<label htmlFor="bookingSearch">Заявка</label>
-						<div className={`selectedClient`}>
-							<span>
-								{selectedBooking ? (
-									<Link href={`/admin/bookings/${selectedBooking.id}`} className="itemLink" target="_blank">
-										Заявка #{selectedBooking.id} - {typeof selectedBooking.scheduledDate === "string" ? new Date(selectedBooking.scheduledDate).toLocaleDateString("ru-RU") : selectedBooking.scheduledDate.toLocaleDateString("ru-RU")} {selectedBooking.scheduledTime}
-									</Link>
-								) : (
-									"Не указана"
-								)}
-							</span>
-							{selectedBooking && canEdit && (
-								<button
-									type="button"
-									onClick={() => {
-										setSelectedBooking(null);
-										setBookingSearch("");
-										clearFieldError("bookingSearch");
-									}}
-									className={`removeButton`}
-								>
-									Убрать заявку ×
-								</button>
-							)}
-						</div>
-						{!selectedBooking && (
-							<SearchDropdownInput
-								id="bookingSearch"
-								value={bookingSearch}
-								onChange={handleBookingManualInput}
-								onFocus={() => {
-									if (bookingBlurTimeout.current) clearTimeout(bookingBlurTimeout.current);
-									setIsBookingSearchFocused(true);
-									clearFieldError("bookingSearch");
-								}}
-								onBlur={handleBookingBlur}
-								placeholder="Поиск заявки по ID"
-								hasError={fieldErrors.has("bookingSearch")}
-								isActiveSearch={isBookingSearchFocused && bookingSearch.length > 0}
-								showDropdown={isBookingSearchFocused && Boolean(bookingSearch)}
-								disabled={!canEdit}
-							>
-								{isBookingSearchFocused && isSearchingBookings && bookingSearch && (
-									<div className="searchResults loading">
-										<Loading />
-									</div>
-								)}
-
-								{isBookingSearchFocused && bookingSearch && !isSearchingBookings && (
-									<div className="searchResults">
-										{bookingSearchResults.length > 0 ? (
-											bookingSearchResults.map((booking) => (
-												<div key={booking.id} className={`searchResultItem`} onMouseDown={() => handleBookingSelect(booking)}>
-													Заявка #{booking.id} - {typeof booking.scheduledDate === "string" ? new Date(booking.scheduledDate).toLocaleDateString("ru-RU") : booking.scheduledDate.toLocaleDateString("ru-RU")} {booking.scheduledTime}
-												</div>
-											))
-										) : (
-											<div className={`searchResultItem`}>Нет результатов</div>
-										)}
-									</div>
-								)}
-							</SearchDropdownInput>
-						)}
-					</div>
-				</div>
-
-				{/* Поле для выбора адреса: отделы для записей или пункты выдачи */}
-				<div className="formRow">
-					<div className={`formField`}>
-						<label htmlFor="deliveryAddressSelect">Адрес доставки</label>
-						<div className={`selectedClient`}>
-							<span>
-								{selectedPickupPoint ? (
-									<>
-										Пункт выдачи: {selectedPickupPoint.name || "Без названия"} — {selectedPickupPoint.address}
-									</>
-								) : selectedBookingDepartment ? (
-									<>
-										Адрес для записей: {selectedBookingDepartment.name || "Адрес"} — {selectedBookingDepartment.address}
-									</>
-								) : (
-									"Не указан"
-								)}
-							</span>
-						</div>
-						<select
-							id="deliveryAddressSelect"
-							name="deliveryAddress"
-							value={deliverySelectValue}
-							onChange={(e) => handleDeliveryAddressSelect(e.target.value)}
-							onFocus={() => clearFieldError("bookingDepartmentId")}
-							className={fieldErrors.has("bookingDepartmentId") ? "error" : ""}
-							disabled={!canEdit}
-						>
-							<option value="">— Не выбран —</option>
-							{bookingDepartments.length > 0 && (
-								<optgroup label="Адреса для записей">
-									{bookingDepartments.map((dept) => (
-										<option key={`bd-${dept.id}`} value={`bd-${dept.id}`}>
-											{dept.name || "Адрес"} — {dept.address}
-										</option>
-									))}
-								</optgroup>
-							)}
-							{pickupPoints.length > 0 && (
-								<optgroup label="Пункты выдачи">
-									{pickupPoints.map((pt) => (
-										<option key={`pp-${pt.id}`} value={`pp-${pt.id}`}>
-											{pt.name || "Пункт"} — {pt.address}
-										</option>
-									))}
-								</optgroup>
-							)}
-						</select>
 					</div>
 				</div>
 			</div>

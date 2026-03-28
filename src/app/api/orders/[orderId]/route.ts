@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { withPermission } from "@/middleware/permissionMiddleware";
-import { OrderResponse, UpdateOrderRequest, Order } from "@/lib/types";
+import { OrderResponse, UpdateOrderRequest, Order, OrderStatus } from "@/lib/types";
+import { validateOrderMergedStateForStatus } from "@/lib/orderStatusValidation";
 import { getFullOrderSnapshot } from "@/lib/crossLogging";
+import { mergeOrderCommentsOnUpdate } from "@/lib/orderComments";
+import { buildOrderUpdateMessage } from "@/lib/orderUpdateDiff";
 
 // Получение конкретного заказа
 async function getOrderHandler(req: NextRequest, { user, scope, params }: { user: any; scope: "all" | "department" | "own"; params: { orderId: string } }) {
@@ -221,9 +224,10 @@ async function updateOrderHandler(req: NextRequest, { user, scope, params }: { u
 			};
 		}
 
-		// Получаем текущий заказ для проверки доступа
+		// Получаем текущий заказ для проверки доступа (позиции — для серверной валидации при смене статуса)
 		const currentOrder = await prisma.order.findFirst({
 			where: whereClause,
+			include: { orderItems: true },
 		});
 
 		if (!currentOrder) {
@@ -314,6 +318,16 @@ async function updateOrderHandler(req: NextRequest, { user, scope, params }: { u
 			targetManagerId = fullUser.id;
 		}
 
+		if (targetManagerId != null && !responsibleUser) {
+			responsibleUser = await prisma.user.findUnique({
+				where: { id: targetManagerId },
+				select: { id: true, role: true, departmentId: true },
+			});
+			if (!responsibleUser) {
+				return NextResponse.json({ error: "Ответственный не найден" }, { status: 400 });
+			}
+		}
+
 		if (targetDepartmentId !== undefined && targetDepartmentId !== null) {
 			const existingDepartment = await prisma.department.findUnique({
 				where: { id: targetDepartmentId },
@@ -381,17 +395,95 @@ async function updateOrderHandler(req: NextRequest, { user, scope, params }: { u
 			}
 		}
 
+		// Валидация цепочки полей при продвижении статуса вперёд (поля этапов не все хранятся в БД — полагаемся на тело запроса)
+		if (body.status !== undefined) {
+			const newIdx = statusTimeline.indexOf(body.status as (typeof statusTimeline)[number]);
+			const isForward = newIdx !== -1 && newIdx > currentStatusIndex;
+			if (isForward) {
+				const effectiveManagerId = targetManagerId ?? null;
+				const isSuperadminSelfResponsible = user.role === "superadmin" && effectiveManagerId === fullUser.id;
+				const mergedDept =
+					user.role === "superadmin" && effectiveManagerId === fullUser.id ? null : (targetDepartmentId ?? null);
+
+				const mergedClientId = body.clientId !== undefined ? body.clientId : currentOrder.clientId ?? null;
+				const mergedContactName = body.contactName !== undefined ? body.contactName : currentOrder.contactName;
+				const mergedContactPhone = body.contactPhone !== undefined ? body.contactPhone : currentOrder.contactPhone;
+				const mergedFinal =
+					body.finalDeliveryDate !== undefined ? body.finalDeliveryDate : currentOrder.finalDeliveryDate;
+				const mergedBookingId = body.bookingId !== undefined ? body.bookingId : currentOrder.bookingId;
+				const mergedBd = body.bookingDepartmentId !== undefined ? body.bookingDepartmentId : currentOrder.bookingDepartmentId;
+				const mergedPp = body.deliveryPickupPointId !== undefined ? body.deliveryPickupPointId : currentOrder.deliveryPickupPointId;
+
+				const mergedItems =
+					body.orderItems !== undefined
+						? body.orderItems.map((item) => ({
+								product_sku: item.product_sku,
+								supplierDeliveryDate: item.supplierDeliveryDate,
+								carModel: item.carModel,
+								vinCode: item.vinCode,
+							}))
+						: currentOrder.orderItems.map((item) => ({
+								product_sku: item.product_sku,
+								supplierDeliveryDate: item.supplierDeliveryDate,
+								carModel: item.carModel,
+								vinCode: item.vinCode,
+							}));
+
+				const statusIssues = validateOrderMergedStateForStatus({
+					targetStatus: body.status as OrderStatus,
+					isSuperadminSelfResponsible,
+					clientId: mergedClientId,
+					contactName: mergedContactName,
+					contactPhone: mergedContactPhone,
+					departmentId: mergedDept,
+					managerId: effectiveManagerId,
+					managerDepartmentId: responsibleUser?.departmentId ?? null,
+					orderItems: mergedItems,
+					finalDeliveryDate: mergedFinal,
+					bookingId: mergedBookingId,
+					bookingDepartmentId: mergedBd,
+					deliveryPickupPointId: mergedPp,
+					bookedUntil: body.bookedUntil,
+					readyUntil: body.readyUntil,
+					prepaymentAmount: body.prepaymentAmount,
+					prepaymentDate: body.prepaymentDate,
+					paymentDate: body.paymentDate,
+					orderAmount: body.orderAmount,
+					completionDate: body.completionDate,
+					returnReason: body.returnReason,
+					returnDate: body.returnDate,
+					returnAmount: body.returnAmount,
+					returnPaymentDate: body.returnPaymentDate,
+					returnDocumentNumber: body.returnDocumentNumber,
+				});
+
+				if (statusIssues.length > 0) {
+					return NextResponse.json({ error: statusIssues.map((i) => i.message).join(" ") }, { status: 400 });
+				}
+			}
+		}
+
 		// Сохраняем снапшот заказа ДО изменений для улучшенного логирования
 		const orderSnapshotBefore = await getFullOrderSnapshot(orderId);
+
+		// Менеджер не может перезаписывать состав заказа после фактического подтверждения в БД
+		const orderItemsPayload = body.orderItems;
+		const applyOrderItemsUpdate =
+			orderItemsPayload !== undefined && !(user.role === "manager" && currentStatusIndex > 0);
 
 		// Обновляем заказ в транзакции
 		const updatedOrder = await prisma.$transaction(async (tx) => {
 			// Подготавливаем данные для обновления
 			const updateData: any = {};
 
-			if (body.comments !== undefined) updateData.comments = body.comments;
+			if (body.comments !== undefined) {
+				updateData.comments = mergeOrderCommentsOnUpdate(currentOrder.comments, body.comments, user.role, fullUser);
+			}
 			if (body.contactName !== undefined) updateData.contactName = body.contactName?.trim() || null;
 			if (body.contactPhone !== undefined) updateData.contactPhone = body.contactPhone?.trim() || null;
+			if (body.clientId !== undefined) {
+				updateData.clientId = body.clientId;
+			}
 			if (body.status !== undefined) {
 				updateData.status = body.status;
 				if (body.status === "confirmed" && currentOrder.status !== "confirmed") {
@@ -455,18 +547,18 @@ async function updateOrderHandler(req: NextRequest, { user, scope, params }: { u
 				}
 			}
 
-			// Обновляем товары заказа, если они были переданы
+			// Обновляем товары заказа, если они были переданы (и роль это допускает)
 			// Сначала удаляем все старые товары, затем создаем новые
-			if (body.orderItems !== undefined) {
+			if (applyOrderItemsUpdate && orderItemsPayload) {
 				// Удаляем все старые позиции заказа
 				await tx.orderItem.deleteMany({
 					where: { orderId: orderId },
 				});
 
 				// Создаем новые позиции заказа с обновленными данными
-				if (body.orderItems.length > 0) {
+				if (orderItemsPayload.length > 0) {
 					await tx.orderItem.createMany({
-						data: body.orderItems.map((item) => ({
+						data: orderItemsPayload.map((item) => ({
 							orderId: orderId,
 							product_sku: item.product_sku,
 							product_title: item.product_title,
@@ -556,24 +648,35 @@ async function updateOrderHandler(req: NextRequest, { user, scope, params }: { u
 				});
 			}
 
-			// Создаем лог изменения с улучшенными снапшотами
+			// Лог: action — для фильтров; message — человекочитаемое «было → стало»
 			let action = "update";
-			let message = "Заказ обновлен";
-
 			if (body.status && body.status !== currentOrder.status) {
 				action = "status_change";
-				message = `Статус заказа изменен на "${body.status}"`;
+			}
+			if (body.managerId !== undefined && body.managerId !== currentOrder.managerId) {
+				action = body.managerId === null ? "unassign" : "assign";
 			}
 
-			if (body.managerId !== undefined && body.managerId !== currentOrder.managerId) {
-				if (body.managerId === null) {
-					action = "unassign";
-					message = "Менеджер снят с заказа";
-				} else {
-					action = "assign";
-					message = "Заказ назначен менеджеру";
-				}
-			}
+			const orderAfterForDiff = {
+				status: order.status,
+				clientId: order.clientId,
+				managerId: order.managerId,
+				departmentId: order.departmentId,
+				contactName: order.contactName,
+				contactPhone: order.contactPhone,
+				finalDeliveryDate: order.finalDeliveryDate,
+				bookingId: order.bookingId,
+				bookingDepartmentId: order.bookingDepartmentId,
+				deliveryPickupPointId: order.deliveryPickupPointId,
+				comments: order.comments,
+				orderItems: order.orderItems,
+				client: order.client,
+				manager: order.manager,
+				department: order.department,
+				bookingDepartment: order.bookingDepartment,
+				deliveryPickupPoint: order.deliveryPickupPoint,
+			};
+			const message = buildOrderUpdateMessage(orderSnapshotBefore, orderAfterForDiff);
 
 			// Получаем полный снапшот заказа ПОСЛЕ изменений
 			const orderSnapshotAfter = {
