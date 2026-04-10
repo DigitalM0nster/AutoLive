@@ -49,7 +49,7 @@ export default function DatePickerField({ label, value, onChange, placeholder = 
 	};
 
 	return (
-		<div className={`${styles.datePickerField} ${className}`}>
+		<div className={`${styles.datePickerField} ${className}`} data-field-invalid={className.trim() ? true : undefined}>
 			{label && <label className={styles.label}>{label}</label>}
 			<div className={`${styles.dateInput} ${disabled ? styles.disabled : ""}`} onClick={handleTogglePicker}>
 				<span className={value ? styles.hasValue : styles.placeholder}>{value ? formatDisplayDate(value) : placeholder}</span>

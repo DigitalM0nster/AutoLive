@@ -1263,7 +1263,18 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 			const validation = validateStatusFields(currentStatus);
 			if (!validation.isValid) {
 				setFieldErrors(new Set(validation.errorFields));
-				showErrorToast(`Необходимо заполнить: ${validation.missingFields.join(", ")}`);
+				showErrorToast(`Не хватает данных: ${validation.missingFields.join("; ")}`);
+				// После отрисовки подсветки — прокрутка к первому полю с ошибкой
+				requestAnimationFrame(() => {
+					requestAnimationFrame(() => {
+						const root = document.querySelector(".orderComponent");
+						const firstErr =
+							root?.querySelector("input.error, textarea.error, select.error") ||
+							root?.querySelector(".error") ||
+							root?.querySelector("[data-field-invalid]");
+						firstErr?.scrollIntoView({ behavior: "smooth", block: "center" });
+					});
+				});
 				return;
 			}
 
@@ -1975,13 +1986,18 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 			</div>
 
 			{/* Фиксированные кнопки для изменений */}
-			{isEditMode && hasChanges && (
+			{isEditMode && (hasChanges || isCreating) && (
 				<div className={`fixedButtons`}>
 					<div className="buttonsBlock">
 						<button type="button" onClick={() => void handleFixedCancel()} className={`secondaryButton`} disabled={isSaving || isReverting}>
 							{isReverting ? "Сброс…" : "Отмена"}
 						</button>
-						<button type="button" onClick={() => void handleSave()} className={`primaryButton`} disabled={isSaving || isReverting || orderItems.length === 0}>
+						<button
+							type="button"
+							onClick={() => void handleSave()}
+							className={`primaryButton`}
+							disabled={isSaving || isReverting || (!isCreating && orderItems.length === 0)}
+						>
 							{isSaving ? "Сохранение..." : isCreating ? "Создать заказ" : "Сохранить изменения"}
 						</button>
 					</div>

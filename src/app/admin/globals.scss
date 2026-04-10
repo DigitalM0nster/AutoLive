@@ -3762,7 +3762,7 @@ span {
 			}
 
 			&:disabled {
-				background: var(--light-grey-color);
+				// background: var(--light-grey-color);
 				cursor: not-allowed;
 				opacity: 0.6;
 			}
