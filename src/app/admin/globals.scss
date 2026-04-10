@@ -3729,7 +3729,7 @@ span {
 	border-radius: 12px;
 	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 	border: 1px solid var(--light-grey-color);
-	z-index: 1000;
+	z-index: 1001;
 	animation: slideUp 0.3s ease-out;
 
 	.formField {
@@ -4153,6 +4153,27 @@ span {
 			border: 2px solid var(--blue-color, #2980b9);
 		}
 	}
+
+	&.addProductZoneValidationError {
+		border-color: #f44336;
+		border-style: solid;
+		background: #ffebee;
+
+		&:hover {
+			border-color: #d32f2f;
+			background: #ffebee;
+			box-shadow: 0 0 0 1px rgba(244, 67, 54, 0.25);
+		}
+
+		.addProductZonePlus {
+			color: #c62828;
+			border-color: #f44336;
+		}
+
+		.addProductZoneText {
+			color: #b71c1c;
+		}
+	}
 }
 
 .addProductZoneOpen {
@@ -4169,6 +4190,32 @@ span {
 		border-color: var(--light-grey2-color);
 		background: var(--light-grey-color);
 		box-shadow: none;
+	}
+
+	&.addProductZoneValidationError {
+		border-color: #f44336;
+		background: #fff5f5;
+
+		&:hover {
+			border-color: #d32f2f;
+			background: #fff5f5;
+		}
+	}
+}
+
+// Блок «Товары в заказе» (например, пустой состав при «Подтверждён»)
+.formField.orderCompositionFieldError {
+	> div:first-child {
+		color: #c62828;
+		font-weight: 600;
+	}
+
+	.productItemsList {
+		min-height: 48px;
+		border: 2px dashed #f44336;
+		border-radius: 8px;
+		padding: 12px;
+		background: #ffebee;
 	}
 }
 

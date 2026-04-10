@@ -83,6 +83,13 @@ export default function StatusNewSection({
 		};
 	}, []);
 
+	// Ошибка «Состав заказа»: поле поиска скрыто в свёрнутой зоне — раскрываем, чтобы была видна красная подсветка
+	useEffect(() => {
+		if (fieldErrors.has("productSearch")) {
+			setShowProductSearch(true);
+		}
+	}, [fieldErrors]);
+
 	const handleProductSearch = async (query: string) => {
 		const trimmedQuery = query.trim();
 		if (trimmedQuery.length < 1) {
@@ -157,6 +164,7 @@ export default function StatusNewSection({
 			});
 		}
 
+		clearFieldError("productSearch");
 		setProductSearch("");
 		setSearchResults([]);
 		setIsSearchFocused(false);
@@ -778,7 +786,12 @@ export default function StatusNewSection({
 						</div>
 					</div>
 					{canEditOrderItems && (
-						<div className={`addProductZone ${showProductSearch ? "addProductZoneOpen" : ""}`} onClick={() => !showProductSearch && setShowProductSearch(true)}>
+						<div
+							className={`addProductZone ${showProductSearch ? "addProductZoneOpen" : ""}${
+								fieldErrors.has("productSearch") ? " addProductZoneValidationError" : ""
+							}`}
+							onClick={() => !showProductSearch && setShowProductSearch(true)}
+						>
 							{!showProductSearch ? (
 								<div className="addProductZonePlaceholder">
 									<span className="addProductZonePlus">+</span>

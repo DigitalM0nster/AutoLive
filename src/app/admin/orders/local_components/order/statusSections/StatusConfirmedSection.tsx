@@ -559,7 +559,7 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 					</div>
 				</div>
 
-				<div className={`formField`}>
+				<div className={`formField${fieldErrors.has("productSearch") ? " orderCompositionFieldError" : ""}`}>
 					<div>Товары в заказе ({orderItems.length})</div>
 					<div className="productItemsList">
 						{orderItems.map((item, index) => {

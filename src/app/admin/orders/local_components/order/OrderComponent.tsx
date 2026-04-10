@@ -1269,6 +1269,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 					requestAnimationFrame(() => {
 						const root = document.querySelector(".orderComponent");
 						const firstErr =
+							root?.querySelector(".addProductZoneValidationError, .orderCompositionFieldError") ||
 							root?.querySelector("input.error, textarea.error, select.error") ||
 							root?.querySelector(".error") ||
 							root?.querySelector("[data-field-invalid]");
