@@ -29,7 +29,8 @@ export default function CategoryPageClient({ initialData, isCreateMode = false }
 		id: 0,
 		title: "",
 		image: "",
-		order: 0, // Добавляем недостающее поле order
+		order: 0,
+		visibleOnSite: true,
 	};
 
 	const [category, setCategory] = useState<Category | null>(isCreateMode ? defaultCategory : initialData?.category || null);
@@ -44,6 +45,10 @@ export default function CategoryPageClient({ initialData, isCreateMode = false }
 
 	const [originalTitle, setOriginalTitle] = useState(isCreateMode ? "" : initialData?.category?.title || "");
 	const [originalImage, setOriginalImage] = useState(isCreateMode ? "" : initialData?.category?.image || "");
+
+	const initialVisibleOnSite = isCreateMode ? true : initialData?.category?.visibleOnSite !== false;
+	const [formVisibleOnSite, setFormVisibleOnSite] = useState(initialVisibleOnSite);
+	const [originalVisibleOnSite, setOriginalVisibleOnSite] = useState(initialVisibleOnSite);
 
 	// Новые состояния для управления фильтрами
 	const initialFilters = isCreateMode ? [] : initialData?.filters || [];
@@ -492,10 +497,12 @@ export default function CategoryPageClient({ initialData, isCreateMode = false }
 		// Сравниваем фильтры с исходными
 		const hasFiltersChanged = JSON.stringify(filters) !== JSON.stringify(initialData?.filters || []);
 
-		const isDirty = hasTitleChanged || hasImageChanged || hasFiltersChanged;
+		const hasVisibleChanged = formVisibleOnSite !== originalVisibleOnSite;
+
+		const isDirty = hasTitleChanged || hasImageChanged || hasFiltersChanged || hasVisibleChanged;
 
 		setIsFormChanged(isDirty);
-	}, [formTitle, originalTitle, imagePreview, originalImage, filters, initialData?.filters]);
+	}, [formTitle, originalTitle, imagePreview, originalImage, filters, initialData?.filters, formVisibleOnSite, originalVisibleOnSite]);
 
 	// Функция для сохранения всех изменений категории
 	const handleSave = async () => {
@@ -503,6 +510,7 @@ export default function CategoryPageClient({ initialData, isCreateMode = false }
 			// Создаем FormData для отправки файла
 			const formData = new FormData();
 			formData.append("title", formTitle);
+			formData.append("visibleOnSite", formVisibleOnSite ? "true" : "false");
 			if (formImage) {
 				formData.append("image", formImage);
 			}
@@ -541,6 +549,7 @@ export default function CategoryPageClient({ initialData, isCreateMode = false }
 					setCategory(updated);
 					setOriginalTitle(formTitle);
 					setOriginalImage(imagePreview);
+					setOriginalVisibleOnSite(formVisibleOnSite);
 
 					// Обновляем исходные данные фильтров
 					setFilters(filters);
@@ -579,8 +588,8 @@ export default function CategoryPageClient({ initialData, isCreateMode = false }
 		setShowConfirmChangesModal(false);
 	};
 
-	// Проверяем общие изменения
-	const hasAnyChanges = isCreateMode ? formTitle.trim() !== "" || formImage !== null || filters.length > 0 : isFormChanged;
+	// Проверяем общие изменения (единая логика «грязной формы», в т.ч. видимость на сайте)
+	const hasAnyChanges = isFormChanged;
 
 	// Функция для получения описания изменений
 	const getChangesDescription = () => {
@@ -589,6 +598,10 @@ export default function CategoryPageClient({ initialData, isCreateMode = false }
 		// Проверяем изменения в названии
 		if (formTitle.trim() !== originalTitle) {
 			changes.push(`Название: "${originalTitle}" → "${formTitle}"`);
+		}
+
+		if (formVisibleOnSite !== originalVisibleOnSite) {
+			changes.push(`Показ на сайте: ${originalVisibleOnSite ? "да" : "нет"} → ${formVisibleOnSite ? "да" : "нет"}`);
 		}
 
 		// Проверяем изменения в изображении
@@ -738,6 +751,19 @@ export default function CategoryPageClient({ initialData, isCreateMode = false }
 									disabled={!canEditCategory()}
 								/>
 								{validationErrors.categoryTitle && <div className="errorMessage">{validationErrors.categoryTitle}</div>}
+							</div>
+							<div className={"titleInputWrapper"} style={{ marginTop: 12 }}>
+								<label
+									style={{ display: "flex", alignItems: "center", gap: 8, cursor: canEditCategory() ? "pointer" : "default", fontSize: 14 }}
+								>
+									<input
+										type="checkbox"
+										checked={formVisibleOnSite}
+										onChange={(e) => setFormVisibleOnSite(e.target.checked)}
+										disabled={!canEditCategory()}
+									/>
+									<span>Показывать категорию на сайте в разделе «Материалы для ТО»</span>
+								</label>
 							</div>
 							{canDeleteCategory() && category.id && (
 								<button onClick={handleDeleteCategory} className={`button cancelButton`}>

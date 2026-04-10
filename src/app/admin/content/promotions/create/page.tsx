@@ -52,8 +52,15 @@ export default function CreatePromotionPage() {
 				}),
 			});
 			if (!res.ok) {
-				const err = await res.json().catch(() => ({}));
-				throw new Error(err.error || "Ошибка создания акции");
+				const text = await res.text();
+				let message = "Ошибка создания акции";
+				try {
+					const err = JSON.parse(text) as { error?: string };
+					if (err?.error) message = err.error;
+				} catch {
+					if (text) message = text;
+				}
+				throw new Error(message);
 			}
 			router.push("/admin/content/promotions");
 		} catch (e) {

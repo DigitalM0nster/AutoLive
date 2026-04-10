@@ -11,22 +11,46 @@ import Loading from "@/components/ui/loading/Loading";
 import ConfirmPopup from "@/components/ui/confirmPopup/ConfirmPopup";
 import contentStyles from "../local_components/styles.module.scss";
 import styles from "./promotionsList.module.scss";
+import { showErrorToast } from "@/components/ui/toast/ToastProvider";
 
 export default function PromotionsPage() {
 	const [promos, setPromos] = useState<Promotion[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
+	const [loadError, setLoadError] = useState<string | null>(null);
 
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [promoToDelete, setPromoToDelete] = useState<Promotion | null>(null);
 
 	const fetchPromos = async () => {
 		setIsLoading(true);
-		const res = await fetch("/api/promotions");
-		const data = await res.json();
-
-		const sorted = data.sort((a: Promotion, b: Promotion) => a.order - b.order);
-		setPromos(sorted);
-		setIsLoading(false);
+		setLoadError(null);
+		try {
+			const res = await fetch("/api/promotions");
+			if (!res.ok) {
+				const msg = `Не удалось загрузить акции (${res.status})`;
+				setLoadError(msg);
+				showErrorToast(msg);
+				setPromos([]);
+				return;
+			}
+			const data: unknown = await res.json();
+			if (!Array.isArray(data)) {
+				const msg = "Сервер вернул неверный формат списка акций";
+				setLoadError(msg);
+				showErrorToast(msg);
+				setPromos([]);
+				return;
+			}
+			const sorted = (data as Promotion[]).sort((a, b) => a.order - b.order);
+			setPromos(sorted);
+		} catch {
+			const msg = "Ошибка сети при загрузке акций";
+			setLoadError(msg);
+			showErrorToast(msg);
+			setPromos([]);
+		} finally {
+			setIsLoading(false);
+		}
 	};
 
 	const openDeleteModal = (promo: Promotion) => {
@@ -90,6 +114,8 @@ export default function PromotionsPage() {
 				<div className="tableContent">
 					{isLoading ? (
 						<Loading />
+					) : loadError ? (
+						<p className={styles.emptyState}>{loadError}</p>
 					) : promos.length === 0 ? (
 						<p className={styles.emptyState}>Акций пока нет</p>
 					) : (

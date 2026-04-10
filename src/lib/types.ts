@@ -139,6 +139,8 @@ export type Category = {
 	productCount?: number;
 	allowedDepartments?: { departmentId: number }[];
 	order: number;
+	/** false — скрыть карточку категории на витрине (список /categories) */
+	visibleOnSite?: boolean;
 };
 
 export type Product = {

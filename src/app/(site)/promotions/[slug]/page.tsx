@@ -5,6 +5,7 @@ import styles from "../styles.module.scss";
 import CONFIG from "@/lib/config";
 import { slugify } from "@/lib/slugify";
 import type { Promotion } from "@/lib/types";
+import { getInternalApiBaseUrl } from "@/lib/internalApiBaseUrl";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,7 @@ type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props) {
 	const { slug } = await params;
-	const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "";
+	const baseUrl = await getInternalApiBaseUrl();
 	const res = await fetch(`${baseUrl}/api/promotions`, { next: { revalidate: 3600 } });
 	if (!res.ok) return { title: "Акция" };
 	const promotions: Promotion[] = await res.json();
@@ -26,7 +27,7 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function PromotionPage({ params }: Props) {
 	const { slug } = await params;
-	const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "";
+	const baseUrl = await getInternalApiBaseUrl();
 	const res = await fetch(`${baseUrl}/api/promotions`, {
 		next: { revalidate: 3600 },
 	});

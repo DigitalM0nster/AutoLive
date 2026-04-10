@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Loading from "@/components/ui/loading/Loading";
 import SearchDropdownInput from "@/components/ui/searchDropdownInput/SearchDropdownInput";
@@ -6,6 +6,8 @@ import DatePickerField from "@/components/ui/datePicker/DatePickerField";
 import datePickerFieldStyles from "@/components/ui/datePicker/DatePickerField.module.scss";
 import { showErrorToast } from "@/components/ui/toast/ToastProvider";
 import { DepartmentForLog, Order, OrderFormState, OrderItemClient, User } from "@/lib/types";
+import { getSupplierVsFinalDeliveryDateConflicts } from "@/lib/orderStatusValidation";
+import statusStyles from "./StatusConfirmedSection.module.scss";
 
 type StatusConfirmedSectionProps = {
 	isActive: boolean;
@@ -82,6 +84,51 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 	const [isClientSearchFocused, setIsClientSearchFocused] = useState(false);
 	const [isManagerSearchFocused, setIsManagerSearchFocused] = useState(false);
 	const [collapsedItems, setCollapsedItems] = useState<Set<string>>(new Set());
+
+	/** Живое сравнение дат поставщика и финальной даты (до нажатия «Сохранить») */
+	const supplierFinalConflicts = useMemo(() => {
+		const items = orderItems.map((i) => ({
+			product_sku: i.product_sku,
+			supplierDeliveryDate: i.supplierDeliveryDate,
+		}));
+		return getSupplierVsFinalDeliveryDateConflicts(formData.finalDeliveryDate, items);
+	}, [formData.finalDeliveryDate, orderItems]);
+
+	const conflictBySku = useMemo(() => new Map(supplierFinalConflicts.map((c) => [c.productSku, c])), [supplierFinalConflicts]);
+
+	const supplierDateComparison = useMemo(() => {
+		const finalRaw = formData.finalDeliveryDate;
+		const hasFinal = Boolean(finalRaw && String(finalRaw).trim());
+		const withSupplier = orderItems.filter((i) => Boolean(i.supplierDeliveryDate && String(i.supplierDeliveryDate).trim()));
+		const allFilled = orderItems.length > 0 && withSupplier.length === orderItems.length;
+		if (!hasFinal) {
+			return {
+				kind: "neutral" as const,
+				text: "Укажите дату финальной поставки клиенту — ниже появится проверка: дата поставщика по каждой позиции не должна быть позже этой даты.",
+			};
+		}
+		if (orderItems.length === 0) {
+			return {
+				kind: "neutral" as const,
+				text: "Нет позиций в заказе — нечего сравнивать по датам.",
+			};
+		}
+		if (supplierFinalConflicts.length > 0) {
+			return {
+				kind: "warn" as const,
+				title: "Несогласованность дат (проверка до сохранения)",
+				lines: supplierFinalConflicts.map((c) => c.message),
+			};
+		}
+		// Даты согласованы и конфликтов нет — ничего не показываем (ни зелёного «успеха»)
+		if (allFilled) {
+			return { kind: "none" as const };
+		}
+		return {
+			kind: "neutral" as const,
+			text: "Финальная дата указана. Заполните дату поставки поставщиком по всем позициям — тогда проверка будет полной.",
+		};
+	}, [formData.finalDeliveryDate, orderItems, supplierFinalConflicts]);
 
 	useEffect(() => {
 		return () => {
@@ -655,10 +702,17 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 												}}
 												placeholder="Выберите дату поставки"
 												className={
-													fieldErrors.has("supplierDeliveryDate") || fieldErrors.has(skuKey) ? `${datePickerFieldStyles.error}` : ""
+													fieldErrors.has("supplierDeliveryDate") ||
+													fieldErrors.has(skuKey) ||
+													conflictBySku.has(item.product_sku)
+														? `${datePickerFieldStyles.error}`
+														: ""
 												}
 												disabled={!canEditSupplierDeliveryDates}
 											/>
+											{conflictBySku.has(item.product_sku) ? (
+												<p className={statusStyles.lineHintWarn}>{conflictBySku.get(item.product_sku)!.message}</p>
+											) : null}
 										</div>
 										<div className="analogsBlock productItemAnalogs">
 											<div
@@ -797,6 +851,22 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 						</div>
 					</div>
 
+				{supplierDateComparison.kind === "neutral" ? (
+					<div className={statusStyles.comparisonNeutral} role="status">
+						{supplierDateComparison.text}
+					</div>
+				) : null}
+				{supplierDateComparison.kind === "warn" ? (
+					<div className={statusStyles.comparisonWarn} role="status">
+						<div className={statusStyles.comparisonTitle}>{supplierDateComparison.title}</div>
+						<ul className={statusStyles.comparisonList}>
+							{supplierDateComparison.lines.map((line, i) => (
+								<li key={`${line}-${i}`}>{line}</li>
+							))}
+						</ul>
+					</div>
+				) : null}
+
 				<div className="formRow">
 					<div className={`formField`}>
 						<DatePickerField
@@ -810,9 +880,17 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 								}
 							}}
 							placeholder="Выберите финальную дату поставки"
-							className={fieldErrors.has("finalDeliveryDate") ? `${datePickerFieldStyles.error}` : ""}
+							className={
+								fieldErrors.has("finalDeliveryDate") || supplierFinalConflicts.length > 0 ? `${datePickerFieldStyles.error}` : ""
+							}
 							disabled={!canEdit}
 						/>
+						{supplierFinalConflicts.length > 0 ? (
+							<p className={statusStyles.lineHintWarn}>
+								Сохранение будет отклонено, пока дата поставки поставщиком хотя бы по одной позиции позже финальной даты клиенту — измените даты
+								выше или финальную дату.
+							</p>
+						) : null}
 					</div>
 				</div>
 

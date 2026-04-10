@@ -4,7 +4,7 @@ import { hasPermission, Role, Permission } from "@/lib/rolesConfig";
 import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 
-type DecodedToken = {
+export type DecodedToken = {
 	id: number;
 	role: Role;
 	name?: string;
@@ -13,6 +13,19 @@ type DecodedToken = {
 	iat: number;
 	exp: number;
 };
+
+/** Для публичных GET: сотрудник админки видит скрытые сущности; гость и клиент — нет */
+export function getOptionalStaffFromRequest(req: NextRequest): DecodedToken | null {
+	try {
+		const token = req.cookies.get("authToken")?.value;
+		if (!token) return null;
+		const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
+		if (["superadmin", "admin", "manager"].includes(decoded.role)) return decoded;
+		return null;
+	} catch {
+		return null;
+	}
+}
 
 export async function getUserFromRequest(req: NextRequest, allowedRoles: Role[] = []): Promise<{ user?: DecodedToken; error?: string; status?: number }> {
 	try {

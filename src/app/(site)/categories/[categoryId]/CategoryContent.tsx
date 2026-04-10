@@ -1,6 +1,7 @@
 import styles from "./styles.module.scss";
 import CategoryPageClient from "./CategoryPageClient";
 import { prisma } from "@/lib/prisma";
+import { notFound } from "next/navigation";
 
 // Функция для загрузки данных категории напрямую из базы данных
 // Используем Prisma напрямую вместо HTTP-запросов к API
@@ -46,6 +47,11 @@ async function loadCategoryData(categoryId: string) {
 
 	if (!category) {
 		throw new Error("Категория не найдена");
+	}
+
+	// Скрытые с витрины категории недоступны по прямой ссылке для посетителей
+	if (category.visibleOnSite === false) {
+		notFound();
 	}
 
 	// Преобразуем данные товаров: удаляем supplierPrice и форматируем фильтры

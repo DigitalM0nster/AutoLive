@@ -4,6 +4,7 @@ import styles from "./styles.module.scss";
 import CONFIG from "@/lib/config";
 import { slugify } from "@/lib/slugify";
 import type { Promotion } from "@/lib/types";
+import { getInternalApiBaseUrl } from "@/lib/internalApiBaseUrl";
 
 // Не статически генерируем при build — страница запрашивает API при каждом запросе (для Vercel и локального build)
 export const dynamic = "force-dynamic";
@@ -15,7 +16,7 @@ export const metadata = {
 };
 
 export default async function Promotions() {
-	const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "";
+	const baseUrl = await getInternalApiBaseUrl();
 	const res = await fetch(`${baseUrl}/api/promotions`, {
 		next: { revalidate: 3600 },
 	});

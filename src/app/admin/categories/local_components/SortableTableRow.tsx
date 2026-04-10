@@ -12,12 +12,14 @@ type SortableTableRowProps = {
 	title: string;
 	image?: string;
 	filtersCount: number;
+	/** false — скрыта с витрины */
+	visibleOnSite?: boolean;
 	onDeleteRequest: (category: any) => void;
 	canDelete: boolean;
 	canDrag: boolean; // Новый проп для определения возможности перетаскивания
 };
 
-export default function SortableTableRow({ id, title, image, filtersCount, onDeleteRequest, canDelete, canDrag }: SortableTableRowProps) {
+export default function SortableTableRow({ id, title, image, filtersCount, visibleOnSite = true, onDeleteRequest, canDelete, canDrag }: SortableTableRowProps) {
 	// Всегда вызываем useSortable - это требование React Hooks
 	// Но используем canDrag для условного применения функциональности
 	const sortableProps = useSortable({ id });
@@ -54,6 +56,9 @@ export default function SortableTableRow({ id, title, image, filtersCount, onDel
 				<Link href={`/admin/categories/${id}`} className="categoryLink">
 					{title}
 				</Link>
+				{!visibleOnSite ? (
+					<span style={{ display: "block", fontSize: 12, color: "#92400e", marginTop: 4 }}>Скрыта на сайте</span>
+				) : null}
 			</td>
 			<td className="tableCell">{filtersCount}</td>
 			{user?.role === "superadmin" ? (

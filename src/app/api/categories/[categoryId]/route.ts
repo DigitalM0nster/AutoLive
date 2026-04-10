@@ -60,10 +60,17 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 			return NextResponse.json({ error: "Категория не найдена" }, { status: 404 });
 		}
 
+		const visibleRaw = formData.get("visibleOnSite");
+		const visibleOnSite =
+			visibleRaw === null || visibleRaw === undefined ? undefined : visibleRaw === "true" || visibleRaw === "on";
+
 		// Подготавливаем данные для обновления категории
-		const updateData: any = {
+		const updateData: Record<string, unknown> = {
 			title: title.trim(),
 		};
+		if (visibleOnSite !== undefined) {
+			updateData.visibleOnSite = visibleOnSite;
+		}
 
 		// Обрабатываем загрузку изображения
 		if (imageFile && imageFile.size > 0) {
@@ -87,7 +94,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 			// Обновляем категорию
 			const category = await tx.category.update({
 				where: { id: categoryId },
-				data: updateData,
+				data: updateData as any,
 			});
 
 			// Обрабатываем фильтры если они есть

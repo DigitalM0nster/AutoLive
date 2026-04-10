@@ -3,11 +3,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { getOptionalStaffFromRequest } from "@/middleware/permissionMiddleware";
 
 export async function GET(request: NextRequest) {
 	try {
 		const { searchParams } = new URL(request.url);
 		const departmentId = searchParams.get("departmentId");
+		const staff = getOptionalStaffFromRequest(request);
+		const visibilityFilter = staff ? {} : { visibleOnSite: true };
 
 		// Получаем категории с количеством связанных фильтров
 		let categories;
@@ -15,6 +18,7 @@ export async function GET(request: NextRequest) {
 			// Если указан отдел, получаем только категории, доступные для этого отдела
 			categories = await prisma.category.findMany({
 				where: {
+					...visibilityFilter,
 					allowedDepartments: {
 						some: {
 							departmentId: parseInt(departmentId),
@@ -26,6 +30,7 @@ export async function GET(request: NextRequest) {
 					title: true,
 					image: true,
 					order: true,
+					visibleOnSite: true,
 					_count: {
 						select: {
 							Filter: true, // Подсчитываем количество фильтров
@@ -35,13 +40,15 @@ export async function GET(request: NextRequest) {
 				orderBy: { order: "asc" },
 			});
 		} else {
-			// Если отдел не указан, получаем все категории
+			// Если отдел не указан, получаем все категории (для витрины — только visibleOnSite)
 			categories = await prisma.category.findMany({
+				where: visibilityFilter,
 				select: {
 					id: true,
 					title: true,
 					image: true,
 					order: true,
+					visibleOnSite: true,
 					_count: {
 						select: {
 							Filter: true, // Подсчитываем количество фильтров
@@ -58,6 +65,7 @@ export async function GET(request: NextRequest) {
 			title: category.title,
 			image: category.image,
 			order: category.order, // Добавляем поле order в ответ
+			visibleOnSite: category.visibleOnSite,
 			filtersCount: category._count.Filter,
 		}));
 
@@ -98,6 +106,8 @@ export async function POST(request: NextRequest) {
 		const title = formData.get("title") as string;
 		const imageFile = formData.get("image") as File | null;
 		const filtersJson = formData.get("filters") as string;
+		const visibleRaw = formData.get("visibleOnSite");
+		const visibleOnSite = visibleRaw === "false" ? false : true;
 
 		if (!title || !title.trim()) {
 			return NextResponse.json({ error: "Название категории обязательно" }, { status: 400 });
@@ -149,6 +159,7 @@ export async function POST(request: NextRequest) {
 				data: {
 					title: title.trim(),
 					order: newOrder,
+					visibleOnSite,
 					// Пока не добавляем изображение, нужно реализовать загрузку файлов
 				},
 			});

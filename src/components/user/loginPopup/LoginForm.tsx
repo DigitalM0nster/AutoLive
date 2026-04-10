@@ -1,16 +1,23 @@
 // src/components/user/loginPopup/LoginForm.tsx
+// Телефон без PatternFormat: только цифры (10), префикс +7 отдельно — так не ломается курсор на планшетах.
 
 import { useState, FormEvent } from "react";
 import styles from "./styles.module.scss";
-import PhoneInput from "@/components/ui/phoneInput/PhoneInput";
 
 interface LoginFormProps {
 	onLogin: (phone: string, password: string) => Promise<void>;
 	switchToReset: () => void;
 }
 
+/** Оставляем до 10 цифр после кода страны; поддержка вставки +7… / 8… */
+function normalizeLoginPhoneDigits(raw: string): string {
+	let d = raw.replace(/\D/g, "");
+	if (d.length === 11 && d.startsWith("7")) d = d.slice(1);
+	if (d.length === 11 && d.startsWith("8")) d = d.slice(1);
+	return d.slice(0, 10);
+}
+
 export default function LoginForm({ onLogin, switchToReset }: LoginFormProps) {
-	// Храним в состоянии только цифры (например, "9954091882")
 	const [phone, setPhone] = useState<string>("");
 	const [password, setPassword] = useState<string>("");
 	const [phoneError, setPhoneError] = useState<string>("");
@@ -21,7 +28,6 @@ export default function LoginForm({ onLogin, switchToReset }: LoginFormProps) {
 		setPhoneError("");
 		setPasswordError("");
 
-		// Ожидаем, что номер состоит ровно из 10 цифр
 		if (phone.length !== 10) {
 			setPhoneError("Введите корректный номер телефона");
 			return;
@@ -34,7 +40,6 @@ export default function LoginForm({ onLogin, switchToReset }: LoginFormProps) {
 		try {
 			await onLogin(phone, password);
 		} catch (error: any) {
-			// Если error.code отсутствует, используем error.message
 			const errorCode = error.code || error.message;
 			if (errorCode === "USER_NOT_FOUND") {
 				setPhoneError("Пользователь не найден");
@@ -49,7 +54,23 @@ export default function LoginForm({ onLogin, switchToReset }: LoginFormProps) {
 	return (
 		<form onSubmit={handleSubmit} className={styles.inputsBlock}>
 			<div className={styles.inputBlock}>
-				<PhoneInput value={phone} onValueChange={(rawValue: string, formattedValue: string) => setPhone(rawValue)} inputClassName={styles.inputField} />
+				<div className={styles.phoneRow}>
+					<span className={styles.phonePrefix} aria-hidden>
+						+7
+					</span>
+					<input
+						id="login-phone"
+						type="tel"
+						name="phone"
+						inputMode="numeric"
+						autoComplete="tel-national"
+						placeholder="9123456789"
+						value={phone}
+						onChange={(e) => setPhone(normalizeLoginPhoneDigits(e.target.value))}
+						className={styles.inputField}
+						aria-label="Телефон, 10 цифр без кода страны"
+					/>
+				</div>
 				{phoneError && <div className={styles.errorMessage}>{phoneError}</div>}
 			</div>
 			<div className={styles.inputBlock}>

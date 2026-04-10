@@ -22,7 +22,8 @@ type Category = {
 	title: string;
 	image?: string;
 	filtersCount: number;
-	order: number; // Добавляем поле order для отслеживания стандартной сортировки
+	order: number;
+	visibleOnSite?: boolean;
 };
 
 export default function AllCategoriesTable() {
@@ -59,9 +60,8 @@ export default function AllCategoriesTable() {
 		const fetchCategories = async () => {
 			setLoading(true);
 			try {
-				const res = await fetch("/api/categories");
+				const res = await fetch("/api/categories", { credentials: "include" });
 				const data = await res.json();
-				console.log(data);
 				// Преобразуем данные, добавляя поле order
 				const categoriesWithOrder = Array.isArray(data)
 					? data.map((cat: any) => ({
@@ -315,6 +315,7 @@ export default function AllCategoriesTable() {
 														title={cat.title}
 														image={cat.image}
 														filtersCount={cat.filtersCount}
+														visibleOnSite={cat.visibleOnSite !== false}
 														onDeleteRequest={requestDelete}
 														canDelete={canDeleteCategories()}
 														canDrag={true} // Передаем флаг что можно перетаскивать
@@ -391,6 +392,7 @@ export default function AllCategoriesTable() {
 												title={cat.title}
 												image={cat.image}
 												filtersCount={cat.filtersCount}
+												visibleOnSite={cat.visibleOnSite !== false}
 												onDeleteRequest={requestDelete}
 												canDelete={canDeleteCategories()}
 												canDrag={false} // Передаем флаг что нельзя перетаскивать

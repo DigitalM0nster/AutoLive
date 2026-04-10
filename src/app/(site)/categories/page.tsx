@@ -11,10 +11,11 @@ import type { Metadata } from "next";
 import type { Category } from "@/lib/types";
 import CategoriesContent from "./CategoriesContent";
 import CategoriesSkeleton from "./CategoriesSkeleton";
+import { getInternalApiBaseUrl } from "@/lib/internalApiBaseUrl";
 
 export async function generateMetadata(): Promise<Metadata> {
 	try {
-		const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "";
+		const baseUrl = await getInternalApiBaseUrl();
 		const res = await fetch(`${baseUrl}/api/categories`, {
 			next: { revalidate: 3600 },
 		});

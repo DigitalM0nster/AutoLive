@@ -72,6 +72,28 @@
 					background-color: #fab8b8;
 				}
 			}
+
+			.phoneRow {
+				width: calc(100% - 40px);
+				max-width: 300px;
+				flex-direction: row;
+				align-items: center;
+				gap: 10px;
+			}
+
+			.phonePrefix {
+				font-family: Montserrat;
+				font-size: 20px;
+				font-weight: 600;
+				flex-shrink: 0;
+			}
+
+			.inputField {
+				flex: 1;
+				min-width: 0;
+				width: auto;
+			}
+
 			input {
 				width: calc(100% - 40px);
 				font-family: Montserrat;
@@ -88,6 +110,12 @@
 				&:focus {
 					outline: none;
 				}
+			}
+
+			.phoneRow input.inputField {
+				width: auto;
+				flex: 1;
+				min-width: 0;
 			}
 
 			.noPassword {

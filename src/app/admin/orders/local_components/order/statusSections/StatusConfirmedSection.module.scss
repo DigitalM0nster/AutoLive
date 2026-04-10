@@ -1,0 +1,37 @@
+.comparisonNeutral {
+	border-radius: 8px;
+	padding: 12px 14px;
+	font-size: 14px;
+	line-height: 1.45;
+	margin-bottom: 12px;
+	background: #f4f4f5;
+	border: 1px solid #e4e4e7;
+	color: #3f3f46;
+}
+
+.comparisonWarn {
+	border-radius: 8px;
+	padding: 12px 14px;
+	font-size: 14px;
+	line-height: 1.45;
+	margin-bottom: 12px;
+	background: #fffbeb;
+	border: 1px solid #fcd34d;
+	color: #92400e;
+}
+
+.comparisonTitle {
+	font-weight: 600;
+	margin-bottom: 8px;
+}
+
+.comparisonList {
+	margin: 0;
+	padding-left: 18px;
+}
+
+.lineHintWarn {
+	margin: 8px 0 0;
+	font-size: 13px;
+	color: #b45309;
+}

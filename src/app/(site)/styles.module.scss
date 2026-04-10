@@ -111,8 +111,8 @@
 	align-items: center;
 	text-align: center;
 	border-radius: 50px;
-	background-color: #b0cb1f;
-	border: 1px solid #b0cb1f;
+	background-color: var(--site-color-accent, #b0cb1f);
+	border: 1px solid var(--site-color-accent, #b0cb1f);
 	color: white;
 	width: fit-content;
 	height: fit-content;
@@ -125,7 +125,7 @@
 	gap: 10px;
 
 	&:hover {
-		background-color: #3d3d3d;
+		background-color: var(--site-color-primary, #3d3d3d);
 	}
 
 	.buttonIcon {
@@ -181,8 +181,8 @@ a.pageItem,
 		width: fit-content;
 		height: fit-content;
 		border-radius: 50px;
-		border: 1px solid #b0cb1f;
-		background-color: #b0cb1f;
+		border: 1px solid var(--site-color-accent, #b0cb1f);
+		background-color: var(--site-color-accent, #b0cb1f);
 		color: white;
 		font-size: 20px;
 		font-weight: 500;
@@ -190,7 +190,7 @@ a.pageItem,
 		transition: 0.25s;
 
 		&:hover {
-			background-color: #3d3d3d;
+			background-color: var(--site-color-primary, #3d3d3d);
 		}
 	}
 
@@ -270,7 +270,7 @@ a.pageItem,
 
 	.button {
 		&.callButton {
-			background-color: #3d3d3d;
+			background-color: var(--site-color-primary, #3d3d3d);
 		}
 	}
 }

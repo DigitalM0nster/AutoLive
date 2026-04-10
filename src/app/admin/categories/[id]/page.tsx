@@ -45,6 +45,7 @@ export default async function CategoryPage({ params }: PageParams) {
 		title: category.title,
 		image: category.image || "",
 		order: category.order || 0,
+		visibleOnSite: category.visibleOnSite !== false,
 		filters:
 			category.Filter?.map((filter) => ({
 				id: filter.id,

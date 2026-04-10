@@ -1,13 +1,12 @@
 import Link from "next/link";
 import styles from "./styles.module.scss";
 import type { Category, Product } from "@/lib/types";
+import { getInternalApiBaseUrl } from "@/lib/internalApiBaseUrl";
 
 // Функция для загрузки данных категорий
 // Вынесена отдельно для лучшей читаемости и тестируемости
 async function loadCategoriesData(): Promise<{ categories: Category[]; products: Product[] }> {
-	const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "";
-	console.log("Base URL:", baseUrl);
-	console.log("Full URL:", `${baseUrl}/api/categories`);
+	const baseUrl = await getInternalApiBaseUrl();
 
 	// Загружаем категории
 	const categoriesRes = await fetch(`${baseUrl}/api/categories`, {
@@ -29,11 +28,8 @@ async function loadCategoriesData(): Promise<{ categories: Category[]; products:
 		throw new Error(`Ошибка API продуктов: ${productsRes.status}`);
 	}
 
-	// Получаем текст ответа для диагностики
 	const categoriesText = await categoriesRes.text();
 	const productsText = await productsRes.text();
-	console.log("Ответ API категорий (первые 200 символов):", categoriesText.substring(0, 200));
-	console.log("Ответ API продуктов (первые 200 символов):", productsText.substring(0, 200));
 
 	// Парсим JSON данные
 	let categories: Category[];

@@ -67,6 +67,55 @@ function startOfLocalDayMs(value: string | Date): number | null {
 	return d.getTime();
 }
 
+function formatRuCalendarDayFromMs(ms: number): string {
+	const d = new Date(ms);
+	const day = String(d.getDate()).padStart(2, "0");
+	const month = String(d.getMonth() + 1).padStart(2, "0");
+	const year = d.getFullYear();
+	return `${day}.${month}.${year}`;
+}
+
+/** Конфликт: дата поставщика позже финальной даты клиенту (та же логика, что и при сохранении) */
+export type SupplierFinalDateConflict = {
+	productSku: string;
+	field: string;
+	/** Сколько календарных дней поставщик «опоздал» относительно финальной даты */
+	daysLate: number;
+	message: string;
+};
+
+/**
+ * Сравнение дат поставщика и финальной поставки клиенту (для UI до сохранения и для валидации).
+ */
+export function getSupplierVsFinalDeliveryDateConflicts(
+	finalDeliveryDate: string | Date | null | undefined,
+	orderItems: OrderItemValidationShape[] | undefined,
+): SupplierFinalDateConflict[] {
+	const out: SupplierFinalDateConflict[] = [];
+	if (isMissingFinalDeliveryDate(finalDeliveryDate) || !orderItems?.length) {
+		return out;
+	}
+	const finalMs = startOfLocalDayMs(finalDeliveryDate as string | Date);
+	if (finalMs == null) return out;
+
+	for (const item of orderItems) {
+		if (!item.supplierDeliveryDate) continue;
+		const supplierMs = startOfLocalDayMs(item.supplierDeliveryDate as string | Date);
+		if (supplierMs == null) continue;
+		if (supplierMs > finalMs) {
+			const daysLate = Math.round((supplierMs - finalMs) / 86400000);
+			const field = `supplierDeliveryDate_${item.product_sku}`;
+			out.push({
+				productSku: item.product_sku,
+				field,
+				daysLate,
+				message: `Позиция ${item.product_sku}: дата поставщика ${formatRuCalendarDayFromMs(supplierMs)} позже финальной даты клиенту ${formatRuCalendarDayFromMs(finalMs)} на ${daysLate} календ. дн.`,
+			});
+		}
+	}
+	return out;
+}
+
 /**
  * Проверяет, что для целевого статуса заполнены все поля по цепочке статусов (created → … → target).
  * Используется в админ-форме и в API при сохранении заказа.
@@ -100,21 +149,8 @@ export function validateOrderMergedStateForStatus(input: OrderMergedValidationIn
 		}
 
 		// Дата поставки поставщиком по позиции не может быть позже даты финальной поставки клиенту
-		if (!isMissingFinalDeliveryDate(input.finalDeliveryDate) && input.finalDeliveryDate != null && input.orderItems?.length) {
-			const finalMs = startOfLocalDayMs(input.finalDeliveryDate as string | Date);
-			if (finalMs != null) {
-				for (const item of input.orderItems) {
-					if (!item.supplierDeliveryDate) continue;
-					const supplierMs = startOfLocalDayMs(item.supplierDeliveryDate as string | Date);
-					if (supplierMs == null) continue;
-					if (supplierMs > finalMs) {
-						push(
-							`Дата поставки поставщиком не может быть позже даты финальной поставки клиенту (позиция ${item.product_sku})`,
-							`supplierDeliveryDate_${item.product_sku}`,
-						);
-					}
-				}
-			}
+		for (const c of getSupplierVsFinalDeliveryDateConflicts(input.finalDeliveryDate, input.orderItems)) {
+			push(c.message, c.field);
 		}
 	}
 

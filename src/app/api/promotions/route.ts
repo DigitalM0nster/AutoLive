@@ -16,8 +16,9 @@ export async function GET() {
 export async function POST(req: NextRequest) {
 	const { user, error, status } = await getUserFromRequest(req);
 	if (!user) return NextResponse.json({ error }, { status });
+	// Раздел «Контент» в админке доступен только суперадмину — создание акций тем же правилом
 	if (user.role !== "superadmin") {
-		return new NextResponse("Недостаточно прав", { status: 403 });
+		return NextResponse.json({ error: "Недостаточно прав (нужна роль суперадмин)" }, { status: 403 });
 	}
 
 	try {
@@ -37,6 +38,6 @@ export async function POST(req: NextRequest) {
 		return NextResponse.json(created);
 	} catch (err) {
 		console.error("Ошибка при создании акции:", err);
-		return new NextResponse("Ошибка сервера", { status: 500 });
+		return NextResponse.json({ error: "Ошибка сервера при создании акции" }, { status: 500 });
 	}
 }

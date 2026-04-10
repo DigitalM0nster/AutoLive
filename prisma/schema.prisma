@@ -35,6 +35,8 @@ model Category {
     image     String?  @map("image") @db.VarChar(255)
     createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
     order     Int      @default(0) @map("order")
+    /// Показывать категорию в списке на сайте (витрина)
+    visibleOnSite Boolean @default(true) @map("visible_on_site")
 
     // Связи
     products           Product[]
