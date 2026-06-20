@@ -733,7 +733,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
 	const resolvedParams = await params;
-	return withPermission(updateBookingHandler, "manage_bookings", ["superadmin", "admin"])(req, {
+	return withPermission(updateBookingHandler, "manage_bookings", ["superadmin", "admin", "manager"])(req, {
 		params: resolvedParams,
 	});
 }

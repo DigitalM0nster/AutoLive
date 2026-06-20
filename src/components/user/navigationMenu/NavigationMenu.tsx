@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import styles from "./styles.module.scss";
 import { Product, Category } from "@/lib/types";
@@ -25,6 +26,7 @@ export default function NavigationMenu({ productId }: NavigationMenuProps) {
 			"/service-kits": "Комплекты ТО",
 			"/booking": "Запись на ТО",
 			"/products": "Запчасти",
+			"/catalog": "Запчасти",
 			"/contacts": "Контакты",
 		}),
 		[],
@@ -193,25 +195,33 @@ export default function NavigationMenu({ productId }: NavigationMenuProps) {
 			.filter(Boolean);
 	}, [pathname, categories, product, getCategoryTitle, pages]);
 
+	const handleBack = () => {
+		if (typeof window !== "undefined" && window.history.length > 1) {
+			router.back();
+		} else {
+			router.push("/");
+		}
+	};
+
 	return (
 		<div className={styles.navigationMenu}>
 			<div className={`${styles.navLine} ${styles.crumbs}`}>
-				<div className={styles.backButtonBlock} onClick={() => window.history.back()}>
+				<button type="button" className={styles.backButtonBlock} onClick={handleBack}>
 					← Назад
-				</div>
+				</button>
 				<div className={styles.navs}>
 					<div className={styles.navBlock}>
-						<div className={styles.nav} onClick={() => router.push("/")}>
+						<Link href="/" className={styles.nav}>
 							Главная
-						</div>
+						</Link>
 						{breadcrumbs.length > 0 && <div className={`${styles.nav} ${styles.separator}`}> / </div>}
 					</div>
 
 					{(breadcrumbs as { name: string; path: string }[]).map((crumb, index) => (
 						<div key={crumb.path} className={styles.navBlock}>
-							<div className={`${styles.nav} ${pathname === crumb.path ? styles.active : ""}`} onClick={() => router.push(crumb.path)}>
+							<Link href={crumb.path} className={`${styles.nav} ${pathname === crumb.path ? styles.active : ""}`}>
 								{crumb.name}
-							</div>
+							</Link>
 							{index < breadcrumbs.length - 1 && <div className={`${styles.nav} ${styles.separator}`}> / </div>}
 						</div>
 					))}
@@ -220,7 +230,9 @@ export default function NavigationMenu({ productId }: NavigationMenuProps) {
 
 			<div className={styles.navLine}>
 				<div className={styles.pages}>
-					{Object.entries(pages).map(([path, name]) => {
+					{Object.entries(pages)
+						.filter(([path]) => path !== "/catalog")
+						.map(([path, name]) => {
 						// Специальная логика для продуктов с категорией
 						let isActive = pathname.startsWith(path);
 
@@ -232,9 +244,9 @@ export default function NavigationMenu({ productId }: NavigationMenuProps) {
 						}
 
 						return (
-							<div key={path} className={`button ${styles.pageButton} ${isActive ? styles.active : ""}`} onClick={() => router.push(path)}>
+							<Link key={path} href={path} className={`button ${styles.pageButton} ${isActive ? styles.active : ""}`}>
 								{name}
-							</div>
+							</Link>
 						);
 					})}
 				</div>

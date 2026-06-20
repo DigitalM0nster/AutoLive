@@ -65,34 +65,49 @@ export function validatePhoneDigits(raw: string): boolean {
 }
 
 /** Серверная/клиентская проверка обязательных полей по схеме из БД */
+export type HomepageRequestValidationError = {
+	fieldKey: string;
+	fieldLabel: string;
+	message: string;
+};
+
 export function validateHomepageRequestValues(
 	fields: FormField[],
 	get: (key: string) => unknown,
-): { ok: true } | { ok: false; message: string } {
+): { ok: true } | { ok: false; message: string; fieldKey: string; fieldLabel: string } {
 	for (const field of fields) {
 		if (field.type === "custom") {
 			if (field.required && !customBlockSatisfied(field, get)) {
+				const label = field.placeholder || "VIN или фото";
 				return {
 					ok: false,
-					message: `Заполните поле «${field.placeholder}» (хотя бы одно из двух значений)`,
+					fieldKey: `field-${field.id}`,
+					fieldLabel: label,
+					message: `Заполните поле «${label}» (хотя бы одно из двух значений)`,
 				};
 			}
 			continue;
 		}
 		const v = get(field.id);
+		const label = field.placeholder || field.id;
 		if (field.required) {
 			if (field.type === "file") {
 				if (!hasNonEmptyFile(v)) {
-					return { ok: false, message: `Поле «${field.placeholder}» обязательно` };
+					return { ok: false, fieldKey: field.id, fieldLabel: label, message: `Поле «${label}» обязательно` };
 				}
 			} else {
 				if (!hasNonEmptyString(v)) {
-					return { ok: false, message: `Поле «${field.placeholder}» обязательно` };
+					return { ok: false, fieldKey: field.id, fieldLabel: label, message: `Поле «${label}» обязательно` };
 				}
 			}
 		}
-		if (field.type === "phone" && hasNonEmptyString(v) && !validatePhoneDigits(String(v))) {
-			return { ok: false, message: "Введите корректный телефон (10–15 цифр)" };
+		if (field.type === "phone") {
+			if (field.required && !hasNonEmptyString(v)) {
+				return { ok: false, fieldKey: field.id, fieldLabel: label, message: `Поле «${label}» обязательно` };
+			}
+			if (hasNonEmptyString(v) && !validatePhoneDigits(String(v))) {
+				return { ok: false, fieldKey: field.id, fieldLabel: label, message: `Поле «${label}»: введите корректный телефон` };
+			}
 		}
 	}
 	return { ok: true };

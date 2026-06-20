@@ -36,15 +36,21 @@ export default async function LegalPolicyPageContent({ variant }: { variant: Var
 
 					{fileUrl ? (
 						<>
-							<p className={shared.lead}>Документ загружен в административной панели. Если просмотр не открылся в окне ниже, откройте файл по ссылке.</p>
+							<p className={shared.lead}>Документ загружен в административной панели.</p>
 							<div className={styles.toolbar}>
 								<a className={styles.openLink} href={fileUrl} target="_blank" rel="noopener noreferrer">
 									Открыть документ в новой вкладке
 								</a>
 							</div>
-							<div className={styles.frameWrap}>
-								<iframe className={styles.frame} src={fileUrl} title={heading} />
-							</div>
+							{fileUrl.toLowerCase().includes(".pdf") || fileUrl.startsWith("data:application/pdf") ? (
+								<div className={styles.frameWrap}>
+									<iframe className={styles.frame} src={fileUrl} title={heading} />
+								</div>
+							) : (
+								<p className={shared.lead}>
+									Для просмотра DOC/DOCX откройте файл по ссылке выше — встроенный просмотр поддерживает только PDF.
+								</p>
+							)}
 						</>
 					) : (
 						<div className={styles.emptyBox}>

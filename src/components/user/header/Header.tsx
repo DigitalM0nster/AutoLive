@@ -4,6 +4,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { formatPhoneDisplay } from "@/lib/phoneUtils";
 import { useAuthStore } from "@/store/authStore";
 import { useUiStore } from "@/store/uiStore";
 import { useCartStore } from "@/store/cartStore";
@@ -46,8 +48,7 @@ export default function Header() {
 		}
 
 		// Если нет имени, форматируем номер телефона
-		const formattedPhone = user.phone.replace(/(\d{3})(\d{3})(\d{2})(\d{2})$/, "($1) $2-$3-$4");
-		return `+7 ${formattedPhone}`;
+		return formatPhoneDisplay(user.phone);
 	};
 
 	// Авторизация при загрузке
@@ -86,9 +87,9 @@ export default function Header() {
 				<div className={styles.headerContent}>
 					<div className={styles.leftBlock}>
 						{logoUrl && (
-							<div className={styles.logo} onClick={() => router.push("/")}>
+							<Link href="/" className={styles.logo}>
 								<img src={logoUrl} alt="Логотип" />
-							</div>
+							</Link>
 						)}
 						{(user?.role === "admin" || user?.role === "superadmin" || user?.role === "manager") && (
 							<div className={styles.dashboardButton} onClick={() => router.push("/admin/dashboard")}>
@@ -101,13 +102,13 @@ export default function Header() {
 							{ label: "Материалы для ТО", path: "/categories" },
 							{ label: "Комплекты ТО", path: "/service-kits" },
 							{ label: "Запись на ТО", path: "/booking" },
-							{ label: "Запчасти", path: "/catalog" },
+							{ label: "Запчасти", path: "/products" },
 							{ label: "Акции", path: "/promotions" },
 							{ label: "Контакты", path: "/contacts" },
 						].map((item) => (
-							<div key={item.path} className={styles.navLi} onClick={() => router.push(item.path)}>
+							<Link key={item.path} href={item.path} className={styles.navLi}>
 								{item.label}
-							</div>
+							</Link>
 						))}
 					</div>
 					<div className={styles.rightBlock}>
@@ -152,7 +153,9 @@ export default function Header() {
 									<div className={styles.phoneIcon}>
 										<img src="/images/phoneIcon.svg" alt="Телефон" />
 									</div>
-									<div className={styles.phoneNumber}>{siteSettings.headerPhone}</div>
+									<a className={styles.phoneNumber} href={`tel:${siteSettings.headerPhone.replace(/\D/g, "").replace(/^8/, "7")}`}>
+										{formatPhoneDisplay(siteSettings.headerPhone)}
+									</a>
 								</div>
 							</div>
 						)}

@@ -23,14 +23,20 @@ export async function POST(req: NextRequest) {
 
 	try {
 		const body = await req.json();
+		const title = String(body.title || "").trim();
+		if (!title) {
+			return NextResponse.json({ error: "Укажите название акции" }, { status: 400 });
+		}
+
+		const maxOrder = await prisma.promotion.aggregate({ _max: { order: true } });
 		const created = await prisma.promotion.create({
 			data: {
-				title: body.title,
-				description: body.description,
-				image: body.imageUrl,
-				buttonText: body.buttonText,
-				buttonLink: body.buttonLink,
-				order: 0,
+				title,
+				description: body.description ? String(body.description).trim() : null,
+				image: body.imageUrl ? String(body.imageUrl).trim() : null,
+				buttonText: body.buttonText ? String(body.buttonText).trim() : null,
+				buttonLink: body.buttonLink ? String(body.buttonLink).trim() : null,
+				order: (maxOrder._max.order ?? 0) + 1,
 				startDate: body.startDate ? new Date(body.startDate) : null,
 				endDate: body.endDate ? new Date(body.endDate) : null,
 			},

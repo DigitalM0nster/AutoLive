@@ -1,0 +1,38 @@
+.screen {
+	padding-top: 120px;
+	min-height: calc(100vh - 120px);
+	justify-content: center;
+	align-items: center;
+}
+
+.content {
+	flex-direction: column;
+	align-items: center;
+	gap: 16px;
+	text-align: center;
+	padding: 40px 20px;
+}
+
+.code {
+	font-size: 96px;
+	font-weight: 700;
+	line-height: 1;
+	color: var(--site-color-accent, #b0cb1f);
+}
+
+.title {
+	font-size: 28px;
+	font-weight: 600;
+	margin: 0;
+}
+
+.text {
+	font-size: 16px;
+	color: #666;
+	margin: 0;
+	max-width: 420px;
+}
+
+.homeButton {
+	margin-top: 12px;
+}

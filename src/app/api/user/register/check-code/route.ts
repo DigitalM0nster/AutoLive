@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { phoneForStorage } from "@/lib/phoneUtils";
 
 export async function POST(request: NextRequest) {
 	try {
-		const { phone } = await request.json();
+		const { phone: rawPhone } = await request.json();
+		const phone = phoneForStorage(String(rawPhone || ""));
 		if (!phone) {
 			return NextResponse.json({ error: "Введите телефон" }, { status: 400 });
 		}

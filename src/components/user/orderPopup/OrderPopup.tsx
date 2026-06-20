@@ -5,22 +5,24 @@ import styles from "@/components/user/loginPopup/styles.module.scss";
 import { useUiStore } from "@/store/uiStore";
 import { HomepageContentData, FormField, CustomFieldSubType } from "@/app/api/homepage-content/route";
 import PersonalDataConsent from "@/components/user/personalDataConsent/PersonalDataConsent";
+import PhoneInput from "@/components/ui/phoneInput/PhoneInput";
 import { formFieldsToPartDefs, validateHomepageRequestValues } from "@/lib/homepageRequestFormShared";
+import { showSuccessToast } from "@/components/ui/toast/ToastProvider";
 
 export default function OrderPopup() {
 	const { isActiveOrderPopup, deactivateOrderPopup, homepageFormData } = useUiStore();
 	const [formValues, setFormValues] = useState<Record<string, string | File>>({});
+	const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 	const [submitting, setSubmitting] = useState(false);
 	const [personalDataConsent, setPersonalDataConsent] = useState(false);
 	const [consentShowError, setConsentShowError] = useState(false);
 	const textareaRefs = useRef<Record<string, HTMLTextAreaElement | null>>({});
 
-	// Загружаем данные формы при открытии попапа, если их нет в store
 	useEffect(() => {
 		if (isActiveOrderPopup && !homepageFormData) {
 			loadFormData();
 		}
-	}, [isActiveOrderPopup]);
+	}, [isActiveOrderPopup, homepageFormData]);
 
 	const loadFormData = async () => {
 		try {
@@ -34,10 +36,19 @@ export default function OrderPopup() {
 		}
 	};
 
-	// Функция для автоувеличения высоты textarea
+	const clearFieldError = (key: string) => {
+		setFieldErrors((prev) => {
+			if (!prev[key]) return prev;
+			const next = { ...prev };
+			delete next[key];
+			return next;
+		});
+	};
+
 	const handleTextareaInput = (fieldId: string, e: React.FormEvent<HTMLTextAreaElement>) => {
 		const value = e.currentTarget.value;
 		setFormValues((prev) => ({ ...prev, [fieldId]: value }));
+		clearFieldError(fieldId);
 
 		const textarea = textareaRefs.current[fieldId];
 		if (textarea) {
@@ -51,20 +62,25 @@ export default function OrderPopup() {
 	const handleInputChange = (fieldId: string, e: React.ChangeEvent<HTMLInputElement>) => {
 		if (e.target.type === "file") {
 			const file = e.target.files?.[0];
-			if (file) {
-				setFormValues((prev) => ({ ...prev, [fieldId]: file }));
-			}
+			setFormValues((prev) => {
+				const next = { ...prev };
+				if (file) next[fieldId] = file;
+				else delete next[fieldId];
+				return next;
+			});
 		} else {
 			setFormValues((prev) => ({ ...prev, [fieldId]: e.target.value }));
 		}
+		clearFieldError(fieldId);
 	};
 
 	const handleSubmit = async () => {
 		if (!homepageFormData) return;
 
+		setFieldErrors({});
+
 		if (!personalDataConsent) {
 			setConsentShowError(true);
-			alert("Отметьте согласие на обработку персональных данных.");
 			return;
 		}
 		setConsentShowError(false);
@@ -72,7 +88,7 @@ export default function OrderPopup() {
 		const getValue = (key: string) => formValues[key] ?? null;
 		const check = validateHomepageRequestValues(homepageFormData.formFields, getValue);
 		if (!check.ok) {
-			alert(check.message);
+			setFieldErrors({ [check.fieldKey]: check.message });
 			return;
 		}
 
@@ -93,20 +109,19 @@ export default function OrderPopup() {
 			const res = await fetch("/api/homepage-requests", { method: "POST", body: fd });
 			const data = await res.json().catch(() => ({}));
 			if (!res.ok) {
-				alert(typeof data.error === "string" ? data.error : "Ошибка отправки заявки. Попробуйте позже.");
+				setFieldErrors({ _form: typeof data.error === "string" ? data.error : "Ошибка отправки заявки. Попробуйте позже." });
 				return;
 			}
-			alert("Заявка отправлена! Мы свяжемся с вами по телефону.");
+			showSuccessToast("Заявка отправлена! Мы свяжемся с вами по телефону.");
 			setFormValues({});
 			deactivateOrderPopup();
 		} catch {
-			alert("Ошибка отправки заявки. Попробуйте позже.");
+			setFieldErrors({ _form: "Ошибка отправки заявки. Попробуйте позже." });
 		} finally {
 			setSubmitting(false);
 		}
 	};
 
-	// Используем данные из store или дефолтные значения
 	const formData: HomepageContentData = homepageFormData || {
 		firstBlockTitle: "Выбрать запчасти с менеджером:",
 		secondBlockTitle: "Выбрать запчасти самостоятельно:",
@@ -146,13 +161,36 @@ export default function OrderPopup() {
 		formSubmitButtonText: "Оставить заказ",
 	};
 
-	// Рендер подполя для кастомного типа
+	const renderFieldError = (key: string) => (fieldErrors[key] ? <div className={styles.fieldError}>{fieldErrors[key]}</div> : null);
+
 	const renderCustomSubField = (subFieldType: CustomFieldSubType, placeholder: string, fieldId: string, subFieldIndex: number) => {
 		const subFieldId = `${fieldId}_${subFieldIndex}`;
 		const value = formValues[subFieldId] || "";
 
 		if (subFieldType === "file") {
-			return <input key={subFieldId} type="file" accept="image/*" onChange={(e) => handleInputChange(subFieldId, e)} placeholder={placeholder} />;
+			return (
+				<input
+					key={subFieldId}
+					type="file"
+					accept="image/*"
+					className={styles.fileInput}
+					onChange={(e) => handleInputChange(subFieldId, e)}
+				/>
+			);
+		}
+
+		if (subFieldType === "phone") {
+			return (
+				<PhoneInput
+					key={subFieldId}
+					value={typeof value === "string" ? value : ""}
+					onValueChange={(raw) => {
+						setFormValues((prev) => ({ ...prev, [subFieldId]: raw }));
+						clearFieldError(subFieldId);
+					}}
+					placeholder={placeholder}
+				/>
+			);
 		}
 
 		if (subFieldType === "textarea") {
@@ -173,7 +211,7 @@ export default function OrderPopup() {
 		return (
 			<input
 				key={subFieldId}
-				type={subFieldType === "phone" ? "tel" : "text"}
+				type="text"
 				placeholder={placeholder}
 				value={typeof value === "string" ? value : ""}
 				onChange={(e) => handleInputChange(subFieldId, e)}
@@ -184,22 +222,33 @@ export default function OrderPopup() {
 	const renderFormField = (field: FormField) => {
 		const fieldId = `field-${field.id}`;
 		const value = formValues[field.id] || "";
+		const errorKey = field.type === "custom" ? fieldId : field.id;
+		const hasError = Boolean(fieldErrors[errorKey] || fieldErrors[field.id]);
 
 		if (field.type === "custom") {
 			const sep = (field.separatorText || "").trim();
 			return (
-				<div key={field.id} className={styles.inputGroup}>
-					{renderCustomSubField(field.firstFieldType || "text", field.firstFieldPlaceholder || "", fieldId, 1)}
-					{sep ? <div className="orText">{sep}</div> : null}
-					{renderCustomSubField(field.secondFieldType || "file", field.secondFieldPlaceholder || "", fieldId, 2)}
+				<div key={field.id} className={`${styles.fieldWrap} ${hasError ? styles.hasError : ""}`}>
+					<div className={styles.inputGroup}>
+						{renderCustomSubField(field.firstFieldType || "text", field.firstFieldPlaceholder || "", fieldId, 1)}
+						{sep ? <div className={styles.orText}>{sep}</div> : null}
+						{renderCustomSubField(field.secondFieldType || "file", field.secondFieldPlaceholder || "", fieldId, 2)}
+					</div>
+					{renderFieldError(errorKey)}
 				</div>
 			);
 		}
 
+		const wrap = (content: React.ReactNode) => (
+			<div key={field.id} className={`${styles.fieldWrap} ${hasError ? styles.hasError : ""}`}>
+				{content}
+				{renderFieldError(field.id)}
+			</div>
+		);
+
 		if (field.type === "textarea") {
-			return (
+			return wrap(
 				<textarea
-					key={field.id}
 					ref={(el) => {
 						textareaRefs.current[field.id] = el;
 					}}
@@ -207,24 +256,34 @@ export default function OrderPopup() {
 					onInput={(e) => handleTextareaInput(field.id, e)}
 					placeholder={field.placeholder}
 					className={styles.autoExpandTextarea}
-					required={field.required}
-				/>
+				/>,
 			);
 		}
 
 		if (field.type === "file") {
-			return <input key={field.id} type="file" accept="image/*" onChange={(e) => handleInputChange(field.id, e)} required={field.required} />;
+			return wrap(<input type="file" accept="image/*" className={styles.fileInput} onChange={(e) => handleInputChange(field.id, e)} />);
 		}
 
-		return (
+		if (field.type === "phone") {
+			return wrap(
+				<PhoneInput
+					value={typeof value === "string" ? value : ""}
+					onValueChange={(raw) => {
+						setFormValues((prev) => ({ ...prev, [field.id]: raw }));
+						clearFieldError(field.id);
+					}}
+					placeholder={field.placeholder}
+				/>,
+			);
+		}
+
+		return wrap(
 			<input
-				key={field.id}
-				type={field.type === "phone" ? "tel" : "text"}
+				type="text"
 				placeholder={field.placeholder}
 				value={typeof value === "string" ? value : ""}
 				onChange={(e) => handleInputChange(field.id, e)}
-				required={field.required}
-			/>
+			/>,
 		);
 	};
 
@@ -244,7 +303,14 @@ export default function OrderPopup() {
 						}}
 						showError={consentShowError}
 					/>
-					<div className={`button ${styles.button}`} onClick={handleSubmit} style={{ cursor: submitting ? "wait" : "pointer" }}>
+					{fieldErrors._form && <div className={styles.fieldError}>{fieldErrors._form}</div>}
+					<div
+						className={`button ${styles.button} ${submitting ? styles.submitWaiting : ""}`}
+						onClick={handleSubmit}
+						role="button"
+						tabIndex={0}
+						onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+					>
 						{submitting ? "Отправка..." : formData.formSubmitButtonText}
 					</div>
 				</div>

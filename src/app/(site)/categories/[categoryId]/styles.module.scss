@@ -4,6 +4,12 @@
 
 	.block {
 		gap: 50px;
+
+		&.catalogRow {
+			flex-direction: row;
+			align-items: flex-start;
+			gap: 30px;
+		}
 	}
 }
 
@@ -176,17 +182,31 @@
 
 .sortingPanel {
 	gap: 30px;
+
 	.sortBlock {
-		gap: 5px;
+		gap: 8px;
+		align-items: center;
+
+		label {
+			font-size: 14px;
+			font-weight: 600;
+		}
 
 		select {
-			border-radius: 0px;
+			height: 40px;
+			padding: 8px 12px;
+			border: 1px solid #ccc;
+			border-radius: 8px;
+			font-size: 14px;
+			background: #fff;
+			min-width: 180px;
 		}
+	}
+}
 
-		option {
-			border-radius: 0px;
-			background-color: red;
-		}
+@media (max-width: 1280px) {
+	.materialContainer .block.catalogRow {
+		flex-direction: column;
 	}
 }
 

@@ -33,7 +33,7 @@ export default function Header() {
 	}, [initAuth]);
 
 	const handleLogout = async () => {
-		await fetch("/api/admin/auth/logout", { method: "POST" });
+		await fetch("/api/admin/logout", { method: "POST" });
 		logout();
 		router.push("/admin/login");
 	};

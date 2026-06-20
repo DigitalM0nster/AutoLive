@@ -1,20 +1,12 @@
 // src/components/user/loginPopup/LoginForm.tsx
-// Телефон без PatternFormat: только цифры (10), префикс +7 отдельно — так не ломается курсор на планшетах.
 
 import { useState, FormEvent } from "react";
 import styles from "./styles.module.scss";
+import PhoneInput from "@/components/ui/phoneInput/PhoneInput";
 
 interface LoginFormProps {
 	onLogin: (phone: string, password: string) => Promise<void>;
 	switchToReset: () => void;
-}
-
-/** Оставляем до 10 цифр после кода страны; поддержка вставки +7… / 8… */
-function normalizeLoginPhoneDigits(raw: string): string {
-	let d = raw.replace(/\D/g, "");
-	if (d.length === 11 && d.startsWith("7")) d = d.slice(1);
-	if (d.length === 11 && d.startsWith("8")) d = d.slice(1);
-	return d.slice(0, 10);
 }
 
 export default function LoginForm({ onLogin, switchToReset }: LoginFormProps) {
@@ -54,23 +46,13 @@ export default function LoginForm({ onLogin, switchToReset }: LoginFormProps) {
 	return (
 		<form onSubmit={handleSubmit} className={styles.inputsBlock}>
 			<div className={styles.inputBlock}>
-				<div className={styles.phoneRow}>
-					<span className={styles.phonePrefix} aria-hidden>
-						+7
-					</span>
-					<input
-						id="login-phone"
-						type="tel"
-						name="phone"
-						inputMode="numeric"
-						autoComplete="tel-national"
-						placeholder="9123456789"
-						value={phone}
-						onChange={(e) => setPhone(normalizeLoginPhoneDigits(e.target.value))}
-						className={styles.inputField}
-						aria-label="Телефон, 10 цифр без кода страны"
-					/>
-				</div>
+				<PhoneInput
+					value={phone}
+					onValueChange={(rawValue) => setPhone(rawValue)}
+					inputClassName={styles.inputField}
+					placeholder="+7 (___) ___-__-__"
+					autoComplete="tel"
+				/>
 				{phoneError && <div className={styles.errorMessage}>{phoneError}</div>}
 			</div>
 			<div className={styles.inputBlock}>

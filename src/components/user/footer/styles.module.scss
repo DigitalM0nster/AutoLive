@@ -36,6 +36,8 @@
 .navLi {
 	font-size: 18px;
 	cursor: pointer;
+	color: inherit;
+	text-decoration: none;
 	&:hover {
 		text-decoration: underline;
 	}
@@ -51,13 +53,17 @@
 	gap: 20px;
 }
 
-.contactItem {
+.contactItem,
+a.contactItem {
 	flex-direction: column;
 	align-items: flex-start;
 	gap: 5px;
+	color: white;
 
 	&.phone {
 		cursor: pointer;
+		text-decoration: none;
+
 		&:hover {
 			.itemName {
 				text-decoration: underline;
@@ -81,6 +87,7 @@
 
 	.itemName {
 		font-weight: 600;
+		color: var(--site-color-contrast-light, #fff);
 	}
 
 	.column {
@@ -98,6 +105,7 @@
 	font-size: 18px;
 	cursor: pointer;
 	text-decoration: underline;
+	color: var(--site-color-contrast-light, #fff);
 	&:hover {
 		opacity: 0.9;
 	}

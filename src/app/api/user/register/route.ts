@@ -3,11 +3,13 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
+import { phoneForStorage } from "@/lib/phoneUtils";
 
 export async function POST(req: NextRequest) {
 	try {
 		const body = await req.json();
-		const { phone, code, first_name, last_name, middle_name } = body;
+		const phone = phoneForStorage(String(body.phone || ""));
+		const { code, first_name, last_name, middle_name } = body;
 
 		if (!phone || !code) {
 			return NextResponse.json({ error: "Введите телефон и код" }, { status: 400 });

@@ -161,7 +161,7 @@ export default function AdminLegalDocumentsPage() {
 										id="legal-privacy-title"
 										type="text"
 										value={data.privacyPolicyTitle ?? ""}
-										onChange={(e) => setData({ ...data, privacyPolicyTitle: e.target.value.trim() || null })}
+										onChange={(e) => setData({ ...data, privacyPolicyTitle: e.target.value || null })}
 										placeholder="Политика в отношении персональных данных"
 									/>
 								</div>
@@ -218,7 +218,7 @@ export default function AdminLegalDocumentsPage() {
 										id="legal-cookies-title"
 										type="text"
 										value={data.cookiesPolicyTitle ?? ""}
-										onChange={(e) => setData({ ...data, cookiesPolicyTitle: e.target.value.trim() || null })}
+										onChange={(e) => setData({ ...data, cookiesPolicyTitle: e.target.value || null })}
 										placeholder="Политика использования файлов cookie"
 									/>
 								</div>

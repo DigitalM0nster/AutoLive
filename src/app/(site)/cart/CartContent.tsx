@@ -22,7 +22,7 @@ export default function CartContent() {
 	const [clientPhoneRaw, setClientPhoneRaw] = useState(""); // только цифры из PhoneInput
 	const [submitting, setSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-	const [success, setSuccess] = useState<string | null>(null);
+	const [orderSuccess, setOrderSuccess] = useState<{ orderId: number } | null>(null);
 	const [personalDataConsent, setPersonalDataConsent] = useState(false);
 	const [consentShowError, setConsentShowError] = useState(false);
 
@@ -45,7 +45,20 @@ export default function CartContent() {
 		}
 	}, [role, user]);
 
-	// Если корзина пуста, показываем сообщение
+	// Успешное оформление — показываем даже при пустой корзине
+	if (orderSuccess) {
+		return (
+			<div className={styles.cartEmpty}>
+				<h1 className="pageTitle">Заказ успешно оформлен</h1>
+				<p className={styles.formSuccess}>Номер заказа: {orderSuccess.orderId}</p>
+				<p>Мы свяжемся с вами по телефону для подтверждения.</p>
+				<div className={`button ${styles.buttonBack}`} onClick={() => router.push("/")}>
+					На главную
+				</div>
+			</div>
+		);
+	}
+
 	if (items.length === 0) {
 		return (
 			<div className={styles.cartEmpty}>
@@ -138,7 +151,6 @@ export default function CartContent() {
 					/>
 
 					{error && <div className={styles.formError}>{error}</div>}
-					{success && <div className={styles.formSuccess}>{success}</div>}
 				</div>
 
 				<div className={styles.summaryActions}>
@@ -150,7 +162,6 @@ export default function CartContent() {
 						disabled={submitting || !clientName.trim() || clientPhoneRaw.length < 10 || !personalDataConsent}
 						onClick={async () => {
 							setError(null);
-							setSuccess(null);
 							if (!personalDataConsent) {
 								setConsentShowError(true);
 								setError("Нужно согласие на обработку персональных данных.");
@@ -183,8 +194,9 @@ export default function CartContent() {
 								if (!res.ok) {
 									throw new Error(data?.error || "Не удалось оформить заказ");
 								}
-								setSuccess("Заявка отправлена! Мы свяжемся с вами по телефону.");
 								clearCart();
+								setOrderSuccess({ orderId: data.orderId });
+								window.scrollTo({ top: 0, behavior: "smooth" });
 							} catch (e: any) {
 								setError(e.message || "Ошибка оформления заказа");
 							} finally {

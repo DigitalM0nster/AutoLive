@@ -36,7 +36,7 @@ export default async function Promotions() {
 
 				<div className={`screenBlock ${styles.screenBlock}`}>
 					{promotions.length === 0 ? (
-						<div className={styles.loading}>Загрузка...</div>
+						<div className={styles.loading}>Акций пока нет</div>
 					) : (
 						promotions.map((promotion) => {
 							const promoSlug = slugify(promotion.title);

@@ -54,7 +54,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
 	login: async (phone, password) => {
 		try {
-			const response = await fetch("/api/user/auth/login", {
+			const response = await fetch("/api/user/login", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ phone, password }),
@@ -75,12 +75,12 @@ export const useAuthStore = create<AuthStore>((set) => ({
 	},
 
 	logout: async () => {
-		await fetch("/api/admin/auth/logout", {
+		await fetch("/api/admin/logout", {
 			method: "POST",
 			credentials: "include",
 		}).catch(() => {});
 
-		await fetch("/api/user/auth/logout", {
+		await fetch("/api/user/logout", {
 			method: "POST",
 			credentials: "include",
 		}).catch(() => {});

@@ -2,15 +2,18 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { phoneForStorage } from "@/lib/phoneUtils";
+import { sendVerificationCode } from "@/lib/smsService";
 
 const generateCode = () => Math.floor(1000 + Math.random() * 9000).toString();
 
 export async function POST(req: NextRequest) {
 	try {
-		const { phone } = await req.json();
+		const { phone: rawPhone } = await req.json();
+		const phone = phoneForStorage(String(rawPhone || ""));
 
-		if (!phone) {
-			return NextResponse.json({ error: "Введите телефон" }, { status: 400 });
+		if (!phone || phone.length !== 10) {
+			return NextResponse.json({ error: "Введите корректный номер телефона" }, { status: 400 });
 		}
 
 		// Проверка: уже зарегистрирован?
@@ -49,9 +52,14 @@ export async function POST(req: NextRequest) {
 			},
 		});
 
-		// тут ты позже вставишь отправку SMS
+		const smsResult = await sendVerificationCode(phone, code);
 
-		return NextResponse.json({ success: true, expiresIn: 300 });
+		return NextResponse.json({
+			success: true,
+			expiresIn: 300,
+			...(smsResult.devCode ? { devCode: smsResult.devCode } : {}),
+			...(smsResult.message ? { smsHint: smsResult.message } : {}),
+		});
 	} catch (error) {
 		console.error("Ошибка при отправке кода:", error);
 		return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });

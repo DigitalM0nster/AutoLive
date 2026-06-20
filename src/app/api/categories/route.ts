@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getOptionalStaffFromRequest } from "@/middleware/permissionMiddleware";
+import { uploadFile, validateFile } from "@/lib/simpleFileUpload";
 
 export async function GET(request: NextRequest) {
 	try {
@@ -230,6 +231,22 @@ export async function POST(request: NextRequest) {
 
 			return category;
 		});
+
+		// Загрузка изображения после создания (нужен id категории)
+		if (imageFile && imageFile.size > 0) {
+			const validation = validateFile(imageFile);
+			if (!validation.isValid) {
+				return NextResponse.json({ error: validation.error }, { status: 400 });
+			}
+			const uploadResult = await uploadFile(imageFile, {
+				prefix: "category",
+				entityId: result.id,
+			});
+			await prisma.category.update({
+				where: { id: result.id },
+				data: { image: uploadResult.url },
+			});
+		}
 
 		// Возвращаем созданную категорию с фильтрами
 		const createdCategory = await prisma.category.findUnique({

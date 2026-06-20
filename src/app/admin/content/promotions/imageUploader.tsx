@@ -22,14 +22,22 @@ export default function ImageUploader({ imageUrl, setImageUrl }: Props) {
 		const formData = new FormData();
 		formData.append("image", file);
 
-		const res = await fetch("/api/upload", {
-			method: "POST",
-			body: formData,
-		});
-
-		const data = await res.json();
-		setImageUrl(data.url);
-		setUploading(false);
+		try {
+			const res = await fetch("/api/upload", {
+				method: "POST",
+				credentials: "include",
+				body: formData,
+			});
+			const data = await res.json().catch(() => ({}));
+			if (!res.ok || !data.url) {
+				throw new Error(typeof data.error === "string" ? data.error : "Ошибка загрузки изображения");
+			}
+			setImageUrl(data.url);
+		} catch (e) {
+			alert(e instanceof Error ? e.message : "Ошибка загрузки изображения");
+		} finally {
+			setUploading(false);
+		}
 	};
 
 	const removeImage = (e: React.MouseEvent) => {

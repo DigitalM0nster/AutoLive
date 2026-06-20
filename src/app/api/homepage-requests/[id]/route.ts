@@ -53,6 +53,15 @@ async function patchHandler(req: NextRequest, { params }: { user: unknown; scope
 	}
 }
 
-export const GET = withPermission(getOneHandler, "view_orders", ["superadmin", "admin", "manager"]);
+const getOneWithPermission = withPermission(getOneHandler, "view_orders", ["superadmin", "admin", "manager"]);
+const patchWithPermission = withPermission(patchHandler, "manage_orders", ["superadmin", "admin", "manager"]);
 
-export const PATCH = withPermission(patchHandler, "manage_orders", ["superadmin", "admin", "manager"]);
+export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+	const params = await context.params;
+	return getOneWithPermission(req, { params });
+}
+
+export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+	const params = await context.params;
+	return patchWithPermission(req, { params });
+}

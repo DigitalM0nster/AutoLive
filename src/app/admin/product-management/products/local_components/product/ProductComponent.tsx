@@ -216,7 +216,14 @@ export default function ProductComponent({ productId, isCreating = false, userRo
 						credentials: "include",
 					});
 					if (response.ok) {
-						const categoriesData = await response.json();
+						let categoriesData = await response.json();
+						// Если для отдела нет привязанных категорий — показываем полный список (для суперадмина и настройки отдела)
+						if (Array.isArray(categoriesData) && categoriesData.length === 0) {
+							const allRes = await fetch("/api/categories", { credentials: "include" });
+							if (allRes.ok) {
+								categoriesData = await allRes.json();
+							}
+						}
 						setAllowedCategories(categoriesData);
 						setCanChangeCategory(categoriesData.length > 0);
 					}

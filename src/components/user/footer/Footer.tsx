@@ -1,7 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useEffect, useState } from "react";
+import { formatPhoneDisplay } from "@/lib/phoneUtils";
 import { MapPin } from "lucide-react";
 import styles from "./styles.module.scss";
 import {
@@ -14,7 +15,6 @@ import {
 import { FOOTER_LUCIDE_BY_KEY } from "@/lib/footerLucideIcons";
 
 export default function Footer() {
-	const router = useRouter();
 	const [content, setContent] = useState<FooterContentData | null>(null);
 
 	useEffect(() => {
@@ -48,13 +48,13 @@ export default function Footer() {
 								{ label: "Материалы для ТО", path: "/categories" },
 								{ label: "Комплекты ТО", path: "/service-kits" },
 								{ label: "Запись на ТО", path: "/booking" },
-								{ label: "Запчасти", path: "/catalog" },
+								{ label: "Запчасти", path: "/products" },
 								{ label: "Акции", path: "/promotions" },
 								{ label: "Контакты", path: "/contacts" },
 							].map((item) => (
-								<div key={item.path} className={styles.navLi} onClick={() => router.push(item.path)}>
+								<Link key={item.path} href={item.path} className={styles.navLi}>
 									{item.label}
-								</div>
+								</Link>
 							))}
 						</div>
 					</div>
@@ -71,7 +71,7 @@ export default function Footer() {
 											<div className={styles.icon}>
 												<img src="/images/phoneIcon.svg" alt="" />
 											</div>
-											<div className={styles.itemName}>{effective.phone}</div>
+											<div className={styles.itemName}>{formatPhoneDisplay(effective.phone)}</div>
 										</div>
 									</a>
 								)}
@@ -93,7 +93,7 @@ export default function Footer() {
 														.map((item, i) =>
 															item.type === "phone" ? (
 																<a key={`${block.id}-p-${i}`} className={styles.blockLineTel} href={footerPhoneToTelHref(item.value)}>
-																	{item.value}
+																	{formatPhoneDisplay(item.value)}
 																</a>
 															) : (
 																<div key={`${block.id}-t-${i}`} className={styles.blockLineText}>

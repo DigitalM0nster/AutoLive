@@ -18,17 +18,16 @@ export default function LoginPopup() {
 	// Функция для восстановления пароля
 	const handlePasswordReset = async (phone: string) => {
 		// Пример запроса на восстановление пароля
-		const response = await fetch("/api/user/auth/reset-password", {
+		const response = await fetch("/api/user/reset-password", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ phone }),
 		});
 		const data = await response.json();
 		if (response.ok) {
-			return { newPassword: data.newPassword };
-		} else {
-			throw new Error("Reset failed");
+			return { newPassword: data.newPassword, message: data.message };
 		}
+		throw new Error(data.error || "Не удалось восстановить пароль");
 	};
 
 	// Функция для логина

@@ -40,6 +40,7 @@ export default function CreatePromotionPage() {
 		try {
 			const res = await fetch("/api/promotions", {
 				method: "POST",
+				credentials: "include",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
 					title: title.trim(),

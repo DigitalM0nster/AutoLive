@@ -31,7 +31,7 @@ export default function CategoryPageClient({ categoryData }: CategoryPageClientP
 				<SortingPanel sortOption={sortOption} setSortOption={setSortOption} itemsPerPage={itemsPerPage} setItemsPerPage={setItemsPerPage} />
 			</div>
 
-			<div className={styles.block}>
+			<div className={`${styles.block} ${styles.catalogRow}`}>
 				<FilterPanel products={categoryData.category.products || []} filters={categoryData.category.filters || []} setFilteredProducts={setFilteredProducts} />
 
 				<ProductsList products={filteredProducts} sortOption={sortOption} itemsPerPage={itemsPerPage} categoryData={categoryData} />

@@ -91,6 +91,7 @@ export const ROLE_PERMISSIONS: Record<Role, RolePermission[]> = {
 		{ permission: "assign_orders", scope: "own" },
 		{ permission: "view_orders_logs", scope: "all" }, // Менеджеры могут просматривать логи всех заказов
 		{ permission: "view_bookings", scope: "all" },
+		{ permission: "manage_bookings", scope: "own" },
 	],
 	client: [],
 };

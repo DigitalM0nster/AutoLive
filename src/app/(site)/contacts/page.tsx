@@ -5,6 +5,7 @@ import ContactsMap from "./local_components/ContactsMap";
 import { ContactRow, ContactRowList } from "./local_components/ContactRow";
 import styles from "./styles.module.scss";
 import CONFIG from "@/lib/config";
+import { getInternalApiBaseUrl } from "@/lib/internalApiBaseUrl";
 
 export const dynamic = "force-dynamic";
 
@@ -50,7 +51,7 @@ type AddressItem = {
 };
 
 async function getContactsData() {
-	const baseUrl = CONFIG.BASE_URL;
+	const baseUrl = await getInternalApiBaseUrl();
 	try {
 		const [contentRes, departmentsRes, pointsRes] = await Promise.all([
 			fetch(`${baseUrl}/api/contacts-content`, { next: { revalidate: 60 } }),

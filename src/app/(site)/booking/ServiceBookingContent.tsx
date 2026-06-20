@@ -40,6 +40,7 @@ export default function ServiceBookingContent() {
 	const [loadingDepartments, setLoadingDepartments] = useState(true);
 	const [personalDataConsent, setPersonalDataConsent] = useState(false);
 	const [consentShowError, setConsentShowError] = useState(false);
+	const [submitSuccess, setSubmitSuccess] = useState(false);
 
 	const timeSlots: string[] = Array.from({ length: 18 }, (_, i) => {
 		const hours = Math.floor(i / 2) + 10;
@@ -166,7 +167,9 @@ export default function ServiceBookingContent() {
 			const result = await res.json();
 
 			if (res.ok) {
-				showSuccessToast("Запись успешно отправлена! Мы свяжемся с вами для подтверждения.");
+				setSubmitSuccess(true);
+				showSuccessToast("Ваша заявка успешно отправлена");
+				window.scrollTo({ top: 0, behavior: "smooth" });
 				// Очистка формы
 				setSelectedDate(new Date());
 				setSelectedTime("");
@@ -191,6 +194,7 @@ export default function ServiceBookingContent() {
 
 	return (
 		<form className={styles.bookingForm} onSubmit={handleSubmit}>
+			{submitSuccess && <div className={styles.successMessage}>Ваша заявка успешно отправлена</div>}
 			<div className={styles.timeBlock}>
 				<div className={styles.blockDescription}>Выберите удобную дату и время для прохождения ТО:</div>
 				<div className={styles.calendarWrapper}>
@@ -254,7 +258,7 @@ export default function ServiceBookingContent() {
 
 				{/* Телефон с использованием PhoneInput */}
 				<PhoneInput
-					value={phoneFormatted}
+					value={phoneRaw}
 					onValueChange={handlePhoneChange}
 					placeholder="+7 (___) ___-__-__"
 					required

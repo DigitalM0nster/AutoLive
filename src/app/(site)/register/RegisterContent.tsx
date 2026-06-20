@@ -49,7 +49,7 @@ export default function RegisterContent() {
 				setPhone(savedPhone);
 				setFormattedPhone(savedPhone);
 
-				fetch("/api/user/auth/register/check-code", {
+				fetch("/api/user/register/check-code", {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({ phone: savedPhone }),
@@ -87,7 +87,7 @@ export default function RegisterContent() {
 		}
 
 		try {
-			const response = await fetch("/api/user/auth/register/verify-code", {
+			const response = await fetch("/api/user/register/verify-code", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ phone: inputPhone, code: inputCode }),
@@ -107,7 +107,7 @@ export default function RegisterContent() {
 
 	const submitUserData = async () => {
 		try {
-			const response = await fetch("/api/user/auth/register", {
+			const response = await fetch("/api/user/register", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({

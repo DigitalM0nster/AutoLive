@@ -6,7 +6,7 @@ import PhoneInput from "@/components/ui/phoneInput/PhoneInput";
 import { showSuccessToast } from "@/components/ui/toast/ToastProvider";
 
 interface PasswordResetFormProps {
-	onReset: (phone: string) => Promise<{ newPassword?: string }>;
+	onReset: (phone: string) => Promise<{ newPassword?: string; message?: string }>;
 	switchToLogin: () => void;
 }
 
@@ -27,12 +27,12 @@ export default function PasswordResetForm({ onReset, switchToLogin }: PasswordRe
 		try {
 			const response = await onReset(phone);
 			if (response.newPassword) {
-				// Показываем пароль через toast
 				showSuccessToast(`Ваш новый пароль: ${response.newPassword}`);
-				setResetSuccessMessage(`Новый пароль отправлен на номер: ${formattedPhone}.`);
 			}
-		} catch (error: any) {
-			setPhoneError("Ошибка сервера, попробуйте позже");
+			setResetSuccessMessage(response.message || `Новый пароль отправлен на номер ${formattedPhone}.`);
+		} catch (error: unknown) {
+			const msg = error instanceof Error ? error.message : "Ошибка сервера, попробуйте позже";
+			setPhoneError(msg);
 		}
 	};
 
