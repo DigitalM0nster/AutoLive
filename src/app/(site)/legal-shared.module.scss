@@ -1,25 +1,20 @@
 // Общие отступы для статичных юридических страниц (privacy, cookies)
 
-.screen {
-	padding-top: 100px;
-	min-height: calc(100vh - 100px);
-	padding-bottom: 48px;
-}
-
 .inner {
 	flex-direction: column;
-	gap: 16px;
-	max-width: 800px;
+	gap: 20px;
 	width: 100%;
-	margin: 0 auto;
-	padding: 0 20px 120px;
+	max-width: none;
+	margin: 0;
+	padding: 0 0 48px;
 	align-self: stretch;
 }
 
 .pageTitle {
-	font-size: 26px;
+	font-size: clamp(26px, 3vw, 32px);
 	font-weight: 700;
-	color: var(--site-color-primary, #3d3d3d);
+	color: #1a1a1a;
+	letter-spacing: -0.02em;
 }
 
 .lead {

@@ -208,6 +208,20 @@ model Order {
     bookingDepartmentId     Int? @map("booking_department_id") // Адрес доставки: отдел для записей (опционально)
     deliveryPickupPointId   Int? @map("delivery_pickup_point_id") // Адрес доставки: пункт выдачи (взаимоисключающе с bookingDepartmentId)
 
+    // Этапы заказа после «Подтверждён»
+    bookedUntil           DateTime? @map("booked_until") @db.Timestamp(0)
+    readyUntil            DateTime? @map("ready_until") @db.Timestamp(0)
+    prepaymentAmount      Float?    @map("prepayment_amount")
+    prepaymentDate        DateTime? @map("prepayment_date") @db.Timestamp(0)
+    paymentDate           DateTime? @map("payment_date") @db.Timestamp(0)
+    orderAmount           Float?    @map("order_amount")
+    completionDate        DateTime? @map("completion_date") @db.Timestamp(0)
+    returnReason          String?   @map("return_reason") @db.VarChar(500)
+    returnDate            DateTime? @map("return_date") @db.Timestamp(0)
+    returnAmount          Float?    @map("return_amount")
+    returnPaymentDate     DateTime? @map("return_payment_date") @db.Timestamp(0)
+    returnDocumentNumber  String?   @map("return_document_number") @db.VarChar(100)
+
     // Связи
     manager           User?              @relation("ManagerOrders", fields: [managerId], references: [id])
     department        Department?        @relation(fields: [departmentId], references: [id])
@@ -379,13 +393,18 @@ model Promotion {
     title       String    @db.VarChar(255)
     description String?   @db.Text
     image       String?   @db.VarChar(255)
-    buttonText  String?   @db.VarChar(255)
-    buttonLink  String?   @db.VarChar(255)
+    /**
+     * JSON: до 2 кнопок [{ id, type, label, href?, openInNewTab?, internalPath? }]
+     * type: phone | link | internal | request
+     */
+    buttonsJson String?   @map("buttons_json") @db.Text
     order       Int       @default(0)
     startDate   DateTime? @db.Date
     endDate     DateTime? @db.Date
     createdAt   DateTime  @default(now()) @db.Timestamp(0)
     updatedAt   DateTime  @default(now()) @updatedAt @db.Timestamp(0)
+
+    formRequests HomepageRequest[] @relation("PromotionFormRequests")
 }
 
 model user_log {
@@ -449,6 +468,12 @@ enum Role {
     admin
     manager
     client
+}
+
+enum SiteFormRequestSource {
+    homepage
+    promotion
+    contacts
 }
 
 enum HomepageRequestStatus {
@@ -567,14 +592,20 @@ model BookingLog {
     @@map("booking_log")
 }
 
-// Заявки с главной (форма «Оставить заявку»; не заказы из корзины и не записи на ТО)
+// Заявки с формы на сайте (главная, акции; не заказы из корзины и не записи на ТО)
 model HomepageRequest {
-    id        Int                   @id @default(autoincrement()) @map("id")
-    createdAt DateTime              @default(now()) @map("created_at") @db.Timestamp(0)
-    updatedAt DateTime              @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
-    status    HomepageRequestStatus @default(new) @map("status")
-    payload   Json                  @map("payload") // массив полей: ключ, подпись, значение и/или url файла
+    id           Int                   @id @default(autoincrement()) @map("id")
+    createdAt    DateTime              @default(now()) @map("created_at") @db.Timestamp(0)
+    updatedAt    DateTime              @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
+    status       HomepageRequestStatus @default(new) @map("status")
+    payload      Json                  @map("payload") // массив полей: ключ, подпись, значение и/или url файла
+    sourceType   SiteFormRequestSource @default(homepage) @map("source_type")
+    sourceLabel  String?               @map("source_label") @db.VarChar(255)
+    promotionId  Int?                  @map("promotion_id")
+    promotion    Promotion?            @relation("PromotionFormRequests", fields: [promotionId], references: [id], onDelete: SetNull)
 
+    @@index([sourceType])
+    @@index([promotionId])
     @@map("homepage_request")
 }
 
@@ -587,6 +618,10 @@ model HomepageContent {
     orderButtonText     String   @default("Оставить заказ") @map("order_button_text") @db.VarChar(255)
     formFields          Json     @default("[]") @map("form_fields") // Массив полей формы
     formSubmitButtonText String  @default("Оставить заказ") @map("form_submit_button_text") @db.VarChar(255)
+    serviceBlockTitle    String  @default("Запись на ТО") @map("service_block_title") @db.VarChar(255)
+    serviceBlockSubtitle String  @default("Выберите удобное время и запишитесь на техническое обслуживание в нашем сервисе") @map("service_block_subtitle") @db.VarChar(500)
+    serviceBlockCtaText  String  @default("Записаться на обслуживание") @map("service_block_cta_text") @db.VarChar(255)
+    serviceBlockImageUrl String? @map("service_block_image_url") @db.VarChar(500)
     createdAt           DateTime @default(now()) @map("created_at") @db.Timestamp(0)
     updatedAt           DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
 

@@ -1,49 +1,37 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, type ReactNode } from "react";
 import Link from "next/link";
 import styles from "../local_components/styles.module.scss";
+import editorStyles from "./FooterEditor.module.scss";
+import FooterContactBlockCard from "./local_components/FooterContactBlockCard";
 import FixedActionButtons from "@/components/ui/fixedActionButtons/FixedActionButtons";
+import PhoneInput from "@/components/ui/phoneInput/PhoneInput";
+import { showSuccessToast } from "@/components/ui/toast/ToastProvider";
+import { formatPhoneDisplay, isValidPhoneDigits, normalizePhoneDigits, phoneForStorage, phoneToTelHref } from "@/lib/phoneUtils";
+import { type FooterContentData, type FooterContactBlock, createEmptyFooterContactBlock, parseFooterContactBlocks } from "@/lib/footerDisplay";
 import {
-	type FooterContentData,
-	type FooterContactBlock,
-	type FooterContactItem,
-	type FooterDocument,
-	type FooterIconKey,
-	FOOTER_ICON_OPTIONS,
-	createEmptyFooterContactBlock,
-	createEmptyFooterContactItem,
-	createEmptyFooterDocument,
-	parseFooterContactBlocks,
-} from "@/lib/footerDisplay";
-import { FooterLucideIcon } from "@/lib/footerLucideIcons";
+	buildFooterLegalLinks,
+	defaultSiteLegalContent,
+	type SiteLegalContentData,
+} from "@/lib/siteLegalContent.shared";
+import { COOKIES_POLICY_PATH, PRIVACY_POLICY_PATH } from "@/lib/consentConstants";
 
-/** Раздел «Юридические документы» в меню контента — единое место настройки файлов для подвала и страниц политик */
 const LEGAL_DOCUMENTS_ADMIN_HREF = "/admin/content/legal-documents";
 
-/** Документы в форме: сохраняем пустые title/fileUrl до ввода и сохранения */
-function normalizeDocumentsForForm(raw: unknown): FooterDocument[] {
-	if (!Array.isArray(raw)) return [];
-	return raw.map((d) => {
-		if (!d || typeof d !== "object") return createEmptyFooterDocument();
-		const o = d as Record<string, unknown>;
-		return {
-			id: typeof o.id === "string" && o.id.trim() ? o.id.trim() : createEmptyFooterDocument().id,
-			title: typeof o.title === "string" ? o.title : "",
-			fileUrl: typeof o.fileUrl === "string" ? o.fileUrl : "",
-		};
-	});
-}
+type FooterFormData = Pick<FooterContentData, "phone" | "contactBlocks" | "copyrightLine">;
 
-function normalizeState(raw: FooterContentData): FooterContentData {
+function normalizeFooterForm(raw: FooterContentData): FooterFormData {
+	const phoneRaw = raw.phone?.trim() || "";
 	return {
-		...raw,
-		phone: raw.phone?.trim() || null,
+		phone: phoneRaw ? phoneForStorage(phoneRaw) || null : null,
 		contactBlocks: parseFooterContactBlocks(raw.contactBlocks).map((b) => ({
 			...b,
-			items: b.items.map((it) => ({ ...it })),
+			items: b.items.map((it) => ({
+				...it,
+				value: it.type === "phone" && it.value.trim() ? phoneForStorage(it.value) : it.value,
+			})),
 		})),
-		documents: normalizeDocumentsForForm(raw.documents),
 		copyrightLine: raw.copyrightLine,
 	};
 }
@@ -51,20 +39,27 @@ function normalizeState(raw: FooterContentData): FooterContentData {
 export default function AdminFooterContentPage() {
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
-	const [data, setData] = useState<FooterContentData | null>(null);
-	const [initialData, setInitialData] = useState<FooterContentData | null>(null);
+	const [data, setData] = useState<FooterFormData | null>(null);
+	const [initialData, setInitialData] = useState<FooterFormData | null>(null);
+	const [legalPreview, setLegalPreview] = useState<SiteLegalContentData>(defaultSiteLegalContent);
 	const [error, setError] = useState<string | null>(null);
 	const [hasChanges, setHasChanges] = useState(false);
 
 	const loadData = useCallback(async () => {
 		try {
 			setLoading(true);
-			const response = await fetch("/api/footer-content");
-			if (!response.ok) throw new Error("Ошибка загрузки данных");
-			const content = (await response.json()) as FooterContentData;
-			const normalized = normalizeState(content);
+			const [footerRes, legalRes] = await Promise.all([fetch("/api/footer-content"), fetch("/api/legal-content")]);
+
+			if (!footerRes.ok) throw new Error("Ошибка загрузки данных подвала");
+
+			const content = (await footerRes.json()) as FooterContentData;
+			const normalized = normalizeFooterForm(content);
 			setData(normalized);
 			setInitialData(JSON.parse(JSON.stringify(normalized)));
+
+			if (legalRes.ok) {
+				setLegalPreview({ ...defaultSiteLegalContent, ...(await legalRes.json()) });
+			}
 		} catch (err) {
 			setError(err instanceof Error ? err.message : "Ошибка загрузки");
 		} finally {
@@ -89,21 +84,36 @@ export default function AdminFooterContentPage() {
 		try {
 			setSaving(true);
 			setError(null);
+
+			const payload = {
+				...data,
+				phone: data.phone ? phoneForStorage(data.phone) || null : null,
+				contactBlocks: data.contactBlocks.map((block) => ({
+					...block,
+					items: block.items.map((item) =>
+						item.type === "phone" && item.value.trim() ?
+							{ ...item, value: phoneForStorage(item.value) }
+						:	item,
+					),
+				})),
+				documents: [] as FooterContentData["documents"],
+			};
+
 			const response = await fetch("/api/footer-content", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				credentials: "include",
-				body: JSON.stringify(data),
+				body: JSON.stringify(payload),
 			});
 			if (!response.ok) {
 				const errorData = await response.json().catch(() => ({}));
 				throw new Error(typeof errorData.error === "string" ? errorData.error : "Ошибка сохранения");
 			}
-			const saved = normalizeState(await response.json());
+			const saved = normalizeFooterForm(await response.json());
 			setInitialData(JSON.parse(JSON.stringify(saved)));
 			setData(saved);
 			setHasChanges(false);
-			alert("Подвал сохранён!");
+			showSuccessToast("Подвал сохранён");
 		} catch (err) {
 			setError(err instanceof Error ? err.message : "Ошибка сохранения");
 		} finally {
@@ -124,233 +134,140 @@ export default function AdminFooterContentPage() {
 		setData({ ...data, contactBlocks: next });
 	};
 
-	const updateItem = (blockIndex: number, itemIndex: number, patch: Partial<FooterContactItem>) => {
+	const removeBlock = (index: number) => {
 		if (!data) return;
-		const next = [...data.contactBlocks];
-		const items = [...next[blockIndex].items];
-		items[itemIndex] = { ...items[itemIndex], ...patch };
-		next[blockIndex] = { ...next[blockIndex], items };
-		setData({ ...data, contactBlocks: next });
+		setData({ ...data, contactBlocks: data.contactBlocks.filter((_, i) => i !== index) });
 	};
 
-	if (loading) {
-		return (
-			<div className="screenContent">
-				<div className="tableContainer">
-					<div className="tabsContainer">
-						<div className="tabTitle">Подвал сайта</div>
-					</div>
-					<div className="tableContent">
-						<div className={styles.editorPlaceholder}>Загрузка...</div>
-					</div>
-				</div>
-			</div>
-		);
-	}
+	const addBlock = () => {
+		if (!data) return;
+		setData({ ...data, contactBlocks: [...data.contactBlocks, createEmptyFooterContactBlock()] });
+	};
 
-	if (!data) {
-		return (
-			<div className="screenContent">
-				<div className="tableContainer">
-					<div className="tabsContainer">
-						<div className="tabTitle">Подвал сайта</div>
-					</div>
-					<div className="tableContent">
-						<div className={styles.editorPlaceholder}>Ошибка загрузки данных</div>
-					</div>
+	const legalLinks = buildFooterLegalLinks(legalPreview, PRIVACY_POLICY_PATH, COOKIES_POLICY_PATH);
+
+	const renderShell = (children: ReactNode) => (
+		<div className="screenContent">
+			<div className="tableContainer footerEditorPage">
+				<div className="tabsContainer column">
+					<Link href="/admin/dashboard" className={styles.backToContentLink}>
+						<span className={styles.backToContentLinkArrow} aria-hidden>
+							←
+						</span>
+						На панель
+					</Link>
+					<div className="tabTitle">Подвал сайта</div>
 				</div>
+				<div className="tableContent">{children}</div>
 			</div>
-		);
-	}
+		</div>
+	);
+
+	if (loading) return renderShell(<div className={styles.editorPlaceholder}>Загрузка...</div>);
+	if (!data) return renderShell(<div className={styles.editorPlaceholder}>Ошибка загрузки данных</div>);
 
 	const currentYear = new Date().getFullYear();
 
 	return (
 		<div className="screenContent">
-			<div className="tableContainer">
+			<div className="tableContainer footerEditorPage">
 				<div className="tabsContainer column">
-					<Link href="/admin/content" className={styles.backToContentLink}>
+					<Link href="/admin/dashboard" className={styles.backToContentLink}>
 						<span className={styles.backToContentLinkArrow} aria-hidden>
 							←
 						</span>
-						Редактор контента
+						На панель
 					</Link>
 					<div className="tabTitle">Подвал сайта</div>
+					<p className={editorStyles.tabsHint}>
+						Телефон, блоки контактов и копирайт. Все юридические документы — в разделе «Юридические документы».
+					</p>
 				</div>
-				<div className={`tableContent contentComponent ${styles.contentComponent}`}>
-					<div className={`formFields ${styles.formFields}`}>
-						{error && <div className={styles.errorBlock}>{error}</div>}
 
-						<div className="formSection borderBlock">
-							<h3 className="formSectionTitle">Основной телефон</h3>
-							<p className={styles.addressesSectionHint}>
-								Если поле заполнено, в подвале показываются иконка телефона и номер со ссылкой для звонка. Если пусто — этот блок скрыт.
-							</p>
-							<div className="formRow">
-								<div className={`formField ${styles.formField}`}>
-									<label htmlFor="footer-phone">Телефон</label>
-									<input
-										id="footer-phone"
-										type="text"
-										value={data.phone ?? ""}
-										onChange={(e) => setData({ ...data, phone: e.target.value.trim() || null })}
-										placeholder="+7 (961) 692-88-16"
-									/>
-								</div>
+				<div className={`tableContent contentComponent ${styles.contentComponent} ${editorStyles.footerEditor}`}>
+					<div className="formFields">
+						{error && <div className={editorStyles.errorBlock}>{error}</div>}
+
+						<section className={editorStyles.sectionCard}>
+							<h3 className={editorStyles.sectionTitle}>Основной телефон</h3>
+							<p className={editorStyles.sectionHint}>Если заполнено — в подвале показываются иконка и ссылка для звонка. Пустое поле скрывает блок.</p>
+							<div className={editorStyles.fieldGroup}>
+								<label htmlFor="footer-phone">Номер</label>
+								<PhoneInput
+									id="footer-phone"
+									value={normalizePhoneDigits(data.phone ?? "")}
+									onValueChange={(raw) => setData({ ...data, phone: raw.length > 0 ? raw : null })}
+								/>
+								{isValidPhoneDigits(data.phone ?? "") ?
+									<p className={editorStyles.fieldHint}>
+										На сайте:{" "}
+										<a href={phoneToTelHref(data.phone ?? "")}>{formatPhoneDisplay(data.phone ?? "")}</a>
+									</p>
+								:	null}
 							</div>
-						</div>
+						</section>
 
-						<div className="formSection borderBlock">
-							<h3 className="formSectionTitle">Блоки контактов</h3>
-							<p className={styles.addressesSectionHint}>
-								Любое количество блоков: заголовок, иконка и список строк. Для строки типа «Телефон» на сайте будет ссылка <code>tel:</code>.
+						<section className={editorStyles.sectionCard}>
+							<h3 className={editorStyles.sectionTitle}>Блоки контактов</h3>
+							<p className={editorStyles.sectionHint}>
+								Колонки в подвале: заголовок, иконка и список строк. Тип «Телефон» на сайте станет ссылкой <code>tel:</code>.
 							</p>
 
-							{data.contactBlocks.map((block, bi) => (
-								<div key={block.id} className={styles.contactAddressCard}>
-									<div className={styles.addressesListName}>Блок {bi + 1}</div>
-									<div className="formRow">
-										<div className={`formField ${styles.formField} fullWidth`}>
-											<label>Заголовок блока</label>
-											<input
-												type="text"
-												value={block.title ?? ""}
-												onChange={(e) => updateBlock(bi, { title: e.target.value.trim() || null })}
-												placeholder="Например: Пункты выдачи"
-											/>
-										</div>
-									</div>
-									<div className="formRow">
-										<div className={`formField ${styles.formField}`}>
-											<label htmlFor={`footer-block-icon-${block.id}`}>Иконка</label>
-											<div className={styles.footerIconPickerRow}>
-												<div className={styles.footerIconCurrentPreview} title="Как на сайте">
-													<FooterLucideIcon icon={block.icon} size={32} strokeWidth={1.5} />
-												</div>
-												<select
-													id={`footer-block-icon-${block.id}`}
-													value={block.icon}
-													onChange={(e) => updateBlock(bi, { icon: e.target.value as FooterIconKey })}
-													className={styles.footerIconSelect}
-												>
-													{FOOTER_ICON_OPTIONS.map((opt) => (
-														<option key={opt.value} value={opt.value}>
-															{opt.label}
-														</option>
-													))}
-												</select>
-											</div>
-											<div className={styles.footerIconLegend} aria-hidden>
-												{FOOTER_ICON_OPTIONS.map((opt) => (
-													<div key={opt.value} className={styles.footerIconLegendItem}>
-														<span className={styles.footerIconLegendGlyph}>
-															<FooterLucideIcon icon={opt.value} size={22} strokeWidth={1.5} />
-														</span>
-														<span className={styles.footerIconLegendLabel}>{opt.label}</span>
-													</div>
-												))}
-											</div>
-										</div>
-									</div>
-									<div className="formRow">
-										<div className={`formField ${styles.formField} fullWidth`}>
-											<label>Строки списка</label>
-											<div className="columnList">
-												{block.items.map((item, ii) => (
-													<div key={`${block.id}-item-${ii}`} className="rowBlock phoneRowBlock">
-														<select
-															className="little"
-															value={item.type}
-															onChange={(e) => updateItem(bi, ii, { type: e.target.value as FooterContactItem["type"] })}
-															aria-label="Тип строки"
-														>
-															<option value="text">Текст / адрес</option>
-															<option value="phone">Телефон (tel:)</option>
-														</select>
-														<input
-															className="little"
-															type="text"
-															value={item.value}
-															onChange={(e) => updateItem(bi, ii, { value: e.target.value })}
-															placeholder={item.type === "phone" ? "+7 …" : "Текст строки"}
-														/>
-														<button
-															type="button"
-															className={`button ${styles.removeButton} ${styles.button}`}
-															onClick={() => {
-																const items = block.items.filter((_, j) => j !== ii);
-																updateBlock(bi, { items });
-															}}
-														>
-															Удалить
-														</button>
-													</div>
-												))}
-											</div>
-											<button
-												type="button"
-												className={`button ${styles.addButton} ${styles.button}`}
-												onClick={() => updateBlock(bi, { items: [...block.items, createEmptyFooterContactItem()] })}
-											>
-												+ Добавить строку
-											</button>
-										</div>
-									</div>
-									<button
-										type="button"
-										className={`removeButton ${styles.removeAdressButton} ${styles.button}`}
-										onClick={() => setData({ ...data, contactBlocks: data.contactBlocks.filter((_, j) => j !== bi) })}
-									>
-										Удалить блок
-									</button>
-								</div>
-							))}
+							<div className={editorStyles.blocksList}>
+								{data.contactBlocks.map((block, index) => (
+									<FooterContactBlockCard key={block.id} block={block} index={index} onChange={updateBlock} onRemove={removeBlock} />
+								))}
+							</div>
 
-							<button
-								type="button"
-								className="button"
-								onClick={() => setData({ ...data, contactBlocks: [...data.contactBlocks, createEmptyFooterContactBlock()] })}
-							>
+							<button type="button" className={editorStyles.addBlockSlot} onClick={addBlock}>
 								+ Добавить блок контактов
 							</button>
-						</div>
+						</section>
 
-						<div className="formSection borderBlock">
-							<h3 className="formSectionTitle">Документы в подвале</h3>
-							<p className={styles.addressesSectionHint}>
-								Здесь документы <strong>не редактируются</strong>. Список файлов и ссылок для блока «Документы» внизу сайта, а также политики для страниц{" "}
-								<code>/privacy</code> и <code>/cookies</code>, настраиваются в отдельном разделе меню контента —{" "}
-								<strong>«Юридические документы»</strong>.
+						<section className={editorStyles.sectionCard}>
+							<h3 className={editorStyles.sectionTitle}>Юридические документы</h3>
+							<p className={editorStyles.sectionHint}>
+								Политики, файлы и заголовки редактируются только в разделе «Юридические документы». После загрузки они появляются на страницах{" "}
+								<code>/privacy</code>, <code>/cookies</code> и в нижней строке подвала.
 							</p>
-							<p className={styles.addressesSectionHint}>
-								<Link href={LEGAL_DOCUMENTS_ADMIN_HREF} className={styles.addressesListEdit}>
-									Перейти к разделу «Юридические документы»
-								</Link>
-							</p>
-						</div>
 
-						<div className="formSection borderBlock">
-							<h3 className="formSectionTitle">Копирайт</h3>
-							<div className="formRow">
-								<div className={`formField ${styles.formField} fullWidth`}>
-									<label htmlFor="footer-copyright">Текст внизу подвала</label>
-									<input
-										id="footer-copyright"
-										type="text"
-										value={data.copyrightLine ?? ""}
-										onChange={(e) => setData({ ...data, copyrightLine: e.target.value.trim() || null })}
-										placeholder="Все права защищены © {{year}}"
-									/>
-									<p className={styles.addressesSectionHint}>
-										Подставьте <code>{"{{year}}"}</code> — на сайте автоматически подставится текущий год ({currentYear}). Если поле пустое, покажется строка по
-										умолчанию с годом.
-									</p>
-								</div>
+							{legalLinks.length === 0 ?
+								<p className={editorStyles.emptyListNote}>Пока нет загруженных документов — добавьте их в «Юридических документах».</p>
+							:	<ul className={editorStyles.legalPreviewList}>
+									{legalLinks.map((link) => (
+										<li key={link.id} className={editorStyles.legalPreviewItem}>
+											<span className={editorStyles.legalPreviewTitle}>{link.title}</span>
+											<span className={editorStyles.legalPreviewPath}>{link.href}</span>
+										</li>
+									))}
+								</ul>
+							}
+
+							<Link href={LEGAL_DOCUMENTS_ADMIN_HREF} className={editorStyles.sectionLink}>
+								Перейти к «Юридическим документам»
+							</Link>
+						</section>
+
+						<section className={editorStyles.sectionCard}>
+							<h3 className={editorStyles.sectionTitle}>Копирайт</h3>
+							<div className={editorStyles.fieldGroup}>
+								<label htmlFor="footer-copyright">Текст внизу подвала</label>
+								<input
+									id="footer-copyright"
+									type="text"
+									value={data.copyrightLine ?? ""}
+									onChange={(e) => setData({ ...data, copyrightLine: e.target.value.trim() || null })}
+									placeholder="Все права защищены © {{year}}"
+								/>
+								<p className={editorStyles.fieldHint}>
+									Подставьте <code>{"{{year}}"}</code> — на сайте автоматически подставится текущий год ({currentYear}).
+								</p>
 							</div>
-						</div>
+						</section>
 					</div>
 				</div>
 			</div>
+
 			{hasChanges && <FixedActionButtons onCancel={handleCancel} onSave={handleSave} isSaving={saving} saveText="Сохранить изменения" />}
 		</div>
 	);

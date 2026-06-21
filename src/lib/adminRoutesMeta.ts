@@ -1,6 +1,23 @@
 // src/lib/adminRoutesMeta.ts
 
-import { Building2, LucideIcon, Users, ShoppingCart, FileText, Package, PackageCheck, ClipboardList, ListOrdered, MapPin, Globe } from "lucide-react";
+import {
+	Building2,
+	ClipboardList,
+	FileText,
+	Globe,
+	Home,
+	ListOrdered,
+	LucideIcon,
+	MapPin,
+	Package,
+	PackageCheck,
+	PanelBottom,
+	Percent,
+	Settings,
+	ShoppingCart,
+	Users,
+	Wrench,
+} from "lucide-react";
 
 export type AdminRouteMeta = {
 	label: string;
@@ -15,22 +32,33 @@ export const adminRoutesMeta: Record<string, AdminRouteMeta> = {
 	departments: {
 		label: "Отделы",
 		icon: Building2,
+		description: "Структура магазина и привязка сотрудников",
 		bg: "green",
 	},
 	users: {
 		label: "Пользователи",
 		icon: Users,
+		description: "Клиенты, менеджеры и администраторы",
 		bg: "green",
 	},
 	categories: {
 		label: "Категории",
 		icon: ListOrdered,
+		description: "Разделы каталога на сайте",
 		bg: "blue",
 	},
-	"product-management": {
-		label: "Управление товарами",
+	products: {
+		label: "Товары",
 		icon: Package,
-		description: "Товары, Комплекты ТО",
+		description: "Добавление и редактирование товаров",
+		href: "/admin/product-management/products",
+		bg: "blue",
+	},
+	kits: {
+		label: "Комплекты ТО",
+		icon: Wrench,
+		description: "Сборка наборов ТО из товаров",
+		href: "/admin/product-management/kits",
 		bg: "blue",
 	},
 	bookings: {
@@ -41,14 +69,14 @@ export const adminRoutesMeta: Record<string, AdminRouteMeta> = {
 	"booking-departments": {
 		label: "Адреса для записей",
 		icon: MapPin,
-		bg: "purple",
 		description: "Отделы с адресами для записей",
+		bg: "purple",
 	},
 	"pickup-points": {
 		label: "Пункты выдачи",
 		icon: PackageCheck,
-		bg: "purple",
 		description: "Адреса пунктов выдачи",
+		bg: "purple",
 	},
 	orders: {
 		label: "Заказы",
@@ -56,28 +84,69 @@ export const adminRoutesMeta: Record<string, AdminRouteMeta> = {
 		bg: "blue",
 	},
 	"homepage-requests": {
-		label: "Заявки с главной",
+		label: "Заявки с сайта",
 		icon: Globe,
-		description: "Форма «Оставить заявку» на главной странице",
+		description: "Заявки с главной страницы и акций",
 		bg: "red",
 		href: "/admin/homepage-requests",
 	},
-	content: {
-		label: "Контент сайта",
+	"site-feedback-form": {
+		label: "Форма обратной связи",
+		icon: ClipboardList,
+		description: "Поля и кнопка формы «Оставить заявку»",
+		bg: "red",
+		href: "/admin/site-feedback-form",
+	},
+	settings: {
+		label: "Основные настройки",
+		icon: Settings,
+		description: "Логотип, фавиконка, основные цвета сайта",
+		href: "/admin/content/settings",
+		bg: "red",
+	},
+	homepage: {
+		label: "Главная страница",
+		icon: Home,
+		description: "Тексты и блоки на главной (без формы заявки)",
+		href: "/admin/content/homepage",
+		bg: "red",
+	},
+	contacts: {
+		label: "Контакты",
+		icon: MapPin,
+		description: "Страница контактов на сайте",
+		href: "/admin/content/contacts",
+		bg: "red",
+	},
+	"legal-documents": {
+		label: "Юридические документы",
 		icon: FileText,
+		description: "Политики для страниц /privacy и /cookies",
+		href: "/admin/content/legal-documents",
+		bg: "red",
+	},
+	footer: {
+		label: "Подвал",
+		icon: PanelBottom,
+		description: "Контакты в подвале и строка копирайта",
+		href: "/admin/content/footer",
+		bg: "red",
+	},
+	promotions: {
+		label: "Акции",
+		icon: Percent,
+		description: "Раздел акций на сайте",
+		href: "/admin/content/promotions",
 		bg: "red",
 	},
 
+	// Только для хлебных крошек (промежуточные сегменты URL)
+	"product-management": { label: "Управление товарами" },
+	content: { label: "Контент сайта" },
+
 	profile: { label: "Редактирование профиля" },
-	products: { label: "Список товаров" },
-	kits: { label: "Комплекты ТО" },
 	clients: { label: "Клиенты" },
 	managers: { label: "Менеджеры" },
-	homepage: { label: "Главная" },
-	contacts: { label: "Контакты" },
-	footer: { label: "Редактор подвала" },
-	settings: { label: "Основные настройки" },
-	promotions: { label: "Акции" },
 	edit: { label: "Редактирование" },
 	create: { label: "Создание" },
 	admin: { label: "Админ-панель" },

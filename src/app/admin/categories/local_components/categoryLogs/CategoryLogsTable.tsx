@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Loading from "@/components/ui/loading/Loading";
 import DeletedBlockNotice from "@/components/ui/deletedBlockNotice/DeletedBlockNotice";
+import styles from "../styles.module.scss";
 
 export type CategoryLog = {
 	id: number;
@@ -349,8 +350,16 @@ export default function CategoryLogsTable({ categoryId, tableHeaders, queryParam
 	const colCount = effectiveCategoryId ? 3 : 4;
 
 	return (
-		<div className="tableContent">
-			<table className="table">
+		<div className={styles.logsTableWrap}>
+			<table className={`table ${styles.logsTable}`}>
+				<colgroup>
+					<col style={{ width: "170px" }} />
+					{!effectiveCategoryId ?
+						<col style={{ width: "190px" }} />
+					:	null}
+					<col style={{ width: "210px" }} />
+					<col />
+				</colgroup>
 				<thead>{tableHeaders}</thead>
 				<tbody>
 					{loading ? (

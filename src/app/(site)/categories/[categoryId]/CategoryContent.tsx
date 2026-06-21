@@ -1,11 +1,9 @@
+import Link from "next/link";
 import styles from "./styles.module.scss";
 import CategoryPageClient from "./CategoryPageClient";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 
-// Функция для загрузки данных категории напрямую из базы данных
-// Используем Prisma напрямую вместо HTTP-запросов к API
-// Это намного быстрее, так как нет лишнего HTTP-круга через сеть
 async function loadCategoryData(categoryId: string) {
 	const id = parseInt(categoryId);
 
@@ -13,10 +11,7 @@ async function loadCategoryData(categoryId: string) {
 		throw new Error("Некорректный ID категории");
 	}
 
-	// Загружаем данные категории с товарами и фильтрами параллельно
-	// Используем Promise.all для одновременной загрузки всех данных
 	const [category, filters] = await Promise.all([
-		// Получаем категорию со всеми товарами и их фильтрами
 		prisma.category.findUnique({
 			where: { id },
 			include: {
@@ -33,7 +28,6 @@ async function loadCategoryData(categoryId: string) {
 				},
 			},
 		}),
-		// Получаем фильтры категории с их значениями
 		prisma.filter.findMany({
 			where: { categoryId: id },
 			include: {
@@ -49,18 +43,14 @@ async function loadCategoryData(categoryId: string) {
 		throw new Error("Категория не найдена");
 	}
 
-	// Скрытые с витрины категории недоступны по прямой ссылке для посетителей
 	if (category.visibleOnSite === false) {
 		notFound();
 	}
 
-	// Преобразуем данные товаров: удаляем supplierPrice и форматируем фильтры
-	// Это такая же логика, как была в API endpoint
 	const sanitizedProducts = category.products.map((product) => {
 		const { supplierPrice, productFilterValues, ...rest } = product;
 
-		// Преобразуем productFilterValues в формат filters
-		const filters = productFilterValues.map((pfv) => ({
+		const productFilters = productFilterValues.map((pfv) => ({
 			filterId: pfv.filterValue.filterId,
 			valueId: pfv.filterValueId,
 			value: pfv.filterValue.value,
@@ -69,11 +59,10 @@ async function loadCategoryData(categoryId: string) {
 
 		return {
 			...rest,
-			filters,
+			filters: productFilters,
 		};
 	});
 
-	// Форматируем фильтры категории в нужный формат
 	const formattedFilters = filters.map((filter) => ({
 		id: filter.id,
 		title: filter.title,
@@ -85,7 +74,6 @@ async function loadCategoryData(categoryId: string) {
 		})),
 	}));
 
-	// Возвращаем данные в том же формате, что и API
 	return {
 		category: {
 			...category,
@@ -95,33 +83,61 @@ async function loadCategoryData(categoryId: string) {
 	};
 }
 
-// Компонент для отображения контента страницы категории
+function pluralPositions(count: number): string {
+	const mod10 = count % 10;
+	const mod100 = count % 100;
+	if (mod100 >= 11 && mod100 <= 14) return "позиций";
+	if (mod10 === 1) return "позиция";
+	if (mod10 >= 2 && mod10 <= 4) return "позиции";
+	return "позиций";
+}
+
 export default async function CategoryContent({ categoryId }: { categoryId: string }) {
 	try {
-		// Загружаем данные напрямую из базы данных
 		const categoryData = await loadCategoryData(categoryId);
-		// ВАЖНО: преобразуем данные к сериализуемому виду для передачи в client-компонент
-		// Prisma может возвращать типы (например, Decimal), которые не сериализуются в props
 		const clientSafeCategoryData = JSON.parse(JSON.stringify(categoryData));
+		const productCount = categoryData.category.products?.length ?? 0;
 
-		// Рендерим контент
 		return (
 			<>
-				<h1 className={`pageTitle ${styles.pageTitle}`}>{categoryData.category.title}</h1>
+				<Link href="/categories" className={styles.backLink}>
+					Материалы для ТО
+				</Link>
+
+				<header className={styles.pageHeader}>
+					{categoryData.category.image ? (
+						<div className={styles.categoryHeroIcon}>
+							<img src={categoryData.category.image} alt="" aria-hidden="true" />
+						</div>
+					) : null}
+
+					<div className={styles.pageHeaderText}>
+						<h1 className={`pageTitle ${styles.pageTitle}`}>{categoryData.category.title}</h1>
+						<p className={`pageLead ${styles.pageLead}`}>
+							{productCount > 0 ?
+								<>
+									<span className={styles.productCount}>{productCount.toLocaleString("ru-RU")}</span> {pluralPositions(productCount)} в категории —
+									используйте фильтры и сортировку, чтобы быстро найти нужный материал.
+								</>
+							:	"В этой категории пока нет позиций. Загляните позже или выберите другую категорию."}
+						</p>
+					</div>
+				</header>
+
 				<CategoryPageClient categoryData={clientSafeCategoryData} />
 			</>
 		);
 	} catch (error) {
 		console.error("Ошибка при загрузке данных категории:", error);
 
-		// Возвращаем страницу с ошибкой
 		return (
 			<>
+				<Link href="/categories" className={styles.backLink}>
+					Материалы для ТО
+				</Link>
 				<h1 className={`pageTitle ${styles.pageTitle}`}>Ошибка загрузки</h1>
-				<div className={styles.materialContainer}>
-					<div className={styles.block}>
-						<div style={{ padding: "20px", textAlign: "center", color: "#666" }}>Произошла ошибка при загрузке данных категории. Пожалуйста, попробуйте позже.</div>
-					</div>
+				<div className={styles.errorState}>
+					<p>Произошла ошибка при загрузке данных категории. Пожалуйста, попробуйте позже.</p>
 				</div>
 			</>
 		);

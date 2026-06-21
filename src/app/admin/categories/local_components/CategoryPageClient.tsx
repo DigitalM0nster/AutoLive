@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { showSuccessToast, showErrorToast } from "@/components/ui/toast/ToastProvider";
 import { Category, CategoryFilter, FilterType, FilterValue } from "@/lib/types";
-import { Check, X, Trash2, Upload, Plus } from "lucide-react";
+import { Check, X, Trash2, Plus, ArrowLeft } from "lucide-react";
 import styles from "./styles.module.scss";
 import Link from "next/link";
 import ConfirmPopup from "@/components/ui/confirmPopup/ConfirmPopup";
+import { ConfirmSummaryMessage } from "@/components/ui/confirmPopup/ConfirmSummary";
+import CategoryConfirmContent, { CategoryEditChanges } from "./CategoryConfirmContent";
 import ImageUpload from "@/components/ui/imageUpload/ImageUpload";
 import FilterCard from "./FilterCard";
 
@@ -711,91 +713,107 @@ export default function CategoryPageClient({ initialData, isCreateMode = false }
 	return (
 		<>
 			<div className="screenContent">
-				<div className="tableContainer">
-					<div className="tabsContainer">
-						{isCreateMode ? <div className={`tabTitle`}>Создание новой категории</div> : <div className={`tabTitle`}>Управление категорией</div>}
-					</div>
+			<div className="tableContainer">
+				<div className={`tabsContainer ${styles.pageTabs}`}>
+					{isCreateMode ? (
+						<>
+							<Link href="/admin/categories" className="tabButton">
+								Список категорий
+							</Link>
+							<div className="tabButton active">Новая категория</div>
+						</>
+					) : (
+						<>
+							<Link href={`/admin/categories/${category.id}`} className="tabButton active">
+								Редактирование
+							</Link>
+							<Link href={`/admin/categories/${category.id}/logs`} className="tabButton">
+								История изменений
+							</Link>
+						</>
+					)}
+				</div>
 
-					<div className="tableContent">
-						{/* Показываем предупреждение если пользователь не может редактировать категорию */}
-						{!canEditCategory() && user && (
-							<div
-								style={{
-									backgroundColor: "#fef3c7",
-									border: "1px solid #f59e0b",
-									borderRadius: "8px",
-									padding: "12px 16px",
-									marginBottom: "16px",
-									color: "#92400e",
-									fontSize: "14px",
-								}}
-							>
-								⚠️ У вас нет прав на редактирование этой категории. Вы можете только просматривать информацию.
+				<div className={`tableContent categoryComponent kitContent ${styles.categoryPage}`}>
+						<div className="formContainer">
+							<div className="formHeader">
+								<Link href="/admin/categories" className={styles.backLink}>
+									<ArrowLeft size={16} />
+									К списку категорий
+								</Link>
+								<div className={styles.headerRow}>
+									<h2>{isCreateMode ? "Новая категория" : category.title || "Категория"}</h2>
+									{canDeleteCategory() && category.id > 0 && (
+										<button type="button" onClick={handleDeleteCategory} className="button cancelButton">
+											<Trash2 size={18} />
+											Удалить
+										</button>
+									)}
+								</div>
+								{isCreateMode && <p className={styles.headerHint}>Укажите название категории. Фильтры и изображение можно добавить сразу или позже при редактировании.</p>}
 							</div>
-						)}
 
-						<div className={`titleBlock`}>
-							<div className={"titleInputWrapper"}>
-								<input
-									type="text"
-									value={formTitle}
-									onChange={(e) => {
-										setFormTitle(e.target.value);
-										// Очищаем ошибку при вводе
-										if (e.target.value.trim()) {
-											clearFieldError("categoryTitle");
-										}
-									}}
-									className={`formInput titleInput ${validationErrors.categoryTitle ? "error" : ""}`}
-									placeholder="Введите название категории"
-									disabled={!canEditCategory()}
-								/>
-								{validationErrors.categoryTitle && <div className="errorMessage">{validationErrors.categoryTitle}</div>}
-							</div>
-							<div className={"titleInputWrapper"} style={{ marginTop: 12 }}>
-								<label
-									style={{ display: "flex", alignItems: "center", gap: 8, cursor: canEditCategory() ? "pointer" : "default", fontSize: 14 }}
-								>
-									<input
-										type="checkbox"
-										checked={formVisibleOnSite}
-										onChange={(e) => setFormVisibleOnSite(e.target.checked)}
-										disabled={!canEditCategory()}
-									/>
-									<span>Показывать категорию на сайте в разделе «Материалы для ТО»</span>
-								</label>
-							</div>
-							{canDeleteCategory() && category.id && (
-								<button onClick={handleDeleteCategory} className={`button cancelButton`}>
-									<Trash2 size={18} />
-									Удалить категорию
-								</button>
+							{!canEditCategory() && user && (
+								<div className={styles.permissionWarning}>У вас нет прав на редактирование этой категории. Доступен только просмотр.</div>
 							)}
-						</div>
 
-						<div className={`sectionsContent ${styles.sectionsContent}`}>
-							{/* Секция изображения */}
-							<div className={`block sectionBlock ${styles.sectionBlock}`}>
-								<h2 className={`sectionTitle`}>Изображение категории</h2>
-								<ImageUpload imageUrl={imagePreview} onImageChange={handleImageChange} onImageRemove={handleImageRemove} disabled={!canEditCategory()} />
-							</div>
+							<div className="formFields">
+								<div className={`formSection ${styles.basicSection}`}>
+									<h3 className="formSectionTitle">Основное</h3>
 
-							{/* Секция фильтров */}
-							<div className={`block sectionBlock ${styles.sectionBlock}`}>
-								<div className={`ssectionHeaderBlock`}>
-									<h2 className={`sectionTitle`}>Фильтры категории</h2>
-									<p className={`sectionDescription ${styles.sectionDescription}`}>Фильтры помогают пользователям находить товары в этой категории</p>
+									<div className={styles.basicFields}>
+										<div className="formField">
+											<label htmlFor="categoryTitle">Название категории *</label>
+											<input
+												type="text"
+												id="categoryTitle"
+												value={formTitle}
+												onChange={(e) => {
+													setFormTitle(e.target.value);
+													if (e.target.value.trim()) {
+														clearFieldError("categoryTitle");
+													}
+												}}
+												className={validationErrors.categoryTitle ? "error" : ""}
+												placeholder="Например: Масла и жидкости"
+												disabled={!canEditCategory()}
+											/>
+											{validationErrors.categoryTitle && <div className="errorMessage">{validationErrors.categoryTitle}</div>}
+										</div>
+
+										<div className={`formField ${styles.imageField}`}>
+											<label>Изображение</label>
+											<ImageUpload
+												imageUrl={imagePreview}
+												onImageChange={handleImageChange}
+												onImageRemove={handleImageRemove}
+												disabled={!canEditCategory()}
+												className={styles.compactImageUpload}
+											/>
+										</div>
+
+										<div className={styles.visibilityRow}>
+											<label className={`${styles.checkboxLabel} ${!canEditCategory() ? styles.disabled : ""}`}>
+												<input
+													type="checkbox"
+													checked={formVisibleOnSite}
+													onChange={(e) => setFormVisibleOnSite(e.target.checked)}
+													disabled={!canEditCategory()}
+												/>
+												<span>Показывать категорию на сайте в разделе «Материалы для ТО»</span>
+											</label>
+										</div>
+									</div>
 								</div>
 
-								{/* Список фильтров */}
-								<div className={`filtersList ${styles.filtersList}`}>
-									{filters.length === 0 ? (
-										<div className={`emptyFilters ${styles.emptyFilters}`}>
-											<p>Фильтры не добавлены</p>
-											<p>Добавьте фильтры, чтобы пользователи могли легко находить товары</p>
-										</div>
-									) : (
-										filters.map((filter) => (
+								<div className={`formSection ${styles.filtersSection}`}>
+									<div className={styles.filtersSectionHeader}>
+										<h3 className="formSectionTitle">Фильтры</h3>
+										<p className={styles.sectionDescription}>Необязательно. Помогают покупателям отфильтровать товары внутри категории.</p>
+									</div>
+
+									<div className={styles.filtersList}>
+										{filters.map((filter) => (
 											<FilterCard
 												key={filter.id}
 												filter={filter}
@@ -811,71 +829,82 @@ export default function CategoryPageClient({ initialData, isCreateMode = false }
 												onClearValuesError={() => clearFieldError("filterValue", filter.id)}
 												onClearValueError={(valueId: number) => clearFieldError("valueError", filter.id, valueId)}
 											/>
-										))
+										))}
+
+										{canEditCategory() && (
+											<button type="button" onClick={addFilter} className={styles.addFilterSlot}>
+												<Plus size={16} />
+												{filters.length === 0 ? "Добавить фильтр" : "Добавить ещё фильтр"}
+											</button>
+										)}
+									</div>
+								</div>
+							</div>
+						</div>
+
+						{canEditCategory() && (hasAnyChanges || isCreateMode) && (
+							<div className="fixedButtonsBlock">
+								{isCreateMode && !hasAnyChanges && (
+									<span className={styles.fixedButtonsHint}>Введите название, чтобы создать категорию</span>
+								)}
+								<div className="buttonsContent">
+									<button
+										type="button"
+										onClick={handleSaveClick}
+										className="acceptButton"
+										disabled={isCreateMode && !formTitle.trim()}
+									>
+										<Check />
+										{isCreateMode ? "Создать категорию" : "Сохранить"}
+									</button>
+
+									{hasAnyChanges && (
+										<button
+											type="button"
+											onClick={() => {
+												if (isCreateMode) {
+													setFormTitle("");
+													setFormImage(null);
+													setImagePreview("");
+													setFormVisibleOnSite(true);
+													setFilters([]);
+													setValidationErrors({
+														filterTitles: {},
+														filterValues: {},
+														valueErrors: {},
+													});
+												} else {
+													setFormTitle(originalTitle);
+													setFormImage(null);
+													setImagePreview(originalImage);
+													setFormVisibleOnSite(originalVisibleOnSite);
+													setFilters(initialData?.filters || []);
+													setFilterTypeValues(new Map());
+													setValidationErrors({
+														filterTitles: {},
+														filterValues: {},
+														valueErrors: {},
+													});
+													setIsFormChanged(false);
+												}
+											}}
+											className="cancelButton"
+										>
+											<X />
+											{isCreateMode ? "Очистить" : "Отменить"}
+										</button>
 									)}
-									{canEditCategory() && (
-										<button type="button" onClick={addFilter} className={`addFilterButton ${styles.addFilterButton}`}>
-											<Plus size={16} />
-											Добавить фильтр
+
+									{isCreateMode && !hasAnyChanges && (
+										<button type="button" onClick={() => router.push("/admin/categories")} className="cancelButton">
+											<X />
+											Отмена
 										</button>
 									)}
 								</div>
 							</div>
-						</div>
+						)}
 					</div>
-
-					{canEditCategory() && hasAnyChanges && (
-						<div className="fixedButtonsBlock">
-							<div className="buttonsContent">
-								<button onClick={handleSaveClick} className="acceptButton">
-									<Check className="" />
-									{isCreateMode ? "Создать категорию" : "Сохранить"}
-								</button>
-
-								{hasAnyChanges && (
-									<button
-										onClick={() => {
-											if (isCreateMode) {
-												// В режиме создания сбрасываем форму
-												setFormTitle("");
-												setFormImage(null);
-												setImagePreview("");
-												setFilters([]);
-												// Очищаем все ошибки валидации
-												setValidationErrors({
-													filterTitles: {},
-													filterValues: {},
-													valueErrors: {},
-												});
-											} else {
-												// В режиме редактирования возвращаем к исходным значениям
-												setFormTitle(originalTitle);
-												setFormImage(null);
-												setImagePreview(originalImage);
-												setFilters(initialData?.filters || []);
-
-												// Очищаем сохраненные значения типов фильтров
-												setFilterTypeValues(new Map());
-
-												// Очищаем все ошибки валидации
-												setValidationErrors({
-													filterTitles: {},
-													filterValues: {},
-													valueErrors: {},
-												});
-
-												setIsFormChanged(false);
-											}
-										}}
-										className="cancelButton"
-									>
-										<X className="" />
-										{isCreateMode ? "Очистить" : "Отменить"}
-									</button>
-								)}
-							</div>
-						</div>
-					)}
 				</div>
 			</div>
 
@@ -884,143 +913,38 @@ export default function CategoryPageClient({ initialData, isCreateMode = false }
 				open={showConfirmChangesModal}
 				onCancel={() => setShowConfirmChangesModal(false)}
 				onConfirm={handleSave}
-				title={isCreateMode ? "Подтверждение создания категории" : "Подтверждение изменений"}
+				title={isCreateMode ? "Создание категории" : "Сохранение изменений"}
+				subtitle={isCreateMode ? "Шаг 2 из 2 — подтверждение" : "Проверьте список изменений"}
 				confirmText={isCreateMode ? "Создать категорию" : "Сохранить изменения"}
 				cancelText="Отмена"
+				variant="primary"
 			>
-				<div className="changesBlock">
-					<div className="changesTitleBlock">
-						<p>{isCreateMode ? "Вы собираетесь создать новую категорию со следующими параметрами:" : `Вы собираетесь сохранить следующие изменения в категории `}</p>
-						{!isCreateMode && <p style={{ fontWeight: "bold", margin: "0 0 10px 0" }}>&quot;{category?.title}&quot;</p>}
-					</div>
-
-					{isCreateMode ? (
-						// Для режима создания показываем что будет создано
-						<div className="changesList">
-							{formTitle.trim() !== "" && (
-								<div className="changeItem">
-									<strong>Название:</strong> {formTitle}
-								</div>
-							)}
-							{formImage && (
-								<div className="changeItem">
-									<strong>Изображение:</strong> Будет загружено новое изображение
-								</div>
-							)}
-							{filters.length > 0 && (
-								<div className="changeItem">
-									<strong>Фильтры:</strong> Будет создано {filters.length} фильтров
-								</div>
-							)}
-						</div>
-					) : (
-						// Для режима редактирования показываем конкретные изменения
-						<div className="changesList">
-							{(() => {
-								const changes = getChangesDescription();
-								const elements: React.ReactNode[] = [];
-								let currentFilterTitle = "";
-								let currentFilterChanges: string[] = [];
-								let isInFilter = false;
-
-								changes.forEach((change, index) => {
-									if (change.startsWith("FILTER_START:")) {
-										// Если уже есть открытый фильтр, закрываем его
-										if (isInFilter && currentFilterChanges.length > 0) {
-											elements.push(
-												<div
-													key={`filter-${elements.length}`}
-													className="changeItem borderBlock"
-													style={{
-														padding: "12px 16px",
-														margin: "8px 0",
-														borderRadius: "8px",
-														backgroundColor: "#f8f9fa",
-														border: "1px solid #e9ecef",
-													}}
-												>
-													<div style={{ fontWeight: "bold", marginBottom: "8px" }}>{currentFilterTitle}</div>
-													{currentFilterChanges.map((filterChange, changeIndex) => {
-														const [label, values] = filterChange.split(": ");
-														const [oldValue, newValue] = values.split(" → ");
-
-														return (
-															<div key={changeIndex} style={{ marginBottom: "4px" }}>
-																<span style={{ fontWeight: "500" }}>{label}:</span>{" "}
-																<span style={{ textDecoration: "line-through", color: "#dc3545" }}>{oldValue}</span> →{" "}
-																<span style={{ color: "#28a745", fontWeight: "500" }}>{newValue}</span>
-															</div>
-														);
-													})}
-												</div>
-											);
-										}
-
-										// Начинаем новый фильтр
-										currentFilterTitle = change.replace("FILTER_START:", "");
-										currentFilterChanges = [];
-										isInFilter = true;
-									} else if (change.startsWith("FILTER_CHANGE:")) {
-										currentFilterChanges.push(change.replace("FILTER_CHANGE:", ""));
-									} else if (change === "FILTER_END") {
-										// Закрываем текущий фильтр
-										if (currentFilterChanges.length > 0) {
-											elements.push(
-												<div
-													key={`filter-${elements.length}`}
-													className="changeItem borderBlock"
-													style={{
-														padding: "12px 16px",
-														margin: "8px 0",
-														borderRadius: "8px",
-														backgroundColor: "#f8f9fa",
-														border: "1px solid #e9ecef",
-													}}
-												>
-													<div style={{ fontWeight: "bold", marginBottom: "8px" }}>{currentFilterTitle}</div>
-													{currentFilterChanges.map((filterChange, changeIndex) => {
-														const [label, values] = filterChange.split(": ");
-														const [oldValue, newValue] = values.split(" → ");
-
-														return (
-															<div key={changeIndex} style={{ marginBottom: "4px" }}>
-																<span style={{ fontWeight: "500" }}>{label}:</span>{" "}
-																<span style={{ textDecoration: "line-through", color: "#dc3545" }}>{oldValue}</span> →{" "}
-																<span style={{ color: "#28a745", fontWeight: "500" }}>{newValue}</span>
-															</div>
-														);
-													})}
-												</div>
-											);
-										}
-										isInFilter = false;
-									} else {
-										// Обычные изменения (не фильтры)
-										elements.push(
-											<div key={index} className="changeItem">
-												{change}
-											</div>
-										);
-									}
-								});
-
-								return elements;
-							})()}
-						</div>
-					)}
-				</div>
+				<CategoryConfirmContent
+					isCreateMode={isCreateMode}
+					categoryTitle={category?.title || ""}
+					formTitle={formTitle}
+					formVisibleOnSite={formVisibleOnSite}
+					imagePreview={imagePreview}
+					hasNewImage={Boolean(formImage)}
+					filters={filters}
+					editChanges={<CategoryEditChanges changes={getChangesDescription()} />}
+				/>
 			</ConfirmPopup>
 
-			{/* Модальное окно подтверждения удаления */}
 			<ConfirmPopup
 				open={showDeleteModal}
 				onCancel={() => setShowDeleteModal(false)}
 				onConfirm={confirmDelete}
-				title="Подтверждение удаления"
-				message={`Вы действительно хотите удалить категорию "${category?.title}"?\n\n⚠️ Это действие нельзя отменить. При удалении категории:\n• Все товары в этой категории будут удалены\n• У отделов будет убрана эта категория (они останутся в системе)\n• Все связи с фильтрами будут удалены`}
-				confirmText="Удалить"
+				title="Удаление категории"
+				subtitle="Это действие необратимо"
+				confirmText="Удалить категорию"
 				cancelText="Отмена"
-			/>
+				variant="danger"
+			>
+				<ConfirmSummaryMessage
+					text={`Вы действительно хотите удалить категорию «${category?.title}»?\n\n⚠️ После удаления:\n• Все товары в этой категории будут удалены\n• У отделов будет снята эта категория\n• Все связи с фильтрами будут удалены`}
+				/>
+			</ConfirmPopup>
 		</>
 	);
 }

@@ -2,33 +2,29 @@
  * Отправка SMS-кодов.
  *
  * Переменные окружения:
- * - SMS_PROVIDER: "dev" | "smsc" (по умолчанию "dev" в development)
- * - SMS_DEV_SHOW_CODE: "true" — вернуть код в ответе API (только для разработки)
- * - SMSC_LOGIN, SMSC_PASSWORD — учётные данные smsc.ru (если SMS_PROVIDER=smsc)
+ * - SMS_PROVIDER=smsc + SMSC_LOGIN + SMSC_PASSWORD — реальная отправка через smsc.ru
+ * - Если smsc не настроен — код возвращается клиенту для теста (alert на регистрации)
  */
 
 export type SendSmsResult = {
 	sent: boolean;
-	/** Только в dev-режиме, если SMS_DEV_SHOW_CODE=true */
-	devCode?: string;
+	/** Код для теста, пока SMS-сервис не подключён */
+	testCode?: string;
+	smsNotConnected?: boolean;
 	message?: string;
 };
 
-function isDevMode(): boolean {
-	return process.env.NODE_ENV === "development" || process.env.SMS_PROVIDER === "dev" || !process.env.SMS_PROVIDER;
-}
-
-function shouldExposeDevCode(): boolean {
-	return process.env.SMS_DEV_SHOW_CODE === "true" || process.env.NODE_ENV === "development";
+function isSmscConfigured(): boolean {
+	return (
+		process.env.SMS_PROVIDER === "smsc" &&
+		Boolean(process.env.SMSC_LOGIN?.trim()) &&
+		Boolean(process.env.SMSC_PASSWORD?.trim())
+	);
 }
 
 async function sendViaSmsc(phone: string, text: string): Promise<boolean> {
-	const login = process.env.SMSC_LOGIN?.trim();
-	const password = process.env.SMSC_PASSWORD?.trim();
-	if (!login || !password) {
-		console.error("[SMS] SMSC_LOGIN / SMSC_PASSWORD не заданы");
-		return false;
-	}
+	const login = process.env.SMSC_LOGIN!.trim();
+	const password = process.env.SMSC_PASSWORD!.trim();
 
 	const digits = phone.replace(/\D/g, "");
 	const params = new URLSearchParams({
@@ -52,37 +48,31 @@ async function sendViaSmsc(phone: string, text: string): Promise<boolean> {
 export async function sendVerificationCode(phone: string, code: string): Promise<SendSmsResult> {
 	const text = `Код подтверждения AutoLive: ${code}`;
 
-	if (isDevMode()) {
-		return {
-			sent: true,
-			devCode: shouldExposeDevCode() ? code : undefined,
-		};
-	}
-
-	if (process.env.SMS_PROVIDER === "smsc") {
+	if (isSmscConfigured()) {
 		const ok = await sendViaSmsc(phone, text);
 		return ok ? { sent: true } : { sent: false, message: "Не удалось отправить SMS" };
 	}
 
-	console.warn("[SMS] Провайдер не настроен, код только в БД");
-	return { sent: false, message: "SMS-сервис не настроен. Обратитесь к администратору." };
+	// SMS-сервис не подключён — код сохранён в БД, показываем пользователю для теста
+	return {
+		sent: true,
+		testCode: code,
+		smsNotConnected: true,
+	};
 }
 
 /** Сброс пароля — отправка нового пароля по SMS */
 export async function sendPasswordResetSms(phone: string, newPassword: string): Promise<SendSmsResult> {
 	const text = `AutoLive: ваш новый пароль ${newPassword}`;
 
-	if (isDevMode()) {
-		return {
-			sent: true,
-			devCode: shouldExposeDevCode() ? newPassword : undefined,
-		};
-	}
-
-	if (process.env.SMS_PROVIDER === "smsc") {
+	if (isSmscConfigured()) {
 		const ok = await sendViaSmsc(phone, text);
 		return ok ? { sent: true } : { sent: false, message: "Не удалось отправить SMS" };
 	}
 
-	return { sent: false, message: "SMS-сервис не настроен" };
+	return {
+		sent: true,
+		testCode: newPassword,
+		smsNotConnected: true,
+	};
 }

@@ -15,11 +15,15 @@ export async function POST(req: NextRequest) {
 			return NextResponse.json({ error: "Введите телефон" }, { status: 400 });
 		}
 
-		// Проверяем, существует ли администратор
-		const admin = await prisma.user.findUnique({ where: { phone } });
+		// Ищем сотрудника с доступом к панели управления
+		const user = await prisma.user.findUnique({ where: { phone } });
 
-		if (!admin) {
-			return NextResponse.json({ error: "Администратор не найден" }, { status: 404 });
+		if (!user) {
+			return NextResponse.json({ error: "Сотрудник с таким телефоном не найден" }, { status: 404 });
+		}
+
+		if (!["superadmin", "admin", "manager"].includes(user.role)) {
+			return NextResponse.json({ error: "У этой учётной записи нет доступа к панели управления" }, { status: 403 });
 		}
 
 		// Генерируем и хешируем новый пароль
@@ -40,7 +44,7 @@ export async function POST(req: NextRequest) {
 			newPassword, // временно для отладки (в будущем убрать)
 		});
 	} catch (error) {
-		console.error("Ошибка при сбросе пароля для администратора:", error);
+		console.error("Ошибка при сбросе пароля для панели управления:", error);
 		return NextResponse.json({ error: "Ошибка сервера, попробуйте позже" }, { status: 500 });
 	}
 }

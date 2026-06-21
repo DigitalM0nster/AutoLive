@@ -1,12 +1,13 @@
-import Link from "next/link";
 import NavigationMenu from "@/components/user/navigationMenu/NavigationMenu";
+import PromotionsHeroBanner, { type PromotionBannerSlide } from "./local_components/PromotionsHeroBanner";
 import styles from "./styles.module.scss";
 import CONFIG from "@/lib/config";
-import { slugify } from "@/lib/slugify";
+import { formatPromotionPeriod } from "@/lib/promotionDisplay";
+import { parsePromotionButtons } from "@/lib/promotionButtons";
 import type { Promotion } from "@/lib/types";
 import { getInternalApiBaseUrl } from "@/lib/internalApiBaseUrl";
+import type { HomepageContentData } from "@/app/api/homepage-content/route";
 
-// Не статически генерируем при build — страница запрашивает API при каждом запросе (для Vercel и локального build)
 export const dynamic = "force-dynamic";
 
 export const metadata = {
@@ -15,60 +16,58 @@ export const metadata = {
 	keywords: `скидки на автозапчасти ${CONFIG.CITY}, акции ${CONFIG.STORE_NAME}, ТО со скидкой ${CONFIG.CITY}, автосервис ${CONFIG.CITY}, ${CONFIG.DOMAIN}`,
 };
 
+function mapPromotionToSlide(promotion: Promotion, formData?: HomepageContentData): PromotionBannerSlide {
+	return {
+		id: promotion.id,
+		title: promotion.title,
+		description: promotion.description,
+		image: promotion.image,
+		period: formatPromotionPeriod(promotion.startDate, promotion.endDate),
+		buttons: parsePromotionButtons(promotion.buttonsJson),
+		formData,
+	};
+}
+
 export default async function Promotions() {
 	const baseUrl = await getInternalApiBaseUrl();
-	const res = await fetch(`${baseUrl}/api/promotions`, {
-		next: { revalidate: 3600 },
-	});
+	const [res, homepageRes] = await Promise.all([
+		fetch(`${baseUrl}/api/promotions`, { next: { revalidate: 3600 } }),
+		fetch(`${baseUrl}/api/homepage-content`, { next: { revalidate: 3600 } }),
+	]);
 
 	if (!res.ok) {
 		console.error(`Ошибка API: ${res.status} ${res.statusText}`);
-		return <div className="text-center">Ошибка загрузки акций</div>;
+		return (
+			<div className="screen">
+				<div className="screenContent">
+					<NavigationMenu />
+					<h1 className="pageTitle">Акции</h1>
+					<div className="emptyState">Не удалось загрузить акции. Попробуйте обновить страницу.</div>
+				</div>
+			</div>
+		);
 	}
 
 	const promotions: Promotion[] = await res.json();
+	const formData: HomepageContentData | undefined = homepageRes.ok ? await homepageRes.json() : undefined;
+	const bannerSlides = promotions.map((promotion) => mapPromotionToSlide(promotion, formData));
 
 	return (
-		<div className={`screen ${styles.screen}`}>
+		<div className="screen">
 			<div className="screenContent">
 				<NavigationMenu />
-				<h1 className={`pageTitle ${styles.pageTitle}`}>Акции</h1>
 
-				<div className={`screenBlock ${styles.screenBlock}`}>
-					{promotions.length === 0 ? (
-						<div className={styles.loading}>Акций пока нет</div>
-					) : (
-						promotions.map((promotion) => {
-							const promoSlug = slugify(promotion.title);
-							return (
-								<div key={promotion.id} className={styles.promotionItem}>
-									<div className={styles.photo}>
-										{promotion.image ? <img src={promotion.image} alt={promotion.title} /> : <img src="/images/no-image.png" alt="" />}
-									</div>
-									<div className={styles.contentBlock}>
-										<div className={styles.textContent}>
-											<div className={styles.title}>
-												<Link href={promoSlug ? `/promotions/${promoSlug}` : "/promotions"} className={styles.titleLink}>
-													{promotion.title}
-												</Link>
-											</div>
-											<div className={styles.description}>{promotion.description}</div>
-										</div>
-										{promoSlug ? (
-											<Link href={`/promotions/${promoSlug}`} className={`button ${styles.button}`}>
-												Подробнее
-											</Link>
-										) : (promotion.buttonLink || promotion.buttonText) ? (
-											<Link href={promotion.buttonLink || ""} className={`button ${styles.button}`}>
-												{promotion.buttonText || "Подробнее"}
-											</Link>
-										) : null}
-									</div>
-								</div>
-							);
-						})
-					)}
-				</div>
+				<header className={styles.pageHeader}>
+					<h1 className="pageTitle">Акции</h1>
+				</header>
+
+				{promotions.length === 0 ? (
+					<div className="emptyState">Акций пока нет — загляните позже.</div>
+				) : (
+					<div className={styles.promotionsLayout}>
+						<PromotionsHeroBanner slides={bannerSlides} />
+					</div>
+				)}
 			</div>
 		</div>
 	);

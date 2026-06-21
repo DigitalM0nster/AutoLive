@@ -80,6 +80,21 @@
 	min-width: 0;
 }
 
+.promoCardTitleLink {
+	display: block;
+	width: fit-content;
+	text-decoration: none;
+	color: inherit;
+	cursor: pointer;
+
+	&:hover {
+		.promoCardTitle {
+			color: var(--blue-color);
+			text-decoration: underline;
+		}
+	}
+}
+
 .promoCardTitle {
 	margin: 0 0 6px 0;
 	font-size: 16px;

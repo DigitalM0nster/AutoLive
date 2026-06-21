@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Promotion } from "@/lib/types";
+import { parsePromotionButtons } from "@/lib/promotionButtons";
 import { GripVertical, ImageIcon } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -45,17 +46,19 @@ export default function PromoCard({ promo, onDelete }: Props) {
 			)}
 
 			<div className={styles.promoCardBody}>
-				<h3 className={styles.promoCardTitle}>{promo.title}</h3>
+				<Link href={`/admin/content/promotions/${promo.id}`} className={styles.promoCardTitleLink}>
+					<h3 className={styles.promoCardTitle}>{promo.title}</h3>
+				</Link>
 				{(promo.startDate != null || promo.endDate != null) && (
 					<p className={styles.promoCardDates}>
 						{formatPromoDates(promo.startDate, promo.endDate)}
 					</p>
 				)}
 				{promo.description ? <p className={styles.promoCardDescription}>{promo.description}</p> : null}
-				{promo.buttonText && promo.buttonLink ? (
-					<a href={promo.buttonLink} target="_blank" rel="noreferrer" className={styles.promoCardButtonLink}>
-						{promo.buttonText}
-					</a>
+				{parsePromotionButtons(promo.buttonsJson).length > 0 ? (
+					<p className={styles.promoCardDescription}>
+						Кнопок: {parsePromotionButtons(promo.buttonsJson).length}
+					</p>
 				) : null}
 			</div>
 

@@ -12,6 +12,10 @@ import LinkedRelationCard from "@/components/admin/linkedRelationCard/LinkedRela
 import CustomSelect from "@/components/ui/customSelect/CustomSelect";
 import DatePickerField from "@/components/ui/datePicker/DatePickerField";
 import FixedActionButtons from "@/components/ui/fixedActionButtons/FixedActionButtons";
+import { ClientSearchResultsPanel, ClientSelectedSummary } from "@/components/admin/clientSearch/ClientSearchDropdownItems";
+import { ManagerSearchResultsPanel, ManagerSelectedSummary } from "@/components/admin/managerSearch/ManagerSearchDropdownItems";
+import { ArrowLeft, Plus } from "lucide-react";
+import styles from "./BookingFormComponent.module.scss";
 
 type BookingFormComponentProps = {
 	isCreating?: boolean;
@@ -167,22 +171,20 @@ function OrderLinkSearchBlock(props: {
 	} = props;
 
 	return (
-		<div className="column bookingLinkInlineSearch">
-			<p className="bookingLinkHint">{hintText}</p>
-			<div className="toLinkOrderSearchWrap">
+		<div className={styles.orderLinkPanel}>
+			<p className={styles.orderLinkHint}>{hintText}</p>
+			<div className={styles.orderLinkSearchWrap}>
 				{selectedOrderForLink ? (
-					<div className="bookingLinkSelectedCard">
-						<div className="bookingLinkSelectedTitle">
-							<span>Заказ #{selectedOrderForLink.id}</span>
-							<span className="bookingLinkPickStatus">{getOrderStatusText(selectedOrderForLink.status)}</span>
+					<div className={styles.orderLinkSelectedCard}>
+						<div className={styles.orderLinkSelectedHead}>
+							<span className={styles.orderLinkPickId}>Заказ #{selectedOrderForLink.id}</span>
+							<span className={styles.orderLinkBadge}>{getOrderStatusText(selectedOrderForLink.status)}</span>
 						</div>
-						<div className="bookingLinkSelectedMeta">
-							Создан: {formatOrderDateRu(selectedOrderForLink.createdAt)}
-							{selectedOrderForLink.finalDeliveryDate ? ` · доставка: ${formatOrderDateRu(selectedOrderForLink.finalDeliveryDate)}` : ""}
-							{" · "}
-							{formatRubBooking(selectedOrderForLink.orderTotal)}
+						<div className={styles.orderLinkSelectedMeta}>
+							<span>{formatOrderDateRu(selectedOrderForLink.createdAt)}</span>
+							<span className={styles.orderLinkPrice}>{formatRubBooking(selectedOrderForLink.orderTotal)}</span>
 						</div>
-						<div className="bookingLinkSelectedMeta">
+						<div className={styles.orderLinkSelectedMeta}>
 							Тел.: {selectedOrderForLink.contactPhone || "—"}
 							{selectedOrderForLink.client
 								? ` · ${clientShortName(selectedOrderForLink.client)}`
@@ -190,12 +192,12 @@ function OrderLinkSearchBlock(props: {
 									? ` · ${selectedOrderForLink.contactName}`
 									: ""}
 						</div>
-						<button type="button" onClick={clearOrderLinkSelection} className="ghostButton">
-							Другой заказ
+						<button type="button" onClick={clearOrderLinkSelection} className={styles.orderLinkGhostBtn}>
+							Выбрать другой
 						</button>
 					</div>
 				) : (
-					<div className={`searchInput ${orderLinkFocused && orderLinkQuery.trim() ? "searching" : ""}`}>
+					<div className={styles.orderLinkInputWrap}>
 						<SearchDropdownInput
 							value={orderLinkQuery}
 							onChange={handleOrderLinkInput}
@@ -204,35 +206,37 @@ function OrderLinkSearchBlock(props: {
 								setOrderLinkFocused(true);
 							}}
 							onBlur={handleOrderLinkBlur}
-							placeholder="ID заказа"
-							inputClassName="searchInput"
+							placeholder="Введите номер заказа"
+							inputClassName={styles.orderLinkInput}
 							isActiveSearch={orderLinkFocused && orderLinkQuery.trim().length >= 1}
 							showDropdown={orderLinkFocused && Boolean(orderLinkQuery.trim())}
 						>
 							{orderLinkFocused && orderLinkLoading && orderLinkQuery.trim() && (
-								<div className="searchResults bookingLinkDropdown loading">
+								<div className={`${styles.orderLinkDropdown} ${styles.loading}`}>
 									<Loading />
 								</div>
 							)}
 							{orderLinkFocused && orderLinkQuery.trim() && !orderLinkLoading && (
-								<div className="searchResults bookingLinkDropdown">
+								<div className={styles.orderLinkDropdown}>
 									{orderLinkResults.length > 0 ? (
 										orderLinkResults.map((row) => (
 											<div
 												key={row.id}
-												className="searchResultItem bookingLinkPick"
+												className={styles.orderLinkPick}
 												onMouseDown={() => handleSelectOrderFromLink(row)}
 											>
-												<div className="bookingLinkPickTop">
-													<span className="bookingLinkPickId">#{row.id}</span>
-													<span className="bookingLinkPickWhen">{getOrderStatusText(row.status)}</span>
-													<span className="bookingLinkPickStatus">{formatOrderDateRu(row.createdAt)}</span>
+												<div className={styles.orderLinkPickHead}>
+													<span className={styles.orderLinkPickId}>#{row.id}</span>
+													<span className={styles.orderLinkBadge}>{getOrderStatusText(row.status)}</span>
 												</div>
-												<div className="bookingLinkPickRow">{formatRubBooking(row.orderTotal)}</div>
+												<div className={styles.orderLinkPickMeta}>
+													<span>{formatOrderDateRu(row.createdAt)}</span>
+													<span className={styles.orderLinkPrice}>{formatRubBooking(row.orderTotal)}</span>
+												</div>
 											</div>
 										))
 									) : (
-										<div className="bookingLinkPickEmpty">Нет подходящих заказов с таким номером</div>
+										<div className={styles.orderLinkEmpty}>Нет подходящих заказов с таким номером</div>
 									)}
 								</div>
 							)}
@@ -240,17 +244,22 @@ function OrderLinkSearchBlock(props: {
 					</div>
 				)}
 			</div>
-			<div className="bookingLinkActions">
+			<div className={styles.orderLinkActions}>
+				<button
+					type="button"
+					onClick={cancelOrderLinkPanel}
+					className={styles.orderLinkCancelBtn}
+					disabled={isOrderLinkSaving}
+				>
+					Отмена
+				</button>
 				<button
 					type="button"
 					onClick={onConfirmOrderPick}
-					className="primaryButton"
+					className={styles.orderLinkConfirmBtn}
 					disabled={isOrderLinkSaving || !selectedOrderForLink}
 				>
 					{isOrderLinkSaving ? "Сохранение…" : confirmOrderPickLabel}
-				</button>
-				<button type="button" onClick={cancelOrderLinkPanel} className="secondaryButton" disabled={isOrderLinkSaving}>
-					Отмена
 				</button>
 			</div>
 		</div>
@@ -941,146 +950,277 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 		return <Loading />;
 	}
 
-	return (
-		<>
-			<div className={`formContainer`}>
-				<div className={`formHeader`}>
-					<h2>{isCreating ? "Создание записи" : `Запись #${bookingId}`}</h2>
-					{isCreating ? (
-						<div className="orderMainInfo">
-							<div className="orderInfoFields">
-								<div className="infoRow">
-									<div className="infoField column">
-										<p className="toLinkOrderHint">
-											После сохранения здесь отобразится краткая сводка по записи. Заказ можно указать сразу (необязательно) или привязать позже.
-										</p>
-									</div>
-								</div>
-								{canManageOrderLink && (
-									<div className="infoRow">
-										<div className={`infoField infoFieldBookingLink column`}>
-											<span className="infoLabel">Связь с заказом</span>
-											<div className="infoValue column">
-												{!orderLinkPanelOpen ? (
-													selectedOrder ? (
-														<LinkedRelationCard
-															title={
-																<>
-																	<Link href={`/admin/orders/${selectedOrder.id}`} className="itemLink" target="_blank">
-																		Заказ #{selectedOrder.id}
-																	</Link>
-																	<span className="bookingLinkPickStatus">{getOrderStatusText(selectedOrder.status)}</span>
-																</>
-															}
-															metaLines={[
-																{
-																	label: "Сумма и даты:",
-																	value: (
-																		<>
-																			{formatRubBooking(selectedOrder.orderTotal)}
-																			{" · создан: "}
-																			{formatOrderDateRu(selectedOrder.createdAt)}
-																			{selectedOrder.finalDeliveryDate
-																				? ` · доставка: ${formatOrderDateRu(selectedOrder.finalDeliveryDate)}`
-																				: ""}
-																		</>
-																	),
-																},
-																{
-																	label: "Контакт:",
-																	value: orderPickContactLine(selectedOrder),
-																},
-															]}
-															actions={
-																<>
-																	<button type="button" className="primaryButton" onClick={openOrderLinkPanel}>
-																		Другой заказ
-																	</button>
-																	<button
-																		type="button"
-																		className="secondaryButton"
-																		onClick={() => {
-																			setSelectedOrder(null);
-																		}}
-																	>
-																		Убрать
-																	</button>
-																</>
-															}
-														/>
-													) : (
-														<>
-															<span className="toLinkOrderHint">Не выбран.</span>
-															<button type="button" onClick={openOrderLinkPanel} className="primaryButton">
-																Указать заказ
-															</button>
-														</>
-													)
-												) : (
-													<>
-														{selectedOrder ? (
-															<LinkedRelationCard
-																title={
-																	<>
-																		<Link href={`/admin/orders/${selectedOrder.id}`} className="itemLink" target="_blank">
-																			Заказ #{selectedOrder.id}
-																		</Link>
-																		<span className="bookingLinkPickStatus">{getOrderStatusText(selectedOrder.status)}</span>
-																	</>
-																}
-																metaLines={[
-																	{
-																		label: "Сумма и даты:",
-																		value: (
-																			<>
-																				{formatRubBooking(selectedOrder.orderTotal)}
-																				{" · создан: "}
-																				{formatOrderDateRu(selectedOrder.createdAt)}
-																				{selectedOrder.finalDeliveryDate
-																					? ` · доставка: ${formatOrderDateRu(selectedOrder.finalDeliveryDate)}`
-																					: ""}
-																			</>
-																		),
-																	},
-																	{
-																		label: "Контакт:",
-																		value: orderPickContactLine(selectedOrder),
-																	},
-																]}
-															/>
-														) : null}
-														<OrderLinkSearchBlock
-															hintText={
-																selectedOrder
-																	? "Укажите ID другого заказа — в списке заказы без другой записи или уже привязанные к этой."
-																	: undefined
-															}
-															orderLinkQuery={orderLinkQuery}
-															handleOrderLinkInput={handleOrderLinkInput}
-															orderLinkFocused={orderLinkFocused}
-															setOrderLinkFocused={setOrderLinkFocused}
-															orderLinkBlurTimeout={orderLinkBlurTimeout}
-															handleOrderLinkBlur={handleOrderLinkBlur}
-															orderLinkLoading={orderLinkLoading}
-															orderLinkResults={orderLinkResults}
-															handleSelectOrderFromLink={handleSelectOrderFromLink}
-															selectedOrderForLink={selectedOrderForLink}
-															clearOrderLinkSelection={clearOrderLinkSelection}
-															onConfirmOrderPick={applyOrderDraftOnCreate}
-															confirmOrderPickLabel="Указать заказ"
-															cancelOrderLinkPanel={cancelOrderLinkPanel}
-															isOrderLinkSaving={false}
-														/>
-													</>
-												)}
-											</div>
-										</div>
-									</div>
-								)}
+	const renderCreateOrderLinkSection = () => {
+		if (!canManageOrderLink) return null;
+
+		return (
+			<div className={`formSection ${styles.formSection} ${styles.orderLinkSection}`}>
+				<div className={styles.sectionHeader}>
+					<h3 className="formSectionTitle">Заказ</h3>
+					<span className={styles.optionalBadge}>необязательно</span>
+				</div>
+				<div className={styles.orderLinkBody}>
+					{!orderLinkPanelOpen ? (
+						selectedOrder ? (
+							<LinkedRelationCard
+								title={
+									<>
+										<Link href={`/admin/orders/${selectedOrder.id}`} className="itemLink" target="_blank">
+											Заказ #{selectedOrder.id}
+										</Link>
+										<span className="bookingLinkPickStatus">{getOrderStatusText(selectedOrder.status)}</span>
+									</>
+								}
+								metaLines={[
+									{
+										label: "Сумма:",
+										value: (
+											<>
+												{formatRubBooking(selectedOrder.orderTotal)}
+												{" · "}
+												{formatOrderDateRu(selectedOrder.createdAt)}
+											</>
+										),
+									},
+									{
+										label: "Контакт:",
+										value: orderPickContactLine(selectedOrder),
+									},
+								]}
+								actions={
+									<>
+										<button type="button" className="primaryButton" onClick={openOrderLinkPanel}>
+											Сменить
+										</button>
+										<button type="button" className="secondaryButton" onClick={() => setSelectedOrder(null)}>
+											Убрать
+										</button>
+									</>
+								}
+							/>
+						) : (
+							<div className={styles.orderLinkEmpty}>
+								<p className={styles.fieldHint}>Можно привязать заказ сейчас или после создания записи.</p>
+								<button type="button" onClick={openOrderLinkPanel} className={styles.linkOrderButton}>
+									<Plus size={16} />
+									Привязать заказ
+								</button>
 							</div>
+						)
+					) : (
+						<>
+							{selectedOrder ? (
+								<LinkedRelationCard
+									title={
+										<>
+											<Link href={`/admin/orders/${selectedOrder.id}`} className="itemLink" target="_blank">
+												Заказ #{selectedOrder.id}
+											</Link>
+											<span className="bookingLinkPickStatus">{getOrderStatusText(selectedOrder.status)}</span>
+										</>
+									}
+									metaLines={[
+										{
+											label: "Сумма:",
+											value: (
+												<>
+													{formatRubBooking(selectedOrder.orderTotal)}
+													{" · "}
+													{formatOrderDateRu(selectedOrder.createdAt)}
+												</>
+											),
+										},
+									]}
+								/>
+							) : null}
+							<OrderLinkSearchBlock
+								hintText="Введите ID заказа — показываются заказы без другой записи."
+								orderLinkQuery={orderLinkQuery}
+								handleOrderLinkInput={handleOrderLinkInput}
+								orderLinkFocused={orderLinkFocused}
+								setOrderLinkFocused={setOrderLinkFocused}
+								orderLinkBlurTimeout={orderLinkBlurTimeout}
+								handleOrderLinkBlur={handleOrderLinkBlur}
+								orderLinkLoading={orderLinkLoading}
+								orderLinkResults={orderLinkResults}
+								handleSelectOrderFromLink={handleSelectOrderFromLink}
+								selectedOrderForLink={selectedOrderForLink}
+								clearOrderLinkSelection={clearOrderLinkSelection}
+								onConfirmOrderPick={applyOrderDraftOnCreate}
+								confirmOrderPickLabel="Привязать"
+								cancelOrderLinkPanel={cancelOrderLinkPanel}
+								isOrderLinkSaving={false}
+							/>
+						</>
+					)}
+				</div>
+			</div>
+		);
+	};
+
+	const renderCreateFormFields = () => (
+		<>
+			<div className={`formSection ${styles.formSection}`}>
+				<h3 className="formSectionTitle">Когда и где</h3>
+				<div className="formRow">
+					<div className={`formField ${styles.compactField}`}>
+						<DatePickerField
+							label="Дата *"
+							value={formData.scheduledDate}
+							onChange={(date: string) => setFormData({ ...formData, scheduledDate: date })}
+							placeholder="Выберите дату"
+						/>
+					</div>
+					<div className={`formField ${styles.compactField}`}>
+						<label htmlFor="scheduledTime">Время *</label>
+						<input
+							type="time"
+							id="scheduledTime"
+							value={formData.scheduledTime}
+							onChange={(e) => setFormData({ ...formData, scheduledTime: e.target.value })}
+							required
+						/>
+					</div>
+				</div>
+				<div className={`formField ${styles.compactField}`}>
+					<label htmlFor="bookingDepartmentId">Отдел *</label>
+					<CustomSelect
+						options={departmentOptions}
+						value={formData.bookingDepartmentId ? formData.bookingDepartmentId.toString() : ""}
+						onChange={(value) => setFormData({ ...formData, bookingDepartmentId: value ? parseInt(value, 10) : 0 })}
+						placeholder="Выберите отдел"
+					/>
+				</div>
+			</div>
+
+			<div className={`formSection ${styles.formSection}`}>
+				<h3 className="formSectionTitle">Клиент</h3>
+				<div className={`formField ${styles.compactField}`}>
+					<label htmlFor="clientSearch">Клиент из базы</label>
+					{selectedClient ? (
+						<div className={styles.clientSelectedBlock}>
+							<ClientSelectedSummary client={selectedClient} />
+							<button type="button" onClick={handleClientClear} className="removeButton">
+								Убрать ×
+							</button>
 						</div>
 					) : (
-						bookingRecord && (
+						<SearchDropdownInput
+							id="clientSearch"
+							value={clientSearch}
+							onChange={handleClientManualInput}
+							onFocus={() => {
+								if (clientBlurTimeout.current) clearTimeout(clientBlurTimeout.current);
+								setIsClientSearchFocused(true);
+							}}
+							onBlur={handleClientBlur}
+							placeholder="ФИО, телефон или ID"
+							isActiveSearch={isClientSearchFocused && clientSearch.length >= 2}
+							showDropdown={isClientSearchFocused && Boolean(clientSearch)}
+						>
+							{isClientSearchFocused && clientSearch ? (
+								<ClientSearchResultsPanel loading={isSearchingClients} results={clientSearchResults} onSelect={handleClientSelect} />
+							) : null}
+						</SearchDropdownInput>
+					)}
+				</div>
+				<div className="formRow">
+					<div className={`formField ${styles.compactField}`}>
+						<label htmlFor="contactPhone">Телефон для связи *</label>
+						<input
+							type="tel"
+							id="contactPhone"
+							value={formData.contactPhone || ""}
+							onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
+							placeholder="+79991234567"
+							required
+						/>
+					</div>
+					{!selectedClient && (
+						<div className={`formField ${styles.compactField}`}>
+							<label htmlFor="clientName">Имя (если нет в базе)</label>
+							<input
+								type="text"
+								id="clientName"
+								value={formData.clientName || ""}
+								onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
+								placeholder="Иван Иванов"
+							/>
+						</div>
+					)}
+				</div>
+			</div>
+
+			{user?.role !== "manager" && (
+				<div className={`formSection ${styles.formSection}`}>
+					<h3 className="formSectionTitle">Ответственный</h3>
+					<div className={`formField ${styles.compactField}`}>
+						<label htmlFor="managerSearch">Менеджер</label>
+						{selectedManager ? (
+							<div className={styles.clientSelectedBlock}>
+								<ManagerSelectedSummary manager={selectedManager} />
+								<button type="button" onClick={handleManagerClear} className="removeButton">
+									Убрать ×
+								</button>
+							</div>
+						) : (
+							<SearchDropdownInput
+								id="managerSearch"
+								value={managerSearch}
+								onChange={handleManagerManualInput}
+								onFocus={() => {
+									if (managerBlurTimeout.current) clearTimeout(managerBlurTimeout.current);
+									setIsManagerSearchFocused(true);
+								}}
+								onBlur={handleManagerBlur}
+								placeholder="ФИО, телефон или ID"
+								isActiveSearch={isManagerSearchFocused && managerSearch.length >= 2}
+								showDropdown={isManagerSearchFocused && Boolean(managerSearch)}
+							>
+								{isManagerSearchFocused && managerSearch ? (
+									<ManagerSearchResultsPanel loading={isSearchingManagers} results={managerSearchResults} onSelect={handleManagerSelect} />
+								) : null}
+							</SearchDropdownInput>
+						)}
+					</div>
+				</div>
+			)}
+
+			{renderCreateOrderLinkSection()}
+
+			<div className={`formSection ${styles.formSection}`}>
+				<h3 className="formSectionTitle">Дополнительно</h3>
+				<div className={`formField ${styles.compactField} ${styles.notesField}`}>
+					<label htmlFor="notes">Примечания</label>
+					<textarea
+						id="notes"
+						value={formData.notes}
+						onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+						placeholder="Комментарий к записи…"
+						rows={2}
+					/>
+				</div>
+			</div>
+		</>
+	);
+
+	return (
+		<>
+			<div className={`formContainer ${isCreating ? styles.bookingFormCompact : ""}`}>
+				<div className={`formHeader`}>
+					{isCreating ? (
+						<>
+							<Link href="/admin/bookings" className={styles.backLink}>
+								<ArrowLeft size={16} />
+								К списку записей
+							</Link>
+							<h2>Новая запись</h2>
+							<p className={styles.headerHint}>Дата, отдел и телефон — обязательны. Остальное можно заполнить позже.</p>
+						</>
+					) : (
+						<>
+							<h2>{`Запись #${bookingId}`}</h2>
+							{bookingRecord && (
 							<div className="orderMainInfo">
 								<div className="orderInfoFields">
 									<div className="infoRow">
@@ -1265,10 +1405,15 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 									</div>
 								</div>
 							</div>
-						)
+						)}
+						</>
 					)}
 				</div>
 				<div className="formFields">
+				{isCreating ? (
+					renderCreateFormFields()
+				) : (
+					<>
 				{/* Дата записи */}
 				<div className="formField">
 					<DatePickerField
@@ -1302,13 +1447,8 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 				<div className="formField">
 					<label htmlFor="clientSearch">Клиент</label>
 					{selectedClient ? (
-						<div className="selectedClient">
-							<span>
-								<Link href={`/admin/users/${selectedClient.id}`} className="itemLink" target="_blank">
-									{`${selectedClient.first_name || ""} ${selectedClient.last_name || ""} ${selectedClient.middle_name || ""}`.trim() || selectedClient.phone} (
-									{selectedClient.phone})
-								</Link>
-							</span>
+						<div className={styles.clientSelectedBlock}>
+							<ClientSelectedSummary client={selectedClient} />
 							<button type="button" onClick={handleClientClear} className="removeButton">
 								Убрать клиента ×
 							</button>
@@ -1327,27 +1467,9 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 							isActiveSearch={isClientSearchFocused && clientSearch.length >= 2}
 							showDropdown={isClientSearchFocused && Boolean(clientSearch)}
 						>
-							{isClientSearchFocused && isSearchingClients && clientSearch && (
-								<div className="searchResults loading">
-									<Loading />
-								</div>
-							)}
-							{isClientSearchFocused && clientSearch && !isSearchingClients && (
-								<div className="searchResults">
-									{clientSearchResults.length > 0 ? (
-										clientSearchResults.map((client) => {
-											const fullName = `${client.first_name || ""} ${client.last_name || ""} ${client.middle_name || ""}`.trim();
-											return (
-												<div key={client.id} className="searchResultItem" onMouseDown={() => handleClientSelect(client)}>
-													{fullName || client.phone} - {client.phone} {client.id ? `(ID: ${client.id})` : ""}
-												</div>
-											);
-										})
-									) : (
-										<div className="searchResultItem">Нет результатов</div>
-									)}
-								</div>
-							)}
+							{isClientSearchFocused && clientSearch ? (
+								<ClientSearchResultsPanel loading={isSearchingClients} results={clientSearchResults} onSelect={handleClientSelect} />
+							) : null}
 						</SearchDropdownInput>
 					)}
 				</div>
@@ -1385,12 +1507,8 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 					<div className="formField">
 						<label htmlFor="managerSearch">Менеджер</label>
 						{selectedManager ? (
-							<div className="selectedClient">
-								<span>
-									<Link href={`/admin/users/${selectedManager.id}`} className="itemLink" target="_blank">
-										{`${selectedManager.first_name || ""} ${selectedManager.last_name || ""}`.trim() || selectedManager.phone} ({selectedManager.phone})
-									</Link>
-								</span>
+							<div className={styles.clientSelectedBlock}>
+								<ManagerSelectedSummary manager={selectedManager} />
 								<button type="button" onClick={handleManagerClear} className="removeButton">
 									Убрать менеджера ×
 								</button>
@@ -1409,27 +1527,9 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 								isActiveSearch={isManagerSearchFocused && managerSearch.length >= 2}
 								showDropdown={isManagerSearchFocused && Boolean(managerSearch)}
 							>
-								{isManagerSearchFocused && isSearchingManagers && managerSearch && (
-									<div className="searchResults loading">
-										<Loading />
-									</div>
-								)}
-								{isManagerSearchFocused && managerSearch && !isSearchingManagers && (
-									<div className="searchResults">
-										{managerSearchResults.length > 0 ? (
-											managerSearchResults.map((manager) => {
-												const fullName = `${manager.first_name || ""} ${manager.last_name || ""}`.trim();
-												return (
-													<div key={manager.id} className="searchResultItem" onMouseDown={() => handleManagerSelect(manager)}>
-														{fullName || manager.phone} - {manager.phone} {manager.id ? `(ID: ${manager.id})` : ""}
-													</div>
-												);
-											})
-										) : (
-											<div className="searchResultItem">Нет результатов</div>
-										)}
-									</div>
-								)}
+								{isManagerSearchFocused && managerSearch ? (
+									<ManagerSearchResultsPanel loading={isSearchingManagers} results={managerSearchResults} onSelect={handleManagerSelect} />
+								) : null}
 							</SearchDropdownInput>
 						)}
 					</div>
@@ -1469,11 +1569,20 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 						rows={4}
 					/>
 				</div>
+					</>
+				)}
 				</div>
 			</div>
 
-			{/* Фиксированные кнопки для изменений */}
-			{hasChanges && <FixedActionButtons onCancel={handleCancel} onSave={handleSave} isSaving={saving} saveText={isCreating ? "Создать запись" : "Сохранить"} />}
+			{hasChanges && (
+				<FixedActionButtons
+					onCancel={handleCancel}
+					onSave={handleSave}
+					isSaving={saving}
+					saveText={isCreating ? "Создать запись" : "Сохранить"}
+					cancelText={isCreating ? "Отмена" : "Отменить"}
+				/>
+			)}
 		</>
 	);
 }

@@ -59,12 +59,17 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function CategoriesPage() {
 	return (
-		<div className={`screen ${styles.screen}`}>
+		<div className="screen">
 			<div className="screenContent">
 				<NavigationMenu />
-				<h1 className={`pageTitle ${styles.pageTitle}`}>Материалы для ТО</h1>
 
-				{/* Секция с категориями с использованием Suspense для скелетона */}
+				<header className={styles.pageHeader}>
+					<h1 className={`pageTitle ${styles.pageTitle}`}>Материалы для ТО</h1>
+					<p className={`pageLead ${styles.pageLead}`}>
+						Подбор масел, фильтров и расходников по категориям — выберите раздел и уточните параметры автомобиля.
+					</p>
+				</header>
+
 				<Suspense fallback={<CategoriesSkeleton />}>
 					<CategoriesContent />
 				</Suspense>

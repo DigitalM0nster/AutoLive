@@ -1,17 +1,19 @@
-// src\components\ui\confirmModal\ConfirmPopup.tsx
-
 "use client";
 
 import React from "react";
 import styles from "./styles.module.scss";
 
+type ConfirmVariant = "primary" | "danger";
+
 type ConfirmPopupProps = {
 	open: boolean;
 	title: string;
-	children?: React.ReactNode; // Новый пропс для React элементов
-	message?: string; // Оставляем для обратной совместимости
+	subtitle?: string;
+	children?: React.ReactNode;
+	message?: string;
 	confirmText?: string;
 	cancelText?: string;
+	variant?: ConfirmVariant;
 	confirmButtonClassName?: string;
 	cancelButtonClassName?: string;
 	onConfirm: () => void;
@@ -21,10 +23,12 @@ type ConfirmPopupProps = {
 export default function ConfirmPopup({
 	open,
 	title,
+	subtitle,
 	children,
 	message,
 	confirmText = "Удалить",
 	cancelText = "Отмена",
+	variant = "primary",
 	confirmButtonClassName,
 	cancelButtonClassName,
 	onConfirm,
@@ -32,34 +36,40 @@ export default function ConfirmPopup({
 }: ConfirmPopupProps) {
 	if (!open) return null;
 
+	const confirmClass =
+		confirmButtonClassName ??
+		`${styles.confirmButton} ${variant === "danger" ? styles.confirmButtonDanger : styles.confirmButtonPrimary}`;
+
 	return (
-		<div className={`popup confirmPopup ${styles.confirmPopup}`}>
+		<div className={`popup confirmPopup ${styles.confirmPopup}`} role="dialog" aria-modal="true" aria-labelledby="confirm-popup-title">
 			<div className={`background ${styles.background}`} onClick={onCancel} />
 			<div className={`contentBlock ${styles.contentBlock}`}>
-				<div className="popupHeader">
-					<h2 className={`title ${styles.title}`}>{title}</h2>
+				<div className={styles.popupHeader}>
+					<h2 id="confirm-popup-title" className={styles.title}>
+						{title}
+					</h2>
+					{subtitle ? <p className={styles.subtitle}>{subtitle}</p> : null}
 				</div>
-				<div className="popupBody">
-					{children ? <div className={`content ${styles.content}`}>{children}</div> : <p className={`message ${styles.message}`}>{message}</p>}
+
+				<div className={styles.popupBody}>
+					{children ? <div className={styles.content}>{children}</div> : message ? <p className={styles.message}>{message}</p> : null}
 				</div>
-				<div className="popupFooter">
-					<div className={`buttonsBlock ${styles.buttonsBlock}`}>
-						<button onClick={onCancel} className={`${cancelButtonClassName ?? `cancelButton ${styles.cancelButton}`}`}>
+
+				<div className={styles.popupFooter}>
+					<div className={styles.buttonsBlock}>
+						<button type="button" onClick={onCancel} className={cancelButtonClassName ?? styles.cancelButton}>
 							{cancelText}
 						</button>
-						<button
-							onClick={onConfirm}
-							// если передали класс — используем его, иначе — дефолтный "красный"
-							className={`button ${confirmButtonClassName ?? ""}`}
-						>
+						<button type="button" onClick={onConfirm} className={confirmClass}>
 							{confirmText}
 						</button>
 					</div>
 				</div>
-				<div className="closeIcon" onClick={onCancel}>
-					<div className="line" />
-					<div className="line" />
-				</div>
+
+				<button type="button" className={styles.closeIcon} onClick={onCancel} aria-label="Закрыть">
+					<span className={styles.closeLine} />
+					<span className={styles.closeLine} />
+				</button>
 			</div>
 		</div>
 	);

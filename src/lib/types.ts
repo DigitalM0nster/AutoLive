@@ -395,8 +395,7 @@ export type Promotion = {
 	description: string;
 	image: string;
 	order: number;
-	buttonText: string;
-	buttonLink: string;
+	buttonsJson: string | null;
 	startDate: string | null;
 	endDate: string | null;
 };
@@ -511,6 +510,18 @@ export type Order = {
 	bookingDepartmentId?: number | null; // Адрес доставки (отдел для записей)
 	deliveryPickupPointId?: number | null; // Адрес доставки (пункт выдачи; взаимоисключающе с bookingDepartmentId)
 	createdBy?: number | null;
+	bookedUntil?: string | Date | null;
+	readyUntil?: string | Date | null;
+	prepaymentAmount?: number | null;
+	prepaymentDate?: string | Date | null;
+	paymentDate?: string | Date | null;
+	orderAmount?: number | null;
+	completionDate?: string | Date | null;
+	returnReason?: string | null;
+	returnDate?: string | Date | null;
+	returnAmount?: number | null;
+	returnPaymentDate?: string | Date | null;
+	returnDocumentNumber?: string | null;
 	// Связи
 	manager?: {
 		id: number;

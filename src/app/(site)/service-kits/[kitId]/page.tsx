@@ -89,6 +89,8 @@ export default async function ServiceKitPage({ params }: PageParams) {
 		<div className={`screen ${styles.screen}`}>
 			<div className="screenContent">
 				<NavigationMenu />
+				<h1 className="pageTitle">{kit.name}</h1>
+				<p className="pageLead">Состав комплекта и стоимость — выберите аналоги при необходимости.</p>
 				<div className={`screenBlock ${styles.screenBlock}`}>
 					<div className={styles.serviceKitDetail}>
 						<div className={styles.title}>{kit.name}</div>

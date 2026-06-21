@@ -1,9 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, type ReactNode } from "react";
 import Link from "next/link";
 import styles from "../local_components/styles.module.scss";
+import editorStyles from "./LegalDocumentsEditor.module.scss";
+import LegalDocumentCard from "./local_components/LegalDocumentCard";
 import FixedActionButtons from "@/components/ui/fixedActionButtons/FixedActionButtons";
+import { showSuccessToast } from "@/components/ui/toast/ToastProvider";
 import type { SiteLegalContentData } from "@/lib/siteLegalContent.shared";
 import { defaultSiteLegalContent } from "@/lib/siteLegalContent.shared";
 
@@ -33,8 +36,6 @@ export default function AdminLegalDocumentsPage() {
 	const [error, setError] = useState<string | null>(null);
 	const [hasChanges, setHasChanges] = useState(false);
 	const [uploading, setUploading] = useState<"privacy" | "cookies" | null>(null);
-	const privacyFileRef = useRef<HTMLInputElement | null>(null);
-	const cookiesFileRef = useRef<HTMLInputElement | null>(null);
 
 	const loadData = useCallback(async () => {
 		try {
@@ -42,8 +43,9 @@ export default function AdminLegalDocumentsPage() {
 			const res = await fetch("/api/legal-content");
 			if (!res.ok) throw new Error("Ошибка загрузки");
 			const json = (await res.json()) as SiteLegalContentData;
-			setData({ ...defaultSiteLegalContent, ...json });
-			setInitialData(JSON.parse(JSON.stringify({ ...defaultSiteLegalContent, ...json })));
+			const normalized = { ...defaultSiteLegalContent, ...json };
+			setData(normalized);
+			setInitialData(JSON.parse(JSON.stringify(normalized)));
 		} catch (err) {
 			setError(err instanceof Error ? err.message : "Ошибка загрузки");
 		} finally {
@@ -77,7 +79,7 @@ export default function AdminLegalDocumentsPage() {
 			setData(saved);
 			setInitialData(JSON.parse(JSON.stringify(saved)));
 			setHasChanges(false);
-			alert("Сохранено");
+			showSuccessToast("Юридические документы сохранены");
 		} catch (e) {
 			setError(e instanceof Error ? e.message : "Ошибка сохранения");
 		} finally {
@@ -116,158 +118,76 @@ export default function AdminLegalDocumentsPage() {
 		}
 	};
 
-	if (loading) {
-		return (
-			<div className="screenContent">
-				<div className="tableContainer">
-					<div className="tabsContainer">
-						<div className="tabTitle">Юридические документы</div>
-					</div>
-					<div className="tableContent">
-						<div className={styles.editorPlaceholder}>Загрузка...</div>
-					</div>
+	const renderShell = (children: ReactNode) => (
+		<div className="screenContent">
+			<div className="tableContainer legalDocumentsPage">
+				<div className="tabsContainer column">
+					<Link href="/admin/dashboard" className={styles.backToContentLink}>
+						<span className={styles.backToContentLinkArrow} aria-hidden>
+							←
+						</span>
+						На панель
+					</Link>
+					<div className="tabTitle">Юридические документы</div>
 				</div>
+				<div className="tableContent">{children}</div>
 			</div>
-		);
+		</div>
+	);
+
+	if (loading) {
+		return renderShell(<div className={styles.editorPlaceholder}>Загрузка...</div>);
 	}
 
 	return (
 		<div className="screenContent">
-			<div className="tableContainer">
+			<div className="tableContainer legalDocumentsPage">
 				<div className="tabsContainer column">
-					<Link href="/admin/content" className={styles.backToContentLink}>
+					<Link href="/admin/dashboard" className={styles.backToContentLink}>
 						<span className={styles.backToContentLinkArrow} aria-hidden>
 							←
 						</span>
-						Редактор контента
+						На панель
 					</Link>
 					<div className="tabTitle">Юридические документы</div>
+					<p className={editorStyles.tabsHint}>
+						Все юридические документы сайта: страницы <code>/privacy</code> и <code>/cookies</code>, а также ссылки на них в подвале.
+					</p>
 				</div>
-				<div className={`tableContent contentComponent ${styles.contentComponent}`}>
-					<div className={`formFields ${styles.formFields}`}>
-						{error && <div className={styles.errorBlock}>{error}</div>}
 
-						<p className={styles.addressesSectionHint}>
-							Файлы для страниц <code>/privacy</code> и <code>/cookies</code> на сайте. Это отдельный раздел: документы в подвале настраиваются в
-							«Подвал» и не заменяют эти политики.
-						</p>
+				<div className={`tableContent contentComponent ${styles.contentComponent} ${editorStyles.legalEditor}`}>
+					<div className="formFields">
+						{error && <div className={editorStyles.errorBlock}>{error}</div>}
 
-						<div className="formSection borderBlock">
-							<h3 className="formSectionTitle">Политика / персональные данные (страница /privacy)</h3>
-							<div className="formRow">
-								<div className={`formField ${styles.formField} fullWidth`}>
-									<label htmlFor="legal-privacy-title">Заголовок на странице (необязательно)</label>
-									<input
-										id="legal-privacy-title"
-										type="text"
-										value={data.privacyPolicyTitle ?? ""}
-										onChange={(e) => setData({ ...data, privacyPolicyTitle: e.target.value || null })}
-										placeholder="Политика в отношении персональных данных"
-									/>
-								</div>
-							</div>
-							<div className="formRow">
-								<div className={`formField ${styles.formField} fullWidth`}>
-									<label>Файл (PDF, DOC, DOCX)</label>
-									<input
-										type="file"
-										hidden
-										ref={privacyFileRef}
-										accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-										onChange={(e) => {
-											const f = e.target.files?.[0] ?? null;
-											e.target.value = "";
-											void onPickFile("privacy", f);
-										}}
-									/>
-									<div className="rowBlock phoneRowBlock">
-										<button
-											type="button"
-											className={`button ${styles.addButton} ${styles.button}`}
-											disabled={uploading === "privacy"}
-											onClick={() => privacyFileRef.current?.click()}
-										>
-											{uploading === "privacy" ? "Загрузка…" : data.privacyPolicyFileUrl ? "Заменить файл" : "Загрузить файл"}
-										</button>
-										{data.privacyPolicyFileUrl ?
-											<>
-												<a
-													href={data.privacyPolicyFileUrl}
-													target="_blank"
-													rel="noopener noreferrer"
-													className={styles.addressesListEdit}
-												>
-													Открыть файл
-												</a>
-												<button type="button" className={`button ${styles.removeButton} ${styles.button}`} onClick={() => clearFile("privacy")}>
-													Убрать файл
-												</button>
-											</>
-										:	<span className={styles.labelHint}>Файл не выбран</span>}
-									</div>
-								</div>
-							</div>
-						</div>
+						<LegalDocumentCard
+							title="Политика персональных данных"
+							routePath="/privacy"
+							pageTitleId="legal-privacy-title"
+							pageTitle={data.privacyPolicyTitle}
+							onPageTitleChange={(value) => setData({ ...data, privacyPolicyTitle: value })}
+							pageTitlePlaceholder="Политика в отношении персональных данных"
+							fileUrl={data.privacyPolicyFileUrl}
+							uploading={uploading === "privacy"}
+							onPickFile={(file) => void onPickFile("privacy", file)}
+							onClearFile={() => clearFile("privacy")}
+						/>
 
-						<div className="formSection borderBlock">
-							<h3 className="formSectionTitle">Политика cookie (страница /cookies)</h3>
-							<div className="formRow">
-								<div className={`formField ${styles.formField} fullWidth`}>
-									<label htmlFor="legal-cookies-title">Заголовок на странице (необязательно)</label>
-									<input
-										id="legal-cookies-title"
-										type="text"
-										value={data.cookiesPolicyTitle ?? ""}
-										onChange={(e) => setData({ ...data, cookiesPolicyTitle: e.target.value || null })}
-										placeholder="Политика использования файлов cookie"
-									/>
-								</div>
-							</div>
-							<div className="formRow">
-								<div className={`formField ${styles.formField} fullWidth`}>
-									<label>Файл (PDF, DOC, DOCX)</label>
-									<input
-										type="file"
-										hidden
-										ref={cookiesFileRef}
-										accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-										onChange={(e) => {
-											const f = e.target.files?.[0] ?? null;
-											e.target.value = "";
-											void onPickFile("cookies", f);
-										}}
-									/>
-									<div className="rowBlock phoneRowBlock">
-										<button
-											type="button"
-											className={`button ${styles.addButton} ${styles.button}`}
-											disabled={uploading === "cookies"}
-											onClick={() => cookiesFileRef.current?.click()}
-										>
-											{uploading === "cookies" ? "Загрузка…" : data.cookiesPolicyFileUrl ? "Заменить файл" : "Загрузить файл"}
-										</button>
-										{data.cookiesPolicyFileUrl ?
-											<>
-												<a
-													href={data.cookiesPolicyFileUrl}
-													target="_blank"
-													rel="noopener noreferrer"
-													className={styles.addressesListEdit}
-												>
-													Открыть файл
-												</a>
-												<button type="button" className={`button ${styles.removeButton} ${styles.button}`} onClick={() => clearFile("cookies")}>
-													Убрать файл
-												</button>
-											</>
-										:	<span className={styles.labelHint}>Файл не выбран</span>}
-									</div>
-								</div>
-							</div>
-						</div>
+						<LegalDocumentCard
+							title="Политика cookie"
+							routePath="/cookies"
+							pageTitleId="legal-cookies-title"
+							pageTitle={data.cookiesPolicyTitle}
+							onPageTitleChange={(value) => setData({ ...data, cookiesPolicyTitle: value })}
+							pageTitlePlaceholder="Политика использования файлов cookie"
+							fileUrl={data.cookiesPolicyFileUrl}
+							uploading={uploading === "cookies"}
+							onPickFile={(file) => void onPickFile("cookies", file)}
+							onClearFile={() => clearFile("cookies")}
+						/>
 					</div>
 				</div>
 			</div>
+
 			{hasChanges && <FixedActionButtons onCancel={handleCancel} onSave={handleSave} isSaving={saving} saveText="Сохранить изменения" />}
 		</div>
 	);

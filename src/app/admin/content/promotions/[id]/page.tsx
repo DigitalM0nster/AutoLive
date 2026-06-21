@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import ImageUploader from "../imageUploader";
+import PromotionButtonsEditor from "../PromotionButtonsEditor";
 import Loading from "@/components/ui/loading/Loading";
 import FixedActionButtons from "@/components/ui/fixedActionButtons/FixedActionButtons";
 import styles from "../../local_components/styles.module.scss";
+import { parsePromotionButtons, type PromotionButton, validatePromotionButtons } from "@/lib/promotionButtons";
 
 type PageParams = {
 	params: Promise<{ id: string }>;
@@ -27,8 +29,7 @@ export default function EditPromotionPage({ params }: PageParams) {
 	const [title, setTitle] = useState("");
 	const [description, setDescription] = useState("");
 	const [imageUrl, setImageUrl] = useState("");
-	const [buttonText, setButtonText] = useState("");
-	const [buttonLink, setButtonLink] = useState("");
+	const [buttons, setButtons] = useState<PromotionButton[]>([]);
 	const [startDate, setStartDate] = useState("");
 	const [endDate, setEndDate] = useState("");
 
@@ -36,8 +37,7 @@ export default function EditPromotionPage({ params }: PageParams) {
 		title: string;
 		description: string;
 		imageUrl: string;
-		buttonText: string;
-		buttonLink: string;
+		buttonsJson: string;
 		startDate: string;
 		endDate: string;
 	} | null>(null);
@@ -70,11 +70,12 @@ export default function EditPromotionPage({ params }: PageParams) {
 				const sd = toDateInputValue(data.startDate);
 				const ed = toDateInputValue(data.endDate);
 
+				const parsedButtons = parsePromotionButtons(data.buttonsJson ?? null);
+
 				setTitle(data.title ?? "");
 				setDescription(data.description ?? "");
 				setImageUrl(img);
-				setButtonText(data.buttonText ?? "");
-				setButtonLink(data.buttonLink ?? "");
+				setButtons(parsedButtons);
 				setStartDate(sd);
 				setEndDate(ed);
 
@@ -82,8 +83,7 @@ export default function EditPromotionPage({ params }: PageParams) {
 					title: data.title ?? "",
 					description: data.description ?? "",
 					imageUrl: img,
-					buttonText: data.buttonText ?? "",
-					buttonLink: data.buttonLink ?? "",
+					buttonsJson: JSON.stringify(parsedButtons),
 					startDate: sd,
 					endDate: ed,
 				});
@@ -98,8 +98,7 @@ export default function EditPromotionPage({ params }: PageParams) {
 		? title !== initialData.title ||
 		  description !== initialData.description ||
 		  imageUrl !== initialData.imageUrl ||
-		  buttonText !== initialData.buttonText ||
-		  buttonLink !== initialData.buttonLink ||
+		  JSON.stringify(buttons) !== initialData.buttonsJson ||
 		  startDate !== initialData.startDate ||
 		  endDate !== initialData.endDate
 		: false;
@@ -107,6 +106,15 @@ export default function EditPromotionPage({ params }: PageParams) {
 	const handleSave = async () => {
 		if (!title.trim()) {
 			alert("Укажите название акции");
+			return;
+		}
+		if (startDate && endDate && endDate < startDate) {
+			alert("Дата окончания не может быть раньше даты начала");
+			return;
+		}
+		const buttonsError = validatePromotionButtons(buttons);
+		if (buttonsError) {
+			alert(buttonsError);
 			return;
 		}
 
@@ -119,8 +127,7 @@ export default function EditPromotionPage({ params }: PageParams) {
 					title: title.trim(),
 					description: description.trim() || null,
 					imageUrl: imageUrl || null,
-					buttonText: buttonText.trim() || null,
-					buttonLink: buttonLink.trim() || null,
+					buttons,
 					startDate: startDate || null,
 					endDate: endDate || null,
 				}),
@@ -142,8 +149,7 @@ export default function EditPromotionPage({ params }: PageParams) {
 		setTitle(initialData.title);
 		setDescription(initialData.description);
 		setImageUrl(initialData.imageUrl);
-		setButtonText(initialData.buttonText);
-		setButtonLink(initialData.buttonLink);
+		setButtons(parsePromotionButtons(initialData.buttonsJson));
 		setStartDate(initialData.startDate);
 		setEndDate(initialData.endDate);
 	};
@@ -153,11 +159,11 @@ export default function EditPromotionPage({ params }: PageParams) {
 			<div className="screenContent">
 				<div className="tableContainer">
 					<div className="tabsContainer column">
-						<Link href="/admin/content" className={styles.backToContentLink}>
+						<Link href="/admin/dashboard" className={styles.backToContentLink}>
 							<span className={styles.backToContentLinkArrow} aria-hidden>
 								←
 							</span>
-							Редактор контента
+							На панель
 						</Link>
 						<div className="tabTitle">Редактирование акции</div>
 					</div>
@@ -173,11 +179,11 @@ export default function EditPromotionPage({ params }: PageParams) {
 		<div className="screenContent">
 			<div className="tableContainer">
 				<div className="tabsContainer column">
-					<Link href="/admin/content" className={styles.backToContentLink}>
+					<Link href="/admin/dashboard" className={styles.backToContentLink}>
 						<span className={styles.backToContentLinkArrow} aria-hidden>
 							←
 						</span>
-						Редактор контента
+						На панель
 					</Link>
 					<div className="rowBlock">
 						<Link href="/admin/content/promotions" className="tabButton">
@@ -228,52 +234,53 @@ export default function EditPromotionPage({ params }: PageParams) {
 
 						<div className="formSection borderBlock">
 							<h3 className="formSectionTitle">Даты акции</h3>
+							<p className={styles.sectionNote}>
+								Даты необязательны. Можно указать только начало, только окончание, обе или не указывать вовсе — на баннере
+								отобразится только то, что заполнено.
+							</p>
 							<div className="formRow">
 								<div className="formField">
-									<label htmlFor="promo-edit-startDate">Дата начала</label>
-									<input
-										id="promo-edit-startDate"
-										type="date"
-										value={startDate}
-										onChange={(e) => setStartDate(e.target.value)}
-									/>
+									<label htmlFor="promo-edit-startDate">
+										Дата начала <span className={styles.labelHint}>(необязательно)</span>
+									</label>
+									<div className={styles.dateFieldRow}>
+										<input
+											id="promo-edit-startDate"
+											type="date"
+											value={startDate}
+											onChange={(e) => setStartDate(e.target.value)}
+										/>
+										{startDate ? (
+											<button type="button" className={styles.clearDateButton} onClick={() => setStartDate("")}>
+												Очистить
+											</button>
+										) : null}
+									</div>
 								</div>
 								<div className="formField">
-									<label htmlFor="promo-edit-endDate">Дата окончания</label>
-									<input
-										id="promo-edit-endDate"
-										type="date"
-										value={endDate}
-										onChange={(e) => setEndDate(e.target.value)}
-									/>
+									<label htmlFor="promo-edit-endDate">
+										Дата окончания <span className={styles.labelHint}>(необязательно)</span>
+									</label>
+									<div className={styles.dateFieldRow}>
+										<input
+											id="promo-edit-endDate"
+											type="date"
+											value={endDate}
+											onChange={(e) => setEndDate(e.target.value)}
+										/>
+										{endDate ? (
+											<button type="button" className={styles.clearDateButton} onClick={() => setEndDate("")}>
+												Очистить
+											</button>
+										) : null}
+									</div>
 								</div>
 							</div>
 						</div>
 
 						<div className="formSection borderBlock">
-							<h3 className="formSectionTitle">Кнопка</h3>
-							<div className="formRow">
-								<div className="formField">
-									<label htmlFor="promo-edit-buttonText">Текст кнопки</label>
-									<input
-										id="promo-edit-buttonText"
-										type="text"
-										placeholder="Текст кнопки"
-										value={buttonText}
-										onChange={(e) => setButtonText(e.target.value)}
-									/>
-								</div>
-								<div className="formField">
-									<label htmlFor="promo-edit-buttonLink">Ссылка кнопки</label>
-									<input
-										id="promo-edit-buttonLink"
-										type="text"
-										placeholder="Ссылка кнопки"
-										value={buttonLink}
-										onChange={(e) => setButtonLink(e.target.value)}
-									/>
-								</div>
-							</div>
+							<h3 className="formSectionTitle">Кнопки на баннере</h3>
+							<PromotionButtonsEditor buttons={buttons} onChange={setButtons} />
 						</div>
 					</div>
 				</div>

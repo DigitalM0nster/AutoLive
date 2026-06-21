@@ -19,8 +19,37 @@ type ProductPageProps = {
 	userRole?: string; // Роль пользователя для определения режима отображения
 };
 
+/** Категории для отдела; если для отдела пусто — полный список */
+async function fetchCategoriesForProductForm(departmentId: string | null): Promise<Category[]> {
+	try {
+		if (departmentId) {
+			const response = await fetch(`/api/categories?departmentId=${departmentId}`, {
+				credentials: "include",
+			});
+			if (response.ok) {
+				const data = await response.json();
+				if (Array.isArray(data) && data.length > 0) {
+					return data;
+				}
+			}
+		}
+
+		const allRes = await fetch("/api/categories", { credentials: "include" });
+		if (!allRes.ok) return [];
+		const all = await allRes.json();
+		return Array.isArray(all) ? all : [];
+	} catch {
+		return [];
+	}
+}
+
+function getUserDepartmentId(user: ReturnType<typeof useAuthStore.getState>["user"]): number | null {
+	if (!user) return null;
+	return user.departmentId ?? user.department?.id ?? null;
+}
+
 export default function ProductComponent({ productId, isCreating = false, userRole }: ProductPageProps) {
-	const { user } = useAuthStore();
+	const { user, initAuth } = useAuthStore();
 	const router = useRouter();
 	const [productData, setProductData] = useState<Product | null>(null);
 	const [loading, setLoading] = useState(!isCreating); // Не показываем загрузку при создании
@@ -69,6 +98,11 @@ export default function ProductComponent({ productId, isCreating = false, userRo
 	// Определяем режим отображения на основе роли пользователя
 	const isEditMode = userRole === "superadmin" || userRole === "admin";
 	const isViewMode = userRole === "manager";
+
+	// Сессия нужна для отдела пользователя и прав
+	useEffect(() => {
+		void initAuth();
+	}, [initAuth]);
 
 	// Проверка прав доступа при создании
 	useEffect(() => {
@@ -207,44 +241,35 @@ export default function ProductComponent({ productId, isCreating = false, userRo
 		fetchCategoriesAndDepartments();
 	}, []);
 
-	// Загрузка разрешенных категорий при изменении отдела (для создания товара)
+	// Список категорий для формы создания / смены отдела
 	useEffect(() => {
+		if (!isCreating) return;
+
 		const loadAllowedCategories = async () => {
-			if (formData.departmentId && isCreating) {
-				try {
-					const response = await fetch(`/api/categories?departmentId=${formData.departmentId}`, {
-						credentials: "include",
-					});
-					if (response.ok) {
-						let categoriesData = await response.json();
-						// Если для отдела нет привязанных категорий — показываем полный список (для суперадмина и настройки отдела)
-						if (Array.isArray(categoriesData) && categoriesData.length === 0) {
-							const allRes = await fetch("/api/categories", { credentials: "include" });
-							if (allRes.ok) {
-								categoriesData = await allRes.json();
-							}
-						}
-						setAllowedCategories(categoriesData);
-						setCanChangeCategory(categoriesData.length > 0);
-					}
-				} catch (err) {
-					console.error("Ошибка при загрузке разрешенных категорий:", err);
-				}
-			}
+			const departmentId = formData.departmentId || null;
+			const categoriesData = await fetchCategoriesForProductForm(departmentId);
+			setAllowedCategories(categoriesData);
+			setCanChangeCategory(categoriesData.length > 0);
 		};
 
-		loadAllowedCategories();
+		void loadAllowedCategories();
 	}, [formData.departmentId, isCreating]);
 
-	// Устанавливаем отдел пользователя при создании товара для не-суперадминов
+	// Отдел пользователя при создании (admin / manager)
 	useEffect(() => {
-		if (isCreating && user?.role !== "superadmin" && user?.departmentId) {
-			setFormData((prev) => ({
+		if (!isCreating || user?.role === "superadmin") return;
+
+		const deptId = getUserDepartmentId(user);
+		if (!deptId) return;
+
+		setFormData((prev) => {
+			if (prev.departmentId) return prev;
+			return {
 				...prev,
-				departmentId: user.departmentId!.toString(),
-			}));
-		}
-	}, [isCreating, user?.role, user?.departmentId]);
+				departmentId: deptId.toString(),
+			};
+		});
+	}, [isCreating, user]);
 
 	// Функция для загрузки фильтров категории
 	const fetchCategoryFiltersForProduct = async (categoryId: number) => {
@@ -328,31 +353,26 @@ export default function ProductComponent({ productId, isCreating = false, userRo
 			[name]: value,
 		}));
 
-		// Если изменился отдел, загружаем разрешенные категории для этого отдела
-		if (name === "departmentId" && value) {
+		// Если изменился отдел, загружаем категории для этого отдела
+		if (name === "departmentId") {
 			try {
-				const response = await fetch(`/api/categories?departmentId=${value}`, {
-					credentials: "include",
-				});
-				if (response.ok) {
-					const categoriesData = await response.json();
-					setAllowedCategories(categoriesData);
-					setCanChangeCategory(categoriesData.length > 0);
+				const categoriesData = await fetchCategoriesForProductForm(value || null);
+				setAllowedCategories(categoriesData);
+				setCanChangeCategory(categoriesData.length > 0);
 
-					// Сбрасываем категорию, если она не разрешена для нового отдела
-					const currentCategoryId = formData.categoryId;
-					if (currentCategoryId && !categoriesData.some((cat: Category) => cat.id.toString() === currentCategoryId)) {
-						setFormData((prev) => ({
-							...prev,
-							categoryId: "",
-						}));
-						// Очищаем фильтры при смене категории
-						setCategoryFilters([]);
-						setSelectedFilters([]);
-					}
+				setFormData((prev) => {
+					const categoryStillValid =
+						prev.categoryId && categoriesData.some((cat: Category) => cat.id.toString() === prev.categoryId);
+					if (categoryStillValid) return prev;
+					return { ...prev, categoryId: "" };
+				});
+
+				if (!categoriesData.some((cat: Category) => cat.id.toString() === formData.categoryId)) {
+					setCategoryFilters([]);
+					setSelectedFilters([]);
 				}
 			} catch (err) {
-				console.error("Ошибка при загрузке разрешенных категорий:", err);
+				console.error("Ошибка при загрузке категорий:", err);
 			}
 		}
 

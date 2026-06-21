@@ -1,5 +1,7 @@
 /** Данные контента подвала (одна запись в БД + ответ API). */
 
+import { phoneToTelHref } from "@/lib/phoneUtils";
+
 /** Пункт внутри блока контактов: телефон → ссылка tel:, текст → обычная строка */
 export type FooterContactItemType = "phone" | "text";
 
@@ -176,14 +178,9 @@ export function formatFooterCopyrightLine(template: string | null | undefined): 
 	return base.replace(/\{\{year\}\}/gi, String(year));
 }
 
-/** Ссылка tel: из отображаемого номера (цифры, ведущая 8 → +7). */
+/** @deprecated Используйте phoneToTelHref из @/lib/phoneUtils */
 export function footerPhoneToTelHref(phone: string): string {
-	const d = phone.replace(/\D/g, "");
-	if (!d) return "#";
-	if (d.length === 11 && d.startsWith("8")) return `tel:+7${d.slice(1)}`;
-	if (d.length === 11 && d.startsWith("7")) return `tel:+${d}`;
-	if (d.length === 10) return `tel:+7${d}`;
-	return `tel:+${d}`;
+	return phoneToTelHref(phone);
 }
 
 /** Блок показываем, если есть заголовок или хотя бы один непустой пункт */

@@ -9,9 +9,12 @@ import PhoneInput from "./PhoneInput";
 import CodeConfirmation from "./CodeConfirmation";
 import UserDataForm from "./UserDataForm";
 import { showSuccessToast } from "@/components/ui/toast/ToastProvider";
+import { useAuthStore } from "@/store/authStore";
 
 export default function RegisterContent() {
 	const router = useRouter();
+	const { isLogined, role, initAuth } = useAuthStore();
+	const [sessionReady, setSessionReady] = useState(false);
 
 	const [phone, setPhone] = useState<string>("");
 	const [formattedPhone, setFormattedPhone] = useState<string>("");
@@ -28,6 +31,25 @@ export default function RegisterContent() {
 	});
 
 	useEffect(() => {
+		void initAuth().finally(() => setSessionReady(true));
+	}, [initAuth]);
+
+	// Уже авторизован — регистрация не нужна
+	useEffect(() => {
+		if (!sessionReady || !isLogined) return;
+
+		if (role === "client") {
+			router.replace("/profile");
+			return;
+		}
+		if (role === "superadmin" || role === "admin" || role === "manager") {
+			router.replace("/admin/dashboard");
+			return;
+		}
+		router.replace("/");
+	}, [sessionReady, isLogined, role, router]);
+
+	useEffect(() => {
 		const interval = setInterval(() => {
 			setExpiresIn((prev) => (prev > 0 ? prev - 1 : 0));
 		}, 1000);
@@ -35,6 +57,8 @@ export default function RegisterContent() {
 	}, [expiresIn]);
 
 	useEffect(() => {
+		if (!sessionReady || isLogined) return;
+
 		const urlParams = new URLSearchParams(window.location.search);
 		const urlPhone = urlParams.get("phone");
 		const urlCode = urlParams.get("code");
@@ -66,7 +90,7 @@ export default function RegisterContent() {
 					.catch((error) => console.error("Ошибка проверки кода:", error));
 			}
 		}
-	}, []);
+	}, [sessionReady, isLogined]);
 
 	const resetRegistration = () => {
 		localStorage.removeItem("phone");
@@ -134,6 +158,10 @@ export default function RegisterContent() {
 			setCodeError("Ошибка сети, попробуйте позже");
 		}
 	};
+
+	if (!sessionReady || isLogined) {
+		return <div className={styles.registerContentBlock}>Загрузка…</div>;
+	}
 
 	return (
 		<div className={styles.registerContentBlock}>

@@ -14,8 +14,10 @@ interface CustomSelectProps {
 	onChange: (value: string) => void;
 	placeholder?: string;
 	className?: string;
-	showSearch?: boolean; // Показывать ли поле поиска
-	searchPlaceholder?: string; // Плейсхолдер для поля поиска
+	showSearch?: boolean;
+	searchPlaceholder?: string;
+	fullWidth?: boolean;
+	variant?: "default" | "site";
 }
 
 const CustomSelect: React.FC<CustomSelectProps> = ({
@@ -26,6 +28,8 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
 	className = "",
 	showSearch = false,
 	searchPlaceholder = "Поиск...",
+	fullWidth = false,
+	variant = "default",
 }) => {
 	const [isOpen, setIsOpen] = useState(false);
 	const [selectedOption, setSelectedOption] = useState<Option | null>(options.find((option) => option.value === value) || null);
@@ -84,7 +88,17 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
 	};
 
 	return (
-		<div className={`${styles.customSelect} ${className}`} ref={selectRef}>
+		<div
+			className={[
+				styles.customSelect,
+				fullWidth ? styles.fullWidth : "",
+				variant === "site" ? styles.site : "",
+				className,
+			]
+				.filter(Boolean)
+				.join(" ")}
+			ref={selectRef}
+		>
 			<div className={styles.selectHeader} onClick={toggleDropdown}>
 				<div className={styles.selectedValue}>{selectedOption ? selectedOption.label : placeholder}</div>
 				<div className={styles.arrow}>

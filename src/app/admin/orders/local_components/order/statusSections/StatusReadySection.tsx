@@ -1,7 +1,13 @@
-import React, { useState } from "react";
+"use client";
+
+import React, { useMemo } from "react";
 import DatePickerField from "@/components/ui/datePicker/DatePickerField";
 import datePickerFieldStyles from "@/components/ui/datePicker/DatePickerField.module.scss";
-import { OrderFormState } from "@/lib/types";
+import { getPrepaymentInvoiceReadiness, openPrepaymentInvoiceDocument, type PrepaymentInvoiceDocumentData } from "@/lib/orderPrepaymentInvoice";
+import type { OrderFormState, OrderItemClient, User } from "@/lib/types";
+import { showErrorToast } from "@/components/ui/toast/ToastProvider";
+import OrderStatusBlock, { OrderStatusFieldGroup } from "../OrderStatusBlock";
+import styles from "./StatusReadySection.module.scss";
 
 type StatusReadySectionProps = {
 	isActive: boolean;
@@ -11,50 +17,114 @@ type StatusReadySectionProps = {
 	fieldErrors: Set<string>;
 	clearFieldError: (field: string) => void;
 	statusDate?: string | null;
+	orderId: number | null;
+	orderItems: OrderItemClient[];
+	orderTotal: number;
+	selectedClient: User | null;
+	departmentName: string | null;
+	managerName: string | null;
+	orderCreatedAt?: string | null;
 };
 
-const StatusReadySection: React.FC<StatusReadySectionProps> = ({ isActive, formData, setFormData, canEdit, fieldErrors, clearFieldError, statusDate }) => {
-	const formatDate = (value?: string | Date | null) => {
-		if (!value) return "";
-		const date = new Date(value);
-		if (isNaN(date.getTime())) return "";
-		const day = String(date.getDate()).padStart(2, "0");
-		const month = String(date.getMonth() + 1).padStart(2, "0");
-		const year = date.getFullYear();
-		const hours = String(date.getHours()).padStart(2, "0");
-		const minutes = String(date.getMinutes()).padStart(2, "0");
-		return `${day}.${month}.${year} ${hours}:${minutes}`;
-	};
-	const [isExpanded, setIsExpanded] = useState(isActive);
+function formatClientName(client: User): string {
+	return [client.last_name, client.first_name, client.middle_name].filter(Boolean).join(" ").trim() || "Клиент";
+}
 
-	const toggleExpand = () => {
-		setIsExpanded(!isExpanded);
+const StatusReadySection: React.FC<StatusReadySectionProps> = ({
+	isActive,
+	formData,
+	setFormData,
+	canEdit,
+	fieldErrors,
+	clearFieldError,
+	statusDate,
+	orderId,
+	orderItems,
+	orderTotal,
+	selectedClient,
+	departmentName,
+	managerName,
+	orderCreatedAt,
+}) => {
+	const invoiceReadiness = useMemo(
+		() =>
+			getPrepaymentInvoiceReadiness({
+				orderId,
+				clientId: selectedClient?.id ?? (formData.clientId ? parseInt(formData.clientId, 10) : null),
+				contactName: formData.contactName,
+				contactPhone: formData.contactPhone,
+				departmentName,
+				orderItemsCount: orderItems.length,
+				prepaymentAmount: formData.prepaymentAmount,
+				prepaymentDate: formData.prepaymentDate,
+			}),
+		[
+			orderId,
+			selectedClient?.id,
+			formData.clientId,
+			formData.contactName,
+			formData.contactPhone,
+			departmentName,
+			orderItems.length,
+			formData.prepaymentAmount,
+			formData.prepaymentDate,
+		],
+	);
+
+	const handleGenerateInvoice = () => {
+		if (!invoiceReadiness.canGenerate || !orderId) {
+			return;
+		}
+
+		const prepaymentAmount = parseFloat(String(formData.prepaymentAmount).replace(",", "."));
+		if (Number.isNaN(prepaymentAmount) || prepaymentAmount <= 0) {
+			showErrorToast("Укажите корректную сумму предоплаты");
+			return;
+		}
+
+		const buyerName = selectedClient ? formatClientName(selectedClient) : formData.contactName.trim();
+		const buyerPhone = selectedClient?.phone?.trim() || formData.contactPhone.trim();
+
+		const payload: PrepaymentInvoiceDocumentData = {
+			orderId,
+			orderCreatedAt,
+			departmentName: departmentName || "—",
+			buyerName,
+			buyerPhone,
+			managerName,
+			prepaymentAmount,
+			prepaymentDate: formData.prepaymentDate,
+			orderTotal,
+			items: orderItems,
+		};
+
+		try {
+			openPrepaymentInvoiceDocument(payload);
+		} catch (error) {
+			showErrorToast(error instanceof Error ? error.message : "Не удалось сформировать счёт");
+		}
 	};
 
 	return (
-		<div className={`statusBlock borderBlock ${isExpanded ? "active" : ""}`}>
-			<div className={`statusHeader statusToneReady`} onClick={toggleExpand}>
-				<h3>4. Готов к выдаче</h3>
-				{statusDate && <span className={`statusDate`}>Присвоен: {formatDate(statusDate)}</span>}
-			</div>
-			<div className={`statusFields`}>
-				<div className={`formRow`}>
-					<div className={`formField`}>
-						<DatePickerField
-							label="Отложен до"
-							value={formData.readyUntil}
-							onChange={(date) => {
-								setFormData((prev) => ({ ...prev, readyUntil: date }));
-								clearFieldError("readyUntil");
-							}}
-							placeholder="Выберите дату отложения"
-							className={fieldErrors.has("readyUntil") ? `${datePickerFieldStyles.error}` : ""}
-							disabled={!canEdit}
-						/>
-					</div>
-					<div className={`formField`}>
-						<label>Сумма предоплаты</label>
+		<OrderStatusBlock step={4} title="Готов к выдаче" tone="ready" isActive={isActive} statusDate={statusDate}>
+			<OrderStatusFieldGroup title="Выдача и предоплата" hint="Срок отложенной выдачи и данные для счёта на предоплату">
+				<DatePickerField
+					label="Отложен до"
+					value={formData.readyUntil}
+					onChange={(date) => {
+						setFormData((prev) => ({ ...prev, readyUntil: date }));
+						clearFieldError("readyUntil");
+					}}
+					placeholder="Выберите дату отложения"
+					className={fieldErrors.has("readyUntil") ? `${datePickerFieldStyles.error}` : ""}
+					disabled={!canEdit}
+				/>
+
+				<div className={styles.prepaymentRow}>
+					<div className={styles.fieldBody}>
+						<label htmlFor="prepaymentAmount">Сумма предоплаты</label>
 						<input
+							id="prepaymentAmount"
 							type="number"
 							value={formData.prepaymentAmount}
 							onChange={(e) => {
@@ -69,27 +139,43 @@ const StatusReadySection: React.FC<StatusReadySectionProps> = ({ isActive, formD
 							disabled={!canEdit}
 						/>
 					</div>
+					<div className={styles.fieldBody}>
+						<DatePickerField
+							label="Дата внесения предоплаты"
+							value={formData.prepaymentDate}
+							onChange={(date) => {
+								setFormData((prev) => ({ ...prev, prepaymentDate: date }));
+								clearFieldError("prepaymentDate");
+							}}
+							placeholder="Выберите дату предоплаты"
+							className={fieldErrors.has("prepaymentDate") ? `${datePickerFieldStyles.error}` : ""}
+							disabled={!canEdit}
+						/>
+					</div>
 				</div>
-				<div className={`formField`}>
-					<DatePickerField
-						label="Дата внесения предоплаты"
-						value={formData.prepaymentDate}
-						onChange={(date) => {
-							setFormData((prev) => ({ ...prev, prepaymentDate: date }));
-							clearFieldError("prepaymentDate");
-						}}
-						placeholder="Выберите дату предоплаты"
-						className={fieldErrors.has("prepaymentDate") ? `${datePickerFieldStyles.error}` : ""}
-						disabled={!canEdit}
-					/>
-				</div>
-				<div className={`formField`}>
-					<button type="button" className={`generateInvoiceButton`}>
+
+				<div className={styles.invoiceBlock}>
+					<button type="button" className={styles.generateBtn} onClick={handleGenerateInvoice} disabled={!invoiceReadiness.canGenerate}>
 						Сформировать счёт
 					</button>
+
+					{!invoiceReadiness.canGenerate ? (
+						<div className={styles.invoiceHint} role="status">
+							<div className={styles.invoiceHintTitle}>Чтобы сформировать счёт, заполните:</div>
+							<ul className={styles.invoiceHintList}>
+								{invoiceReadiness.missing.map((item) => (
+									<li key={item}>{item}</li>
+								))}
+							</ul>
+						</div>
+					) : (
+						<p className={styles.invoiceNote}>
+							Откроется печатная форма счёта на предоплату — её можно сохранить в PDF или распечатать для клиента.
+						</p>
+					)}
 				</div>
-			</div>
-		</div>
+			</OrderStatusFieldGroup>
+		</OrderStatusBlock>
 	);
 };
 

@@ -2,7 +2,56 @@
 	position: relative;
 	width: fit-content;
 	max-width: 300px;
-	font-family: "Manrope", sans-serif;
+	font-family: inherit;
+
+	&.fullWidth {
+		width: 100%;
+		max-width: none;
+	}
+
+	&.site {
+		.selectHeader {
+			min-height: 42px;
+			padding: 0 12px;
+			border: 1px solid #e8e4de;
+			border-radius: 10px;
+			background-color: #fff;
+			transition: border-color 0.2s ease;
+
+			&:hover {
+				border-color: color-mix(in srgb, var(--site-color-accent, #b0cb1f) 45%, #e8e4de);
+			}
+		}
+
+		.optionsContainer {
+			border: 1px solid #e8e4de;
+			border-radius: 10px;
+			margin-top: 6px;
+			max-height: 240px;
+			box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+			z-index: 20;
+		}
+
+		.option {
+			font-size: 14px;
+			color: #333;
+
+			&:hover {
+				background-color: color-mix(in srgb, var(--site-color-accent, #b0cb1f) 8%, #fff);
+			}
+
+			&.selected {
+				background-color: color-mix(in srgb, var(--site-color-accent, #b0cb1f) 14%, #fff);
+				color: #1a1a1a;
+				font-weight: 600;
+			}
+		}
+
+		.searchContainer {
+			border-bottom: 1px solid #ece8e0;
+			background-color: #faf9f7;
+		}
+	}
 }
 
 .selectHeader {

@@ -1,0 +1,110 @@
+.invoiceBlock {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	gap: 10px;
+	margin-top: 4px;
+}
+
+.invoiceHint {
+	border-radius: 8px;
+	padding: 10px 12px;
+	font-size: 13px;
+	line-height: 1.45;
+	background: #fffbeb;
+	border: 1px solid #fcd34d;
+	color: #92400e;
+}
+
+.invoiceHintTitle {
+	font-weight: 600;
+	margin-bottom: 6px;
+}
+
+.invoiceHintList {
+	margin: 0;
+	padding-left: 18px;
+}
+
+.downloadBtn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 38px;
+	padding: 9px 16px;
+	border-radius: 8px;
+	border: 1px solid #2563eb;
+	background: #2563eb;
+	color: #fff;
+	font-size: 14px;
+	font-weight: 600;
+	line-height: 1.35;
+	cursor: pointer;
+	transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+
+	&:hover:not(:disabled) {
+		background: #1d4ed8;
+		border-color: #1d4ed8;
+	}
+
+	&:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+		border-color: #cbd5e1;
+		background: #94a3b8;
+	}
+}
+
+.invoiceNote {
+	margin: 0;
+	font-size: 12px;
+	line-height: 1.4;
+	color: #64748b;
+}
+
+.paymentRow {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px 14px;
+	width: 100%;
+
+	> * {
+		flex: 1 1 220px;
+		min-width: 0;
+	}
+}
+
+.fieldBody {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	gap: 8px;
+	width: 100%;
+	min-width: 0;
+
+	label {
+		font-size: 12px;
+		font-weight: 600;
+		color: #6b7280;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		line-height: 1.4;
+	}
+
+	input:not([type="checkbox"]):not([type="radio"]) {
+		width: 100%;
+		box-sizing: border-box;
+		padding: 12px 16px;
+		border: 1px solid var(--light-grey2-color);
+		border-radius: 8px;
+		font-size: 14px;
+		font-family: var(--mainFont);
+		background: #fff;
+
+		&:disabled {
+			background: var(--light-grey-color);
+			color: #6b7280;
+			cursor: not-allowed;
+		}
+	}
+}

@@ -1,30 +1,48 @@
+// Хлебные крошки — вторая строка шапки, без отдельного фона
+
 .breadcrumbs {
-	justify-content: center;
+	display: flex;
+	justify-content: flex-start;
 	align-items: center;
 	width: 100%;
-	height: fit-content;
-	padding: 10px 0px;
-	border-bottom: 1px solid var(--grey2-color);
-	border-top: 1px solid var(--grey2-color);
-	border-radius: 0px;
-	background-color: var(--grey-color);
+	padding: 0 0 4px;
+	background: transparent;
+	border-bottom: none;
+
+	.screenContent {
+		display: flex;
+		width: 100%;
+		max-width: none;
+		padding: 0;
+		box-sizing: border-box;
+	}
 
 	.breadcrumbsList {
 		display: flex;
+		flex-wrap: wrap;
 		align-items: center;
+		gap: 4px 0;
 		margin: 0;
 		padding: 0;
+		list-style: none;
 
 		li {
-			font-size: 15px;
-			color: var(--text-color);
-
-			a {
-				color: var(--text-color);
-			}
-
 			display: flex;
 			align-items: center;
+			font-size: 11px;
+			font-weight: 500;
+			line-height: 1.4;
+			color: #999;
+
+			a {
+				color: #777;
+				text-decoration: none;
+				transition: color 0.2s ease;
+
+				&:hover {
+					color: var(--site-color-accent, #b0cb1f);
+				}
+			}
 		}
 	}
 
@@ -32,22 +50,55 @@
 		display: flex;
 		justify-content: center;
 		align-items: center;
+		position: relative;
 		width: 20px;
 		height: 20px;
+		margin: 0 2px;
+		flex-shrink: 0;
 
 		.arrow {
 			position: absolute;
 			left: 50%;
-			width: 7px;
+			width: 6px;
 			height: 1px;
-			background-color: var(--text-color);
+			background-color: #aaa;
 
 			&:nth-child(1) {
 				transform: rotate(-135deg) translate(50%, 0%);
 			}
+
 			&:nth-child(2) {
 				transform: rotate(-225deg) translate(50%, 0%);
 			}
+		}
+	}
+}
+
+@media (max-width: 560px) {
+	.breadcrumbs {
+		padding: 0;
+
+		.screenContent {
+			padding: 0;
+			overflow-x: auto;
+			-webkit-overflow-scrolling: touch;
+			scrollbar-width: none;
+
+			&::-webkit-scrollbar {
+				display: none;
+			}
+		}
+
+		.breadcrumbsList {
+			flex-wrap: nowrap;
+			width: max-content;
+			min-width: 100%;
+			padding-bottom: 2px;
+		}
+
+		.breadcrumbsList li {
+			font-size: 11px;
+			white-space: nowrap;
 		}
 	}
 }

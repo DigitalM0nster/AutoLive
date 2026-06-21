@@ -20,10 +20,11 @@ export async function generateMetadata() {
 
 export default function ServiceBooking() {
 	return (
-		<div className={`screen ${styles.screen}`}>
+		<div className="screen">
 			<div className="screenContent">
 				<NavigationMenu />
 				<h1 className={`pageTitle ${styles.pageTitle}`}>Запись на ТО</h1>
+				<p className="pageLead">Выберите удобную дату и время — мы подтвердим запись после отправки заявки.</p>
 				<div className={`screenBlock ${styles.screenBlock}`}>
 					<ServiceBookingContent />
 				</div>

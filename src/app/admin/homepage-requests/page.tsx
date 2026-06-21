@@ -1,16 +1,11 @@
 import HomepageRequestsTable from "./local_components/HomepageRequestsTable";
-import Link from "next/link";
+import RequestsSectionTabs from "./local_components/RequestsSectionTabs";
 
 export default function HomepageRequestsPage() {
 	return (
 		<div className="screenContent">
 			<div className="tableContainer">
-				<div className="tabsContainer">
-					<div className="tabButton active">Заявки с главной</div>
-					<Link href="/admin/content/homepage" className="tabButton">
-						Настройка формы на главной
-					</Link>
-				</div>
+				<RequestsSectionTabs active="requests" />
 				<HomepageRequestsTable />
 			</div>
 		</div>

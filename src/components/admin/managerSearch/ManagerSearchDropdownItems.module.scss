@@ -1,0 +1,164 @@
+.resultsPanel {
+	max-height: 260px;
+	margin-bottom: 0;
+	border-radius: 0 0 12px 12px;
+	border-top: 1px solid #e2e8f0;
+	box-shadow:
+		0 18px 44px rgba(15, 23, 42, 0.1),
+		0 0 0 1px rgba(41, 128, 185, 0.06);
+
+	&.isLoading {
+		padding: 18px 16px;
+		align-items: center;
+		justify-content: center;
+	}
+}
+
+.resultItem {
+	flex-direction: column;
+	align-items: stretch;
+	gap: 5px;
+	padding: 10px 14px 10px 16px;
+	border-bottom: 1px solid #eef2f7;
+
+	&::before {
+		display: none;
+	}
+
+	&:last-child {
+		border-bottom: none;
+	}
+
+	&:hover {
+		background: #f1f5f9;
+		box-shadow: none;
+	}
+}
+
+.resultTop {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px 8px;
+}
+
+.resultName {
+	font-weight: 700;
+	font-size: 14px;
+	line-height: 1.35;
+	color: var(--text-color);
+	letter-spacing: -0.01em;
+}
+
+.resultId {
+	font-size: 12px;
+	font-weight: 600;
+	color: #94a3b8;
+}
+
+.roleBadge {
+	display: inline-flex;
+	align-items: center;
+	flex-shrink: 0;
+	padding: 2px 7px;
+	border-radius: 6px;
+	font-size: 10px;
+	font-weight: 600;
+	line-height: 1.35;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+
+	&.toneSuperadmin {
+		background: #ede9fe;
+		color: #5b21b6;
+	}
+
+	&.toneAdmin {
+		background: #dbeafe;
+		color: #1d4ed8;
+	}
+
+	&.toneManager {
+		background: #ecfdf5;
+		color: #047857;
+	}
+
+	&.toneDefault {
+		background: #f1f5f9;
+		color: #64748b;
+	}
+}
+
+.metaLine {
+	display: flex;
+	align-items: flex-start;
+	gap: 6px;
+	font-size: 12px;
+	line-height: 1.4;
+	color: #64748b;
+}
+
+.metaLabel {
+	flex-shrink: 0;
+	font-weight: 600;
+	color: #94a3b8;
+}
+
+.emptyState {
+	padding: 12px 16px;
+	font-size: 13px;
+	line-height: 1.45;
+	color: #64748b;
+	cursor: default;
+
+	&:hover {
+		background: transparent;
+		box-shadow: none;
+	}
+}
+
+.selectedCard {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	gap: 5px;
+	width: 100%;
+	box-sizing: border-box;
+	padding: 10px 12px;
+	border-radius: 10px;
+	border: 1px solid #e2e8f0;
+	background: #f8fafc;
+}
+
+.selectedTop {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px 8px;
+}
+
+.selectedLink {
+	font-weight: 700;
+	font-size: 14px;
+	color: var(--text-color);
+	text-decoration: none;
+
+	&:hover {
+		text-decoration: underline;
+	}
+}
+
+.selectedMeta {
+	font-size: 12px;
+	line-height: 1.4;
+	color: #64748b;
+}
+
+.departmentLink {
+	color: #475569;
+	text-decoration: none;
+
+	&:hover {
+		text-decoration: underline;
+	}
+}

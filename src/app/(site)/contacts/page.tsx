@@ -2,10 +2,12 @@
 
 import NavigationMenu from "@/components/user/navigationMenu/NavigationMenu";
 import ContactsMap from "./local_components/ContactsMap";
+import ContactsActions from "./local_components/ContactsActions";
 import { ContactRow, ContactRowList } from "./local_components/ContactRow";
 import styles from "./styles.module.scss";
 import CONFIG from "@/lib/config";
 import { getInternalApiBaseUrl } from "@/lib/internalApiBaseUrl";
+import type { HomepageContentData } from "@/app/api/homepage-content/route";
 
 export const dynamic = "force-dynamic";
 
@@ -53,10 +55,11 @@ type AddressItem = {
 async function getContactsData() {
 	const baseUrl = await getInternalApiBaseUrl();
 	try {
-		const [contentRes, departmentsRes, pointsRes] = await Promise.all([
+		const [contentRes, departmentsRes, pointsRes, homepageRes] = await Promise.all([
 			fetch(`${baseUrl}/api/contacts-content`, { next: { revalidate: 60 } }),
 			fetch(`${baseUrl}/api/booking-departments/public`, { next: { revalidate: 60 } }),
 			fetch(`${baseUrl}/api/pickup-points/public`, { next: { revalidate: 60 } }),
+			fetch(`${baseUrl}/api/homepage-content`, { next: { revalidate: 60 } }),
 		]);
 
 		const content: ContactsContent =
@@ -66,14 +69,16 @@ async function getContactsData() {
 
 		const departments: AddressItem[] = departmentsRes.ok && (await departmentsRes.json()) || [];
 		const points: AddressItem[] = pointsRes.ok && (await pointsRes.json()) || [];
+		const homepageContent: HomepageContentData | null = homepageRes.ok ? await homepageRes.json() : null;
 
-		return { content, departments, points };
+		return { content, departments, points, homepageContent };
 	} catch (e) {
 		console.warn("Ошибка загрузки контактов:", e);
 		return {
 			content: { address: "", phone: "", email: "", workingHours: "", mapNote: "", mapMarkerColor: "", mapZoom: null, addressesBlockTitle: "", pickupBlockTitle: "", contactAddresses: [] } as ContactsContent,
 			departments: [] as AddressItem[],
 			points: [] as AddressItem[],
+			homepageContent: null as HomepageContentData | null,
 		};
 	}
 }
@@ -81,10 +86,9 @@ async function getContactsData() {
 function getMapPoints(
 	contactAddresses: ContactAddressItem[],
 	departments: AddressItem[],
-	points: AddressItem[]
+	points: AddressItem[],
 ): { id: number; name: string | null; address: string; latitude: number; longitude: number }[] {
 	const list: { id: number; name: string | null; address: string; latitude: number; longitude: number }[] = [];
-	// Контактные адреса — всегда на карте
 	contactAddresses.forEach((a, i) => {
 		if (a.latitude != null && a.longitude != null) {
 			list.push({ id: 200000 + i, name: null, address: a.address, latitude: a.latitude, longitude: a.longitude });
@@ -104,108 +108,152 @@ function getMapPoints(
 }
 
 export default async function Contacts() {
-	const { content, departments, points } = await getContactsData();
+	const { content, departments, points, homepageContent } = await getContactsData();
 	const contactAddresses = content.contactAddresses ?? [];
 	const hasContactAddresses = contactAddresses.length > 0;
 	const hasMain = hasContactAddresses || !!(content.address || content.phone || content.email || content.workingHours);
 	const mapPoints = getMapPoints(contactAddresses, departments, points);
+	const hasDetails = hasMain || departments.length > 0 || points.length > 0;
+	const hasMap = mapPoints.length > 0;
 
 	return (
-		<div className={`screen ${styles.screen}`}>
+		<div className="screen">
 			<div className="screenContent">
 				<NavigationMenu />
-				<div className={`screenBlock ${styles.screenBlock}`}>
-					{hasMain && (
-						<section className={styles.contactsSection}>
-							<h2 className={styles.contactsSectionTitle}>Контактная информация</h2>
-							{hasContactAddresses ? (
-								<ul className={styles.contactsAddressList}>
-									{contactAddresses.map((addr, i) => (
-										<li key={addr.id ?? i} className={styles.contactsAddressItem}>
-											{addr.address && <ContactRow type="address" secondary iconClassName={styles.contactsIconColor}>{addr.address}</ContactRow>}
-											{addr.phones?.length > 0 && (
-												<ContactRowList type="phone" items={addr.phones} secondary iconClassName={styles.contactsIconColor} />
-											)}
-											{addr.emails?.length > 0 && (
-												<ContactRowList type="email" items={addr.emails} secondary iconClassName={styles.contactsIconColor} />
-											)}
-											{addr.workingHours && (
-												<ContactRow type="hours" secondary iconClassName={styles.contactsIconColor}>{addr.workingHours}</ContactRow>
-											)}
-										</li>
-									))}
-								</ul>
-							) : (
-								<div className={styles.contactsMainBlock}>
-									{content.address && <ContactRow type="address" iconClassName={styles.contactsIconColor}>{content.address}</ContactRow>}
-									{content.phone && <ContactRow type="phone" iconClassName={styles.contactsIconColor}>{content.phone}</ContactRow>}
-									{content.email && <ContactRow type="email" iconClassName={styles.contactsIconColor}>{content.email}</ContactRow>}
-									{content.workingHours && <ContactRow type="hours" iconClassName={styles.contactsIconColor}>{content.workingHours}</ContactRow>}
-								</div>
-							)}
-							{content.mapNote && <p className={styles.contactsText}>{content.mapNote}</p>}
-						</section>
-					)}
 
-					{mapPoints.length > 0 && (
-						<section className={styles.contactsSection}>
-							<ContactsMap points={mapPoints} markerColor={content.mapMarkerColor} initialZoom={content.mapZoom ?? undefined} />
-						</section>
-					)}
+				<header className={styles.pageHeader}>
+					<h1 className="pageTitle">Контакты</h1>
+					<p className={`pageLead ${styles.pageLead}`}>
+						Адреса, телефоны и карта — всё для связи с нами и записи на обслуживание в {CONFIG.CITY}.
+					</p>
+				</header>
 
-					{departments.length > 0 && (
-						<section className={styles.contactsSection}>
-							{content.addressesBlockTitle?.trim() && (
-								<h2 className={styles.contactsSectionTitle}>{content.addressesBlockTitle.trim()}</h2>
-							)}
-							<ul className={styles.contactsAddressList}>
-								{departments.map((d) => (
-									<li key={d.id} className={styles.contactsAddressItem}>
-										<span className={styles.contactsAddressName}>{d.name || "Адрес"}</span>
-										<ContactRow type="address" secondary iconClassName={styles.contactsIconColor}>{d.address}</ContactRow>
-										{d.phones?.length > 0 && (
-											<ContactRowList type="phone" items={d.phones} secondary iconClassName={styles.contactsIconColor} />
-										)}
-										{d.emails?.length > 0 && (
-											<ContactRowList type="email" items={d.emails} secondary iconClassName={styles.contactsIconColor} />
-										)}
-										{d.workingHours && (
-											<ContactRow type="hours" secondary iconClassName={styles.contactsIconColor}>{d.workingHours}</ContactRow>
-										)}
-									</li>
-								))}
-							</ul>
-						</section>
-					)}
+				<div className={[styles.contactsLayout, !hasMap ? styles.withoutMap : ""].filter(Boolean).join(" ")}>
+					<div className={styles.contactsMain}>
+						{!hasMap ? (
+							<ContactsActions orderButtonText={homepageContent?.orderButtonText} formData={homepageContent ?? undefined} />
+						) : null}
 
-					{points.length > 0 && (
-						<section className={styles.contactsSection}>
-							{content.pickupBlockTitle?.trim() && (
-								<h2 className={styles.contactsSectionTitle}>{content.pickupBlockTitle.trim()}</h2>
-							)}
-							<ul className={styles.contactsAddressList}>
-								{points.map((p) => (
-									<li key={p.id} className={styles.contactsAddressItem}>
-										<span className={styles.contactsAddressName}>{p.name || "Пункт выдачи"}</span>
-										<ContactRow type="address" secondary iconClassName={styles.contactsIconColor}>{p.address}</ContactRow>
-										{p.phones?.length > 0 && (
-											<ContactRowList type="phone" items={p.phones} secondary iconClassName={styles.contactsIconColor} />
+						{hasDetails ? (
+							<div className={styles.contactsPanel}>
+								{hasMain && (
+									<section className={styles.contactsSection}>
+										<h2 className={styles.contactsSectionTitle}>Контактная информация</h2>
+										{hasContactAddresses ? (
+											<ul className={styles.contactsAddressList}>
+												{contactAddresses.map((addr, i) => (
+													<li key={addr.id ?? i} className={styles.contactsAddressItem}>
+														{addr.address && (
+															<ContactRow type="address" secondary iconClassName={styles.contactsIconColor}>
+																{addr.address}
+															</ContactRow>
+														)}
+														{addr.phones?.length > 0 && (
+															<ContactRowList type="phone" items={addr.phones} secondary iconClassName={styles.contactsIconColor} />
+														)}
+														{addr.emails?.length > 0 && (
+															<ContactRowList type="email" items={addr.emails} secondary iconClassName={styles.contactsIconColor} />
+														)}
+														{addr.workingHours && (
+															<ContactRow type="hours" secondary iconClassName={styles.contactsIconColor}>
+																{addr.workingHours}
+															</ContactRow>
+														)}
+													</li>
+												))}
+											</ul>
+										) : (
+											<div className={styles.contactsMainBlock}>
+												{content.address && (
+													<ContactRow type="address" iconClassName={styles.contactsIconColor}>
+														{content.address}
+													</ContactRow>
+												)}
+												{content.phone && <ContactRow type="phone" iconClassName={styles.contactsIconColor}>{content.phone}</ContactRow>}
+												{content.email && <ContactRow type="email" iconClassName={styles.contactsIconColor}>{content.email}</ContactRow>}
+												{content.workingHours && (
+													<ContactRow type="hours" iconClassName={styles.contactsIconColor}>
+														{content.workingHours}
+													</ContactRow>
+												)}
+											</div>
 										)}
-										{p.emails?.length > 0 && (
-											<ContactRowList type="email" items={p.emails} secondary iconClassName={styles.contactsIconColor} />
-										)}
-										{p.workingHours && (
-											<ContactRow type="hours" secondary iconClassName={styles.contactsIconColor}>{p.workingHours}</ContactRow>
-										)}
-									</li>
-								))}
-							</ul>
-						</section>
-					)}
+									</section>
+								)}
 
-					{!hasMain && departments.length === 0 && points.length === 0 && (
-						<p className={styles.contactsText}>Контент страницы контактов пока не заполнен. Заполните его в разделе админки «Контент» → «Контакты».</p>
-					)}
+								{departments.length > 0 && (
+									<section className={styles.contactsSection}>
+										<h2 className={styles.contactsSectionTitle}>
+											{content.addressesBlockTitle?.trim() || "Адреса для записи на обслуживание"}
+										</h2>
+										<ul className={styles.contactsAddressList}>
+											{departments.map((d) => (
+												<li key={d.id} className={styles.contactsAddressItem}>
+													<span className={styles.contactsAddressName}>{d.name || "Адрес"}</span>
+													<ContactRow type="address" secondary iconClassName={styles.contactsIconColor}>
+														{d.address}
+													</ContactRow>
+													{d.phones?.length > 0 && (
+														<ContactRowList type="phone" items={d.phones} secondary iconClassName={styles.contactsIconColor} />
+													)}
+													{d.emails?.length > 0 && (
+														<ContactRowList type="email" items={d.emails} secondary iconClassName={styles.contactsIconColor} />
+													)}
+													{d.workingHours && (
+														<ContactRow type="hours" secondary iconClassName={styles.contactsIconColor}>
+															{d.workingHours}
+														</ContactRow>
+													)}
+												</li>
+											))}
+										</ul>
+									</section>
+								)}
+
+								{points.length > 0 && (
+									<section className={styles.contactsSection}>
+										<h2 className={styles.contactsSectionTitle}>{content.pickupBlockTitle?.trim() || "Пункты выдачи"}</h2>
+										<ul className={styles.contactsAddressList}>
+											{points.map((p) => (
+												<li key={p.id} className={styles.contactsAddressItem}>
+													<span className={styles.contactsAddressName}>{p.name || "Пункт выдачи"}</span>
+													<ContactRow type="address" secondary iconClassName={styles.contactsIconColor}>
+														{p.address}
+													</ContactRow>
+													{p.phones?.length > 0 && (
+														<ContactRowList type="phone" items={p.phones} secondary iconClassName={styles.contactsIconColor} />
+													)}
+													{p.emails?.length > 0 && (
+														<ContactRowList type="email" items={p.emails} secondary iconClassName={styles.contactsIconColor} />
+													)}
+													{p.workingHours && (
+														<ContactRow type="hours" secondary iconClassName={styles.contactsIconColor}>
+															{p.workingHours}
+														</ContactRow>
+													)}
+												</li>
+											))}
+										</ul>
+									</section>
+								)}
+							</div>
+						) : (
+							<p className={styles.contactsText}>
+								Контент страницы контактов пока не заполнен. Заполните его в разделе админки «Контент» → «Контакты».
+							</p>
+						)}
+					</div>
+
+					{hasMap ? (
+						<aside className={styles.contactsSide}>
+							<section className={styles.mapBlock} aria-label="Карта">
+								<h2 className={styles.mapTitle}>На карте</h2>
+								<ContactsMap points={mapPoints} markerColor={content.mapMarkerColor} initialZoom={content.mapZoom ?? undefined} />
+								{content.mapNote?.trim() ? <p className={styles.mapNote}>{content.mapNote.trim()}</p> : null}
+							</section>
+							<ContactsActions orderButtonText={homepageContent?.orderButtonText} formData={homepageContent ?? undefined} />
+						</aside>
+					) : null}
 				</div>
 			</div>
 		</div>

@@ -22,33 +22,25 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
 	initAuth: async () => {
 		try {
-			// пробуем сначала как админ
-			let response = await fetch("/api/admin/get-admin-data", {
+			const response = await fetch("/api/user/session", {
 				method: "GET",
 				credentials: "include",
 			});
 
-			if (!response.ok) {
-				// если не получилось — пробуем как клиент
-				response = await fetch("/api/user/get-user-data", {
-					method: "GET",
-					credentials: "include",
-				});
-			}
-
 			const data = await response.json();
 
-			if (response.ok) {
+			if (response.ok && data.authenticated && data.user) {
 				set({
 					isLogined: true,
-					user: data,
-					role: data.role,
+					user: data.user,
+					role: data.user.role,
 				});
 			} else {
 				set({ isLogined: false, user: null, role: null });
 			}
 		} catch (error) {
 			console.error("Ошибка при получении данных пользователя:", error);
+			set({ isLogined: false, user: null, role: null });
 		}
 	},
 

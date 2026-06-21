@@ -33,14 +33,14 @@ export async function POST(req: NextRequest) {
 		});
 
 		const smsResult = await sendPasswordResetSms(phone, newPassword);
-		const isDev = process.env.NODE_ENV === "development" || process.env.SMS_DEV_SHOW_CODE === "true";
 
 		return NextResponse.json({
 			success: true,
-			message: smsResult.sent
-				? "Новый пароль отправлен на ваш номер телефона"
-				: smsResult.message || "Пароль обновлён. Если SMS не пришло — обратитесь в поддержку.",
-			...(isDev && smsResult.devCode ? { newPassword: smsResult.devCode } : {}),
+			message: smsResult.smsNotConnected
+				? "SMS-сервис не подключён. Новый пароль показан для теста."
+				: "Новый пароль отправлен на ваш номер телефона",
+			...(smsResult.testCode ? { newPassword: smsResult.testCode } : {}),
+			...(smsResult.smsNotConnected ? { smsNotConnected: true } : {}),
 		});
 	} catch (error) {
 		console.error("Ошибка при сбросе пароля:", error);

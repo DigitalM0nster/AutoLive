@@ -1,14 +1,11 @@
 import Link from "next/link";
 import styles from "./styles.module.scss";
-import type { Category, Product } from "@/lib/types";
+import type { Category } from "@/lib/types";
 import { getInternalApiBaseUrl } from "@/lib/internalApiBaseUrl";
 
-// Функция для загрузки данных категорий
-// Вынесена отдельно для лучшей читаемости и тестируемости
-async function loadCategoriesData(): Promise<{ categories: Category[]; products: Product[] }> {
+async function loadCategoriesData(): Promise<Category[]> {
 	const baseUrl = await getInternalApiBaseUrl();
 
-	// Загружаем категории
 	const categoriesRes = await fetch(`${baseUrl}/api/categories`, {
 		next: { revalidate: 3600 },
 	});
@@ -18,90 +15,75 @@ async function loadCategoriesData(): Promise<{ categories: Category[]; products:
 		throw new Error(`Ошибка API категорий: ${categoriesRes.status}`);
 	}
 
-	// Загружаем все продукты через публичный API
-	const productsRes = await fetch(`${baseUrl}/api/products/public`, {
-		next: { revalidate: 3600 },
-	});
-
-	if (!productsRes.ok) {
-		console.error(`Ошибка API продуктов: ${productsRes.status} ${productsRes.statusText}`);
-		throw new Error(`Ошибка API продуктов: ${productsRes.status}`);
-	}
-
 	const categoriesText = await categoriesRes.text();
-	const productsText = await productsRes.text();
 
-	// Парсим JSON данные
 	let categories: Category[];
-	let products: Product[];
 
 	try {
 		categories = JSON.parse(categoriesText);
-		const productsData = JSON.parse(productsText);
-
-		// API продуктов возвращает объект с products массивом
-		if (productsData && Array.isArray(productsData.products)) {
-			products = productsData.products;
-		} else {
-			console.error("API продуктов вернул неверную структуру:", productsData);
-			throw new Error("Неверный формат данных продуктов");
-		}
 	} catch (parseError) {
 		console.error("Ошибка парсинга JSON:", parseError);
-		console.error("Полный ответ API категорий:", categoriesText);
-		console.error("Полный ответ API продуктов:", productsText);
 		throw new Error("Неверный формат ответа API");
 	}
 
-	// Проверяем валидность данных
 	if (!Array.isArray(categories)) {
 		console.error("API категорий вернул не массив:", categories);
 		throw new Error("Неверный формат данных категорий");
 	}
 
-	return { categories, products };
+	return categories;
 }
 
-// Компонент для отображения списка категорий
-// Чистый компонент без логики загрузки данных
+function CategoryArrow() {
+	return (
+		<span className={styles.categoryArrow} aria-hidden="true">
+			<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+				<path d="M7 17L17 7" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+				<path d="M9 7H17V15" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+			</svg>
+		</span>
+	);
+}
+
 function CategoriesList({ categories }: { categories: Category[] }) {
 	if (categories.length === 0) {
-		return <div className={styles.loading}>Загрузка...</div>;
+		return (
+			<div className="emptyState">
+				<p>Категории пока не добавлены.</p>
+				<p>Загляните позже или свяжитесь с магазином — поможем подобрать материалы.</p>
+			</div>
+		);
 	}
 
 	return (
-		<>
+		<div className={styles.categoryGrid}>
 			{categories.map((category) => (
-				<Link href={`/categories/${category.id}`} key={category.id} className={styles.categoryItem}>
-					<div className={styles.categoryTitleBlock}>
-						<h2 className={styles.title}>{category.title}</h2>
-						<div className={styles.button}>Перейти →</div>
+				<Link href={`/categories/${category.id}`} key={category.id} className={styles.categoryCard}>
+					<div className={styles.categoryIcon}>
+						{category.image ? <img src={category.image} alt="" aria-hidden="true" /> : <span className={styles.categoryIconFallback} aria-hidden="true" />}
 					</div>
-					<div className={styles.categoryImageBlock}>
-						<div className={styles.background} />
-						<div className={styles.image}>{category.image && <img src={category.image} alt={category.title} />}</div>
+					<div className={styles.categoryBody}>
+						<div className={styles.categoryBodyContent}>
+							<h2 className={styles.categoryTitle}>{category.title}</h2>
+							<p className={styles.categoryDesc}>Расходники и материалы для обслуживания</p>
+						</div>
+						<CategoryArrow />
 					</div>
 				</Link>
 			))}
-		</>
-	);
-}
-
-// Компонент для отображения ошибки
-function ErrorMessage({ message }: { message: string }) {
-	return <div className={styles.loading}>{message}</div>;
-}
-
-// Основной компонент для отображения контента категорий
-// Вынесен в отдельный компонент для работы с Suspense
-export default async function CategoriesContent() {
-	// Загружаем данные
-	const data = await loadCategoriesData();
-
-	// Рендерим контент
-	return (
-		<div className={`screenBlock ${styles.screenBlock}`}>
-			<CategoriesList categories={data.categories} />
 		</div>
 	);
+}
+
+function ErrorMessage({ message }: { message: string }) {
+	return <div className="emptyState">{message}</div>;
+}
+
+export default async function CategoriesContent() {
+	try {
+		const categories = await loadCategoriesData();
+		return <CategoriesList categories={categories} />;
+	} catch {
+		return <ErrorMessage message="Не удалось загрузить категории. Попробуйте обновить страницу." />;
+	}
 }

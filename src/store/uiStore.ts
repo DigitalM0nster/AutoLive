@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { HomepageContentData } from "@/app/api/homepage-content/route";
+import { buildHomepageRequestSource, type SiteFormRequestSource } from "@/lib/siteRequestSource";
 
 type UiStore = {
 	isActiveLoginPopup: boolean;
@@ -7,6 +8,7 @@ type UiStore = {
 	isActiveOrderPopup: boolean;
 	isLoading: boolean;
 	homepageFormData: HomepageContentData | null;
+	orderPopupSource: SiteFormRequestSource | null;
 
 	activateLoginPopup: () => void;
 	deactivateLoginPopup: () => void;
@@ -14,7 +16,7 @@ type UiStore = {
 	activateRegisterPopup: () => void;
 	deactivateRegisterPopup: () => void;
 
-	activateOrderPopup: () => void;
+	activateOrderPopup: (source?: SiteFormRequestSource) => void;
 	deactivateOrderPopup: () => void;
 
 	startLoading: () => void;
@@ -30,6 +32,7 @@ export const useUiStore = create<UiStore>((set) => ({
 	isActiveOrderPopup: false,
 	isLoading: true,
 	homepageFormData: null,
+	orderPopupSource: null,
 
 	// ПОПАП ЛОГИНА
 	activateLoginPopup: () => set({ isActiveLoginPopup: true }),
@@ -40,8 +43,12 @@ export const useUiStore = create<UiStore>((set) => ({
 	deactivateRegisterPopup: () => set({ isActiveRegisterPopup: false }),
 
 	// ПОПАП ЗАКАЗА
-	activateOrderPopup: () => set({ isActiveOrderPopup: true }),
-	deactivateOrderPopup: () => set({ isActiveOrderPopup: false }),
+	activateOrderPopup: (source) =>
+		set({
+			isActiveOrderPopup: true,
+			orderPopupSource: source ?? buildHomepageRequestSource(),
+		}),
+	deactivateOrderPopup: () => set({ isActiveOrderPopup: false, orderPopupSource: null }),
 
 	// ЗАГРУЗКА
 	startLoading: () => set({ isLoading: true }),

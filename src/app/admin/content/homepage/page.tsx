@@ -1,34 +1,24 @@
 "use client";
 
-import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import styles from "../local_components/styles.module.scss";
-import { HomepageContentData, FormField } from "@/app/api/homepage-content/route";
-import { Plus } from "lucide-react";
-import { DndContext, closestCenter, DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
-import { SortableContext, arrayMove, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import { HomepageContentData } from "@/app/api/homepage-content/route";
 import FixedActionButtons from "@/components/ui/fixedActionButtons/FixedActionButtons";
-import HomepageSortableField from "./local_components/HomepageSortableField";
+import ImageUploader from "../promotions/imageUploader";
 
 export default function AdminHomepageContent() {
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
 	const [data, setData] = useState<HomepageContentData | null>(null);
-	const [initialData, setInitialData] = useState<HomepageContentData | null>(null); // Исходные данные для отслеживания изменений
+	const [initialData, setInitialData] = useState<HomepageContentData | null>(null);
 	const [error, setError] = useState<string | null>(null);
-	/** Подсветка полей формы после отказа API: fieldId → список ключей (placeholder, type, …) */
-	const [fieldSaveIssues, setFieldSaveIssues] = useState<Record<string, string[]>>({});
 	const [hasChanges, setHasChanges] = useState(false);
-	const scrollPositionRef = useRef<number | null>(null);
-	const shouldRestoreScrollRef = useRef<boolean>(false);
 
-	// Загрузка данных при монтировании
 	useEffect(() => {
 		loadData();
 	}, []);
 
-	// Отслеживание изменений
 	useEffect(() => {
 		if (!data || !initialData) {
 			setHasChanges(false);
@@ -40,23 +30,13 @@ export default function AdminHomepageContent() {
 			data.secondBlockTitle !== initialData.secondBlockTitle ||
 			data.callButtonText !== initialData.callButtonText ||
 			data.orderButtonText !== initialData.orderButtonText ||
-			data.formSubmitButtonText !== initialData.formSubmitButtonText ||
-			JSON.stringify(data.formFields) !== JSON.stringify(initialData.formFields);
+			data.serviceBlockTitle !== initialData.serviceBlockTitle ||
+			data.serviceBlockSubtitle !== initialData.serviceBlockSubtitle ||
+			data.serviceBlockCtaText !== initialData.serviceBlockCtaText ||
+			data.serviceBlockImageUrl !== initialData.serviceBlockImageUrl;
 
 		setHasChanges(hasDataChanges);
 	}, [data, initialData]);
-
-	// Восстанавливаем позицию скролла после перетаскивания полей
-	useLayoutEffect(() => {
-		if (shouldRestoreScrollRef.current && scrollPositionRef.current !== null) {
-			window.scrollTo({
-				top: scrollPositionRef.current,
-				behavior: "instant" as ScrollBehavior,
-			});
-			shouldRestoreScrollRef.current = false;
-			scrollPositionRef.current = null;
-		}
-	});
 
 	const loadData = async () => {
 		try {
@@ -67,8 +47,7 @@ export default function AdminHomepageContent() {
 			}
 			const content = await response.json();
 			setData(content);
-			setInitialData(JSON.parse(JSON.stringify(content))); // Глубокая копия для сравнения
-			setFieldSaveIssues({});
+			setInitialData(JSON.parse(JSON.stringify(content)));
 		} catch (err) {
 			setError(err instanceof Error ? err.message : "Ошибка загрузки");
 		} finally {
@@ -77,11 +56,18 @@ export default function AdminHomepageContent() {
 	};
 
 	const handleSave = async () => {
-		if (!data) return;
+		if (!data || !initialData) return;
 
 		try {
 			setSaving(true);
 			setError(null);
+
+			// Блоки главной — форму не перезаписываем (она в отдельном разделе)
+			const payload: HomepageContentData = {
+				...data,
+				formFields: initialData.formFields,
+				formSubmitButtonText: initialData.formSubmitButtonText,
+			};
 
 			const response = await fetch("/api/homepage-content", {
 				method: "POST",
@@ -89,24 +75,11 @@ export default function AdminHomepageContent() {
 					"Content-Type": "application/json",
 				},
 				credentials: "include",
-				body: JSON.stringify(data),
+				body: JSON.stringify(payload),
 			});
 
 			if (!response.ok) {
-				const errorData = (await response.json()) as {
-					error?: string;
-					fieldId?: string | null;
-					issues?: string[];
-				};
-				if (errorData.fieldId && errorData.issues && errorData.issues.length > 0) {
-					setFieldSaveIssues({ [errorData.fieldId]: errorData.issues });
-					requestAnimationFrame(() => {
-						const el = document.querySelector(`[data-homepage-field-id="${CSS.escape(String(errorData.fieldId))}"]`);
-						el?.scrollIntoView({ behavior: "smooth", block: "center" });
-					});
-				} else {
-					setFieldSaveIssues({});
-				}
+				const errorData = (await response.json()) as { error?: string };
 				throw new Error(errorData.error || "Ошибка сохранения");
 			}
 
@@ -115,7 +88,6 @@ export default function AdminHomepageContent() {
 			setData(normalizedSavedData);
 			setInitialData(normalizedSavedData);
 			setHasChanges(false);
-			setFieldSaveIssues({});
 
 			alert("Данные успешно сохранены!");
 		} catch (err) {
@@ -129,91 +101,18 @@ export default function AdminHomepageContent() {
 		if (!initialData) return;
 		setData(JSON.parse(JSON.stringify(initialData)));
 		setHasChanges(false);
-		setFieldSaveIssues({});
 	};
-
-	const addFormField = () => {
-		if (!data) return;
-
-		const newField: FormField = {
-			id: Date.now().toString(),
-			type: "text",
-			placeholder: "",
-			required: false,
-		};
-
-		setData({
-			...data,
-			formFields: [...data.formFields, newField],
-		});
-	};
-
-	const removeFormField = (fieldId: string) => {
-		if (!data) return;
-
-		setData({
-			...data,
-			formFields: data.formFields.filter((f) => f.id !== fieldId),
-		});
-	};
-
-	const updateFormField = (fieldId: string, updates: Partial<FormField>) => {
-		if (!data) return;
-
-		setFieldSaveIssues((prev) => {
-			if (!prev[fieldId]) return prev;
-			const next = { ...prev };
-			delete next[fieldId];
-			return next;
-		});
-
-		setData({
-			...data,
-			formFields: data.formFields.map((f) => (f.id === fieldId ? { ...f, ...updates } : f)),
-		});
-	};
-
-	const handleDragEnd = (event: DragEndEvent) => {
-		if (!data) return;
-
-		const { active, over } = event;
-		if (!over || active.id === over.id) {
-			return;
-		}
-
-		scrollPositionRef.current = window.scrollY || document.documentElement.scrollTop;
-		shouldRestoreScrollRef.current = true;
-
-		const oldIndex = data.formFields.findIndex((f) => f.id === active.id);
-		const newIndex = data.formFields.findIndex((f) => f.id === over.id);
-
-		if (oldIndex !== -1 && newIndex !== -1) {
-			const newFields = arrayMove(data.formFields, oldIndex, newIndex);
-			setData({
-				...data,
-				formFields: newFields,
-			});
-		}
-	};
-
-	const sensors = useSensors(
-		useSensor(PointerSensor, {
-			activationConstraint: {
-				distance: 8,
-			},
-		}),
-	);
 
 	if (loading) {
 		return (
 			<div className="screenContent">
 				<div className="tableContainer">
 					<div className="tabsContainer column">
-						<Link href="/admin/content" className={styles.backToContentLink}>
+						<Link href="/admin/dashboard" className={styles.backToContentLink}>
 							<span className={styles.backToContentLinkArrow} aria-hidden>
 								←
 							</span>
-							Редактор контента
+							На панель
 						</Link>
 						<div className="tabTitle">Главная страница</div>
 					</div>
@@ -230,11 +129,11 @@ export default function AdminHomepageContent() {
 			<div className="screenContent">
 				<div className="tableContainer">
 					<div className="tabsContainer column">
-						<Link href="/admin/content" className={styles.backToContentLink}>
+						<Link href="/admin/dashboard" className={styles.backToContentLink}>
 							<span className={styles.backToContentLinkArrow} aria-hidden>
 								←
 							</span>
-							Редактор контента
+							На панель
 						</Link>
 						<div className="tabTitle">Главная страница</div>
 					</div>
@@ -250,11 +149,11 @@ export default function AdminHomepageContent() {
 		<div className="screenContent">
 			<div className="tableContainer">
 				<div className="tabsContainer column">
-					<Link href="/admin/content" className={styles.backToContentLink}>
+					<Link href="/admin/dashboard" className={styles.backToContentLink}>
 						<span className={styles.backToContentLinkArrow} aria-hidden>
 							←
 						</span>
-						Редактор контента
+						На панель
 					</Link>
 					<div className="tabTitle">Главная страница</div>
 				</div>
@@ -265,23 +164,25 @@ export default function AdminHomepageContent() {
 						<div className="formSection borderBlock">
 							<h3 className="formSectionTitle">Блоки главной страницы</h3>
 							<div className={`formField ${styles.formField}`}>
-								<label htmlFor="firstBlockTitle">Заголовок первого блока (видео, менеджер) *</label>
+								<label htmlFor="firstBlockTitle">
+									Заголовок блока «Связь с магазином» (видео, звонок, заявка) *
+								</label>
 								<input
 									type="text"
 									id="firstBlockTitle"
 									value={data.firstBlockTitle}
 									onChange={(e) => setData({ ...data, firstBlockTitle: e.target.value })}
-									placeholder="Выбрать запчасти с менеджером:"
+									placeholder="Например: Поможем подобрать запчасти"
 								/>
 							</div>
 							<div className={`formField ${styles.formField}`}>
-								<label htmlFor="secondBlockTitle">Заголовок второго блока (карточки разделов) *</label>
+								<label htmlFor="secondBlockTitle">Заголовок блока «Каталог» (карточки разделов) *</label>
 								<input
 									type="text"
 									id="secondBlockTitle"
 									value={data.secondBlockTitle}
 									onChange={(e) => setData({ ...data, secondBlockTitle: e.target.value })}
-									placeholder="Выбрать запчасти самостоятельно:"
+									placeholder="Выбрать запчасти самостоятельно"
 								/>
 							</div>
 
@@ -315,52 +216,45 @@ export default function AdminHomepageContent() {
 						</div>
 
 						<div className="formSection borderBlock">
-							<h3 className="formSectionTitle">Форма обратной связи</h3>
-
+							<h3 className="formSectionTitle">Блок «Сервис» (баннер записи на ТО)</h3>
 							<div className={`formField ${styles.formField}`}>
-								<label htmlFor="formSubmitButtonText">Текст кнопки отправки формы *</label>
+								<label htmlFor="serviceBlockTitle">Заголовок баннера *</label>
 								<input
 									type="text"
-									id="formSubmitButtonText"
-									value={data.formSubmitButtonText}
-									onChange={(e) => setData({ ...data, formSubmitButtonText: e.target.value })}
-									placeholder="Оставить заявку"
+									id="serviceBlockTitle"
+									value={data.serviceBlockTitle ?? ""}
+									onChange={(e) => setData({ ...data, serviceBlockTitle: e.target.value })}
+									placeholder="Запись на ТО"
 								/>
 							</div>
-
-							<DndContext
-								sensors={sensors}
-								collisionDetection={closestCenter}
-								modifiers={[restrictToVerticalAxis]}
-								onDragEnd={handleDragEnd}
-								autoScroll={{ enabled: false }}
-							>
-								<SortableContext items={data.formFields.map((f) => f.id)} strategy={verticalListSortingStrategy}>
-									<div className={styles.fieldsListContainer}>
-										{data.formFields.map((field, index) => (
-											<HomepageSortableField
-												key={field.id}
-												field={field}
-												index={index}
-												onRemove={removeFormField}
-												onUpdate={updateFormField}
-												validationIssues={fieldSaveIssues[field.id]}
-											/>
-										))}
-
-										{data.formFields.length === 0 && (
-											<div className={`${styles.editorPlaceholder} ${styles.centeredPlaceholder}`}>
-												Нет полей формы. Нажмите &quot;Добавить поле&quot; для создания первого поля.
-											</div>
-										)}
-									</div>
-								</SortableContext>
-							</DndContext>
-
-							<button type="button" onClick={addFormField} className={`button ${styles.addFieldButton}`}>
-								<Plus size={16} />
-								Добавить поле
-							</button>
+							<div className={`formField ${styles.formField}`}>
+								<label htmlFor="serviceBlockSubtitle">Подзаголовок баннера *</label>
+								<textarea
+									id="serviceBlockSubtitle"
+									value={data.serviceBlockSubtitle ?? ""}
+									onChange={(e) => setData({ ...data, serviceBlockSubtitle: e.target.value })}
+									placeholder="Краткое описание записи на обслуживание"
+									rows={3}
+								/>
+							</div>
+							<div className={`formField ${styles.formField}`}>
+								<label htmlFor="serviceBlockCtaText">Текст кнопки на баннере *</label>
+								<input
+									type="text"
+									id="serviceBlockCtaText"
+									value={data.serviceBlockCtaText ?? ""}
+									onChange={(e) => setData({ ...data, serviceBlockCtaText: e.target.value })}
+									placeholder="Записаться на обслуживание"
+								/>
+							</div>
+							<div className={`formField ${styles.formField}`}>
+								<label>Фоновое изображение баннера</label>
+								<span className={styles.labelHint}>Рекомендуемый формат: широкое фото сервиса или автомобиля, от 1600×600 px</span>
+								<ImageUploader
+									imageUrl={data.serviceBlockImageUrl ?? ""}
+									setImageUrl={(url) => setData({ ...data, serviceBlockImageUrl: url || null })}
+								/>
+							</div>
 						</div>
 					</div>
 				</div>

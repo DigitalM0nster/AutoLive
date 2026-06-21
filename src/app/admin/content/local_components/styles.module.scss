@@ -80,6 +80,291 @@
 	margin-left: 8px;
 }
 
+.sectionNote {
+	margin: 0 0 12px;
+	font-size: 13px;
+	line-height: 1.45;
+	color: var(--grey3-color);
+}
+
+.dateFieldRow {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+
+	input {
+		flex: 1;
+		min-width: 0;
+	}
+}
+
+.clearDateButton {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	padding: 8px 12px;
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--grey3-color);
+	background: transparent;
+	border: 1px solid var(--grey2-color, #ddd);
+	border-radius: 8px;
+	cursor: pointer;
+	transition:
+		color 0.2s ease,
+		border-color 0.2s ease,
+		background 0.2s ease;
+
+	&:hover {
+		color: var(--red-color, #c62828);
+		border-color: color-mix(in srgb, var(--red-color, #c62828) 35%, #ddd);
+		background: color-mix(in srgb, var(--red-color, #c62828) 6%, transparent);
+	}
+}
+
+.promotionButtonsEditor {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	width: 100%;
+}
+
+.promotionButtonsAddTrigger {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	width: 100%;
+	padding: 14px 16px;
+	font-size: 12px;
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--grey3-color);
+	background: transparent;
+	border: 1px dashed var(--grey2-color, #ccc);
+	border-radius: 10px;
+	cursor: pointer;
+	transition:
+		border-color 0.2s ease,
+		color 0.2s ease,
+		background 0.2s ease;
+
+	&:hover {
+		border-color: var(--site-color-accent, #b0cb1f);
+		color: var(--text-color, #222);
+		background: color-mix(in srgb, var(--site-color-accent, #b0cb1f) 6%, transparent);
+	}
+}
+
+.promotionButtonsAddIcon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 18px;
+	height: 18px;
+	font-size: 18px;
+	line-height: 1;
+	font-weight: 500;
+}
+
+.promotionButtonCard {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: 16px;
+	border: 1px solid var(--grey2-color, #e5e5e5);
+	border-radius: 12px;
+	background: #fafafa;
+}
+
+.promotionButtonCardHead {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.promotionButtonCardTitle {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--grey3-color);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.promotionButtonRemove {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	flex-shrink: 0;
+	padding: 8px 12px;
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--red-color, #c62828);
+	background: var(--light-red-color);
+	border: 1px solid color-mix(in srgb, var(--red-color, #c62828) 25%, #fff);
+	border-radius: 8px;
+	cursor: pointer;
+	transition:
+		background 0.2s ease,
+		color 0.2s ease,
+		border-color 0.2s ease;
+
+	&:hover {
+		color: #fff;
+		background: var(--red-color, #c62828);
+		border-color: var(--red-color, #c62828);
+	}
+}
+
+.promotionPhoneInput {
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.sitePagePicker {
+	position: relative;
+	width: 100%;
+}
+
+.sitePagePickerTrigger {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	width: 100%;
+	padding: 10px 12px;
+	font-size: 14px;
+	text-align: left;
+	color: var(--text-color, #222);
+	background: #fff;
+	border: 1px solid var(--grey2-color, #ddd);
+	border-radius: 8px;
+	cursor: pointer;
+}
+
+.sitePagePickerChevron {
+	display: block;
+	width: 8px;
+	height: 8px;
+	border-right: 2px solid #888;
+	border-bottom: 2px solid #888;
+	transform: rotate(45deg) translateY(-2px);
+}
+
+.sitePagePickerPanel {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	min-height: 0;
+	padding: 10px;
+	box-sizing: border-box;
+	overflow: hidden;
+	background: #fff;
+	border: 1px solid var(--grey2-color, #ddd);
+	border-radius: 10px;
+	box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+}
+
+.sitePagePickerSearchWrap {
+	width: 100%;
+	flex-shrink: 0;
+
+	input {
+		width: 100%;
+		box-sizing: border-box;
+		padding-right: 28px;
+		font-size: 14px;
+	}
+}
+
+.sitePagePickerList {
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	gap: 4px;
+	min-height: 0;
+	overflow: auto;
+}
+
+.sitePagePickerPagination {
+	display: flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding-top: 4px;
+	border-top: 1px solid var(--grey2-color, #ddd);
+}
+
+.sitePagePickerPaginationButton {
+	padding: 4px 10px;
+	font-size: 13px;
+	color: var(--text-color, #222);
+	background: #fff;
+	border: 1px solid var(--grey2-color, #ddd);
+	border-radius: 6px;
+	cursor: pointer;
+
+	&:disabled {
+		color: var(--grey3-color, #aaa);
+		cursor: not-allowed;
+		opacity: 0.6;
+	}
+
+	&:not(:disabled):hover {
+		background: #f3f3f3;
+	}
+}
+
+.sitePagePickerPaginationInfo {
+	font-size: 13px;
+	color: var(--grey3-color, #888);
+}
+
+.sitePagePickerOption {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 2px;
+	width: 100%;
+	padding: 8px 10px;
+	text-align: left;
+	background: transparent;
+	border: none;
+	border-radius: 8px;
+	cursor: pointer;
+
+	&:hover {
+		background: #f3f3f3;
+	}
+
+	&.sitePagePickerOptionActive {
+		background: color-mix(in srgb, var(--site-color-accent, #b0cb1f) 14%, #fff);
+	}
+}
+
+.sitePagePickerOptionLabel {
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--text-color, #222);
+}
+
+.sitePagePickerOptionHint {
+	font-size: 12px;
+	color: var(--grey3-color);
+}
+
+.sitePagePickerEmpty {
+	padding: 12px;
+	font-size: 13px;
+	color: var(--grey3-color);
+}
+
 // Label для checkbox
 .checkboxLabel {
 	display: flex;

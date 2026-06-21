@@ -3,6 +3,8 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse, NextRequest } from "next/server";
 import { getUserFromRequest } from "@/middleware/permissionMiddleware";
+import { parseOptionalPromotionDate, validatePromotionDates } from "@/lib/promotionDates";
+import { readPromotionButtonsFromBody, serializePromotionButtons, validatePromotionButtons } from "@/lib/promotionButtons";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -27,16 +29,28 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
 	try {
 		const body = await req.json();
+		const startDate = parseOptionalPromotionDate(body.startDate);
+		const endDate = parseOptionalPromotionDate(body.endDate);
+		const datesValidationError = validatePromotionDates(startDate, endDate);
+		if (datesValidationError) {
+			return NextResponse.json({ error: datesValidationError }, { status: 400 });
+		}
+
+		const buttons = readPromotionButtonsFromBody(body);
+		const buttonsError = validatePromotionButtons(buttons);
+		if (buttonsError) {
+			return NextResponse.json({ error: buttonsError }, { status: 400 });
+		}
+
 		const updated = await prisma.promotion.update({
 			where: { id: Number(id) },
 			data: {
 				title: body.title,
 				description: body.description,
 				image: body.imageUrl,
-				buttonText: body.buttonText,
-				buttonLink: body.buttonLink,
-				startDate: body.startDate ? new Date(body.startDate) : null,
-				endDate: body.endDate ? new Date(body.endDate) : null,
+				buttonsJson: serializePromotionButtons(buttons),
+				startDate,
+				endDate,
 			},
 		});
 		return NextResponse.json(updated);

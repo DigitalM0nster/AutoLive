@@ -1,0 +1,284 @@
+.list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	width: 100%;
+	min-width: 0;
+}
+
+.toolbar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	flex-wrap: wrap;
+	margin-bottom: 2px;
+}
+
+.stats {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.countBadge {
+	display: inline-flex;
+	align-items: center;
+	padding: 4px 10px;
+	border-radius: 999px;
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 1.35;
+	background: #f1f5f9;
+	border: 1px solid #e2e8f0;
+	color: #475569;
+}
+
+.totalBadge {
+	display: inline-flex;
+	align-items: center;
+	padding: 4px 10px;
+	border-radius: 999px;
+	font-size: 13px;
+	font-weight: 700;
+	line-height: 1.35;
+	background: #ecfdf5;
+	border: 1px solid #bbf7d0;
+	color: #15803d;
+}
+
+.card {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+	border: 1px solid #e2e8f0;
+	border-radius: 10px;
+	background: #fff;
+	overflow: hidden;
+	box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+	transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+	&.isExpanded {
+		border-color: #cbd5e1;
+		box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+	}
+}
+
+.head {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	padding: 10px 12px;
+	cursor: pointer;
+	user-select: none;
+
+	&:hover {
+		background: #fafbfc;
+	}
+}
+
+.index {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	width: 24px;
+	height: 24px;
+	border-radius: 7px;
+	background: #f1f5f9;
+	border: 1px solid #e2e8f0;
+	font-size: 11px;
+	font-weight: 700;
+	line-height: 1;
+	color: #64748b;
+}
+
+.thumb {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	width: 48px;
+	height: 48px;
+	border-radius: 8px;
+	overflow: hidden;
+	background: #f8fafc;
+	border: 1px solid #e2e8f0;
+}
+
+.thumbImage {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+.thumbEmpty {
+	font-size: 9px;
+	font-weight: 600;
+	line-height: 1.2;
+	text-align: center;
+	color: #94a3b8;
+	padding: 4px;
+}
+
+.main {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	flex: 1;
+	min-width: 0;
+}
+
+.titleRow {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.title {
+	font-size: 14px;
+	font-weight: 700;
+	line-height: 1.35;
+	color: var(--text-color);
+	min-width: 0;
+
+	a {
+		color: inherit;
+		text-decoration: none;
+
+		&:hover {
+			text-decoration: underline;
+		}
+	}
+}
+
+.lineTotal {
+	flex-shrink: 0;
+	font-size: 14px;
+	font-weight: 700;
+	line-height: 1.35;
+	color: #15803d;
+	white-space: nowrap;
+}
+
+.chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.chip {
+	display: inline-flex;
+	align-items: center;
+	padding: 2px 8px;
+	border-radius: 999px;
+	font-size: 11px;
+	font-weight: 600;
+	line-height: 1.35;
+	background: #f8fafc;
+	border: 1px solid #e2e8f0;
+	color: #475569;
+}
+
+.chipQty {
+	background: #eff6ff;
+	border-color: #bfdbfe;
+	color: #1d4ed8;
+}
+
+.chipMuted {
+	color: #64748b;
+	font-weight: 500;
+}
+
+.extraLine {
+	font-size: 12px;
+	line-height: 1.4;
+	color: #64748b;
+}
+
+.actions {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 0 12px 10px 74px;
+}
+
+.removeBtn {
+	padding: 0;
+	border: none;
+	background: transparent;
+	color: var(--red-color);
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 1.35;
+	text-decoration: underline;
+	cursor: pointer;
+
+	&:hover:not(:disabled) {
+		opacity: 0.85;
+	}
+
+	&:disabled {
+		opacity: 0.45;
+		cursor: not-allowed;
+	}
+}
+
+.expandBtn {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 4px 8px;
+	border-radius: 6px;
+	border: 1px solid #e2e8f0;
+	background: #fff;
+	color: #64748b;
+	font-size: 11px;
+	font-weight: 600;
+	line-height: 1.35;
+	cursor: pointer;
+	transition: background 0.15s ease, border-color 0.15s ease;
+
+	&:hover {
+		background: #f8fafc;
+		border-color: #cbd5e1;
+	}
+
+	&.isExpanded {
+		background: #f1f5f9;
+	}
+}
+
+.expandIcon {
+	transition: transform 0.2s ease;
+
+	&.isExpanded {
+		transform: rotate(180deg);
+	}
+}
+
+.dateRow {
+	padding: 0 12px 10px;
+	border-top: 1px solid #f1f5f9;
+}
+
+.details {
+	border-top: 1px solid #f1f5f9;
+	padding: 10px 12px 12px;
+}
+
+.readonlySegment {
+	opacity: 0.72;
+}
+
+.conflictHint {
+	margin: 6px 0 0;
+	font-size: 12px;
+	line-height: 1.4;
+	color: #b45309;
+}

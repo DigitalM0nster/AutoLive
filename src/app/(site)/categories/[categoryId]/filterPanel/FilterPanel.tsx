@@ -2,10 +2,10 @@
 
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import styles from "./styles.module.scss";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import panelStyles from "./styles.module.scss";
+import CustomSelect from "@/components/ui/customSelect/CustomSelect";
 import type { Product, Category } from "@/lib/types";
-import { useUiStore } from "@/store/uiStore";
 
 type FilterPanelProps = {
 	products: Product[];
@@ -16,7 +16,6 @@ type FilterPanelProps = {
 export default function FilterPanel({ products = [], filters = [], setFilteredProducts }: FilterPanelProps) {
 	const minPriceDefault = products.length > 0 ? Math.min(...products.map((p) => p.price)) : 0;
 	const maxPriceDefault = products.length > 0 ? Math.max(...products.map((p) => p.price)) : 0;
-	const { headerHeight } = useUiStore();
 	const [selectedFilters, setSelectedFilters] = useState<Record<number, number | "" | number[] | { min?: number; max?: number }>>({});
 	const [selectedBrand, setSelectedBrand] = useState<string>("");
 	const [minPrice, setMinPrice] = useState<number>(minPriceDefault);
@@ -26,6 +25,10 @@ export default function FilterPanel({ products = [], filters = [], setFilteredPr
 
 	// Получаем уникальные бренды из товаров
 	const uniqueBrands = Array.from(new Set(products.map((p) => p.brand).filter(Boolean))).sort();
+	const brandOptions = useMemo(
+		() => [{ value: "", label: "Все бренды" }, ...uniqueBrands.map((brand) => ({ value: brand, label: brand }))],
+		[uniqueBrands],
+	);
 
 	// Используем useCallback для оптимизации
 	const applyFilters = useCallback(() => {
@@ -184,23 +187,38 @@ export default function FilterPanel({ products = [], filters = [], setFilteredPr
 	}, []);
 
 	// Обработчик для изменения бренда
-	const handleBrandChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-		setSelectedBrand(e.target.value);
+	const handleBrandChange = useCallback((value: string) => {
+		setSelectedBrand(value);
 	}, []);
 
+	const getFilterSelectValue = (filterId: number): string => {
+		const value = selectedFilters[filterId];
+		return typeof value === "number" ? value.toString() : "";
+	};
+
+	const getFilterOptions = (values: { id: number; value: string }[]) => [
+		{ value: "", label: "Все" },
+		...values.map((item) => ({ value: String(item.id), label: item.value })),
+	];
+
 	return (
-		<div className={styles.filterPanel} style={{ top: headerHeight + 20 + "px" }}>
-			<div className={styles.filterContent}>
+		<div className={panelStyles.filterPanel}>
+			<div className={panelStyles.filterHeader}>
+				<h2 className={panelStyles.filterTitle}>Фильтры</h2>
+				<p className={panelStyles.filterLead}>Сузьте выбор по цене, бренду и параметрам</p>
+			</div>
+
+			<div className={panelStyles.filterContent}>
 				{products.length > 0 && (
-					<div className={styles.filterBlock}>
-						<div className={styles.filterName}>Цена</div>
-						<div className={styles.priceInputs}>
+					<div className={panelStyles.filterBlock}>
+						<div className={panelStyles.filterName}>Цена</div>
+						<div className={panelStyles.priceInputs}>
 							<input
 								type="number"
 								value={inputMinPrice}
 								onChange={(e) => setInputMinPrice(Number(e.target.value))}
 								onBlur={handleMinPriceChange}
-								className={styles.priceInput}
+								className={panelStyles.priceInput}
 								min={minPriceDefault}
 								max={maxPrice}
 							/>
@@ -210,13 +228,13 @@ export default function FilterPanel({ products = [], filters = [], setFilteredPr
 								value={inputMaxPrice}
 								onChange={(e) => setInputMaxPrice(Number(e.target.value))}
 								onBlur={handleMaxPriceChange}
-								className={styles.priceInput}
+								className={panelStyles.priceInput}
 								min={minPrice}
 								max={maxPriceDefault}
 							/>
 						</div>
 
-						<div className={styles.sliderWrapper}>
+						<div className={panelStyles.sliderWrapper}>
 							<input
 								type="range"
 								min={minPriceDefault}
@@ -224,7 +242,7 @@ export default function FilterPanel({ products = [], filters = [], setFilteredPr
 								step={0.01}
 								value={minPrice}
 								onChange={handleMinPriceChange}
-								className={styles.slider}
+								className={panelStyles.slider}
 							/>
 							<input
 								type="range"
@@ -233,10 +251,10 @@ export default function FilterPanel({ products = [], filters = [], setFilteredPr
 								step={0.01}
 								value={maxPrice}
 								onChange={handleMaxPriceChange}
-								className={styles.slider}
+								className={panelStyles.slider}
 							/>
 						</div>
-						<div className={styles.priceLabels}>
+						<div className={panelStyles.priceLabels}>
 							<span>{minPriceDefault} руб.</span>
 							<span>{maxPriceDefault} руб.</span>
 						</div>
@@ -245,44 +263,41 @@ export default function FilterPanel({ products = [], filters = [], setFilteredPr
 
 				{/* Фильтр бренда - всегда присутствует */}
 				{uniqueBrands.length > 0 && (
-					<div className={styles.filterBlock}>
-						<div className={styles.filterName}>Бренд</div>
-						<select value={selectedBrand} onChange={handleBrandChange} className={styles.brandSelect}>
-							<option value="">Все бренды</option>
-							{uniqueBrands.map((brand) => (
-								<option key={brand} value={brand}>
-									{brand}
-								</option>
-							))}
-						</select>
+					<div className={panelStyles.filterBlock}>
+						<div className={panelStyles.filterName}>Бренд</div>
+						<CustomSelect
+							options={brandOptions}
+							value={selectedBrand}
+							onChange={handleBrandChange}
+							placeholder="Все бренды"
+							fullWidth
+							variant="site"
+						/>
 					</div>
 				)}
 
 				{filters.length > 0 &&
 					filters.map((filter) => (
-						<div key={filter.id} className={styles.filterBlock}>
-							<div className={styles.filterName}>{filter.title}</div>
+						<div key={filter.id} className={panelStyles.filterBlock}>
+							<div className={panelStyles.filterName}>{filter.title}</div>
 
 							{/* Единственный выбор */}
 							{filter.type === "select" && (
-								<select
-									value={typeof selectedFilters[filter.id] === "number" ? selectedFilters[filter.id].toString() : ""}
-									onChange={(e) => handleFilterChange(filter.id, e.target.value)}
-								>
-									<option value="">Все</option>
-									{filter.values.map((value) => (
-										<option key={value.id} value={value.id}>
-											{value.value}
-										</option>
-									))}
-								</select>
+								<CustomSelect
+									options={getFilterOptions(filter.values)}
+									value={getFilterSelectValue(filter.id)}
+									onChange={(value) => handleFilterChange(filter.id, value)}
+									placeholder="Все"
+									fullWidth
+									variant="site"
+								/>
 							)}
 
 							{/* Множественный выбор */}
 							{filter.type === "multi_select" && (
-								<div className={styles.multiSelect}>
+								<div className={panelStyles.multiSelect}>
 									{filter.values.map((value) => (
-										<label key={value.id} className={styles.checkboxLabel}>
+										<label key={value.id} className={panelStyles.checkboxLabel}>
 											<input
 												type="checkbox"
 												checked={Array.isArray(selectedFilters[filter.id]) ? (selectedFilters[filter.id] as number[]).includes(value.id) : false}
@@ -296,11 +311,11 @@ export default function FilterPanel({ products = [], filters = [], setFilteredPr
 
 							{/* Диапазон */}
 							{filter.type === "range" && (
-								<div className={styles.rangeFilter}>
-									<div className={styles.rangeLabel}>
+								<div className={panelStyles.rangeFilter}>
+									<div className={panelStyles.rangeLabel}>
 										{filter.title} {filter.unit && `(${filter.unit})`}
 									</div>
-									<div className={styles.rangeInputs}>
+									<div className={panelStyles.rangeInputs}>
 										<input
 											type="number"
 											placeholder="От"
@@ -310,9 +325,9 @@ export default function FilterPanel({ products = [], filters = [], setFilteredPr
 													: ""
 											}
 											onChange={(e) => handleRangeChange(filter.id, "min", e.target.value)}
-											className={styles.rangeInput}
+											className={panelStyles.rangeInput}
 										/>
-										<span className={styles.rangeSeparator}>-</span>
+										<span className={panelStyles.rangeSeparator}>-</span>
 										<input
 											type="number"
 											placeholder="До"
@@ -322,34 +337,29 @@ export default function FilterPanel({ products = [], filters = [], setFilteredPr
 													: ""
 											}
 											onChange={(e) => handleRangeChange(filter.id, "max", e.target.value)}
-											className={styles.rangeInput}
+											className={panelStyles.rangeInput}
 										/>
-										{filter.unit && <span className={styles.rangeUnit}>{filter.unit}</span>}
+										{filter.unit && <span className={panelStyles.rangeUnit}>{filter.unit}</span>}
 									</div>
 								</div>
 							)}
 
 							{/* Да/Нет */}
 							{filter.type === "boolean" && (
-								<select
-									value={typeof selectedFilters[filter.id] === "number" ? selectedFilters[filter.id].toString() : ""}
-									onChange={(e) => handleFilterChange(filter.id, e.target.value)}
-								>
-									<option value="">Все</option>
-									{filter.values.map((value) => (
-										<option key={value.id} value={value.id}>
-											{value.value}
-										</option>
-									))}
-								</select>
+								<CustomSelect
+									options={getFilterOptions(filter.values)}
+									value={getFilterSelectValue(filter.id)}
+									onChange={(value) => handleFilterChange(filter.id, value)}
+									placeholder="Все"
+									fullWidth
+									variant="site"
+								/>
 							)}
 						</div>
 					))}
 			</div>
 
-			<button
-				className={`button ${styles.resetButton}`}
-				onClick={resetFilters}
+			<button type="button" className={panelStyles.resetButton} onClick={resetFilters}
 				disabled={Object.keys(selectedFilters).length === 0 && selectedBrand === "" && minPrice === minPriceDefault && maxPrice === maxPriceDefault}
 			>
 				Сбросить фильтры

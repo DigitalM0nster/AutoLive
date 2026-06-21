@@ -32,6 +32,11 @@ export interface HomepageContentData {
 	orderButtonText: string;
 	formFields: FormField[];
 	formSubmitButtonText: string;
+	/** Блок «Сервис» — баннер записи на ТО */
+	serviceBlockTitle: string;
+	serviceBlockSubtitle: string;
+	serviceBlockCtaText: string;
+	serviceBlockImageUrl: string | null;
 }
 
 // GET /api/homepage-content - Получить контент главной страницы
@@ -82,6 +87,10 @@ export async function GET(request: NextRequest) {
 					},
 				],
 				formSubmitButtonText: "Оставить заказ",
+				serviceBlockTitle: "Запись на ТО",
+				serviceBlockSubtitle: "Выберите удобное время и запишитесь на техническое обслуживание в нашем сервисе",
+				serviceBlockCtaText: "Записаться на обслуживание",
+				serviceBlockImageUrl: null,
 			};
 			return NextResponse.json(defaultContent);
 		}
@@ -97,6 +106,10 @@ export async function GET(request: NextRequest) {
 			orderButtonText: content.orderButtonText,
 			formFields: formFields,
 			formSubmitButtonText: content.formSubmitButtonText,
+			serviceBlockTitle: content.serviceBlockTitle,
+			serviceBlockSubtitle: content.serviceBlockSubtitle,
+			serviceBlockCtaText: content.serviceBlockCtaText,
+			serviceBlockImageUrl: content.serviceBlockImageUrl?.trim() ? content.serviceBlockImageUrl.trim() : null,
 		};
 
 		return NextResponse.json(response);
@@ -116,6 +129,18 @@ export const POST = withPermission(
 				typeof body.secondBlockTitle === "string"
 					? body.secondBlockTitle.trim()
 					: "Выбрать запчасти самостоятельно:";
+			const serviceBlockTitle =
+				typeof body.serviceBlockTitle === "string" ? body.serviceBlockTitle.trim() : "Запись на ТО";
+			const serviceBlockSubtitle =
+				typeof body.serviceBlockSubtitle === "string"
+					? body.serviceBlockSubtitle.trim()
+					: "Выберите удобное время и запишитесь на техническое обслуживание в нашем сервисе";
+			const serviceBlockCtaText =
+				typeof body.serviceBlockCtaText === "string" ? body.serviceBlockCtaText.trim() : "Записаться на обслуживание";
+			const serviceBlockImageUrl =
+				typeof body.serviceBlockImageUrl === "string" && body.serviceBlockImageUrl.trim() !== ""
+					? body.serviceBlockImageUrl.trim()
+					: null;
 
 			if (!Array.isArray(body.formFields)) {
 				return NextResponse.json({ error: "Поля формы должны быть массивом" }, { status: 400 });
@@ -218,6 +243,10 @@ export const POST = withPermission(
 							orderButtonText: body.orderButtonText.trim(),
 							formFields: body.formFields as any,
 							formSubmitButtonText: body.formSubmitButtonText.trim(),
+							serviceBlockTitle,
+							serviceBlockSubtitle,
+							serviceBlockCtaText,
+							serviceBlockImageUrl,
 						},
 					});
 				} else {
@@ -230,6 +259,10 @@ export const POST = withPermission(
 							orderButtonText: body.orderButtonText.trim(),
 							formFields: body.formFields as any,
 							formSubmitButtonText: body.formSubmitButtonText.trim(),
+							serviceBlockTitle,
+							serviceBlockSubtitle,
+							serviceBlockCtaText,
+							serviceBlockImageUrl,
 						},
 					});
 				}
@@ -243,6 +276,10 @@ export const POST = withPermission(
 				orderButtonText: result.orderButtonText,
 				formFields: result.formFields,
 				formSubmitButtonText: result.formSubmitButtonText,
+				serviceBlockTitle: result.serviceBlockTitle,
+				serviceBlockSubtitle: result.serviceBlockSubtitle,
+				serviceBlockCtaText: result.serviceBlockCtaText,
+				serviceBlockImageUrl: result.serviceBlockImageUrl,
 			});
 		} catch (error) {
 			console.error("Ошибка при сохранении контента главной страницы:", error);

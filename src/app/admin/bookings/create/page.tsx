@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import jwt from "jsonwebtoken";
@@ -15,7 +16,6 @@ export default async function CreateBookingPage() {
 	const cookieStore = await cookies();
 	const token = cookieStore.get("authToken")?.value;
 
-	// Проверяем авторизацию
 	if (!token) {
 		redirect("/admin");
 	}
@@ -28,18 +28,20 @@ export default async function CreateBookingPage() {
 		redirect("/admin");
 	}
 
-	// Проверяем права доступа - только админы и суперадмины могут создавать записи
 	if (!["superadmin", "admin"].includes(user.role)) {
 		redirect("/admin/dashboard");
 	}
 
 	return (
-		<div className={`screenContent`}>
-			<div className={`tableContainer`}>
-				<div className={`tabsContainer`}>
-					<div className={`tabButton active`}>Создание записи</div>
+		<div className="screenContent">
+			<div className="tableContainer">
+				<div className="tabsContainer">
+					<Link href="/admin/bookings" className="tabButton">
+						Список записей
+					</Link>
+					<div className="tabButton active">Новая запись</div>
 				</div>
-				<div className={`tableContent bookingComponent`}>
+				<div className="tableContent bookingComponent kitContent">
 					<BookingFormComponent isCreating={true} userRole={user.role} />
 				</div>
 			</div>

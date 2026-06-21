@@ -27,6 +27,7 @@ export const GET = withPermission(
 			const startDate = searchParams.get("startDate");
 			const endDate = searchParams.get("endDate");
 			const adminSearch = searchParams.get("adminSearch")?.trim() || "";
+			const categorySearch = searchParams.get("categorySearch")?.trim() || "";
 
 			const where: any = { entityType: "category" };
 			if (startDate || endDate) {
@@ -98,6 +99,19 @@ export const GET = withPermission(
 					const fio = [a.last_name, a.first_name, a.middle_name].filter(Boolean).join(" ").toLowerCase();
 					const phone = (a.phone || "").toLowerCase();
 					return fio.includes(search) || phone.includes(search);
+				});
+			}
+
+			// Фильтр по названию категории или ID
+			if (categorySearch) {
+				const search = categorySearch.toLowerCase();
+				const searchAsId = Number(categorySearch);
+				const hasNumericId = !Number.isNaN(searchAsId) && String(searchAsId) === categorySearch;
+
+				formattedLogs = formattedLogs.filter((log) => {
+					const title = (log.targetCategory?.title || "").toLowerCase();
+					if (hasNumericId && log.entityId === searchAsId) return true;
+					return title.includes(search);
 				});
 			}
 

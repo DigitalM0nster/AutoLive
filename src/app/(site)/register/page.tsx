@@ -16,10 +16,7 @@ export default function RegisterPage() {
 	return (
 		<div className={`screen ${styles.screen}`}>
 			<div className={`screenContent ${styles.screenContent}`}>
-				<h1 className={`pageTitle ${styles.pageTitle}`}>Регистрация</h1>
-				<div className={`screenBlock ${styles.screenBlock}`}>
-					<RegisterContent />
-				</div>
+				<RegisterContent />
 			</div>
 		</div>
 	);

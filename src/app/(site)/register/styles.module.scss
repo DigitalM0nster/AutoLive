@@ -1,120 +1,152 @@
 .screen {
 	justify-content: center;
-	min-height: calc(80vh - 100px);
+	align-items: center;
+	min-height: calc(100vh - 120px);
 }
 
 .screenContent {
 	align-items: center;
-	padding: 100px 0px;
-	// min-height: calc(100vh - 100px);
+	padding: 48px 24px 72px;
+	max-width: 440px;
 }
 
 .registerContentBlock {
 	flex-direction: column;
-	gap: 10px;
+	gap: 16px;
+	width: 100%;
+	padding: 32px 28px;
+	background-color: #fff;
+	border: 1px solid #e8e4de;
+	border-radius: 20px;
+	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
 }
 
 .inputBlock {
 	flex-direction: column;
 	align-items: center;
-	gap: 5px;
+	gap: 8px;
+	width: 100%;
 }
 
 .inputPhone {
+	width: 100%;
+
 	input {
-		font-family: Montserrat;
-		height: 20px;
-		line-height: 1;
-		font-size: 20px;
+		font-family: inherit;
+		width: 100%;
+		box-sizing: border-box;
+		font-size: 18px;
 		text-align: center;
-		border: none;
-		border-radius: 50px;
-		background-color: #f3f3f3;
-		padding: 20px 20px;
-		// border-bottom: 1px solid #3d3d3d;
+		border: 1px solid #e8e4de;
+		border-radius: 14px;
+		background-color: #faf9f7;
+		padding: 16px 20px;
+		transition:
+			border-color 0.2s ease,
+			box-shadow 0.2s ease;
 
 		&:focus {
 			outline: none;
+			border-color: color-mix(in srgb, var(--site-color-accent, #b0cb1f) 50%, #ddd);
+			box-shadow: 0 0 0 3px color-mix(in srgb, var(--site-color-accent, #b0cb1f) 12%, transparent);
+			background-color: #fff;
 		}
 	}
 }
 
 .inputCode {
-	gap: 5px;
+	gap: 8px;
+	justify-content: center;
 
 	input {
 		font-size: 20px;
-		justify-content: center;
 		padding: 0;
 		text-align: center;
-		width: 35px;
-		height: 45px;
-		border: 1px solid #3d3d3d;
-		border-radius: 5px;
+		width: 44px;
+		height: 52px;
+		border: 1px solid #e8e4de;
+		border-radius: 12px;
+		background-color: #faf9f7;
+		transition: border-color 0.2s ease;
+
+		&:focus {
+			outline: none;
+			border-color: var(--site-color-accent, #b0cb1f);
+		}
 	}
 }
 
 .formField {
 	flex-direction: column;
 	width: 100%;
-	max-width: 300px;
-	margin-bottom: 15px;
+	margin-bottom: 12px;
 
 	label {
-		font-size: 14px;
-		margin-bottom: 5px;
+		font-size: 13px;
+		margin-bottom: 6px;
 		font-weight: 500;
+		color: #666;
 	}
 
 	input {
-		font-family: Montserrat;
-		height: 20px;
-		line-height: 1;
+		font-family: inherit;
+		width: 100%;
+		box-sizing: border-box;
 		font-size: 16px;
-		border: none;
-		border-radius: 50px;
-		background-color: #f3f3f3;
-		padding: 15px 20px;
+		border: 1px solid #e8e4de;
+		border-radius: 14px;
+		background-color: #faf9f7;
+		padding: 14px 18px;
 
 		&:focus {
 			outline: none;
-			box-shadow: 0 0 0 2px rgba(61, 61, 61, 0.2);
+			border-color: color-mix(in srgb, var(--site-color-accent, #b0cb1f) 50%, #ddd);
+			box-shadow: 0 0 0 3px color-mix(in srgb, var(--site-color-accent, #b0cb1f) 12%, transparent);
+			background-color: #fff;
 		}
 	}
 }
 
 .inputName {
-	font-size: 18px;
-	font-weight: 600;
-	margin-bottom: 20px;
+	font-size: 20px;
+	font-weight: 700;
+	margin-bottom: 8px;
+	color: #1a1a1a;
+	text-align: center;
 }
 
 .button {
-	margin: 20px 0px 0px 0px;
-	&:hover {
-		background-color: #3d3d3d;
-	}
+	width: 100%;
+	margin: 12px 0 0;
+	justify-content: center;
+	font-size: 15px;
+	padding: 12px 24px;
 }
 
 .backButton {
-	font-size: 12px;
-	text-transform: uppercase;
-	margin: 0px 0px 30px 0px;
-
+	font-size: 13px;
+	font-weight: 500;
+	color: #888;
+	margin: 0 0 20px;
 	cursor: pointer;
+	transition: color 0.15s ease;
+
 	&:hover {
-		text-decoration: underline;
+		color: var(--site-color-primary, #2c2c2c);
+		text-decoration: none;
 	}
 }
 
 .error {
-	color: #e74c3c;
+	color: var(--red-color, #ef4444);
 	font-size: 14px;
-	margin-top: 10px;
+	margin-top: 8px;
+	text-align: center;
 }
 
 .timer {
 	font-size: 14px;
-	color: #7f8c8d;
-	margin: 10px 0;
+	color: #888;
+	margin: 8px 0;
+	text-align: center;
 }

@@ -46,7 +46,7 @@ function hasNonEmptyFile(v: unknown): boolean {
 	return v instanceof File && v.size > 0;
 }
 
-/** Проверка «кастомного» блока: обязательно хотя бы одно из двух подполей */
+/** Блок VIN/фото: заполнено хотя бы одно подполе (для отображения, не для обязательности отправки) */
 export function customBlockSatisfied(field: FormField, get: (key: string) => unknown): boolean {
 	if (field.type !== "custom") return true;
 	const base = `field-${field.id}`;
@@ -64,6 +64,55 @@ export function validatePhoneDigits(raw: string): boolean {
 	return d.length >= 10 && d.length <= 15;
 }
 
+/** Список того, что ещё нужно заполнить (для подсказки у неактивной кнопки) */
+export function getHomepageRequestMissingFields(
+	fields: FormField[],
+	get: (key: string) => unknown,
+	opts: { personalDataConsent: boolean },
+): string[] {
+	const missing: string[] = [];
+
+	for (const field of fields) {
+		// VIN / фото — необязательны: достаточно наименования детали и телефона
+		if (field.type === "custom") continue;
+
+		const v = get(field.id);
+		const label = field.placeholder?.trim() || "Поле";
+
+		if (field.type === "phone") {
+			const raw = typeof v === "string" ? v : "";
+			if (!hasNonEmptyString(raw)) {
+				if (field.required) missing.push(label.includes("телефон") ? label : "Телефон");
+			} else if (!validatePhoneDigits(raw)) {
+				missing.push("Корректный телефон");
+			}
+			continue;
+		}
+
+		if (!field.required) continue;
+
+		if (field.type === "file") {
+			if (!hasNonEmptyFile(v)) missing.push(label);
+		} else if (!hasNonEmptyString(v)) {
+			missing.push(label);
+		}
+	}
+
+	if (!opts.personalDataConsent) {
+		missing.push("Согласие на обработку данных");
+	}
+
+	return missing;
+}
+
+export function canSubmitHomepageRequest(
+	fields: FormField[],
+	get: (key: string) => unknown,
+	opts: { personalDataConsent: boolean },
+): boolean {
+	return getHomepageRequestMissingFields(fields, get, opts).length === 0;
+}
+
 /** Серверная/клиентская проверка обязательных полей по схеме из БД */
 export type HomepageRequestValidationError = {
 	fieldKey: string;
@@ -77,15 +126,7 @@ export function validateHomepageRequestValues(
 ): { ok: true } | { ok: false; message: string; fieldKey: string; fieldLabel: string } {
 	for (const field of fields) {
 		if (field.type === "custom") {
-			if (field.required && !customBlockSatisfied(field, get)) {
-				const label = field.placeholder || "VIN или фото";
-				return {
-					ok: false,
-					fieldKey: `field-${field.id}`,
-					fieldLabel: label,
-					message: `Заполните поле «${label}» (хотя бы одно из двух значений)`,
-				};
-			}
+			// VIN и фото — по желанию; менеджер уточнит по телефону
 			continue;
 		}
 		const v = get(field.id);

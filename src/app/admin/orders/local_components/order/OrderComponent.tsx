@@ -6,6 +6,7 @@ import { useAuthStore } from "@/store/authStore";
 import Link from "next/link";
 import { Order, User, ProductListItem, OrderStatus, OrderItemClient, OrderFormState, DepartmentForLog } from "@/lib/types";
 import { validateOrderMergedStateForStatus } from "@/lib/orderStatusValidation";
+import { orderStatusFieldsToFormState } from "@/lib/orderStatusFields";
 import { showSuccessToast, showErrorToast } from "@/components/ui/toast/ToastProvider";
 import Loading from "@/components/ui/loading/Loading";
 import SearchDropdownInput from "@/components/ui/searchDropdownInput/SearchDropdownInput";
@@ -20,6 +21,10 @@ import StatusReturnedSection from "./statusSections/StatusReturnedSection";
 import OrderCommentsSection from "./OrderCommentsSection";
 import type { OrderCommentEntry } from "@/lib/orderComments";
 import { parseOrderCommentsFromDb, toCommentWires } from "@/lib/orderComments";
+import orderListStyles from "../styles.module.scss";
+import headerStyles from "./OrderHeaderSummary.module.scss";
+import { BookingSearchResultsPanel, BookingSelectedSummary } from "./BookingSearchDropdownItems";
+import { bookingStatusLabelRu, type BookingSearchListRow } from "@/lib/bookingSearchForOrderDisplay";
 
 type OrderPageProps = {
 	orderId?: string | number; // Если не указан, значит создаем новый заказ
@@ -34,37 +39,12 @@ function formatToRuDate(iso: string | null | undefined): string {
 	return String(iso);
 }
 
-/** Статус записи (booking) для подписи в карточке заказа */
-function bookingStatusLabelRu(status: string): string {
-	const m: Record<string, string> = {
-		scheduled: "Запланирована",
-		confirmed: "Подтверждена",
-		completed: "Выполнена",
-		cancelled: "Отменена",
-		no_show: "Не явился",
-	};
-	return m[status] || status;
-}
-
 /** Строка поиска записи для привязки к заказу (ответ /api/bookings/search-for-order) */
-type BookingSearchForOrderRow = {
-	id: number;
-	scheduledDate: string | Date;
-	scheduledTime: string;
-	contactPhone: string;
-	status: string;
+type BookingSearchForOrderRow = BookingSearchListRow & {
 	notes: string | null;
 	createdAt: string | Date;
 	updatedAt: string | Date;
-	client: { id: number; first_name: string | null; last_name: string | null; phone: string } | null;
-	manager: { id: number; first_name: string | null; last_name: string | null; phone: string | null } | null;
-	bookingDepartment: { id: number; name: string | null; address: string; phones: string[] } | null;
 };
-
-function bookingClientShortName(c: BookingSearchForOrderRow["client"]): string {
-	if (!c) return "—";
-	return [c.first_name, c.last_name].filter(Boolean).join(" ").trim() || "—";
-}
 
 function truncateText(text: string | null | undefined, max: number): string {
 	if (!text) return "";
@@ -90,6 +70,8 @@ function BookingLinkSearchBlock(props: {
 	saveBookingLinkToOrder: () => void;
 	cancelBookingLinkPanel: () => void;
 	isBookingLinkSaving: boolean;
+	/** Черновик при создании заказа: выбор сразу в форму, без отдельного сохранения связи */
+	draftMode?: boolean;
 }) {
 	const {
 		hintText = "Введите ID записи — в списке только записи без привязанного заказа.",
@@ -107,6 +89,7 @@ function BookingLinkSearchBlock(props: {
 		saveBookingLinkToOrder,
 		cancelBookingLinkPanel,
 		isBookingLinkSaving,
+		draftMode = false,
 	} = props;
 
 	return (
@@ -115,29 +98,7 @@ function BookingLinkSearchBlock(props: {
 			<div className="toLinkOrderSearchWrap">
 				{selectedBookingForLink ? (
 					<div className="bookingLinkSelectedCard">
-						<div className="bookingLinkSelectedTitle">
-							<span>Запись #{selectedBookingForLink.id}</span>
-							<span className="bookingLinkPickStatus">{bookingStatusLabelRu(String(selectedBookingForLink.status))}</span>
-						</div>
-						<div className="bookingLinkSelectedMeta">
-							{formatToRuDate(
-								typeof selectedBookingForLink.scheduledDate === "string"
-									? selectedBookingForLink.scheduledDate
-									: new Date(selectedBookingForLink.scheduledDate).toISOString(),
-							)}{" "}
-							· {selectedBookingForLink.scheduledTime}
-						</div>
-						<div className="bookingLinkSelectedMeta">
-							{bookingClientShortName(selectedBookingForLink.client)}
-							{selectedBookingForLink.client?.phone ? ` · ${selectedBookingForLink.client.phone}` : ""}
-							{" · "}
-							{selectedBookingForLink.contactPhone || "—"}
-						</div>
-						<div className="bookingLinkSelectedMeta">
-							{selectedBookingForLink.bookingDepartment
-								? [selectedBookingForLink.bookingDepartment.name, selectedBookingForLink.bookingDepartment.address].filter(Boolean).join(" — ")
-								: "—"}
-						</div>
+						<BookingSelectedSummary booking={selectedBookingForLink} />
 						{selectedBookingForLink.notes ? <div className="bookingLinkSelectedMeta">{truncateText(selectedBookingForLink.notes, 120)}</div> : null}
 						<button type="button" onClick={clearBookingLinkSelection} className="ghostButton">
 							Другая запись
@@ -158,49 +119,33 @@ function BookingLinkSearchBlock(props: {
 							isActiveSearch={bookingSearchFocused && bookingSearchQuery.trim().length >= 1}
 							showDropdown={bookingSearchFocused && Boolean(bookingSearchQuery.trim())}
 						>
-							{bookingSearchFocused && bookingSearchLoading && bookingSearchQuery.trim() && (
-								<div className="searchResults bookingLinkDropdown loading">
-									<Loading />
-								</div>
-							)}
-							{bookingSearchFocused && bookingSearchQuery.trim() && !bookingSearchLoading && (
-								<div className="searchResults bookingLinkDropdown">
-									{bookingSearchResults.length > 0 ? (
-										bookingSearchResults.map((row) => {
-											const when = formatToRuDate(typeof row.scheduledDate === "string" ? row.scheduledDate : new Date(row.scheduledDate).toISOString());
-											const dept = row.bookingDepartment ? [row.bookingDepartment.name, row.bookingDepartment.address].filter(Boolean).join(" — ") : "—";
-											const clientLine = [bookingClientShortName(row.client), row.contactPhone].filter(Boolean).join(" · ");
-											return (
-												<div key={row.id} className="searchResultItem bookingLinkPick" onMouseDown={() => handleSelectBookingFromSearch(row)}>
-													<div className="bookingLinkPickTop">
-														<span className="bookingLinkPickId">#{row.id}</span>
-														<span className="bookingLinkPickWhen">
-															{when} · {row.scheduledTime}
-														</span>
-														<span className="bookingLinkPickStatus">{bookingStatusLabelRu(String(row.status))}</span>
-													</div>
-													<div className="bookingLinkPickRow">{clientLine || "—"}</div>
-													<div className="bookingLinkPickRow">{dept}</div>
-												</div>
-											);
-										})
-									) : (
-										<div className="bookingLinkPickEmpty">Нет свободных записей с таким номером</div>
-									)}
-								</div>
-							)}
+							{bookingSearchFocused && bookingSearchQuery.trim() ? (
+								<BookingSearchResultsPanel
+									loading={bookingSearchLoading}
+									results={bookingSearchResults}
+									onSelect={(row) => handleSelectBookingFromSearch(row as BookingSearchForOrderRow)}
+								/>
+							) : null}
 						</SearchDropdownInput>
 					</div>
 				)}
 			</div>
-			<div className="bookingLinkActions">
-				<button type="button" onClick={saveBookingLinkToOrder} className="primaryButton" disabled={isBookingLinkSaving || !selectedBookingForLink}>
-					{isBookingLinkSaving ? "Сохранение…" : "Сохранить связь"}
-				</button>
-				<button type="button" onClick={cancelBookingLinkPanel} className="secondaryButton" disabled={isBookingLinkSaving}>
-					Отмена
-				</button>
-			</div>
+			{!draftMode ? (
+				<div className="bookingLinkActions">
+					<button type="button" onClick={saveBookingLinkToOrder} className="primaryButton" disabled={isBookingLinkSaving || !selectedBookingForLink}>
+						{isBookingLinkSaving ? "Сохранение…" : "Сохранить связь"}
+					</button>
+					<button type="button" onClick={cancelBookingLinkPanel} className="secondaryButton" disabled={isBookingLinkSaving}>
+						Отмена
+					</button>
+				</div>
+			) : (
+				<div className="bookingLinkActions">
+					<button type="button" onClick={cancelBookingLinkPanel} className="secondaryButton" disabled={isBookingLinkSaving}>
+						Отмена
+					</button>
+				</div>
+			)}
 		</div>
 	);
 }
@@ -358,7 +303,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 				(currentStatus === "created" || (currentStatus === "confirmed" && initialStatus === "created"))));
 	const isViewMode = !isEditMode && hasAccessToOrder; // Режим просмотра только если есть доступ, но нет прав на редактирование
 	/** Привязка записи (ТО) к заказу: только у существующего заказа и в режиме редактирования */
-	const canManageBookingLink = isEditMode && !isCreating;
+	const canManageBookingLink = isEditMode;
 
 	// Функция для определения доступных статусов для менеджера
 	const getAvailableStatuses = (currentStatus: string) => {
@@ -592,7 +537,9 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 	};
 
 	/** Заполняет форму, комментарии и связи из объекта заказа (после GET или сброса) */
-	const hydrateEditorFromOrder = (order: Order) => {
+	const hydrateEditorFromOrder = (order: Order, itemsTotal?: number) => {
+		const statusFields = orderStatusFieldsToFormState(order);
+		const orderAmountFromDb = statusFields.orderAmount;
 		setFormData({
 			clientId: order.clientId?.toString() || "",
 			departmentId: order.departmentId?.toString() || "",
@@ -600,18 +547,8 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 			contactName: order.contactName || "",
 			contactPhone: order.contactPhone || "",
 			finalDeliveryDate: order.finalDeliveryDate ? new Date(order.finalDeliveryDate).toISOString() : "",
-			bookedUntil: "",
-			readyUntil: "",
-			prepaymentAmount: "",
-			prepaymentDate: "",
-			paymentDate: "",
-			orderAmount: "",
-			completionDate: "",
-			returnReason: "",
-			returnDate: "",
-			returnAmount: "",
-			returnPaymentDate: "",
-			returnDocumentNumber: "",
+			...statusFields,
+			orderAmount: orderAmountFromDb || (itemsTotal != null && itemsTotal > 0 ? String(itemsTotal) : ""),
 		});
 		setComments(parseOrderCommentsFromDb(order.comments));
 		setCommentAddOpen(false);
@@ -717,7 +654,8 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 			}
 
 			setOrderItems(itemsWithDepartments);
-			hydrateEditorFromOrder(order);
+			const itemsTotal = itemsWithDepartments.reduce((sum, item) => sum + item.product_price * item.quantity, 0);
+			hydrateEditorFromOrder(order, itemsTotal);
 
 			try {
 				const logsResponse = await fetch(`/api/orders/${orderId}/logs?limit=1000`, {
@@ -826,9 +764,23 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 	};
 
 	const handleSelectBookingFromSearch = (row: BookingSearchForOrderRow) => {
+		if (isCreating) {
+			handleSelectBookingForDraft(row);
+			return;
+		}
 		setSelectedBookingForLink(row);
 		setBookingSearchQuery(String(row.id));
 		setBookingSearchResults([]);
+		setBookingSearchFocused(false);
+	};
+
+	/** При создании заказа: запись попадает в черновик и уйдёт в POST /api/orders */
+	const handleSelectBookingForDraft = (row: BookingSearchForOrderRow) => {
+		setSelectedBooking(row as NonNullable<Order["booking"]>);
+		setBookingLinkPanelOpen(false);
+		setBookingSearchQuery("");
+		setBookingSearchResults([]);
+		setSelectedBookingForLink(null);
 		setBookingSearchFocused(false);
 	};
 
@@ -1415,10 +1367,11 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 				orderData.paymentDate = formData.paymentDate;
 			}
 
-			if (formData.orderAmount && managerCanEditFieldForRequest("orderAmount")) {
-				orderData.orderAmount = parseFloat(formData.orderAmount);
-			} else if (!isManager && formData.orderAmount) {
-				orderData.orderAmount = parseFloat(formData.orderAmount);
+			const resolvedOrderAmount = formData.orderAmount ? parseFloat(formData.orderAmount) : orderTotal;
+			if (resolvedOrderAmount > 0 && managerCanEditFieldForRequest("orderAmount")) {
+				orderData.orderAmount = resolvedOrderAmount;
+			} else if (!isManager && resolvedOrderAmount > 0) {
+				orderData.orderAmount = resolvedOrderAmount;
 			}
 
 			if (formData.completionDate && managerCanEditFieldForRequest("completionDate")) {
@@ -1564,6 +1517,11 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 					setComments(parseOrderCommentsFromDb(saved.comments));
 					setCommentAddOpen(false);
 					setCommentDraft("");
+					const savedItemsTotal = (saved.orderItems || []).reduce(
+						(sum, item) => sum + item.product_price * item.quantity,
+						0,
+					);
+					hydrateEditorFromOrder(saved, savedItemsTotal);
 					initialSnapshotRef.current = null;
 					setHasChanges(false);
 				} else {
@@ -1663,94 +1621,153 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 										</>
 									)}
 								</div>
-								<div className="infoRow">
-									<div className={`infoField`}>
-										<span className={`infoLabel`}>Клиент:</span>
-										<span className={`infoValue`}>
+								<div className={`infoRow ${headerStyles.summaryRow}`}>
+									<div className={headerStyles.summaryCard}>
+										<span className={headerStyles.summaryLabel}>Клиент</span>
+										<div className={headerStyles.summaryBody}>
 											{(() => {
 												const client = selectedClient || orderData?.client;
 												const clientName = client ? `${client.first_name || ""} ${client.last_name || ""}`.trim() || "Не указан" : "Не указан";
 												const clientId = client?.id;
 
 												return clientId ? (
-													<Link href={`/admin/users/${clientId}`} className="itemLink" target="_blank">
+													<Link href={`/admin/users/${clientId}`} className={`itemLink ${headerStyles.summaryValue}`} target="_blank">
 														{clientName}
 													</Link>
 												) : (
-													clientName
+													<span className={`${headerStyles.summaryValue} ${headerStyles.summaryValueMuted}`}>{clientName}</span>
 												);
 											})()}
-										</span>
+										</div>
 									</div>
-									<div className={`infoField`}>
-										<span className={`infoLabel`}>Ответственный:</span>
-										<span className={`infoValue`}>
+									<div className={headerStyles.summaryCard}>
+										<span className={headerStyles.summaryLabel}>Ответственный</span>
+										<div className={headerStyles.summaryBody}>
 											{(() => {
 												const manager = selectedManager || orderData?.manager;
 												const managerName = manager ? `${manager.first_name || ""} ${manager.last_name || ""}`.trim() || "Не назначен" : "Не назначен";
 												const managerId = manager?.id;
 
 												return managerId ? (
-													<Link href={`/admin/users/${managerId}`} className="itemLink" target="_blank">
+													<Link href={`/admin/users/${managerId}`} className={`itemLink ${headerStyles.summaryValue}`} target="_blank">
 														{managerName}
 													</Link>
 												) : (
-													managerName
+													<span className={`${headerStyles.summaryValue} ${headerStyles.summaryValueMuted}`}>{managerName}</span>
 												);
 											})()}
-										</span>
-										{(() => {
-											// Проверяем условия для отображения кнопки "забрать заказ"
-											const currentManager = selectedManager || orderData?.manager;
-											// Проверяем наличие ответственного: либо в selectedManager, либо в orderData.manager, либо в orderData.managerId
-											const hasManager = (currentManager && currentManager.id) || (orderData?.managerId !== null && orderData?.managerId !== undefined);
+											{(() => {
+												const currentManager = selectedManager || orderData?.manager;
+												const hasManager = (currentManager && currentManager.id) || (orderData?.managerId !== null && orderData?.managerId !== undefined);
+												const canTakeOrder =
+													!hasManager && !!orderData && (isManager || isAdminOrSuperadmin) && !isCreating && !!orderId;
 
-											// Кнопка показывается если:
-											// 1. У заказа нет ответственного
-											// 2. Заказ загружен (orderData существует) - это означает, что API уже проверил права доступа
-											//    Если заказ загружен и менеджер имеет к нему доступ, значит либо заказ свободный, либо заказ его отдела
-											// 3. Пользователь менеджер или админ
-											// 4. Не в режиме создания заказа
-											// 5. Заказ существует
-											const canTakeOrder =
-												!hasManager && // У заказа нет ответственного
-												!!orderData && // Заказ загружен (API уже проверил права доступа)
-												(isManager || isAdminOrSuperadmin) && // Пользователь менеджер или админ
-												!isCreating && // Не в режиме создания
-												!!orderId; // Заказ существует
-
-											return canTakeOrder ? (
-												<button type="button" onClick={handleTakeOrder} className="takeOrderButton" disabled={isSaving}>
-													{isSaving ? "Обработка..." : "Забрать заказ"}
-												</button>
-											) : null;
-										})()}
+												return canTakeOrder ? (
+													<button type="button" onClick={handleTakeOrder} className={headerStyles.takeOrderButton} disabled={isSaving}>
+														{isSaving ? "Обработка..." : "Забрать заказ"}
+													</button>
+												) : null;
+											})()}
+										</div>
 									</div>
 									{(orderData || isCreating) && (
-										<div className={`infoField infoFieldBookingLink column`} id={orderData ? "orderLinkedBooking" : undefined}>
-											<span className={`infoLabel`}>Связь с записью</span>
-											<div className={`infoValue column`}>
+										<div className={headerStyles.summaryCard} id={orderData ? "orderLinkedBooking" : undefined}>
+											<span className={headerStyles.summaryLabel}>Связь с записью</span>
+											<div className={headerStyles.summaryBody}>
 												{isCreating ? (
-													<p className="toLinkOrderHint">После сохранения заказа здесь можно связать запись с заказом: поиск по числовому ID записи.</p>
+													(() => {
+														const bk = selectedBooking;
+														if (!canManageBookingLink) {
+															return (
+																<div className={headerStyles.bookingPlaceholder}>
+																	<span className={`${headerStyles.summaryValue} ${headerStyles.summaryValueMuted}`}>Запись не привязана</span>
+																	<p className={headerStyles.bookingPlaceholderText}>Привязка записи недоступна для вашей роли.</p>
+																</div>
+															);
+														}
+														if (bk) {
+															return (
+																<div className={headerStyles.bookingPlaceholder}>
+																	<BookingSelectedSummary booking={bk as BookingSearchListRow} />
+																	<div className={headerStyles.bookingActions}>
+																		<button
+																			type="button"
+																			onClick={() => {
+																				setSelectedBooking(null);
+																				setBookingSearchQuery("");
+																				setBookingSearchResults([]);
+																			}}
+																			className="ghostButton"
+																		>
+																			Отвязать
+																		</button>
+																		<button type="button" onClick={openBookingLinkPanel} className="primaryButton">
+																			Сменить запись
+																		</button>
+																	</div>
+																	<p className={headerStyles.bookingPlaceholderText}>Сохранится вместе с заказом при нажатии «Создать заказ».</p>
+																</div>
+															);
+														}
+														if (!bookingLinkPanelOpen) {
+															return (
+																<div className={headerStyles.bookingPlaceholder}>
+																	<span className={`${headerStyles.summaryValue} ${headerStyles.summaryValueMuted}`}>Запись не привязана</span>
+																	<p className={headerStyles.bookingPlaceholderText}>Привяжите свободную запись по числовому ID — до или после заполнения товаров.</p>
+																	<div className={headerStyles.bookingActions}>
+																		<button type="button" onClick={openBookingLinkPanel} className="primaryButton">
+																			Привязать запись
+																		</button>
+																	</div>
+																</div>
+															);
+														}
+														return (
+															<BookingLinkSearchBlock
+																hintText="Выберите запись — она попадёт в черновик заказа."
+																draftMode
+																bookingSearchQuery={bookingSearchQuery}
+																handleBookingSearchInput={handleBookingSearchInput}
+																bookingSearchFocused={bookingSearchFocused}
+																setBookingSearchFocused={setBookingSearchFocused}
+																bookingSearchBlurTimeout={bookingSearchBlurTimeout}
+																handleBookingSearchBlur={handleBookingSearchBlur}
+																bookingSearchLoading={bookingSearchLoading}
+																bookingSearchResults={bookingSearchResults}
+																handleSelectBookingFromSearch={handleSelectBookingFromSearch}
+																selectedBookingForLink={selectedBookingForLink}
+																clearBookingLinkSelection={clearBookingLinkSelection}
+																saveBookingLinkToOrder={saveBookingLinkToOrder}
+																cancelBookingLinkPanel={cancelBookingLinkPanel}
+																isBookingLinkSaving={isBookingLinkSaving}
+															/>
+														);
+													})()
 												) : (
 													(() => {
 														const bk = selectedBooking ?? orderData?.booking;
 														if (!bk) {
 															return (
-																<div className="column">
+																<div className={headerStyles.bookingPlaceholder}>
 																	{!canManageBookingLink ? (
-																		<span className="toLinkOrderHint">Запись не привязана.</span>
+																		<>
+																			<span className={`${headerStyles.summaryValue} ${headerStyles.summaryValueMuted}`}>Запись не привязана</span>
+																			<p className={headerStyles.bookingPlaceholderText}>Изменение привязки недоступно для вашей роли.</p>
+																		</>
 																	) : !bookingLinkPanelOpen ? (
 																		<>
-																			<span className="toLinkOrderHint">Запись не привязана.</span>
-																			<button
-																				type="button"
-																				onClick={openBookingLinkPanel}
-																				className="primaryButton"
-																				disabled={isBookingLinkSaving}
-																			>
-																				Связать с записью
-																			</button>
+																			<span className={`${headerStyles.summaryValue} ${headerStyles.summaryValueMuted}`}>Запись не привязана</span>
+																			<p className={headerStyles.bookingPlaceholderText}>Привяжите свободную запись по числовому ID.</p>
+																			<div className={headerStyles.bookingActions}>
+																				<button
+																					type="button"
+																					onClick={openBookingLinkPanel}
+																					className="primaryButton"
+																					disabled={isBookingLinkSaving}
+																				>
+																					Связать с записью
+																				</button>
+																			</div>
 																		</>
 																	) : (
 																		<BookingLinkSearchBlock
@@ -1809,7 +1826,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 														];
 														const bookingActions =
 															canManageBookingLink && !bookingLinkPanelOpen ? (
-																<>
+																<div className={headerStyles.bookingActions}>
 																	<button type="button" className="primaryButton" onClick={openBookingLinkPanel} disabled={isBookingLinkSaving}>
 																		Сменить запись
 																	</button>
@@ -1821,7 +1838,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 																	>
 																		Отвязать
 																	</button>
-																</>
+																</div>
 															) : null;
 														return (
 															<div className="column">
@@ -1859,7 +1876,7 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 				</div>
 
 				{(isEditMode || isViewMode) && (
-					<div className={`formFields`}>
+					<div className={`formFields ${orderListStyles.statusFlow}`}>
 						{/* Блоки статусов заказа */}
 						{/* 1. Новый - Контактные данные лида (если клиент не выбран) */}
 						<StatusNewSection
@@ -1931,6 +1948,23 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 							fieldErrors={fieldErrors}
 							clearFieldError={clearFieldError}
 							statusDate={statusDates.ready}
+							orderId={orderId != null && !isCreating ? Number(orderId) : null}
+							orderItems={orderItems}
+							orderTotal={orderTotal}
+							selectedClient={selectedClient}
+							departmentName={currentDepartment?.name ?? null}
+							managerName={
+								selectedManager
+									? [selectedManager.last_name, selectedManager.first_name].filter(Boolean).join(" ").trim() || null
+									: null
+							}
+							orderCreatedAt={
+								orderData?.createdAt
+									? typeof orderData.createdAt === "string"
+										? orderData.createdAt
+										: new Date(orderData.createdAt).toISOString()
+									: null
+							}
 						/>
 
 						{/* 5. Оплачен - Дата внесения оплаты, сумма заказа */}
@@ -1942,6 +1976,23 @@ export default function OrderComponent({ orderId, isCreating = false, userRole }
 							fieldErrors={fieldErrors}
 							clearFieldError={clearFieldError}
 							statusDate={statusDates.paid}
+							orderId={orderId != null && !isCreating ? Number(orderId) : null}
+							orderItems={orderItems}
+							orderTotal={orderTotal}
+							selectedClient={selectedClient}
+							departmentName={currentDepartment?.name ?? null}
+							managerName={
+								selectedManager
+									? [selectedManager.last_name, selectedManager.first_name].filter(Boolean).join(" ").trim() || null
+									: null
+							}
+							orderCreatedAt={
+								orderData?.createdAt
+									? typeof orderData.createdAt === "string"
+										? orderData.createdAt
+										: new Date(orderData.createdAt).toISOString()
+									: null
+							}
 						/>
 
 						{/* 6. Выполнен - Дата выполнения */}

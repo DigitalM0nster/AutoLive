@@ -50,3 +50,35 @@ export function parseSiteLegalContentBody(body: unknown): SiteLegalContentData {
 		cookiesPolicyFileUrl: trimToNull(o.cookiesPolicyFileUrl, 1000),
 	};
 }
+
+const DEFAULT_PRIVACY_TITLE = "Политика в отношении персональных данных";
+const DEFAULT_COOKIES_TITLE = "Политика использования файлов cookie";
+
+/** Ссылки на юридические документы в подвале — из того же источника, что /privacy и /cookies */
+export type FooterLegalLink = {
+	id: string;
+	title: string;
+	href: string;
+};
+
+export function buildFooterLegalLinks(data: SiteLegalContentData, privacyPath: string, cookiesPath: string): FooterLegalLink[] {
+	const links: FooterLegalLink[] = [];
+
+	if (data.privacyPolicyFileUrl?.trim()) {
+		links.push({
+			id: "privacy",
+			title: data.privacyPolicyTitle?.trim() || DEFAULT_PRIVACY_TITLE,
+			href: privacyPath,
+		});
+	}
+
+	if (data.cookiesPolicyFileUrl?.trim()) {
+		links.push({
+			id: "cookies",
+			title: data.cookiesPolicyTitle?.trim() || DEFAULT_COOKIES_TITLE,
+			href: cookiesPath,
+		});
+	}
+
+	return links;
+}

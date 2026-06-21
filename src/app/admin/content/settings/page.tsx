@@ -142,11 +142,11 @@ export default function AdminSiteSettingsPage() {
 		<div className="screenContent">
 			<div className="tableContainer">
 				<div className="tabsContainer column">
-					<Link href="/admin/content" className={styles.backToContentLink}>
+					<Link href="/admin/dashboard" className={styles.backToContentLink}>
 						<span className={styles.backToContentLinkArrow} aria-hidden>
 							←
 						</span>
-						Редактор контента
+						На панель
 					</Link>
 					<div className="tabTitle">Основные настройки</div>
 				</div>

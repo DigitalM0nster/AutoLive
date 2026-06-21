@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { formatPhoneDisplay } from "@/lib/phoneUtils";
 import { useAuthStore } from "@/store/authStore";
 import type { SiteLegalContentData } from "@/lib/siteLegalContent.shared";
 import { defaultSiteLegalContent } from "@/lib/siteLegalContent.shared";
+import { canAccessSiteProfile } from "@/lib/siteProfileAccess";
 import styles from "./profileArea.module.scss";
 
 type UserRow = {
@@ -37,7 +39,7 @@ export default function ProfileSettingsPage() {
 		const res = await fetch("/api/user/get-user-data", { credentials: "include" });
 		if (!res.ok) return;
 		const u = (await res.json()) as UserRow;
-		if (u.role !== "client") return;
+		if (!canAccessSiteProfile(u.role)) return;
 		setProfile(u);
 		setFirstName(u.first_name ?? "");
 		setLastName(u.last_name ?? "");
@@ -146,24 +148,38 @@ export default function ProfileSettingsPage() {
 	};
 
 	if (!profile) {
-		return <p className={styles.redirectNote}>Загрузка…</p>;
+		return <p className={styles.loadingNote}>Загрузка…</p>;
 	}
 
 	return (
 		<>
-			<h1 className={styles.pageTitle}>Профиль и безопасность</h1>
+			<header className={styles.pageHeader}>
+				<h1 className={styles.pageTitle}>Профиль и безопасность</h1>
+				<p className={styles.pageLead}>Управляйте ФИО, паролем и просматривайте юридические документы сайта.</p>
+			</header>
+
 			{banner?.type === "ok" && <div className={styles.successBanner}>{banner.text}</div>}
 			{banner?.type === "err" && <div className={styles.errorBanner}>{banner.text}</div>}
 
-			<section className={styles.section}>
-				<h2 className={styles.subTitle}>Контакты аккаунта</h2>
-				<p className={styles.muted}>Телефон: {profile.phone} (логин, меняется только через поддержку магазина).</p>
-			</section>
+			<div className={styles.panelCard}>
+				<h2 className={styles.panelTitle}>Контакты аккаунта</h2>
+				<dl className={styles.factsList}>
+					<dt>Телефон (логин)</dt>
+					<dd>{formatPhoneDisplay(profile.phone)}</dd>
+					<dt>Статус</dt>
+					<dd>
+						{profile.status === "verified" ?
+							<span className={`${styles.statusBadge} ${styles.verified}`}>Подтверждён</span>
+						:	<span className={`${styles.statusBadge} ${styles.pending}`}>Не подтверждён</span>}
+					</dd>
+				</dl>
+				<p className={styles.panelHint}>Изменить номер телефона можно только через поддержку магазина.</p>
+			</div>
 
 			<section className={styles.section}>
-				<h2 className={styles.subTitle}>ФИО</h2>
-				<p className={styles.muted}>Так вас увидят менеджеры в заказах и записях.</p>
-				<div className={styles.card}>
+				<div className={styles.panelCard}>
+					<h2 className={styles.panelTitle}>ФИО</h2>
+					<p className={styles.panelHint}>Так вас увидят менеджеры в заказах и записях.</p>
 					<div className={styles.formGrid}>
 						<div className={styles.formField}>
 							<label htmlFor="set-last">Фамилия</label>
@@ -187,10 +203,10 @@ export default function ProfileSettingsPage() {
 			</section>
 
 			<section className={styles.section}>
-				<h2 className={styles.subTitle}>Пароль</h2>
-				<p className={styles.muted}>Укажите текущий пароль и новый (не менее 8 символов).</p>
-				<div className={styles.card}>
-					<div className={styles.formGrid}>
+				<div className={styles.panelCard}>
+					<h2 className={styles.panelTitle}>Пароль</h2>
+					<p className={styles.panelHint}>Укажите текущий пароль и новый (не менее 8 символов).</p>
+					<div className={styles.formGridSingleColumn}>
 						<div className={styles.formField}>
 							<label htmlFor="pwd-current">Текущий пароль</label>
 							<input
@@ -236,12 +252,12 @@ export default function ProfileSettingsPage() {
 			</section>
 
 			<section className={styles.section}>
-				<h2 className={styles.subTitle}>Юридические документы</h2>
-				<p className={styles.muted}>Политики, размещённые администратором для страниц сайта (не путать со ссылками в подвале).</p>
-				{!legal.privacyPolicyFileUrl && !legal.cookiesPolicyFileUrl ?
-					<div className={styles.emptyState}>Файлы политик ещё не загружены.</div>
-				:	<div className={styles.card}>
-						<div className={styles.documentsList}>
+				<div className={styles.panelCard}>
+					<h2 className={styles.panelTitle}>Юридические документы</h2>
+					<p className={styles.panelHint}>Политики, размещённые администратором для страниц сайта.</p>
+					{!legal.privacyPolicyFileUrl && !legal.cookiesPolicyFileUrl ?
+						<p className={styles.muted}>Файлы политик ещё не загружены.</p>
+					:	<div className={styles.documentsList}>
 							{legal.privacyPolicyFileUrl && (
 								<a className={styles.docLink} href={legal.privacyPolicyFileUrl} target="_blank" rel="noopener noreferrer">
 									{legal.privacyPolicyTitle?.trim() || "Политика персональных данных"}
@@ -253,8 +269,8 @@ export default function ProfileSettingsPage() {
 								</a>
 							)}
 						</div>
-					</div>
-				}
+					}
+				</div>
 			</section>
 		</>
 	);

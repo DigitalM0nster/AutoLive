@@ -103,11 +103,11 @@ export default function PromotionsPage() {
 		<div className="screenContent">
 			<div className="tableContainer">
 				<div className="tabsContainer column">
-					<Link href="/admin/content" className={contentStyles.backToContentLink}>
+					<Link href="/admin/dashboard" className={contentStyles.backToContentLink}>
 						<span className={contentStyles.backToContentLinkArrow} aria-hidden>
 							←
 						</span>
-						Редактор контента
+						На панель
 					</Link>
 					<div className="tabTitle">Акции</div>
 				</div>

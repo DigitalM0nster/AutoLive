@@ -89,33 +89,34 @@ export default function FilterCard({
 				</div>
 			</div>
 
-			<div className={`filterType ${styles.filterType}`}>
-				<div className={styles.inputBlock}>
-					<div className={styles.inputDescription}>Тип фильтра</div>
-					<select value={filter.type} onChange={(e) => handleFilterTypeChange(e.target.value as FilterType)} className={`filterTypeSelect ${styles.filterTypeSelect}`}>
-						<option value="select">Один выбор</option>
-						<option value="multi_select">Множественный выбор</option>
-						<option value="range">Диапазон</option>
-						<option value="boolean">Да/Нет</option>
-					</select>
-				</div>
-			</div>
-
-			{/* Поле для единицы измерения (только для range) */}
-			{filter.type === "range" && (
-				<div className={`filterUnit ${styles.filterUnit}`}>
+			<div className={`filterMetaRow ${styles.filterMetaRow}`}>
+				<div className={`filterType ${styles.filterType}`}>
 					<div className={styles.inputBlock}>
-						<div className={styles.inputDescription}>Единица измерения</div>
-						<input
-							type="text"
-							value={filter.unit || ""}
-							onChange={(e) => onUpdateFilter(filter.id, { unit: e.target.value })}
-							className={`filterUnitInput ${styles.filterUnitInput}`}
-							placeholder="л, кг, шт, см, мм и т.д."
-						/>
+						<div className={styles.inputDescription}>Тип фильтра</div>
+						<select value={filter.type} onChange={(e) => handleFilterTypeChange(e.target.value as FilterType)} className={`filterTypeSelect ${styles.filterTypeSelect}`}>
+							<option value="select">Один выбор</option>
+							<option value="multi_select">Множественный выбор</option>
+							<option value="range">Диапазон</option>
+							<option value="boolean">Да/Нет</option>
+						</select>
 					</div>
 				</div>
-			)}
+
+				{filter.type === "range" && (
+					<div className={`filterUnit ${styles.filterUnit}`}>
+						<div className={styles.inputBlock}>
+							<div className={styles.inputDescription}>Единица измерения</div>
+							<input
+								type="text"
+								value={filter.unit || ""}
+								onChange={(e) => onUpdateFilter(filter.id, { unit: e.target.value })}
+								className={`filterUnitInput ${styles.filterUnitInput}`}
+								placeholder="л, кг, шт…"
+							/>
+						</div>
+					</div>
+				)}
+			</div>
 
 			{filter.type !== "range" && (
 				<div className={`filterValues ${styles.filterValues}`}>

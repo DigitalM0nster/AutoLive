@@ -67,7 +67,7 @@ export default async function CategoryPage({ params }: PageParams) {
 	}
 
 	return (
-		<div className={`screen ${styles.screen}`}>
+		<div className="screen">
 			<div className="screenContent">
 				<NavigationMenu productId={undefined} />
 

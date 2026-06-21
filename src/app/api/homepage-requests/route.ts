@@ -77,11 +77,27 @@ export async function POST(req: NextRequest) {
 			}
 		}
 
+		const sourceTypeRaw = typeof formData.get("source_type") === "string" ? String(formData.get("source_type")).trim() : "homepage";
+		const sourceType: "homepage" | "promotion" | "contacts" =
+			sourceTypeRaw === "promotion" ? "promotion" : sourceTypeRaw === "contacts" ? "contacts" : "homepage";
+		const sourceLabelRaw = formData.get("source_label");
+		const sourceLabel = typeof sourceLabelRaw === "string" ? sourceLabelRaw.trim() : null;
+		const promotionIdRaw = formData.get("promotion_id");
+		const promotionId =
+			typeof promotionIdRaw === "string" && promotionIdRaw.trim() && !Number.isNaN(Number(promotionIdRaw))
+				? Number(promotionIdRaw)
+				: null;
+
 		await withDbRetry(async () =>
 			prisma.homepageRequest.create({
 				data: {
 					payload,
 					status: "new",
+					sourceType,
+					sourceLabel:
+						sourceLabel?.trim() ||
+						(sourceType === "promotion" ? "Акция" : sourceType === "contacts" ? "Контакты" : "Главная страница"),
+					promotionId,
 				},
 			}),
 		);

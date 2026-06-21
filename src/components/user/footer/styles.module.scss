@@ -1,164 +1,320 @@
+// Подвал: тёмный премиум, ровная сетка, минимальные иконки
+
 .footer {
-	justify-content: center;
-	width: calc(100% - 40px);
-	height: fit-content;
-	background-color: var(--site-color-primary, #3d3d3d);
-	color: var(--site-color-contrast-light, white);
-	padding: 20px;
-	z-index: 8;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	width: 100%;
+	background: linear-gradient(
+		180deg,
+		var(--site-color-primary, #2c2c2c) 0%,
+		color-mix(in srgb, var(--site-color-primary, #2c2c2c) 92%, black) 100%
+	);
+	color: var(--site-color-contrast-light, #fff);
 }
 
-.footerContent {
-	flex-wrap: wrap;
-	justify-content: flex-start;
+.brandAccent {
+	width: 100%;
+	height: 3px;
+	background: linear-gradient(
+		90deg,
+		var(--site-color-accent, #b0cb1f) 0%,
+		color-mix(in srgb, var(--site-color-accent, #b0cb1f) 50%, white) 50%,
+		var(--site-color-accent, #b0cb1f) 100%
+	);
+}
+
+.footerInner {
+	display: flex;
+	flex-direction: column;
 	max-width: 1400px;
 	width: 100%;
-	gap: 100px;
+	margin-inline: auto;
+	padding: 64px 32px 36px;
+	gap: 56px;
+	box-sizing: border-box;
 }
 
-.leftBlock {
+.footerGrid {
+	display: grid;
+	grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.8fr) minmax(0, 1.1fr);
+	gap: 48px 72px;
+	width: 100%;
+	align-items: start;
+}
+
+// —— Бренд ——
+
+.brandColumn {
+	display: flex;
 	flex-direction: column;
-	gap: 20px;
+	gap: 14px;
 }
 
-.blockName {
-	font-size: 15px;
+.footerLogo {
+	max-width: 168px;
+	max-height: 52px;
+
+	img {
+		position: relative;
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+	}
+}
+
+.brandName {
+	margin: 0;
+	font-size: clamp(18px, 2vw, 22px);
 	font-weight: 700;
+	line-height: 1.25;
+	letter-spacing: -0.02em;
+	color: #fff;
+}
+
+.brandCity {
+	font-weight: 500;
+	color: rgba(255, 255, 255, 0.5);
+}
+
+.brandDescription {
+	margin: 0;
+	max-width: 320px;
+	font-size: 14px;
+	font-weight: 400;
+	line-height: 1.65;
+	color: rgba(255, 255, 255, 0.58);
+}
+
+// —— Колонки навигации и контактов ——
+
+.navColumn,
+.contactsColumn {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+}
+
+.columnTitle {
+	margin: 0 0 22px;
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.16em;
 	text-transform: uppercase;
-	letter-spacing: 0.5px;
-}
-.blockContent {
-}
-.navUl {
-	flex-direction: column;
-	gap: 5px;
-}
-.navLi {
-	font-size: 18px;
-	cursor: pointer;
-	color: inherit;
-	text-decoration: none;
-	&:hover {
-		text-decoration: underline;
-	}
+	color: rgba(255, 255, 255, 0.38);
 }
 
-.rightBlock {
-	flex-direction: column;
-	gap: 20px;
-}
-
-.contactItems {
-	flex-direction: column;
-	gap: 20px;
-}
-
-.contactItem,
-a.contactItem {
-	flex-direction: column;
-	align-items: flex-start;
-	gap: 5px;
-	color: white;
-
-	&.phone {
-		cursor: pointer;
-		text-decoration: none;
-
-		&:hover {
-			.itemName {
-				text-decoration: underline;
-			}
-		}
-	}
-
-	.iconGroup {
-		gap: 5px;
-	}
-
-	.icon {
-		min-width: 20px;
-		width: 20px;
-		height: 20px;
-
-		svg {
-			fill: var(--site-color-accent, #66b244);
-		}
-	}
-
-	.itemName {
-		font-weight: 600;
-		color: var(--site-color-contrast-light, #fff);
-	}
-
-	.column {
-		flex-direction: column;
-		padding: 0px 0px 0px 25px;
-		gap: 4px;
-	}
-}
-
-.blockLineText {
-	font-size: 18px;
-}
-
-.blockLineTel {
-	font-size: 18px;
-	cursor: pointer;
-	text-decoration: underline;
-	color: var(--site-color-contrast-light, #fff);
-	&:hover {
-		opacity: 0.9;
-	}
-}
-
-.documentsRow {
+.navList {
+	display: flex;
 	flex-direction: column;
 	gap: 12px;
-	width: 100%;
-	max-width: 1400px;
-	margin-top: 20px;
-	padding-top: 16px;
-	border-top: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-.documentsTitle {
-	font-size: 14px;
-	font-weight: 700;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
-}
+.navLink {
+	font-size: 15px;
+	font-weight: 400;
+	line-height: 1.4;
+	color: rgba(255, 255, 255, 0.82);
+	text-decoration: none;
+	transition: color 0.2s ease;
 
-.documentsLinks {
-	flex-wrap: wrap;
-	gap: 12px 24px;
-}
-
-.documentLink {
-	font-size: 14px;
-	text-decoration: underline;
-	cursor: pointer;
 	&:hover {
-		opacity: 0.88;
+		color: var(--site-color-accent, #b0cb1f);
 	}
+}
+
+// —— Контакты ——
+
+.contactsBody {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+}
+
+.phoneBlock {
+	display: inline-flex;
+	align-items: center;
+	align-self: flex-start;
+	gap: 12px;
+	margin-bottom: 28px;
+	padding-bottom: 28px;
+	width: 100%;
+	color: inherit;
+	text-decoration: none;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+	transition: opacity 0.2s ease;
+
+	&:hover {
+		.phoneNumber {
+			color: var(--site-color-accent, #b0cb1f);
+		}
+	}
+}
+
+.phoneIcon {
+	flex-shrink: 0;
+	color: var(--site-color-accent, #b0cb1f);
+}
+
+.phoneNumber {
+	font-size: clamp(17px, 1.8vw, 20px);
+	font-weight: 600;
+	line-height: 1.3;
+	letter-spacing: 0.01em;
+	color: rgba(255, 255, 255, 0.95);
+	transition: color 0.2s ease;
+}
+
+.contactGroup {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+
+	& + & {
+		margin-top: 24px;
+	}
+}
+
+.contactGroupTitle {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: rgba(255, 255, 255, 0.42);
+
+	svg {
+		flex-shrink: 0;
+		color: var(--site-color-accent, #b0cb1f);
+	}
+}
+
+.contactGroupList {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+
+	li {
+		margin: 0;
+		padding: 0;
+	}
+}
+
+.contactLineText {
+	font-size: 15px;
+	font-weight: 400;
+	line-height: 1.55;
+	color: rgba(255, 255, 255, 0.72);
+}
+
+.contactLineLink {
+	font-size: 15px;
+	font-weight: 400;
+	line-height: 1.55;
+	color: rgba(255, 255, 255, 0.82);
+	text-decoration: none;
+	transition: color 0.2s ease;
+
+	&:hover {
+		color: var(--site-color-accent, #b0cb1f);
+	}
+}
+
+// —— Нижняя полоса ——
+
+.footerBottom {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	align-items: center;
+	gap: 16px 32px;
+	width: 100%;
+	padding-top: 28px;
+	border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .footerCopyright {
-	justify-content: center;
-	align-items: center;
-	width: 100%;
-	max-width: 1400px;
-	margin-top: 24px;
-	padding-top: 16px;
-	border-top: 1px solid rgba(255, 255, 255, 0.15);
 	font-size: 13px;
-	line-height: 1.4;
-	opacity: 0.9;
-	text-align: center;
+	line-height: 1.5;
+	color: rgba(255, 255, 255, 0.38);
 }
 
-@media (max-width: 1280px) {
-	.footer {
-		padding: 20px 5vw;
-		width: calc(100% - 10vw);
+.documentsRow {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+	gap: 8px 24px;
+}
+
+.documentLink {
+	font-size: 13px;
+	color: rgba(255, 255, 255, 0.48);
+	text-decoration: none;
+	transition: color 0.2s ease;
+
+	&:hover {
+		color: var(--site-color-accent, #b0cb1f);
+	}
+}
+
+// —— Адаптив ——
+
+@media (max-width: 1024px) {
+	.footerGrid {
+		grid-template-columns: 1fr 1fr;
+		gap: 40px 48px;
+	}
+
+	.contactsColumn {
+		grid-column: 1 / -1;
+	}
+
+	.contactsBody {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+		gap: 28px 48px;
+	}
+
+	.phoneBlock {
+		grid-column: 1 / -1;
+		margin-bottom: 0;
+		padding-bottom: 24px;
+	}
+
+	.contactGroup {
+		& + & {
+			margin-top: 0;
+		}
+	}
+}
+
+@media (max-width: 640px) {
+	.footerInner {
+		padding: 48px 20px 28px;
+		gap: 40px;
+	}
+
+	.footerGrid {
+		grid-template-columns: 1fr;
+		gap: 36px;
+	}
+
+	.contactsBody {
+		grid-template-columns: 1fr;
+	}
+
+	.footerBottom {
+		flex-direction: column;
+		align-items: flex-start;
+	}
+
+	.documentsRow {
+		justify-content: flex-start;
 	}
 }

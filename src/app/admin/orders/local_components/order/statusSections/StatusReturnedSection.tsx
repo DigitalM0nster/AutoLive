@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React from "react";
 import DatePickerField from "@/components/ui/datePicker/DatePickerField";
 import datePickerFieldStyles from "@/components/ui/datePicker/DatePickerField.module.scss";
 import { OrderFormState } from "@/lib/types";
+import OrderStatusBlock, { OrderStatusFieldGroup } from "../OrderStatusBlock";
 
 type StatusReturnedSectionProps = {
 	isActive: boolean;
@@ -14,30 +15,9 @@ type StatusReturnedSectionProps = {
 };
 
 const StatusReturnedSection: React.FC<StatusReturnedSectionProps> = ({ isActive, formData, setFormData, canEdit, fieldErrors, clearFieldError, statusDate }) => {
-	const formatDate = (value?: string | Date | null) => {
-		if (!value) return "";
-		const date = new Date(value);
-		if (isNaN(date.getTime())) return "";
-		const day = String(date.getDate()).padStart(2, "0");
-		const month = String(date.getMonth() + 1).padStart(2, "0");
-		const year = date.getFullYear();
-		const hours = String(date.getHours()).padStart(2, "0");
-		const minutes = String(date.getMinutes()).padStart(2, "0");
-		return `${day}.${month}.${year} ${hours}:${minutes}`;
-	};
-	const [isExpanded, setIsExpanded] = useState(isActive);
-
-	const toggleExpand = () => {
-		setIsExpanded(!isExpanded);
-	};
-
 	return (
-		<div className={`statusBlock borderBlock ${isExpanded ? "active" : ""}`}>
-			<div className={`statusHeader statusToneReturned`} onClick={toggleExpand}>
-				<h3>7. Возврат</h3>
-				{statusDate && <span className={`statusDate`}>Присвоен: {formatDate(statusDate)}</span>}
-			</div>
-			<div className={`statusFields`}>
+		<OrderStatusBlock step={7} title="Возврат" tone="returned" isActive={isActive} statusDate={statusDate}>
+			<OrderStatusFieldGroup title="Причина и позиция">
 				<div className={`formField`}>
 					<label>Причина возврата позиции</label>
 					<textarea
@@ -85,6 +65,9 @@ const StatusReturnedSection: React.FC<StatusReturnedSectionProps> = ({ isActive,
 						/>
 					</div>
 				</div>
+			</OrderStatusFieldGroup>
+
+			<OrderStatusFieldGroup title="Возврат средств">
 				<div className={`formRow`}>
 					<div className={`formField`}>
 						<DatePickerField
@@ -115,8 +98,8 @@ const StatusReturnedSection: React.FC<StatusReturnedSectionProps> = ({ isActive,
 						/>
 					</div>
 				</div>
-			</div>
-		</div>
+			</OrderStatusFieldGroup>
+		</OrderStatusBlock>
 	);
 };
 

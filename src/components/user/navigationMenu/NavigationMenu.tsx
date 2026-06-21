@@ -3,12 +3,21 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { getPreviousSitePath, trackSitePath } from "@/lib/siteNavigationHistory";
 import styles from "./styles.module.scss";
 import { Product, Category } from "@/lib/types";
+
+type BreadcrumbItem = {
+	name: string;
+	path: string;
+};
 
 type NavigationMenuProps = {
 	productId?: string | number;
 };
+
+/** Страницы, которые не показываем в горизонтальной навигации разделов (только в подвале / отдельных URL) */
+const SECTION_NAV_EXCLUDED = new Set(["/catalog", "/privacy", "/cookies"]);
 
 export default function NavigationMenu({ productId }: NavigationMenuProps) {
 	const pathname = usePathname();
@@ -17,240 +26,247 @@ export default function NavigationMenu({ productId }: NavigationMenuProps) {
 	const [categories, setCategories] = useState<Category[]>([]);
 	const [product, setProduct] = useState<Product | null>(null);
 
-	// Все сегменты путей клиентской части — только русские подписи, чтобы в крошках не было английского
-	// Только разделы навигации: без регистрации и корзины
 	const pages = useMemo<Record<string, string>>(
 		() => ({
-			"/promotions": "Акции",
 			"/categories": "Материалы для ТО",
 			"/service-kits": "Комплекты ТО",
 			"/booking": "Запись на ТО",
 			"/products": "Запчасти",
 			"/catalog": "Запчасти",
 			"/contacts": "Контакты",
+			"/promotions": "Акции",
+			"/privacy": "Политика персональных данных",
+			"/cookies": "Политика cookie",
 		}),
 		[],
 	);
 
-	// 🔄 Обновлённый fetch категорий
 	useEffect(() => {
-		console.log("Загружаем категории...");
 		fetch("/api/categories")
-			.then((res) => {
-				console.log("Ответ API категорий:", res.status);
-				return res.json();
-			})
+			.then((res) => res.json())
 			.then((data) => {
-				console.log("Загруженные категории:", data);
-				setCategories(data);
+				setCategories(Array.isArray(data) ? data : []);
 			})
-			.catch((err) => {
-				console.error("Ошибка загрузки категорий:", err);
+			.catch(() => {
 				setCategories([]);
 			});
 	}, []);
 
-	// Загружаем данные о продукте, если передан productId
 	useEffect(() => {
 		if (productId) {
 			fetch(`/api/products/${productId}/public`)
 				.then((res) => res.json())
 				.then((data) => setProduct(data.product))
-				.catch((err) => console.error("Ошибка загрузки продукта:", err));
+				.catch(() => setProduct(null));
 		}
 	}, [productId]);
 
-	const getCategoryTitle = useCallback((id: string | number): string | undefined => {
-		if (!Array.isArray(categories)) {
-			return undefined;
-		}
-		const found = categories.find((cat) => cat.id.toString() === id.toString());
-		return found?.title;
-	}, [categories]);
+	const getCategoryTitle = useCallback(
+		(id: string | number): string | undefined => {
+			if (!Array.isArray(categories)) return undefined;
+			return categories.find((cat) => cat.id.toString() === id.toString())?.title;
+		},
+		[categories],
+	);
 
-	const breadcrumbs = useMemo(() => {
+	const breadcrumbs = useMemo((): BreadcrumbItem[] => {
 		const segments = pathname.split("/").filter(Boolean);
 
-		// Добавляем корзину в хлебные крошки
-		if (segments[0] === "cart") {
+		if (segments[0] === "promotions" && segments.length === 2) {
+			const slug = segments[1];
+			const titleFromSlug = decodeURIComponent(slug).replace(/-/g, " ");
+
 			return [
-				{
-					name: "Корзина",
-					path: "/cart",
-				},
+				{ name: "Акции", path: "/promotions" },
+				{ name: titleFromSlug, path: `/promotions/${slug}` },
 			];
 		}
 
-		// Специальная логика для прямого пути к продукту /products/[productId]
-		if (segments[0] === "products" && segments.length === 2) {
-			const productId = segments[1];
+		if (segments[0] === "cart") {
+			return [{ name: "Корзина", path: "/cart" }];
+		}
 
-			// Если данные о продукте еще не загружены, показываем загрузку
-			if (/^\d+$/.test(productId) && !product) {
-				return [{ name: "Загрузка...", path: `/products/${productId}` }];
-			}
+		if (segments[0] === "profile") {
+			const profileLabels: Record<string, string> = {
+				orders: "Заказы",
+				bookings: "Записи на ТО",
+				settings: "Настройки",
+			};
 
-			if (/^\d+$/.test(productId) && product?.title) {
-				const breadcrumbs = [];
+			return segments.map((segment, index) => {
+				const fullPath = "/" + segments.slice(0, index + 1).join("/");
+				let name = "Профиль";
 
-				// Добавляем "Материалы для ТО", если есть категория
-				if (product.categoryId) {
-					breadcrumbs.push({
-						name: "Материалы для ТО",
-						path: "/categories",
-					});
-
-					const categoryTitle = getCategoryTitle(product.categoryId);
-					if (categoryTitle) {
-						breadcrumbs.push({
-							name: categoryTitle,
-							path: `/categories/${product.categoryId}`,
-						});
+				if (index > 0) {
+					if (/^\d+$/.test(segment)) {
+						const parent = segments[index - 1];
+						name = parent === "orders" ? `Заказ №${segment}` : parent === "bookings" ? `Запись №${segment}` : `№${segment}`;
+					} else {
+						name = profileLabels[segment] ?? decodeURIComponent(segment);
 					}
 				}
 
-				// Добавляем товар
-				breadcrumbs.push({
-					name: product.title,
-					path: `/products/${productId}`,
-				});
+				return { name, path: fullPath };
+			});
+		}
 
-				return breadcrumbs;
+		if (segments[0] === "products" && segments.length === 2) {
+			const id = segments[1];
+
+			if (/^\d+$/.test(id) && !product) {
+				return [{ name: "Загрузка…", path: `/products/${id}` }];
 			}
 
-			// Если это прямой путь к продукту, но данные не загружены, возвращаем пустой массив
+			if (/^\d+$/.test(id) && product?.title) {
+				const trail: BreadcrumbItem[] = [];
+
+				if (product.categoryId) {
+					trail.push({ name: "Материалы для ТО", path: "/categories" });
+					const categoryTitle = getCategoryTitle(product.categoryId);
+					if (categoryTitle) {
+						trail.push({ name: categoryTitle, path: `/categories/${product.categoryId}` });
+					}
+				} else {
+					trail.push({ name: "Запчасти", path: "/products" });
+				}
+
+				trail.push({ name: product.title, path: `/products/${id}` });
+				return trail;
+			}
+
 			return [];
 		}
 
-		// Специальная логика для прямого пути к категории /categories/[categoryId]
 		if (segments[0] === "categories" && segments.length === 2) {
 			const categoryId = segments[1];
 
-			// Если это ID категории (число)
 			if (/^\d+$/.test(categoryId)) {
-				// Проверяем, что categories загружены и является массивом
-				if (Array.isArray(categories) && categories.length > 0) {
-					const categoryTitle = getCategoryTitle(categoryId);
-					console.log("Category ID:", categoryId, "Title:", categoryTitle, "Categories:", categories);
+				const categoryTitle = getCategoryTitle(categoryId);
 
-					if (categoryTitle) {
-						return [
-							{
-								name: "Материалы для ТО",
-								path: "/categories",
-							},
-							{
-								name: categoryTitle,
-								path: `/categories/${categoryId}`,
-							},
-						];
-					}
-				}
-
-				// Если категории не загружены или категория не найдена, показываем ID
 				return [
+					{ name: "Материалы для ТО", path: "/categories" },
 					{
-						name: "Материалы для ТО",
-						path: "/categories",
-					},
-					{
-						name: ``,
+						name: categoryTitle ?? "Загрузка…",
 						path: `/categories/${categoryId}`,
 					},
 				];
 			}
 
-			// Если это не ID категории, возвращаем пустой массив
 			return [];
 		}
 
-		// Обычная логика для остальных путей
 		return segments
 			.map((segment, index) => {
 				const fullPath = "/" + segments.slice(0, index + 1).join("/");
-
 				let name: string = pages[fullPath] ?? decodeURIComponent(segment);
 
-				// Логика для категорий /categories/[categoryId] - только если это НЕ прямой путь
-				if (segments[0] === "categories" && index === 1 && segments.length > 2) {
-					// Проверяем, является ли сегмент ID категории (число)
-					if (/^\d+$/.test(segment)) {
-						const categoryTitle = getCategoryTitle(segment);
-						if (!categoryTitle) return null;
-						name = categoryTitle;
-					}
+				if (segments[0] === "categories" && index === 1 && segments.length > 2 && /^\d+$/.test(segment)) {
+					const categoryTitle = getCategoryTitle(segment);
+					if (!categoryTitle) return null;
+					name = categoryTitle;
 				}
 
-				// Логика для продуктов /products/[productId] - только если это НЕ прямой путь
-				if (segments[0] === "products" && index === 1 && segments.length > 2) {
-					// Проверяем, является ли сегмент ID продукта (число)
-					if (/^\d+$/.test(segment)) {
-						if (!product?.title) return null;
-						name = product.title;
-					}
+				if (segments[0] === "products" && index === 1 && segments.length > 2 && /^\d+$/.test(segment)) {
+					if (!product?.title) return null;
+					name = product.title;
 				}
 
 				return { name, path: fullPath };
 			})
-			.filter(Boolean);
+			.filter((item): item is BreadcrumbItem => item !== null && Boolean(item.name));
 	}, [pathname, categories, product, getCategoryTitle, pages]);
 
-	const handleBack = () => {
-		if (typeof window !== "undefined" && window.history.length > 1) {
-			router.back();
-		} else {
-			router.push("/");
+	const trailItems = useMemo((): { label: string; href?: string }[] => {
+		const items: { label: string; href?: string }[] = [{ label: "Главная", href: "/" }];
+
+		breadcrumbs.forEach((crumb, index) => {
+			const isLast = index === breadcrumbs.length - 1;
+			items.push(isLast ? { label: crumb.name } : { label: crumb.name, href: crumb.path });
+		});
+
+		return items;
+	}, [breadcrumbs]);
+
+	const isProfileSection = pathname === "/profile" || pathname.startsWith("/profile/");
+	const isLegalPage = pathname === "/privacy" || pathname === "/cookies";
+
+	useEffect(() => {
+		trackSitePath(pathname);
+	}, [pathname]);
+
+	const getFallbackBackPath = useCallback((): string => {
+		if (breadcrumbs.length > 1) {
+			return breadcrumbs[breadcrumbs.length - 2].path;
 		}
-	};
+		return "/";
+	}, [breadcrumbs]);
+
+	const handleBack = useCallback(() => {
+		const previous = getPreviousSitePath(pathname);
+		router.push(previous ?? getFallbackBackPath());
+	}, [getFallbackBackPath, pathname, router]);
 
 	return (
 		<div className={styles.navigationMenu}>
-			<div className={`${styles.navLine} ${styles.crumbs}`}>
-				<button type="button" className={styles.backButtonBlock} onClick={handleBack}>
-					← Назад
-				</button>
-				<div className={styles.navs}>
-					<div className={styles.navBlock}>
-						<Link href="/" className={styles.nav}>
-							Главная
-						</Link>
-						{breadcrumbs.length > 0 && <div className={`${styles.nav} ${styles.separator}`}> / </div>}
-					</div>
-
-					{(breadcrumbs as { name: string; path: string }[]).map((crumb, index) => (
-						<div key={crumb.path} className={styles.navBlock}>
-							<Link href={crumb.path} className={`${styles.nav} ${pathname === crumb.path ? styles.active : ""}`}>
-								{crumb.name}
-							</Link>
-							{index < breadcrumbs.length - 1 && <div className={`${styles.nav} ${styles.separator}`}> / </div>}
-						</div>
-					))}
-				</div>
-			</div>
-
-			<div className={styles.navLine}>
-				<div className={styles.pages}>
-					{Object.entries(pages)
-						.filter(([path]) => path !== "/catalog")
-						.map(([path, name]) => {
-						// Специальная логика для продуктов с категорией
-						let isActive = pathname.startsWith(path);
-
-						// Если это страница продукта и у продукта есть категория, то активным должно быть "Материалы для ТО"
-						if (pathname.startsWith("/products/") && product?.categoryId && path === "/categories") {
-							isActive = true;
-						} else if (pathname.startsWith("/products/") && product?.categoryId && path === "/products") {
-							isActive = false;
+			<nav className={styles.breadcrumbs} aria-label="Хлебные крошки">
+				<span
+					role="button"
+					tabIndex={0}
+					className={styles.backLink}
+					onClick={handleBack}
+					onKeyDown={(event) => {
+						if (event.key === "Enter" || event.key === " ") {
+							event.preventDefault();
+							handleBack();
 						}
+					}}
+				>
+					<span className={styles.backChevron} aria-hidden="true" />
+					Назад
+				</span>
+
+				<ol className={styles.breadcrumbList}>
+					{trailItems.map((item, index) => {
+						const isLast = index === trailItems.length - 1;
 
 						return (
-							<Link key={path} href={path} className={`button ${styles.pageButton} ${isActive ? styles.active : ""}`}>
-								{name}
-							</Link>
+							<li key={`${item.label}-${index}`} className={styles.breadcrumbItem}>
+								{isLast || !item.href ? (
+									<span className={styles.breadcrumbCurrent} aria-current={isLast ? "page" : undefined}>
+										{item.label}
+									</span>
+								) : (
+									<Link href={item.href} className={styles.breadcrumbLink}>
+										{item.label}
+									</Link>
+								)}
+							</li>
 						);
 					})}
+				</ol>
+			</nav>
+
+			{!isProfileSection && !isLegalPage && (
+				<div className={styles.sectionNav}>
+					{Object.entries(pages)
+						.filter(([path]) => !SECTION_NAV_EXCLUDED.has(path))
+						.map(([path, name]) => {
+							let isActive = pathname.startsWith(path);
+
+							if (pathname.startsWith("/products/") && product?.categoryId && path === "/categories") {
+								isActive = true;
+							} else if (pathname.startsWith("/products/") && product?.categoryId && path === "/products") {
+								isActive = false;
+							}
+
+							return (
+								<Link key={path} href={path} className={[styles.sectionLink, isActive ? styles.sectionLinkActive : ""].filter(Boolean).join(" ")}>
+									{name}
+								</Link>
+							);
+						})}
 				</div>
-			</div>
+			)}
 		</div>
 	);
 }

@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, FormEvent, useEffect, useCallback } from "react";
+import { useState, FormEvent, useEffect, useCallback, useMemo, useRef } from "react";
 import { useAuthStore } from "@/store/authStore";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
@@ -41,12 +41,110 @@ export default function ServiceBookingContent() {
 	const [personalDataConsent, setPersonalDataConsent] = useState(false);
 	const [consentShowError, setConsentShowError] = useState(false);
 	const [submitSuccess, setSubmitSuccess] = useState(false);
+	const authBootstrapped = useRef(false);
 
-	const timeSlots: string[] = Array.from({ length: 18 }, (_, i) => {
-		const hours = Math.floor(i / 2) + 10;
-		const minutes = i % 2 === 0 ? "00" : "30";
-		return `${hours}:${minutes}`;
-	});
+	const minCalendarDate = useMemo(() => {
+		const date = new Date();
+		date.setHours(0, 0, 0, 0);
+		return date;
+	}, []);
+
+	const timeSlots: string[] = useMemo(
+		() =>
+			Array.from({ length: 18 }, (_, i) => {
+				const hours = Math.floor(i / 2) + 10;
+				const minutes = i % 2 === 0 ? "00" : "30";
+				return `${hours}:${minutes}`;
+			}),
+		[],
+	);
+
+	const isSelectedDateToday = useMemo(() => {
+		const today = new Date();
+		return selectedDate.toDateString() === today.toDateString();
+	}, [selectedDate]);
+
+	const isTimeSlotDisabled = useCallback(
+		(time: string) => {
+			if (!isSelectedDateToday) return false;
+
+			const [hours, minutes] = time.split(":").map(Number);
+			const now = new Date();
+
+			return hours < now.getHours() || (hours === now.getHours() && minutes <= now.getMinutes());
+		},
+		[isSelectedDateToday],
+	);
+
+	const availableTimeSlots = useMemo(
+		() => timeSlots.filter((time) => !isTimeSlotDisabled(time)),
+		[timeSlots, isTimeSlotDisabled],
+	);
+
+	const selectedDateShort = useMemo(
+		() =>
+			selectedDate.toLocaleDateString("ru-RU", {
+				day: "numeric",
+				month: "long",
+			}),
+		[selectedDate],
+	);
+
+	const canSubmit = useMemo(
+		() =>
+			Boolean(selectedDate) &&
+			selectedTime !== "" &&
+			selectedDepartmentId > 0 &&
+			name.trim() !== "" &&
+			phoneRaw.length >= 10 &&
+			personalDataConsent &&
+			!loadingDepartments,
+		[selectedDate, selectedTime, selectedDepartmentId, name, phoneRaw, personalDataConsent, loadingDepartments],
+	);
+
+	const missingFields = useMemo(() => {
+		const items: string[] = [];
+
+		if (!selectedTime) {
+			items.push(availableTimeSlots.length > 0 ? "Время записи" : "Другую дату со свободным временем");
+		}
+
+		if (loadingDepartments) {
+			items.push("Загрузка списка отделов");
+		} else if (selectedDepartmentId <= 0) {
+			items.push("Отдел");
+		}
+
+		if (!name.trim()) {
+			items.push("Имя");
+		}
+
+		if (phoneRaw.length < 10) {
+			items.push("Телефон");
+		}
+
+		if (!personalDataConsent) {
+			items.push("Согласие на обработку данных");
+		}
+
+		return items;
+	}, [
+		selectedTime,
+		availableTimeSlots.length,
+		loadingDepartments,
+		selectedDepartmentId,
+		name,
+		phoneRaw,
+		personalDataConsent,
+	]);
+
+	const showSubmitHint = !loading && !canSubmit && missingFields.length > 0;
+
+	useEffect(() => {
+		if (selectedTime && isTimeSlotDisabled(selectedTime)) {
+			setSelectedTime("");
+		}
+	}, [selectedDate, selectedTime, isTimeSlotDisabled]);
 
 	const services: string[] = ["Замена масла", "Комплексное ТО", "Диагностика двигателя", "Шиномонтаж"];
 
@@ -62,10 +160,16 @@ export default function ServiceBookingContent() {
 		}
 	}, [role, user]);
 
-	// Сессия: чтобы привязать запись к ЛК (cookie уходит на POST)
+	// Сессия один раз — иначе initAuth + prefill зацикливали /api/user/session
 	useEffect(() => {
-		void initAuth().then(() => prefillFromClient());
-	}, [initAuth, prefillFromClient]);
+		if (authBootstrapped.current) return;
+		authBootstrapped.current = true;
+		void initAuth();
+	}, [initAuth]);
+
+	useEffect(() => {
+		prefillFromClient();
+	}, [prefillFromClient]);
 
 	// Загрузка списка отделов для записей
 	useEffect(() => {
@@ -90,10 +194,10 @@ export default function ServiceBookingContent() {
 		fetchDepartments();
 	}, []);
 
-	// Обработчик изменения даты
-	const handleDateChange = (value: any) => {
+	const handleDateChange = (value: unknown) => {
 		if (value instanceof Date) {
 			setSelectedDate(value);
+			setSelectedTime("");
 		}
 	};
 
@@ -196,24 +300,78 @@ export default function ServiceBookingContent() {
 		<form className={styles.bookingForm} onSubmit={handleSubmit}>
 			{submitSuccess && <div className={styles.successMessage}>Ваша заявка успешно отправлена</div>}
 			<div className={styles.timeBlock}>
-				<div className={styles.blockDescription}>Выберите удобную дату и время для прохождения ТО:</div>
-				<div className={styles.calendarWrapper}>
-					<Calendar onChange={handleDateChange} value={selectedDate} minDate={new Date()} />
+				<div className={styles.schedulePanel}>
+					<div className={styles.scheduleStepHeader}>
+						<span className={styles.scheduleStepNumber}>1</span>
+						<div className={styles.scheduleStepText}>
+							<h3 className={styles.scheduleStepTitle}>Дата и время</h3>
+							<p className={styles.scheduleStepHint}>Выберите удобный день в календаре, затем — время записи</p>
+						</div>
+					</div>
+
+					<div className={styles.calendarWrapper}>
+						<Calendar onChange={handleDateChange} value={selectedDate} minDate={minCalendarDate} />
+					</div>
+
+					<div className={styles.timeSection}>
+						<p className={styles.timeSectionLabel}>Время</p>
+						<p className={styles.timeSectionHint}>
+							{availableTimeSlots.length > 0
+								? isSelectedDateToday
+									? "Свободные окна на сегодня"
+									: `Свободные окна на ${selectedDateShort}`
+								: "На выбранную дату свободного времени не осталось — выберите другой день"}
+						</p>
+
+						{availableTimeSlots.length > 0 ? (
+							<div className={styles.timeSlotGrid} role="listbox" aria-label="Выбор времени записи">
+								{availableTimeSlots.map((time) => {
+									const isActive = selectedTime === time;
+
+									return (
+										<button
+											key={time}
+											type="button"
+											role="option"
+											aria-selected={isActive}
+											disabled={loading}
+											className={[styles.timeSlot, isActive ? styles.timeSlotActive : ""].filter(Boolean).join(" ")}
+											onClick={() => setSelectedTime(time)}
+										>
+											{time}
+										</button>
+									);
+								})}
+							</div>
+						) : (
+							<div className={styles.timeEmptyState}>Попробуйте выбрать завтра или другой удобный день в календаре.</div>
+						)}
+					</div>
+
+					<div className={styles.scheduleSummary} aria-live="polite">
+						<div className={styles.scheduleSummaryItem}>
+							<span className={styles.scheduleSummaryLabel}>Дата</span>
+							<span className={styles.scheduleSummaryValue}>{selectedDateShort}</span>
+						</div>
+						<div className={styles.scheduleSummaryDivider} aria-hidden="true" />
+						<div className={styles.scheduleSummaryItem}>
+							<span className={styles.scheduleSummaryLabel}>Время</span>
+							<span className={selectedTime ? styles.scheduleSummaryValue : styles.scheduleSummaryPlaceholder}>
+								{selectedTime || "Не выбрано"}
+							</span>
+						</div>
+					</div>
 				</div>
-				<select value={selectedTime} onChange={(e) => setSelectedTime(e.target.value)} required disabled={loading}>
-					<option value="" disabled>
-						Выберите время
-					</option>
-					{timeSlots.map((time) => (
-						<option key={time} value={time}>
-							{time}
-						</option>
-					))}
-				</select>
 			</div>
 
 			<div className={styles.inputsBlock}>
-				<div className={styles.blockDescription}>Оставьте свои данные для подтверждения записи:</div>
+				<div className={styles.scheduleStepHeader}>
+					<span className={styles.scheduleStepNumber}>2</span>
+					<div className={styles.scheduleStepText}>
+						<h3 className={styles.scheduleStepTitle}>Контактные данные</h3>
+						<p className={styles.scheduleStepHint}>Оставьте информацию для подтверждения записи</p>
+					</div>
+				</div>
 				{role === "client" && <div className={styles.blockDescription}>Запись будет отображаться в вашем личном кабинете.</div>}
 
 				{/* Выбор отдела для записи */}
@@ -284,9 +442,22 @@ export default function ServiceBookingContent() {
 					showError={consentShowError}
 				/>
 
-				<button type="submit" className={`button ${styles.button}`} disabled={loading}>
-					{loading ? "Отправка..." : "Записаться"}
-				</button>
+				<div className={[styles.submitWrap, showSubmitHint ? styles.submitWrapBlocked : ""].filter(Boolean).join(" ")}>
+					<button type="submit" className={`button ${styles.button}`} disabled={loading || !canSubmit} aria-describedby={showSubmitHint ? "booking-submit-hint" : undefined}>
+						{loading ? "Отправка..." : "Записаться"}
+					</button>
+
+					{showSubmitHint && (
+						<div className={styles.submitHint} id="booking-submit-hint" role="tooltip">
+							<p className={styles.submitHintTitle}>Чтобы записаться, укажите:</p>
+							<ul className={styles.submitHintList}>
+								{missingFields.map((field) => (
+									<li key={field}>{field}</li>
+								))}
+							</ul>
+						</div>
+					)}
+				</div>
 			</div>
 		</form>
 	);

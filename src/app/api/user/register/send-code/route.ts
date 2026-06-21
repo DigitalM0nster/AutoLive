@@ -54,11 +54,19 @@ export async function POST(req: NextRequest) {
 
 		const smsResult = await sendVerificationCode(phone, code);
 
+		if (!smsResult.sent) {
+			await prisma.sms_code.deleteMany({ where: { phone } });
+			return NextResponse.json(
+				{ error: smsResult.message || "Не удалось отправить SMS. Попробуйте позже." },
+				{ status: 503 },
+			);
+		}
+
 		return NextResponse.json({
 			success: true,
 			expiresIn: 300,
-			...(smsResult.devCode ? { devCode: smsResult.devCode } : {}),
-			...(smsResult.message ? { smsHint: smsResult.message } : {}),
+			...(smsResult.testCode ? { testCode: smsResult.testCode } : {}),
+			...(smsResult.smsNotConnected ? { smsNotConnected: true } : {}),
 		});
 	} catch (error) {
 		console.error("Ошибка при отправке кода:", error);

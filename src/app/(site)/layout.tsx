@@ -13,6 +13,8 @@ import ToastProvider from "@/components/ui/toast/ToastProvider";
 import { SiteSettingsProvider } from "@/contexts/SiteSettingsContext";
 import SitePreloader from "@/components/site/preloader/SitePreloader";
 import CookieConsent from "@/components/site/cookieConsent/CookieConsent";
+import { onest, siteFontVariables } from "@/lib/siteFonts";
+import ScrollToTop from "@/components/ScrollToTop/ScrollToTop";
 
 export const metadata: Metadata = {
 	title: `Главная | ${CONFIG.STORE_NAME} ${CONFIG.CITY}`,
@@ -22,10 +24,11 @@ export const metadata: Metadata = {
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
 	return (
-		<html lang="ru">
-			<body>
+		<html lang="ru" className={siteFontVariables}>
+			<body className={onest.className}>
 				<SiteSettingsProvider>
 					<GlobalLoadingProvider>
+						<ScrollToTop />
 						<SitePreloader>
 							<ToastProvider />
 							<Header />

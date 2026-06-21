@@ -1,62 +1,40 @@
 import styles from "./styles.module.scss";
 
-// Компонент скелетона для страницы товара
-// Показывает анимированные заглушки для карточки товара
 export default function ProductSkeleton() {
 	return (
-		<div className={styles.productItem}>
-			{/* Скелетон для изображения товара */}
-			<div className={`${styles.imageBlock} skeletonImageBlock`}>
-				<div className="skeletonImage skeletonShimmer"></div>
-			</div>
+		<article className={styles.productPage}>
+			<div className={styles.productSheet}>
+				<div className={styles.productTop}>
+					<div className={`${styles.skeletonMedia} ${styles.skeletonShimmer}`} />
 
-			{/* Скелетон для блока фильтров */}
-			<div className={`${styles.filtersBlock} skeletonFiltersBlock`}>
-				<div className="skeletonFiltersTitle skeletonShimmer"></div>
-				<div className={styles.filtersList}>
-					{Array.from({ length: 3 }).map((_, index) => (
-						<div key={index} className={styles.filterItem}>
-							<div className="skeletonFilterName skeletonShimmer"></div>
-							<div className={styles.values}>
-								<div className="skeletonFilterValue skeletonShimmer"></div>
-								<div className="skeletonFilterValue skeletonShimmer"></div>
+					<div className={styles.summary}>
+						<div className={styles.summaryHead}>
+							<div className={`${styles.skeletonLink} ${styles.skeletonShimmer}`} />
+							<div className={`${styles.skeletonTitle} ${styles.skeletonShimmer}`} />
+
+							<div className={styles.skeletonFacts}>
+								<div className={`${styles.skeletonFact} ${styles.skeletonShimmer} ${styles.label}`} />
+								<div className={`${styles.skeletonFact} ${styles.skeletonShimmer} ${styles.value}`} />
+								<div className={`${styles.skeletonFact} ${styles.skeletonShimmer} ${styles.label}`} />
+								<div className={`${styles.skeletonFact} ${styles.skeletonShimmer} ${styles.value}`} />
 							</div>
 						</div>
-					))}
-				</div>
-			</div>
 
-			{/* Скелетон для блока описания */}
-			<div className={styles.descriptionBlock}>
-				<div className={styles.textBlock}>
-					{/* Скелетон для заголовка */}
-					<div className="skeletonProductTitle skeletonShimmer"></div>
-
-					{/* Скелетон для описания */}
-					<div className={styles.description}>
-						<div className="skeletonDescriptionLine skeletonShimmer"></div>
-						<div className="skeletonDescriptionLine skeletonShimmer"></div>
-						<div className="skeletonDescriptionLine skeletonShimmer"></div>
-						<div className="skeletonDescriptionLineShort skeletonShimmer"></div>
+						<div className={styles.summaryFoot}>
+							<div className={`${styles.skeletonPrice} ${styles.skeletonShimmer}`} />
+							<div className={`${styles.skeletonQuantity} ${styles.skeletonShimmer}`} />
+							<div className={`${styles.skeletonButton} ${styles.skeletonShimmer}`} />
+							<div className={`${styles.skeletonLine} ${styles.skeletonShimmer} ${styles.medium}`} />
+						</div>
 					</div>
 				</div>
 
-				{/* Скелетон для блока с ценой и кнопкой */}
-				<div className={styles.buttonBlock}>
-					<div className={styles.column}>
-						<div className="skeletonPrice skeletonShimmer"></div>
-						<div className="skeletonButton skeletonShimmer"></div>
-					</div>
+				<div className={styles.skeletonSection}>
+					<div className={`${styles.skeletonLine} ${styles.skeletonShimmer} ${styles.short}`} />
+					<div className={`${styles.skeletonLine} ${styles.skeletonShimmer} ${styles.wide}`} />
+					<div className={`${styles.skeletonLine} ${styles.skeletonShimmer} ${styles.medium}`} />
 				</div>
 			</div>
-
-			{/* Скелетон для мобильного блока с ценой и кнопкой */}
-			<div className={`${styles.buttonBlock} ${styles.mobile} skeletonMobileBlock`}>
-				<div className={styles.column}>
-					<div className="skeletonPrice skeletonShimmer"></div>
-					<div className="skeletonButton skeletonShimmer"></div>
-				</div>
-			</div>
-		</div>
+		</article>
 	);
 }

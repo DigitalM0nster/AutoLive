@@ -4,8 +4,11 @@ import NavigationMenu from "@/components/user/navigationMenu/NavigationMenu";
 import styles from "../styles.module.scss";
 import CONFIG from "@/lib/config";
 import { slugify } from "@/lib/slugify";
+import { formatPromotionPeriod } from "@/lib/promotionDisplay";
+import { parsePromotionButtons } from "@/lib/promotionButtons";
 import type { Promotion } from "@/lib/types";
 import { getInternalApiBaseUrl } from "@/lib/internalApiBaseUrl";
+import PromotionDetailActions from "../local_components/PromotionDetailActions";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +36,14 @@ export default async function PromotionPage({ params }: Props) {
 	});
 
 	if (!res.ok) {
-		return <div className="text-center">Ошибка загрузки</div>;
+		return (
+			<div className="screen">
+				<div className="screenContent">
+					<NavigationMenu />
+					<div className="emptyState">Не удалось загрузить акцию. Попробуйте обновить страницу.</div>
+				</div>
+			</div>
+		);
 	}
 
 	const promotions: Promotion[] = await res.json();
@@ -43,40 +53,47 @@ export default async function PromotionPage({ params }: Props) {
 		notFound();
 	}
 
+	const period = formatPromotionPeriod(promotion.startDate, promotion.endDate);
+	const buttons = parsePromotionButtons(promotion.buttonsJson);
+
 	return (
-		<div className={`screen ${styles.screen}`}>
+		<div className="screen">
 			<div className="screenContent">
 				<NavigationMenu />
-				<nav className={styles.breadcrumb}>
-					<Link href="/promotions">Акции</Link>
-					<span className={styles.breadcrumbSep}> / </span>
-					<span>{promotion.title}</span>
-				</nav>
-				<h1 className={`pageTitle ${styles.pageTitle}`}>{promotion.title}</h1>
 
-				<div className={`screenBlock ${styles.screenBlock}`}>
-					<div className={styles.promotionItem}>
-						<div className={styles.photo}>
-							{promotion.image ? (
-								<img src={promotion.image} alt={promotion.title} />
-							) : (
-								<img src="/images/no-image.png" alt="" />
-							)}
-						</div>
-						<div className={styles.contentBlock}>
-							<div className={styles.textContent}>
-								{promotion.description && (
-									<div className={styles.description}>{promotion.description}</div>
-								)}
-							</div>
-							{(promotion.buttonLink || promotion.buttonText) && (
-								<Link href={promotion.buttonLink || "#"} className={`button ${styles.button}`}>
-									{promotion.buttonText || "Подробнее"}
-								</Link>
-							)}
-						</div>
+				<Link href="/promotions" className={styles.backLink}>
+					Все акции
+				</Link>
+
+				<header className={styles.pageHeader}>
+					<h1 className="pageTitle">{promotion.title}</h1>
+					{period && <p className="pageLead">{period}</p>}
+				</header>
+
+				<article className={styles.promotionDetail}>
+					<div className={styles.detailHero}>
+						{promotion.image ? (
+							<img src={promotion.image} alt={promotion.title} />
+						) : (
+							<img src="/images/no-image.png" alt="" />
+						)}
+						<div className={styles.detailHeroOverlay} aria-hidden="true" />
 					</div>
-				</div>
+
+					{(promotion.description || buttons.length > 0) && (
+						<div className={styles.detailContent}>
+							{promotion.description && <div className={styles.detailDescription}>{promotion.description}</div>}
+
+							{buttons.length > 0 && (
+								<PromotionDetailActions
+									promotionId={promotion.id}
+									promotionTitle={promotion.title}
+									buttonsJson={promotion.buttonsJson}
+								/>
+							)}
+						</div>
+					)}
+				</article>
 			</div>
 		</div>
 	);

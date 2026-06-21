@@ -450,6 +450,15 @@ export default function AllOrdersTable() {
 		);
 	};
 
+	// Кнопка перехода в карточку заказа — тот же стиль, что «Редактировать» в записях
+	const renderActionsBlock = (order: Order) => (
+		<div className="actionButtons">
+			<button type="button" className="button edit" onClick={() => router.push(`/admin/orders/${order.id}`)}>
+				Перейти
+			</button>
+		</div>
+	);
+
 	// Функция для сброса всех фильтров
 	const resetFilters = () => {
 		setStatusFilter("all");
@@ -693,7 +702,7 @@ export default function AllOrdersTable() {
 			<FiltersBlock activeFilters={getActiveFilters()} onResetFilters={resetFilters} />
 
 			<div className={styles.tableContainer}>
-				<table className={styles.table}>
+				<table className="table">
 					<thead className={styles.tableHeader}>
 						<tr>
 							<th className={styles.tableHeaderCell}>
@@ -733,7 +742,7 @@ export default function AllOrdersTable() {
 							<th className={styles.tableHeaderCell}>
 								<ClientSearchField clientSearch={clientSearch} onSearchChange={handleClientSearchChange} onClearSearch={handleClearClientSearch} />
 							</th>
-							<th className={styles.tableHeaderCell}>
+							<th className={`tableHeaderCell ${styles.tableHeaderCell}`}>
 								<div className="dateFilterHeader">
 									Дата доставки клиенту
 									<div
@@ -775,9 +784,7 @@ export default function AllOrdersTable() {
 										<div className="orderListIdCell">
 											<div className="orderListIdRow">
 												<span>{order.id}</span>
-												<button type="button" className="viewButton" onClick={() => router.push(`/admin/orders/${order.id}`)}>
-													Перейти
-												</button>
+												{renderActionsBlock(order)}
 											</div>
 										</div>
 									</td>

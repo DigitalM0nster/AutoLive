@@ -36,6 +36,33 @@ const AdminSearchField = React.memo(
 );
 AdminSearchField.displayName = "AdminSearchField";
 
+// Поле поиска по названию категории (общий список логов)
+const CategorySearchField = React.memo(
+	({
+		categorySearch,
+		onSearchChange,
+		onClearSearch,
+	}: {
+		categorySearch: string;
+		onSearchChange: (value: string) => void;
+		onClearSearch: () => void;
+	}) => (
+		<div className="searchFilterHeader">
+			Категория:
+			<div className="searchInput">
+				<input
+					type="text"
+					value={categorySearch}
+					onChange={(e) => onSearchChange(e.target.value)}
+					placeholder="Название или ID"
+				/>
+				<div onClick={onClearSearch} className="clearSearchButton"></div>
+			</div>
+		</div>
+	)
+);
+CategorySearchField.displayName = "CategorySearchField";
+
 // Фильтр по дате
 const DateFilterField = React.memo(
 	({
@@ -81,6 +108,7 @@ export default function CategoryLogsComponent({ categoryId }: Props) {
 	const [startDate, setStartDate] = useState<string>("");
 	const [endDate, setEndDate] = useState<string>("");
 	const [adminSearch, setAdminSearch] = useState<string>("");
+	const [categorySearch, setCategorySearch] = useState<string>("");
 
 	const queryParams = useMemo(() => {
 		const params = new URLSearchParams({
@@ -91,8 +119,9 @@ export default function CategoryLogsComponent({ categoryId }: Props) {
 		if (startDate?.trim()) params.append("startDate", startDate);
 		if (endDate?.trim()) params.append("endDate", endDate);
 		if (adminSearch?.trim()) params.append("adminSearch", adminSearch.trim());
+		if (!categoryId && categorySearch?.trim()) params.append("categorySearch", categorySearch.trim());
 		return params;
-	}, [page, actionFilter, startDate, endDate, adminSearch]);
+	}, [page, actionFilter, startDate, endDate, adminSearch, categorySearch, categoryId]);
 
 	const formatDateFromString = useCallback((dateString: string): string => {
 		if (!dateString) return "";
@@ -130,8 +159,11 @@ export default function CategoryLogsComponent({ categoryId }: Props) {
 		if (adminSearch?.trim()) {
 			filters.push({ key: "adminSearch", label: "Кто изменил", value: adminSearch });
 		}
+		if (!categoryId && categorySearch?.trim()) {
+			filters.push({ key: "categorySearch", label: "Категория", value: categorySearch });
+		}
 		return filters;
-	}, [actionFilter, actionOptions, startDate, endDate, adminSearch, formatDateFromString]);
+	}, [actionFilter, actionOptions, startDate, endDate, adminSearch, categorySearch, categoryId, formatDateFromString]);
 
 	const handleDateRangeChange = useCallback((start: string, end: string) => {
 		setStartDate(start);
@@ -144,6 +176,7 @@ export default function CategoryLogsComponent({ categoryId }: Props) {
 		setStartDate("");
 		setEndDate("");
 		setAdminSearch("");
+		setCategorySearch("");
 		setPage(1);
 	}, []);
 
@@ -152,8 +185,18 @@ export default function CategoryLogsComponent({ categoryId }: Props) {
 		setPage(1);
 	}, []);
 
+	const handleCategorySearchChange = useCallback((value: string) => {
+		setCategorySearch(value);
+		setPage(1);
+	}, []);
+
 	const handleClearAdminSearch = useCallback(() => {
 		setAdminSearch("");
+		setPage(1);
+	}, []);
+
+	const handleClearCategorySearch = useCallback(() => {
+		setCategorySearch("");
 		setPage(1);
 	}, []);
 
@@ -197,7 +240,13 @@ export default function CategoryLogsComponent({ categoryId }: Props) {
 					/>
 				</th>
 				{!categoryId && (
-					<th className={styles.tableHeaderCell}>Категория</th>
+					<th className={styles.tableHeaderCell}>
+						<CategorySearchField
+							categorySearch={categorySearch}
+							onSearchChange={handleCategorySearchChange}
+							onClearSearch={handleClearCategorySearch}
+						/>
+					</th>
 				)}
 				<th className={styles.tableHeaderCell}>
 					<AdminSearchField
@@ -224,6 +273,9 @@ export default function CategoryLogsComponent({ categoryId }: Props) {
 			formatDateFromString,
 			handleDateRangeChange,
 			categoryId,
+			categorySearch,
+			handleCategorySearchChange,
+			handleClearCategorySearch,
 			adminSearch,
 			handleAdminSearchChange,
 			handleClearAdminSearch,

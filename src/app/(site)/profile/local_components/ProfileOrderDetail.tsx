@@ -62,7 +62,7 @@ export default function ProfileOrderDetail() {
 	}, [load]);
 
 	if (loading) {
-		return <p className={styles.redirectNote}>Загрузка заказа…</p>;
+		return <p className={styles.loadingNote}>Загрузка заказа…</p>;
 	}
 
 	if (error || !order) {
@@ -81,38 +81,46 @@ export default function ProfileOrderDetail() {
 			<Link href="/profile/orders" className={styles.backLink}>
 				← К списку заказов
 			</Link>
-			<h1 className={styles.pageTitle}>Заказ №{order.id}</h1>
-			<div className={styles.card}>
-				<div className={styles.rowBetween}>
-					<div className={styles.muted}>Статус</div>
-					<div className={styles.orderStatus}>{orderStatusLabelRu(order.status)}</div>
+
+			<header className={styles.detailHeader}>
+				<h1 className={styles.pageTitle}>Заказ №{order.id}</h1>
+				<div className={styles.detailMeta}>
+					<span className={styles.statusBadge}>{orderStatusLabelRu(order.status)}</span>
+					<span className={styles.muted}>{formatDateTime(order.createdAt)}</span>
 				</div>
-				<div className={styles.bookingRow}>
-					<strong>Создан:</strong> {formatDateTime(order.createdAt)}
-				</div>
-				<div className={styles.bookingRow}>
-					<strong>Обновлён:</strong> {formatDateTime(order.updatedAt)}
-				</div>
-				{order.finalDeliveryDate && (
-					<div className={styles.bookingRow}>
-						<strong>Ориентировочная дата:</strong> {formatDateTime(order.finalDeliveryDate)}
+			</header>
+
+			<div className={styles.panelCard}>
+				<h2 className={styles.panelTitle}>Информация о заказе</h2>
+				<div className={styles.detailFacts}>
+					<div className={styles.detailFactRow}>
+						<strong>Обновлён:</strong> {formatDateTime(order.updatedAt)}
 					</div>
-				)}
+					{order.finalDeliveryDate ?
+						<div className={styles.detailFactRow}>
+							<strong>Ориентировочная дата:</strong> {formatDateTime(order.finalDeliveryDate)}
+						</div>
+					:	null}
+				</div>
 			</div>
 
-			{order.deliveryPoint && (
-				<div className={styles.card}>
-					<div className={styles.subTitle}>Пункт / адрес</div>
+			{order.deliveryPoint ?
+				<div className={styles.panelCard}>
+					<h2 className={styles.panelTitle}>Пункт / адрес</h2>
 					<div className={styles.deliveryBlock}>
-						{order.deliveryPoint.name && <div>{order.deliveryPoint.name}</div>}
+						{order.deliveryPoint.name ?
+							<div>{order.deliveryPoint.name}</div>
+						:	null}
 						<div>{order.deliveryPoint.address}</div>
-						{order.deliveryPoint.phones?.length > 0 && <div>Тел.: {order.deliveryPoint.phones.join(", ")}</div>}
+						{order.deliveryPoint.phones?.length > 0 ?
+							<div>Тел.: {order.deliveryPoint.phones.join(", ")}</div>
+						:	null}
 					</div>
 				</div>
-			)}
+			:	null}
 
 			<div className={styles.card}>
-				<div className={styles.subTitle}>Состав заказа</div>
+				<h2 className={styles.panelTitle}>Состав заказа</h2>
 				<table className={styles.itemsTable}>
 					<thead>
 						<tr>

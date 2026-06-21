@@ -242,16 +242,18 @@ async function main() {
 			title: "Весенняя распродажа",
 			description: "Скидки до 20% на все масла",
 			image: "/images/promotions/spring-sale.png",
-			buttonText: "Узнать больше",
-			buttonLink: "/promotions/spring-sale",
+			buttonsJson: JSON.stringify([
+				{ id: "seed-1", type: "internal", label: "Узнать больше", internalPath: "/promotions", openInNewTab: false },
+			]),
 			order: 1,
 		},
 		{
 			title: "Летняя акция",
 			description: "Специальные цены на жидкости",
 			image: "/images/promotions/summer-sale.png",
-			buttonText: "Подробнее",
-			buttonLink: "/promotions/summer-sale",
+			buttonsJson: JSON.stringify([
+				{ id: "seed-2", type: "request", label: "Оставить заявку" },
+			]),
 			order: 2,
 		},
 	];

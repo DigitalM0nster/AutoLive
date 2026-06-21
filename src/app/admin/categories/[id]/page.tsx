@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import CategoryPageClient from "../local_components/CategoryPageClient";
@@ -69,20 +68,6 @@ export default async function CategoryPage({ params }: PageParams) {
 	};
 
 	return (
-		<div className="screenContent">
-			<div className="tableContainer">
-				<div className="tabsContainer">
-					<Link href={`/admin/categories/${id}`} className="tabButton active">
-						Редактирование категории
-					</Link>
-					<Link href={`/admin/categories/${id}/logs`} className="tabButton">
-						История изменений
-					</Link>
-				</div>
-				<div className="tableContent">
-					<CategoryPageClient initialData={initialData} />
-				</div>
-			</div>
-		</div>
+		<CategoryPageClient initialData={initialData} />
 	);
 }

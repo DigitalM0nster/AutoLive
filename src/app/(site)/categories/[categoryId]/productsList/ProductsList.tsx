@@ -1,178 +1,142 @@
-// src\app\products\[categoryId]\productsList\ProductsList.tsx
-
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import styles from "../styles.module.scss";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import type { Product, Category } from "@/lib/types";
+import styles from "../styles.module.scss";
+import type { Product } from "@/lib/types";
 
 type ProductsListProps = {
 	products: Product[];
 	sortOption: string;
 	itemsPerPage: number;
-	categoryData: {
-		category: Category;
-	};
+	categoryTitle: string;
 };
 
-export default function ProductsList({ products, sortOption, itemsPerPage, categoryData }: ProductsListProps) {
-	const [displayedProducts, setDisplayedProducts] = useState<Product[]>([]);
+function formatPrice(value: number): string {
+	return `${value.toLocaleString("ru-RU")} ₽`;
+}
 
-	// Создаем массивы ref'ов для каждого товара
-	const marqueeTitleRefs = useRef<(HTMLDivElement | null)[]>([]);
-	const marqueeSkuRefs = useRef<(HTMLDivElement | null)[]>([]);
-	const marqueeBrandRefs = useRef<(HTMLDivElement | null)[]>([]);
-	const spanTitleRefs = useRef<(HTMLSpanElement | null)[]>([]);
-	const skuRefs = useRef<(HTMLSpanElement | null)[]>([]);
-	const brandRefs = useRef<(HTMLSpanElement | null)[]>([]);
+function normalizeBrand(brand?: string | null): string | null {
+	const value = brand?.trim();
+	if (!value || value.toLowerCase() === "unknown") return null;
+	return value;
+}
 
-	const [isMarqueeTitleLong, setIsMarqueeTitleLong] = useState<boolean[]>([]);
-	const [isMarqueeSkuLong, setIsMarqueeSkuLong] = useState<boolean[]>([]);
-	const [isMarqueeBrandLong, setIsMarqueeBrandLong] = useState<boolean[]>([]);
+function getDescriptionExcerpt(description?: string | null): string | null {
+	const clean = description?.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+	if (!clean) return null;
+	return clean.length <= 96 ? clean : `${clean.slice(0, 96).trim()}…`;
+}
 
-	// Проверяем длину текста для каждого товара
-	useEffect(() => {
-		setTimeout(() => {
-			const titleLongStates: boolean[] = [];
-			const skuLongStates: boolean[] = [];
-			const brandLongStates: boolean[] = [];
+function getFilterTags(product: Product, limit = 3): string[] {
+	const tags = product.filters?.map((filter) => filter.value).filter(Boolean) ?? [];
+	return [...new Set(tags)].slice(0, limit);
+}
 
-			displayedProducts.forEach((_, index) => {
-				const spanTitle = spanTitleRefs.current[index];
-				const marqueeTitle = marqueeTitleRefs.current[index];
-				const sku = skuRefs.current[index];
-				const marqueeSku = marqueeSkuRefs.current[index];
-				const brand = brandRefs.current[index];
-				const marqueeBrand = marqueeBrandRefs.current[index];
+function ProductArrow() {
+	return (
+		<span className={styles.productArrow} aria-hidden="true">
+			<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+				<path d="M7 17L17 7" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+				<path d="M9 7H17V15" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+			</svg>
+		</span>
+	);
+}
 
-				// Проверяем длину названия
-				if (spanTitle && marqueeTitle) {
-					titleLongStates[index] = spanTitle.offsetWidth > marqueeTitle.offsetWidth;
-				} else {
-					titleLongStates[index] = false;
-				}
-
-				// Проверяем длину артикула
-				if (sku && marqueeSku) {
-					skuLongStates[index] = sku.offsetWidth > marqueeSku.offsetWidth;
-				} else {
-					skuLongStates[index] = false;
-				}
-
-				// Проверяем длину бренда
-				if (brand && marqueeBrand) {
-					brandLongStates[index] = brand.offsetWidth > marqueeBrand.offsetWidth;
-				} else {
-					brandLongStates[index] = false;
-				}
-			});
-
-			setIsMarqueeTitleLong(titleLongStates);
-			setIsMarqueeSkuLong(skuLongStates);
-			setIsMarqueeBrandLong(brandLongStates);
-		}, 100);
-	}, [displayedProducts]);
+export default function ProductsList({ products, sortOption, itemsPerPage, categoryTitle }: ProductsListProps) {
+	const [visibleCount, setVisibleCount] = useState(itemsPerPage);
 
 	useEffect(() => {
-		let sortedProducts = [...products];
+		setVisibleCount(itemsPerPage);
+	}, [itemsPerPage, products, sortOption]);
+
+	const sortedProducts = useMemo(() => {
+		const list = [...products];
 
 		if (sortOption === "price_asc") {
-			sortedProducts.sort((a, b) => a.price - b.price);
+			list.sort((a, b) => a.price - b.price);
 		} else if (sortOption === "price_desc") {
-			sortedProducts.sort((a, b) => b.price - a.price);
+			list.sort((a, b) => b.price - a.price);
 		} else {
-			sortedProducts.sort((a, b) => a.title.localeCompare(b.title));
+			list.sort((a, b) => a.title.localeCompare(b.title, "ru"));
 		}
 
-		setDisplayedProducts(sortedProducts.slice(0, itemsPerPage));
-	}, [products, sortOption, itemsPerPage]);
+		return list;
+	}, [products, sortOption]);
+
+	const displayedProducts = sortedProducts.slice(0, visibleCount);
+	const hasMore = visibleCount < sortedProducts.length;
+
+	if (products.length === 0) {
+		return (
+			<div className={styles.emptyState}>
+				<p className={styles.emptyTitle}>Ничего не найдено</p>
+				<p className={styles.emptyText}>По выбранным фильтрам в категории «{categoryTitle}» нет подходящих позиций. Сбросьте фильтры или измените параметры.</p>
+			</div>
+		);
+	}
 
 	return (
-		<div className={styles.productsList}>
-			{displayedProducts.length === 0 ? (
-				<div>Нет товаров</div>
-			) : (
-				displayedProducts.map((product, index) => (
-					<Link href={`/products/${product.id}`} key={product.id} className={styles.productItem}>
-						<div className={styles.topBlock}>
-							<div className={styles.imageBlock}>
-								{product.image ? <img src={product.image} alt={product.title} /> : <img className={styles.noImage} src="/images/no-image.png" alt="" />}
+		<div className={styles.catalogSection}>
+			<div className={styles.productsGrid}>
+				{displayedProducts.map((product) => {
+					const brand = normalizeBrand(product.brand);
+					const excerpt = getDescriptionExcerpt(product.description);
+					const tags = getFilterTags(product);
+
+					return (
+						<Link href={`/products/${product.id}`} key={product.id} className={styles.productCard}>
+							<div className={styles.productMedia}>
+								{product.image ?
+									<img src={product.image} alt="" />
+								:	<span className={styles.productMediaPlaceholder} aria-hidden="true" />}
 							</div>
-							<div className={styles.nameBlock}>
-								<div className={`${styles.productMarqueeBlock} ${styles.block}`}>
-									<div className={styles.descr}>Название:</div>
-									<div
-										className={styles.marqueeBlock}
-										ref={(el) => {
-											marqueeTitleRefs.current[index] = el;
-										}}
-									>
-										<span
-											ref={(el) => {
-												spanTitleRefs.current[index] = el;
-											}}
-											data-title={product.title}
-											className={`${styles.title} ${isMarqueeTitleLong[index] ? styles.long : ""}`}
-											style={{ animationDuration: `${product.title.length * 0.1}s` }}
-										>
-											{product.title}
-										</span>
+
+							<div className={styles.productContent}>
+								{brand || product.sku ?
+									<div className={styles.productMeta}>
+										{brand ? <span className={styles.productBrand}>{brand}</span> : null}
+										{product.sku ? <span className={styles.productSku}>{product.sku}</span> : null}
 									</div>
+								:	null}
+
+								<h2 className={styles.productTitle}>{product.title}</h2>
+
+								{excerpt ? <p className={styles.productDesc}>{excerpt}</p> : null}
+
+								{tags.length > 0 ?
+									<ul className={styles.productTags}>
+										{tags.map((tag) => (
+											<li key={tag}>{tag}</li>
+										))}
+									</ul>
+								:	null}
+							</div>
+
+							<div className={styles.productFooter}>
+								<div className={styles.productPriceBlock}>
+									<span className={styles.productPriceLabel}>Цена</span>
+									<span className={styles.productPrice}>{formatPrice(product.price)}</span>
 								</div>
-								<div className={`${styles.productMarqueeBlock} ${styles.block}`}>
-									<div className={styles.descr}>Бренд:</div>
-									<div
-										className={styles.marqueeBlock}
-										ref={(el) => {
-											marqueeBrandRefs.current[index] = el;
-										}}
-									>
-										<span
-											ref={(el) => {
-												brandRefs.current[index] = el;
-											}}
-											data-title={product.brand}
-											className={`${styles.brand} ${isMarqueeBrandLong[index] ? styles.long : ""}`}
-											style={{ animationDuration: `${product.brand.length * 0.1}s` }}
-										>
-											{product.brand}
-										</span>
-									</div>
-								</div>
-								<div className={`${styles.productMarqueeBlock} ${styles.block}`}>
-									<div className={styles.descr}>Артикул:</div>
-									<div
-										className={styles.marqueeBlock}
-										ref={(el) => {
-											marqueeSkuRefs.current[index] = el;
-										}}
-									>
-										<span
-											ref={(el) => {
-												skuRefs.current[index] = el;
-											}}
-											data-title={product.sku}
-											className={`${styles.sku} ${isMarqueeSkuLong[index] ? styles.long : ""}`}
-											style={{ animationDuration: `${product.sku.length * 0.1}s` }}
-										>
-											{product.sku}
-										</span>
-									</div>
-								</div>
-								<div className={styles.block}>
-									<div className={styles.descr}>Стоимость:</div>
-									<span className={styles.price}>{product.price} ₽</span>
+
+								<div className={styles.productAction}>
+									<span className={styles.productActionText}>Подробнее</span>
+									<ProductArrow />
 								</div>
 							</div>
-						</div>
-						<div className={styles.bottomBlock}>
-							{/* <div className={styles.priceBlock}>{product.price} ₽</div> */}
-							<div className={`button ${styles.button}`}>Подробнее</div>
-						</div>
-					</Link>
-				))
-			)}
+						</Link>
+					);
+				})}
+			</div>
+
+			{hasMore ? (
+				<div className={styles.loadMoreWrap}>
+					<button type="button" className={styles.loadMoreButton} onClick={() => setVisibleCount((prev) => prev + itemsPerPage)}>
+						Показать ещё ({sortedProducts.length - visibleCount})
+					</button>
+				</div>
+			) : null}
 		</div>
 	);
 }

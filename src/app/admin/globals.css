@@ -25,8 +25,8 @@
   --dark-orange-color: rgba(204, 102, 0, 1);
   --shadow: rgba(0, 0, 0, 0.025);
   --shadow-hover: rgba(0, 0, 0, 0.075);
-  --background-color: rgba(245, 245, 245, 1);
-  --header-height: 100px;
+  --background-color: #fff;
+  --header-height: 72px;
   --content-padding: 50px;
   --h1Size: 32px;
   --h2Size: 18px;
@@ -92,9 +92,7 @@ a.button {
   gap: 5px;
   text-align: center;
   justify-content: center;
-  width: -moz-fit-content;
   width: fit-content;
-  height: -moz-fit-content;
   height: fit-content;
   padding: 10px 25px;
   background: linear-gradient(135deg, var(--blue-color), var(--dark-blue-color));
@@ -258,9 +256,7 @@ a.button.disabled {
 }
 .tableContainer .table {
   width: 100%;
-  height: -moz-fit-content;
   height: fit-content;
-  min-width: -moz-max-content;
   min-width: max-content;
 }
 .tableContainer .tableContent {
@@ -293,13 +289,10 @@ a.button.disabled {
   align-items: flex-start;
   width: 100%;
   gap: 10px;
-  height: -moz-fit-content;
   height: fit-content;
 }
 .tableContainer .tableContent .titleBlock .button {
-  min-width: -moz-max-content;
   min-width: max-content;
-  width: -moz-max-content;
   width: max-content;
   padding: 15px 25px;
 }
@@ -312,9 +305,7 @@ a.button.disabled {
   padding: 10px 25px;
   border: 1px solid var(--blue-color);
   border-radius: 8px;
-  width: -moz-fit-content;
   width: fit-content;
-  height: -moz-fit-content;
   height: fit-content;
   margin: 10px 0px 0px 0px;
   text-decoration: none;
@@ -344,16 +335,8 @@ a.button.disabled {
 .tableContainer .formInput.error {
   border-color: var(--red-color);
 }
-.tableContainer .formInput.error::-moz-placeholder {
-  color: var(--red-color);
-  opacity: 0.5;
-}
 .tableContainer .formInput.error::placeholder {
   color: var(--red-color);
-  opacity: 0.5;
-}
-.tableContainer .formInput::-moz-placeholder {
-  color: var(--blue-color);
   opacity: 0.5;
 }
 .tableContainer .formInput::placeholder {
@@ -456,9 +439,7 @@ a.cardItem .cardButton {
   font-size: 13px;
   font-weight: 500;
   opacity: 0.7;
-  transition: -webkit-text-decoration 0.2s;
   transition: text-decoration 0.2s;
-  transition: text-decoration 0.2s, -webkit-text-decoration 0.2s;
 }
 .cardItem .cardNewOrdersNumber,
 a.cardItem .cardNewOrdersNumber {
@@ -499,12 +480,10 @@ a.cardItem .cardNewOrdersNumber {
   padding: 0px 10px;
 }
 .detailsList .detailItem.noBorder .label {
-  width: -moz-fit-content;
   width: fit-content;
   font-weight: 600;
 }
 .detailsList .detailItem h3.label {
-  width: -moz-fit-content;
   width: fit-content;
 }
 .detailsList .detailItem .label {
@@ -523,7 +502,6 @@ a.cardItem .cardNewOrdersNumber {
   display: flex;
   gap: 10px;
   width: 100%;
-  height: -moz-fit-content;
   height: fit-content;
   max-width: var(--maxContentWidth);
 }
@@ -546,10 +524,6 @@ input:focus {
 }
 input.error {
   border-color: var(--red-color);
-}
-input.error::-moz-placeholder {
-  color: var(--red-color);
-  opacity: 0.5;
 }
 input.error::placeholder {
   color: var(--red-color);
@@ -589,10 +563,6 @@ select option:last-child {
 select.error {
   border-color: var(--red-color);
 }
-select.error::-moz-placeholder {
-  color: var(--red-color);
-  opacity: 0.5;
-}
 select.error::placeholder {
   color: var(--red-color);
   opacity: 0.5;
@@ -604,10 +574,6 @@ textarea {
 }
 textarea.error {
   border-color: var(--red-color);
-}
-textarea.error::-moz-placeholder {
-  color: var(--red-color);
-  opacity: 0.5;
 }
 textarea.error::placeholder {
   color: var(--red-color);
@@ -681,9 +647,7 @@ textarea.error::placeholder {
   justify-content: center;
   border: 1px solid var(--grey-color);
   border-radius: 10px;
-  width: -moz-fit-content;
   width: fit-content;
-  height: -moz-fit-content;
   height: fit-content;
   align-items: flex-start;
 }
@@ -704,7 +668,6 @@ textarea.error::placeholder {
   position: absolute;
   right: 5px;
   top: 0px;
-  width: -moz-fit-content;
   width: fit-content;
   font-size: 12px;
   color: var(--text-color);
@@ -810,7 +773,6 @@ textarea.error::placeholder {
   display: flex;
   flex-direction: column;
   gap: 5px;
-  height: -moz-fit-content;
   height: fit-content;
   min-height: 200px;
   border-radius: 10px;
@@ -890,11 +852,9 @@ textarea.error::placeholder {
   display: flex;
   flex-direction: column;
   position: absolute;
-  width: -moz-fit-content;
   width: fit-content;
   min-width: 600px;
   max-width: 80vw;
-  height: -moz-fit-content;
   height: fit-content;
   max-height: 80vh;
   background-color: white;
@@ -954,7 +914,6 @@ textarea.error::placeholder {
   align-items: center;
   text-align: center;
   min-width: 40px;
-  width: -moz-fit-content;
   width: fit-content;
   max-width: unset;
   height: 40px;
@@ -978,6 +937,7 @@ textarea.error::placeholder {
   z-index: 999;
   padding: 10px;
   border-radius: 10px;
+  max-width: 500px;
   background-color: white;
   color: var(--text-color);
   border: 1px solid var(--grey-color);
@@ -1025,10 +985,6 @@ textarea.error::placeholder {
   color: var(--text-color);
   font-size: 12px;
   transition: all 0.2s ease;
-}
-.searchInput input::-moz-placeholder {
-  color: var(--blue-color);
-  opacity: 0.5;
 }
 .searchInput input::placeholder {
   color: var(--blue-color);
@@ -1278,8 +1234,7 @@ table tbody tr td .image,
 .table tbody tr td .image {
   width: 60px;
   height: 60px;
-  -o-object-fit: cover;
-     object-fit: cover;
+  object-fit: cover;
   border-radius: 4px;
   border: 1px solid #e0e0e0;
   cursor: pointer;
@@ -1355,54 +1310,54 @@ table .fullInfoBlock:before,
   opacity: 0.1;
   pointer-events: none;
 }
-table .fullInfoBlock.create_department:before,
-.table .fullInfoBlock.create_department:before {
-  background: var(--green-color);
-}
 table .fullInfoBlock.create_department,
 .table .fullInfoBlock.create_department {
   border: 1px solid var(--green-color);
 }
+table .fullInfoBlock.create_department:before,
+.table .fullInfoBlock.create_department:before {
+  background: var(--green-color);
+}
 table .fullInfoBlock.create_department .clickInfoBlock,
 .table .fullInfoBlock.create_department .clickInfoBlock {
   color: var(--dark-green-color);
-}
-table .fullInfoBlock.update_name:before, table .fullInfoBlock.update:before,
-.table .fullInfoBlock.update_name:before,
-.table .fullInfoBlock.update:before {
-  background: var(--blue-color);
 }
 table .fullInfoBlock.update_name, table .fullInfoBlock.update,
 .table .fullInfoBlock.update_name,
 .table .fullInfoBlock.update {
   border: 1px solid var(--blue-color);
 }
+table .fullInfoBlock.update_name:before, table .fullInfoBlock.update:before,
+.table .fullInfoBlock.update_name:before,
+.table .fullInfoBlock.update:before {
+  background: var(--blue-color);
+}
 table .fullInfoBlock.update_name .clickInfoBlock, table .fullInfoBlock.update .clickInfoBlock,
 .table .fullInfoBlock.update_name .clickInfoBlock,
 .table .fullInfoBlock.update .clickInfoBlock {
   color: var(--dark-blue-color);
 }
-table .fullInfoBlock.update_categories:before,
-.table .fullInfoBlock.update_categories:before {
-  background: var(--blue-color);
-}
 table .fullInfoBlock.update_categories,
 .table .fullInfoBlock.update_categories {
   border: 1px solid var(--blue-color);
+}
+table .fullInfoBlock.update_categories:before,
+.table .fullInfoBlock.update_categories:before {
+  background: var(--blue-color);
 }
 table .fullInfoBlock.update_categories .clickInfoBlock,
 .table .fullInfoBlock.update_categories .clickInfoBlock {
   color: var(--dark-blue-color);
 }
-table .fullInfoBlock.add_users:before, table .fullInfoBlock.create:before,
-.table .fullInfoBlock.add_users:before,
-.table .fullInfoBlock.create:before {
-  background: var(--green-color);
-}
 table .fullInfoBlock.add_users, table .fullInfoBlock.create,
 .table .fullInfoBlock.add_users,
 .table .fullInfoBlock.create {
   border: 1px solid var(--green-color);
+}
+table .fullInfoBlock.add_users:before, table .fullInfoBlock.create:before,
+.table .fullInfoBlock.add_users:before,
+.table .fullInfoBlock.create:before {
+  background: var(--green-color);
 }
 table .fullInfoBlock.add_users .clickInfoBlock, table .fullInfoBlock.create .clickInfoBlock,
 .table .fullInfoBlock.add_users .clickInfoBlock,
@@ -1413,16 +1368,12 @@ table .fullInfoBlock.remove_users, table .fullInfoBlock.remove,
 .table .fullInfoBlock.remove_users,
 .table .fullInfoBlock.remove {
   background-color: var(--light-red-color);
+  border: 1px solid var(--red-color);
 }
 table .fullInfoBlock.remove_users:before, table .fullInfoBlock.remove:before,
 .table .fullInfoBlock.remove_users:before,
 .table .fullInfoBlock.remove:before {
   background: var(--red-color);
-}
-table .fullInfoBlock.remove_users, table .fullInfoBlock.remove,
-.table .fullInfoBlock.remove_users,
-.table .fullInfoBlock.remove {
-  border: 1px solid var(--red-color);
 }
 table .fullInfoBlock.remove_users .clickInfoBlock, table .fullInfoBlock.remove .clickInfoBlock,
 .table .fullInfoBlock.remove_users .clickInfoBlock,
@@ -1460,7 +1411,6 @@ table .fullInfoBlock .clickInfoBlock:after,
   content: "подробнее";
   display: flex;
   position: relative;
-  width: -moz-max-content;
   width: max-content;
   white-space: nowrap;
   font-size: 10px;
@@ -1499,7 +1449,6 @@ table .fullInfoBlock .openingBlock,
 table .fullInfoBlock .openingBlock.active,
 .table .fullInfoBlock .openingBlock.active {
   display: flex;
-  height: -moz-fit-content;
   height: fit-content;
   border-top: 1px solid var(--grey-color);
   margin: 10px 0px 0px 0px;
@@ -1522,19 +1471,17 @@ table .fullInfoBlock .openingBlock .infoField,
   display: flex;
   gap: 5px;
 }
-table .fullInfoBlock .openingBlock .infoField .title.maxContent,
-.table .fullInfoBlock .openingBlock .infoField .title.maxContent {
-  min-width: -moz-max-content;
-  min-width: max-content;
-}
 table .fullInfoBlock .openingBlock .infoField .title,
 .table .fullInfoBlock .openingBlock .infoField .title {
   font-size: 14px;
   font-weight: 500;
   color: var(--text-color);
-  min-width: -moz-max-content;
   min-width: max-content;
   max-width: 50%;
+}
+table .fullInfoBlock .openingBlock .infoField .title.maxContent,
+.table .fullInfoBlock .openingBlock .infoField .title.maxContent {
+  min-width: max-content;
 }
 table .fullInfoBlock .openingBlock .infoField .value,
 .table .fullInfoBlock .openingBlock .infoField .value {
@@ -1592,7 +1539,6 @@ table .actionBlock,
   border-radius: 5px;
   padding: 5px 15px;
   font-size: 12px;
-  width: -moz-fit-content;
   width: fit-content;
   font-weight: 600;
 }
@@ -1685,7 +1631,6 @@ table tr td .category,
   padding: 2px 15px;
   border-radius: 30px;
   margin: 2px;
-  width: -moz-fit-content;
   width: fit-content;
   font-size: 12px;
   font-weight: 500;
@@ -1797,7 +1742,6 @@ span.oldName {
 span.oldName:after {
   content: "старое название";
   position: absolute;
-  width: -moz-max-content;
   width: max-content;
   left: 50%;
   top: 0;
@@ -2110,7 +2054,6 @@ span.oldName:after {
   align-items: center;
   text-align: center;
   min-width: 36px;
-  width: -moz-fit-content;
   width: fit-content;
   max-width: unset;
   height: 36px;
@@ -3347,7 +3290,6 @@ span.oldName:after {
 .orderComponent .formField.formFieldGroup .formField:nth-child(1),
 .bookingComponent .formField.formFieldGroup .formField:nth-child(1),
 .contentComponent .formField.formFieldGroup .formField:nth-child(1) {
-  width: -moz-fit-content;
   width: fit-content;
 }
 .productComponent .formField.formFieldGroup .formField:nth-child(2),
@@ -3478,9 +3420,6 @@ span.oldName:after {
   color: #6b7280;
   cursor: not-allowed;
 }
-.productComponent .formField input::-moz-placeholder, .productComponent .formField textarea::-moz-placeholder, .productComponent .formField select::-moz-placeholder, .orderComponent .formField input::-moz-placeholder, .orderComponent .formField textarea::-moz-placeholder, .orderComponent .formField select::-moz-placeholder, .bookingComponent .formField input::-moz-placeholder, .bookingComponent .formField textarea::-moz-placeholder, .bookingComponent .formField select::-moz-placeholder, .contentComponent .formField input::-moz-placeholder, .contentComponent .formField textarea::-moz-placeholder, .contentComponent .formField select::-moz-placeholder {
-  color: #9ca3af;
-}
 .productComponent .formField input::placeholder,
 .productComponent .formField textarea::placeholder,
 .productComponent .formField select::placeholder,
@@ -3509,10 +3448,6 @@ span.oldName:after {
 .contentComponent .formField select.error {
   border-color: var(--red-color);
   background: var(--light-red-color);
-}
-.productComponent .formField input.error::-moz-placeholder, .productComponent .formField textarea.error::-moz-placeholder, .productComponent .formField select.error::-moz-placeholder, .orderComponent .formField input.error::-moz-placeholder, .orderComponent .formField textarea.error::-moz-placeholder, .orderComponent .formField select.error::-moz-placeholder, .bookingComponent .formField input.error::-moz-placeholder, .bookingComponent .formField textarea.error::-moz-placeholder, .bookingComponent .formField select.error::-moz-placeholder, .contentComponent .formField input.error::-moz-placeholder, .contentComponent .formField textarea.error::-moz-placeholder, .contentComponent .formField select.error::-moz-placeholder {
-  color: var(--red-color);
-  opacity: 0.5;
 }
 .productComponent .formField input.error::placeholder,
 .productComponent .formField textarea.error::placeholder,
@@ -3558,8 +3493,7 @@ span.oldName:after {
   width: 30px;
   text-align: center;
   -moz-appearance: textfield;
-  -webkit-appearance: textfield;
-          appearance: textfield;
+  appearance: textfield;
 }
 .productComponent .formField input.quantityInput::-webkit-outer-spin-button, .productComponent .formField input.quantityInput::-webkit-inner-spin-button,
 .productComponent .formField textarea.quantityInput::-webkit-outer-spin-button,
@@ -3638,13 +3572,14 @@ span.oldName:after {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  width: -moz-fit-content;
   width: fit-content;
-  height: -moz-fit-content;
   height: fit-content;
   padding: 12px 16px;
   background: var(--light-grey-color);
   position: relative;
+  border: 1px solid var(--light-grey2-color);
+  border-radius: 8px;
+  transition: all 0.2s ease;
 }
 .productComponent .infoField .takeOrderButton,
 .orderComponent .infoField .takeOrderButton,
@@ -3673,14 +3608,6 @@ span.oldName:after {
 .contentComponent .infoField .takeOrderButton:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-.productComponent .infoField,
-.orderComponent .infoField,
-.bookingComponent .infoField,
-.contentComponent .infoField {
-  border: 1px solid var(--light-grey2-color);
-  border-radius: 8px;
-  transition: all 0.2s ease;
 }
 .productComponent .infoField:hover,
 .orderComponent .infoField:hover,
@@ -3730,7 +3657,6 @@ span.oldName:after {
 .orderComponent button.removeButton,
 .bookingComponent button.removeButton,
 .contentComponent button.removeButton {
-  min-width: -moz-fit-content;
   min-width: fit-content;
   padding: 10px 25px;
   background: var(--red-color);
@@ -3780,8 +3706,7 @@ span.oldName:after {
 .contentComponent .viewModeContainer .productImageSection .productImage {
   max-width: 100%;
   max-height: 250px;
-  -o-object-fit: contain;
-     object-fit: contain;
+  object-fit: contain;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
@@ -4058,9 +3983,7 @@ span.oldName:after {
 .contentComponent .filtersSection .filterGroup .filterValueItem .filterValueText {
   font-size: 14px;
   color: var(--text-color);
-  -webkit-user-select: none;
-     -moz-user-select: none;
-          user-select: none;
+  user-select: none;
 }
 .productComponent .filtersSection .filterGroup .filterValueItem.active,
 .orderComponent .filtersSection .filterGroup .filterValueItem.active,
@@ -4134,8 +4057,9 @@ span.oldName:after {
 
 .fixedButtons {
   position: fixed;
-  bottom: 20px;
-  left: calc((100vw - var(--maxContentWidth)) * 0.5);
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
   display: flex;
   gap: 12px;
   background: white;
@@ -4143,8 +4067,8 @@ span.oldName:after {
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   border: 1px solid var(--light-grey-color);
-  z-index: 1000;
-  animation: slideUp 0.3s ease-out;
+  z-index: 1001;
+  animation: fixedButtonsSlideUp 0.3s ease-out;
 }
 .fixedButtons .formField {
   display: flex;
@@ -4173,7 +4097,6 @@ span.oldName:after {
   transform: translateY(-1px);
 }
 .fixedButtons button.primaryButton:disabled {
-  background: var(--light-grey-color);
   cursor: not-allowed;
   opacity: 0.6;
 }
@@ -4191,14 +4114,14 @@ span.oldName:after {
   opacity: 0.6;
   cursor: not-allowed;
 }
-@keyframes slideUp {
+@keyframes fixedButtonsSlideUp {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateX(-50%) translateY(20px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateX(-50%) translateY(0);
   }
 }
 .fixedButtons .filtersValue {
@@ -4403,9 +4326,7 @@ span.oldName:after {
   position: relative;
   border-bottom: 1px solid var(--light-grey2-color);
   padding: 11px 14px 11px 16px;
-  height: -moz-fit-content;
   height: fit-content;
-  min-height: -moz-fit-content;
   min-height: fit-content;
   cursor: pointer;
   overflow: hidden;
@@ -4497,6 +4418,23 @@ span.oldName:after {
   color: var(--blue-color, #2980b9);
   border: 2px solid var(--blue-color, #2980b9);
 }
+.addProductZone.addProductZoneValidationError {
+  border-color: #f44336;
+  border-style: solid;
+  background: #ffebee;
+}
+.addProductZone.addProductZoneValidationError:hover {
+  border-color: #d32f2f;
+  background: #ffebee;
+  box-shadow: 0 0 0 1px rgba(244, 67, 54, 0.25);
+}
+.addProductZone.addProductZoneValidationError .addProductZonePlus {
+  color: #c62828;
+  border-color: #f44336;
+}
+.addProductZone.addProductZoneValidationError .addProductZoneText {
+  color: #b71c1c;
+}
 
 .addProductZoneOpen {
   flex-direction: column;
@@ -4512,6 +4450,26 @@ span.oldName:after {
   border-color: var(--light-grey2-color);
   background: var(--light-grey-color);
   box-shadow: none;
+}
+.addProductZoneOpen.addProductZoneValidationError {
+  border-color: #f44336;
+  background: #fff5f5;
+}
+.addProductZoneOpen.addProductZoneValidationError:hover {
+  border-color: #d32f2f;
+  background: #fff5f5;
+}
+
+.formField.orderCompositionFieldError > div:first-child {
+  color: #c62828;
+  font-weight: 600;
+}
+.formField.orderCompositionFieldError .productItemsList {
+  min-height: 48px;
+  border: 2px dashed #f44336;
+  border-radius: 8px;
+  padding: 12px;
+  background: #ffebee;
 }
 
 .addProductZonePlaceholder {
@@ -4586,14 +4544,6 @@ span.oldName:after {
   flex-direction: column;
   gap: 16px;
 }
-.productItemsList.readonly .productItem,
-.productItemsList.readonly .orderItem,
-.orderItemsList.readonly .productItem,
-.orderItemsList.readonly .orderItem {
-  opacity: 0.7;
-  background-color: #f8f9fa;
-  border: 1px solid #e9ecef;
-}
 .productItemsList.readonly .productItem .itemFields,
 .productItemsList.readonly .orderItem .itemFields,
 .orderItemsList.readonly .productItem .itemFields,
@@ -4619,6 +4569,10 @@ span.oldName:after {
 .orderItemsList.editable .productItem .itemHeader .removeButton,
 .orderItemsList.editable .orderItem .itemHeader .removeButton {
   display: none;
+}
+
+.productItemReadonlySegment {
+  opacity: 0.7;
 }
 
 .productItem,
@@ -4651,9 +4605,7 @@ span.oldName:after {
   text-transform: uppercase;
   width: 100%;
   cursor: pointer;
-  -webkit-user-select: none;
-     -moz-user-select: none;
-          user-select: none;
+  user-select: none;
   transition: opacity 0.2s ease;
 }
 .productItem .itemTitle:hover,
@@ -4701,8 +4653,7 @@ span.oldName:after {
 .orderItem .orderItemImage {
   width: 100%;
   height: 100%;
-  -o-object-fit: cover;
-     object-fit: cover;
+  object-fit: cover;
   display: block;
 }
 .productItem .productItemNoImage,
@@ -4866,7 +4817,6 @@ span.oldName:after {
   position: absolute;
   right: 20px;
   top: -22px;
-  min-width: -moz-max-content;
   min-width: max-content;
   padding: 0px;
   background: transparent;
@@ -5036,8 +4986,7 @@ span.oldName:after {
 .analogItemImage {
   width: 100%;
   height: 100%;
-  -o-object-fit: cover;
-     object-fit: cover;
+  object-fit: cover;
 }
 
 .analogItemNoImage {
@@ -5399,4 +5348,4 @@ span.oldName:after {
   :root {
     --maxContentWidth: 90vw;
   }
-}/*# sourceMappingURL=globals.css.map */
+}

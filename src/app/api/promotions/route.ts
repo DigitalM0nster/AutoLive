@@ -3,6 +3,8 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse, NextRequest } from "next/server";
 import { getUserFromRequest } from "@/middleware/permissionMiddleware";
+import { parseOptionalPromotionDate, validatePromotionDates } from "@/lib/promotionDates";
+import { readPromotionButtonsFromBody, serializePromotionButtons, validatePromotionButtons } from "@/lib/promotionButtons";
 
 // GET /api/promotions
 export async function GET() {
@@ -29,16 +31,28 @@ export async function POST(req: NextRequest) {
 		}
 
 		const maxOrder = await prisma.promotion.aggregate({ _max: { order: true } });
+		const startDate = parseOptionalPromotionDate(body.startDate);
+		const endDate = parseOptionalPromotionDate(body.endDate);
+		const datesValidationError = validatePromotionDates(startDate, endDate);
+		if (datesValidationError) {
+			return NextResponse.json({ error: datesValidationError }, { status: 400 });
+		}
+
+		const buttons = readPromotionButtonsFromBody(body);
+		const buttonsError = validatePromotionButtons(buttons);
+		if (buttonsError) {
+			return NextResponse.json({ error: buttonsError }, { status: 400 });
+		}
+
 		const created = await prisma.promotion.create({
 			data: {
 				title,
 				description: body.description ? String(body.description).trim() : null,
 				image: body.imageUrl ? String(body.imageUrl).trim() : null,
-				buttonText: body.buttonText ? String(body.buttonText).trim() : null,
-				buttonLink: body.buttonLink ? String(body.buttonLink).trim() : null,
+				buttonsJson: serializePromotionButtons(buttons),
 				order: (maxOrder._max.order ?? 0) + 1,
-				startDate: body.startDate ? new Date(body.startDate) : null,
-				endDate: body.endDate ? new Date(body.endDate) : null,
+				startDate,
+				endDate,
 			},
 		});
 		return NextResponse.json(created);

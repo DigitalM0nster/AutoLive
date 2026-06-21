@@ -7,6 +7,7 @@ import { validateOrderMergedStateForStatus } from "@/lib/orderStatusValidation";
 import { getFullOrderSnapshot } from "@/lib/crossLogging";
 import { mergeOrderCommentsOnUpdate } from "@/lib/orderComments";
 import { buildOrderUpdateMessage } from "@/lib/orderUpdateDiff";
+import { applyOrderStatusFieldsToUpdate, mergeOrderStatusFieldsForValidation } from "@/lib/orderStatusFields";
 
 // Получение конкретного заказа
 async function getOrderHandler(req: NextRequest, { user, scope, params }: { user: any; scope: "all" | "department" | "own"; params: { orderId: string } }) {
@@ -395,7 +396,7 @@ async function updateOrderHandler(req: NextRequest, { user, scope, params }: { u
 			}
 		}
 
-		// Валидация цепочки полей при продвижении статуса вперёд (поля этапов не все хранятся в БД — полагаемся на тело запроса)
+		// Валидация цепочки полей при продвижении статуса вперёд
 		if (body.status !== undefined) {
 			const newIdx = statusTimeline.indexOf(body.status as (typeof statusTimeline)[number]);
 			const isForward = newIdx !== -1 && newIdx > currentStatusIndex;
@@ -429,6 +430,8 @@ async function updateOrderHandler(req: NextRequest, { user, scope, params }: { u
 								vinCode: item.vinCode,
 							}));
 
+				const mergedStatusFields = mergeOrderStatusFieldsForValidation(body, currentOrder);
+
 				const statusIssues = validateOrderMergedStateForStatus({
 					targetStatus: body.status as OrderStatus,
 					isSuperadminSelfResponsible,
@@ -443,18 +446,7 @@ async function updateOrderHandler(req: NextRequest, { user, scope, params }: { u
 					bookingId: mergedBookingId,
 					bookingDepartmentId: mergedBd,
 					deliveryPickupPointId: mergedPp,
-					bookedUntil: body.bookedUntil,
-					readyUntil: body.readyUntil,
-					prepaymentAmount: body.prepaymentAmount,
-					prepaymentDate: body.prepaymentDate,
-					paymentDate: body.paymentDate,
-					orderAmount: body.orderAmount,
-					completionDate: body.completionDate,
-					returnReason: body.returnReason,
-					returnDate: body.returnDate,
-					returnAmount: body.returnAmount,
-					returnPaymentDate: body.returnPaymentDate,
-					returnDocumentNumber: body.returnDocumentNumber,
+					...mergedStatusFields,
 				});
 
 				if (statusIssues.length > 0) {
@@ -515,6 +507,8 @@ async function updateOrderHandler(req: NextRequest, { user, scope, params }: { u
 			if (finalDeliveryDateValue !== undefined) {
 				updateData.finalDeliveryDate = finalDeliveryDateValue;
 			}
+
+			applyOrderStatusFieldsToUpdate(body, updateData);
 
 			// Обновляем связь с заявкой
 			if (body.bookingId !== undefined) {

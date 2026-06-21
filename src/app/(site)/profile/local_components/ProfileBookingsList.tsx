@@ -20,18 +20,19 @@ type BookingRow = {
 export default function ProfileBookingsList() {
 	const [bookings, setBookings] = useState<BookingRow[]>([]);
 	const [error, setError] = useState<string | null>(null);
+	const [loading, setLoading] = useState(true);
 
 	const load = useCallback(async () => {
 		setError(null);
+		setLoading(true);
 		try {
 			const res = await fetch("/api/user/profile/bookings", { credentials: "include" });
-			if (res.ok) {
-				setBookings(await res.json());
-			} else {
-				setError("Не удалось загрузить записи.");
-			}
+			if (res.ok) setBookings(await res.json());
+			else setError("Не удалось загрузить записи.");
 		} catch {
 			setError("Не удалось загрузить записи.");
+		} finally {
+			setLoading(false);
 		}
 	}, []);
 
@@ -41,34 +42,40 @@ export default function ProfileBookingsList() {
 
 	return (
 		<>
-			<h1 className={styles.pageTitle}>Мои записи на ТО</h1>
-			<p className={styles.muted}>Менеджер свяжется с вами по указанному телефону.</p>
-			{error && <div className={styles.errorBanner}>{error}</div>}
+			<header className={styles.pageHeader}>
+				<h1 className={styles.pageTitle}>Записи на ТО</h1>
+				<p className={styles.pageLead}>История записей на техническое обслуживание. Менеджер свяжется с вами по указанному телефону.</p>
+			</header>
 
-			{bookings.length === 0 ?
+			{error ? <div className={styles.errorBanner}>{error}</div> : null}
+
+			{loading ?
+				<p className={styles.loadingNote}>Загрузка записей…</p>
+			: bookings.length === 0 ?
 				<div className={styles.emptyState}>
-					Записей пока нет. <Link href="/booking">Записаться на обслуживание</Link>
-				</div>
-			:	bookings.map((row) => (
-					<Link key={row.id} href={`/profile/bookings/${row.id}`} className={styles.orderListCard}>
-						<div className={styles.rowBetween}>
-							<div className={styles.orderId}>
-								Запись №{row.id} · {bookingStatusLabelRu(row.status)}
-							</div>
-						</div>
-						<div className={styles.bookingRow}>
-							<strong>Дата и время:</strong> {row.scheduledDate} в {row.scheduledTime}
-						</div>
-						<div className={styles.bookingRow}>
-							<strong>Адрес:</strong> {row.departmentName ? `${row.departmentName}, ` : ""}
-							{row.departmentAddress}
-						</div>
-						<div className={styles.bookingRow}>
-							<strong>Телефон:</strong> {row.contactPhone}
-						</div>
-						<div className={styles.linkDetail}>Подробнее</div>
+					<p>Записей пока нет.</p>
+					<Link href="/booking" className={styles.emptyAction}>
+						Записаться на ТО
 					</Link>
-				))
+				</div>
+			:	<div className={styles.listStack}>
+					{bookings.map((booking) => (
+						<Link key={booking.id} href={`/profile/bookings/${booking.id}`} className={styles.listCard}>
+							<div className={styles.listCardTop}>
+								<span className={styles.listCardId}>Запись №{booking.id}</span>
+								<span className={styles.statusBadge}>{bookingStatusLabelRu(booking.status)}</span>
+							</div>
+							<div className={styles.listCardMeta}>
+								{booking.scheduledDate} в {booking.scheduledTime}
+							</div>
+							<p className={styles.listCardPreview}>
+								{booking.departmentName ? `${booking.departmentName}, ` : ""}
+								{booking.departmentAddress}
+							</p>
+							<p className={styles.listCardPreview}>Телефон: {booking.contactPhone}</p>
+						</Link>
+					))}
+				</div>
 			}
 		</>
 	);

@@ -16,18 +16,20 @@ export function phoneForStorage(raw: string): string {
 	return normalizePhoneDigits(raw);
 }
 
-/** Отображение: +7 (999) 999-99-99 */
+/** Отображение: +7 (999) 999-99-99 — только введённые цифры, без символов-заглушек маски */
 export function formatPhoneDisplay(raw: string): string {
 	const d = normalizePhoneDigits(raw);
 	if (d.length === 0) return "";
-	const mask = "+7 (___) ___-__-__".split("");
-	let di = 0;
-	for (let i = 0; i < mask.length; i++) {
-		if (mask[i] === "_" && di < d.length) {
-			mask[i] = d[di++];
-		}
-	}
-	return mask.join("");
+
+	const area = d.slice(0, 3);
+	const mid = d.slice(3, 6);
+	const part1 = d.slice(6, 8);
+	const part2 = d.slice(8, 10);
+
+	if (d.length <= 3) return `+7 (${area}`;
+	if (d.length <= 6) return `+7 (${area}) ${mid}`;
+	if (d.length <= 8) return `+7 (${area}) ${mid}-${part1}`;
+	return `+7 (${area}) ${mid}-${part1}-${part2}`;
 }
 
 /** tel: ссылка */

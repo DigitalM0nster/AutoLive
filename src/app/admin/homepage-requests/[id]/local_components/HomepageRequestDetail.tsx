@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Loading from "@/components/ui/loading/Loading";
 import { showErrorToast, showSuccessToast } from "@/components/ui/toast/ToastProvider";
+import { formatSiteFormRequestSource } from "@/lib/siteRequestSource";
 
 type PayloadRow = {
 	key: string;
@@ -19,6 +20,8 @@ type Row = {
 	createdAt: string;
 	status: "new" | "processed";
 	payload: unknown;
+	sourceType?: "homepage" | "promotion" | "contacts";
+	sourceLabel?: string | null;
 };
 
 function getStatusMeta(status: Row["status"]) {
@@ -103,6 +106,10 @@ export default function HomepageRequestDetail({ id }: { id: number }) {
 			<div className="infoField">
 				<span className="title">Создана:</span>
 				<span className="value">{new Date(row.createdAt).toLocaleString("ru-RU")}</span>
+			</div>
+			<div className="infoField">
+				<span className="title">Источник:</span>
+				<span className="value">{formatSiteFormRequestSource(row.sourceType ?? "homepage", row.sourceLabel)}</span>
 			</div>
 			<div className="infoField">
 				<span className="title">Статус:</span>

@@ -1,8 +1,9 @@
-// Проверка JWT из cookie: только роль client (личный кабинет на сайте)
+// Проверка JWT из cookie: личный кабинет на сайте (клиенты и сотрудники)
 
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 import type { Role } from "@/lib/rolesConfig";
+import { canAccessSiteProfile } from "@/lib/siteProfileAccess";
 
 type JwtPayload = {
 	id: number;
@@ -15,7 +16,7 @@ export type ClientSessionOk = { userId: number };
 export type ClientSessionErr = { error: string; status: number };
 
 /**
- * Возвращает id пользователя, если в cookie валидный токен и роль client.
+ * Возвращает id пользователя, если в cookie валидный токен и роль допускает ЛК на сайте.
  */
 export async function requireClientSession(): Promise<ClientSessionOk | ClientSessionErr> {
 	const token = (await cookies()).get("authToken")?.value;
@@ -27,8 +28,8 @@ export async function requireClientSession(): Promise<ClientSessionOk | ClientSe
 	}
 	try {
 		const payload = jwt.verify(token, process.env.JWT_SECRET) as JwtPayload;
-		if (payload.role !== "client") {
-			return { error: "Раздел доступен только клиентам магазина", status: 403 };
+		if (!canAccessSiteProfile(payload.role)) {
+			return { error: "Раздел недоступен для вашей роли", status: 403 };
 		}
 		return { userId: payload.id };
 	} catch {

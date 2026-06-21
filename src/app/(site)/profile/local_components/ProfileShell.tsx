@@ -4,14 +4,18 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import NavigationMenu from "@/components/user/navigationMenu/NavigationMenu";
+import { formatPhoneDisplay } from "@/lib/phoneUtils";
+import { canAccessSiteProfile } from "@/lib/siteProfileAccess";
 import { useAuthStore } from "@/store/authStore";
+import { useUiStore } from "@/store/uiStore";
+import { displayProfileName } from "./profileUiUtils";
 import styles from "./profileArea.module.scss";
 
 const NAV = [
-	{ href: "/profile", label: "Обзор" },
-	{ href: "/profile/orders", label: "Заказы" },
-	{ href: "/profile/bookings", label: "Записи на ТО" },
-	{ href: "/profile/settings", label: "Профиль и безопасность" },
+	{ href: "/profile", label: "Обзор", hint: "Сводка и быстрые действия" },
+	{ href: "/profile/orders", label: "Заказы", hint: "История заявок" },
+	{ href: "/profile/bookings", label: "Записи на ТО", hint: "Сервисные визиты" },
+	{ href: "/profile/settings", label: "Профиль", hint: "Данные и безопасность" },
 ] as const;
 
 function navClass(pathname: string, href: string): string {
@@ -24,18 +28,22 @@ function navClass(pathname: string, href: string): string {
 export default function ProfileShell({ children }: { children: ReactNode }) {
 	const router = useRouter();
 	const pathname = usePathname();
-	const { initAuth } = useAuthStore();
+	const { initAuth, user, role } = useAuthStore();
+	const activateLoginPopup = useUiStore((state) => state.activateLoginPopup);
 	const [ready, setReady] = useState(false);
 
 	const gate = useCallback(async () => {
 		await initAuth();
-		const { isLogined, role } = useAuthStore.getState();
-		if (!isLogined || role !== "client") {
+		const { isLogined, role, user } = useAuthStore.getState();
+		if (!isLogined || !canAccessSiteProfile(role ?? user?.role)) {
+			if (!isLogined) {
+				activateLoginPopup();
+			}
 			router.replace("/");
 			return;
 		}
 		setReady(true);
-	}, [initAuth, router]);
+	}, [activateLoginPopup, initAuth, router]);
 
 	useEffect(() => {
 		void gate();
@@ -46,8 +54,15 @@ export default function ProfileShell({ children }: { children: ReactNode }) {
 			<div className={`screen ${styles.screen}`}>
 				<div className="screenContent">
 					<NavigationMenu />
-					<div className={styles.layoutInner}>
-						<p className={styles.redirectNote}>Загрузка личного кабинета…</p>
+					<div className={styles.cabinetLayout}>
+						<aside className={`${styles.cabinetSidebar} ${styles.skeletonSidebar}`}>
+							<div className={`${styles.skeletonBlock} ${styles.skeletonShimmer}`} />
+							<div className={`${styles.skeletonBlock} ${styles.skeletonShimmer}`} />
+						</aside>
+						<main className={styles.cabinetMain}>
+							<div className={`${styles.skeletonTitle} ${styles.skeletonShimmer}`} />
+							<div className={`${styles.skeletonCard} ${styles.skeletonShimmer}`} />
+						</main>
 					</div>
 				</div>
 			</div>
@@ -58,19 +73,42 @@ export default function ProfileShell({ children }: { children: ReactNode }) {
 		<div className={`screen ${styles.screen}`}>
 			<div className="screenContent">
 				<NavigationMenu />
-				<div className={styles.layoutInner}>
-					<nav className={styles.cabinetNav} aria-label="Разделы личного кабинета">
-						{NAV.map((item) => (
-							<Link
-								key={item.href}
-								href={item.href}
-								className={`${styles.navLink} ${navClass(pathname, item.href)}`.trim()}
-							>
-								{item.label}
+
+				<div className={styles.cabinetLayout}>
+					<aside className={styles.cabinetSidebar}>
+						<div className={styles.userCard}>
+							<div className={styles.userAvatar} aria-hidden="true" />
+							<div className={styles.userName}>{user ? displayProfileName(user) : "Клиент"}</div>
+							{user?.phone ?
+								<div className={styles.userPhone}>{formatPhoneDisplay(user.phone)}</div>
+							:	null}
+						</div>
+
+						<nav className={styles.cabinetNav} aria-label="Разделы личного кабинета">
+							{NAV.map((item) => (
+								<Link key={item.href} href={item.href} className={`${styles.navLink} ${navClass(pathname, item.href)}`.trim()}>
+									<span className={styles.navLinkLabel}>{item.label}</span>
+									<span className={styles.navLinkHint}>{item.hint}</span>
+								</Link>
+							))}
+						</nav>
+
+						<div className={styles.sidebarFooter}>
+							{(role === "admin" || role === "superadmin" || role === "manager") && (
+								<Link href="/admin/dashboard" className={styles.sidebarActionSecondary}>
+									Админ-панель
+								</Link>
+							)}
+							<Link href="/cart" className={styles.sidebarAction}>
+								Корзина
 							</Link>
-						))}
-					</nav>
-					{children}
+							<Link href="/" className={styles.sidebarActionSecondary}>
+								На сайт
+							</Link>
+						</div>
+					</aside>
+
+					<main className={styles.cabinetMain}>{children}</main>
 				</div>
 			</div>
 		</div>

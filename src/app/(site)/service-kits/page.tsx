@@ -49,6 +49,7 @@ export default async function ServiceKitsPage() {
 			<div className="screenContent">
 				<NavigationMenu />
 				<h1 className={`pageTitle ${styles.pageTitle}`}>Комплекты ТО</h1>
+				<p className="pageLead">Готовые наборы расходников для планового обслуживания — выберите комплект и уточните состав.</p>
 				<div className={`screenBlock ${styles.screenBlock}`}>
 					{kits.length > 0 ? (
 						kits.map((kit) => (

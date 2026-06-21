@@ -53,7 +53,7 @@ export default function ProfileBookingDetail() {
 	}, [load]);
 
 	if (loading) {
-		return <p className={styles.redirectNote}>Загрузка записи…</p>;
+		return <p className={styles.loadingNote}>Загрузка записи…</p>;
 	}
 
 	if (error || !b) {
@@ -72,42 +72,51 @@ export default function ProfileBookingDetail() {
 			<Link href="/profile/bookings" className={styles.backLink}>
 				← К списку записей
 			</Link>
-			<h1 className={styles.pageTitle}>Запись №{b.id}</h1>
 
-			<div className={styles.card}>
-				<div className={styles.rowBetween}>
-					<div className={styles.muted}>Статус</div>
-					<div className={styles.orderStatus}>{bookingStatusLabelRu(b.status)}</div>
+			<header className={styles.detailHeader}>
+				<h1 className={styles.pageTitle}>Запись №{b.id}</h1>
+				<div className={styles.detailMeta}>
+					<span className={styles.statusBadge}>{bookingStatusLabelRu(b.status)}</span>
 				</div>
-				<div className={styles.bookingRow}>
-					<strong>Дата:</strong> {formatDateRu(b.scheduledDate)}
-				</div>
-				<div className={styles.bookingRow}>
-					<strong>Время:</strong> {b.scheduledTime}
-				</div>
-				<div className={styles.bookingRow}>
-					<strong>Телефон для связи:</strong> {b.contactPhone}
-				</div>
-			</div>
+			</header>
 
-			<div className={styles.card}>
-				<div className={styles.subTitle}>Отдел</div>
-				<div className={styles.deliveryBlock}>
-					{b.departmentName && <div>{b.departmentName}</div>}
-					<div>{b.departmentAddress}</div>
-					{b.departmentPhones?.length > 0 && <div>Тел.: {b.departmentPhones.join(", ")}</div>}
-					{b.departmentEmails?.length > 0 && <div>Email: {b.departmentEmails.join(", ")}</div>}
-				</div>
-			</div>
-
-			{b.notes && (
-				<div className={styles.card}>
-					<div className={styles.subTitle}>Комментарий к записи</div>
-					<div className={`${styles.bookingRow} ${styles.notesBlock}`.trim()}>
-						{b.notes}
+			<div className={styles.panelCard}>
+				<h2 className={styles.panelTitle}>Дата и контакты</h2>
+				<div className={styles.detailFacts}>
+					<div className={styles.detailFactRow}>
+						<strong>Дата:</strong> {formatDateRu(b.scheduledDate)}
+					</div>
+					<div className={styles.detailFactRow}>
+						<strong>Время:</strong> {b.scheduledTime}
+					</div>
+					<div className={styles.detailFactRow}>
+						<strong>Телефон для связи:</strong> {b.contactPhone}
 					</div>
 				</div>
-			)}
+			</div>
+
+			<div className={styles.panelCard}>
+				<h2 className={styles.panelTitle}>Отдел</h2>
+				<div className={styles.deliveryBlock}>
+					{b.departmentName ?
+						<div>{b.departmentName}</div>
+					:	null}
+					<div>{b.departmentAddress}</div>
+					{b.departmentPhones?.length > 0 ?
+						<div>Тел.: {b.departmentPhones.join(", ")}</div>
+					:	null}
+					{b.departmentEmails?.length > 0 ?
+						<div>Email: {b.departmentEmails.join(", ")}</div>
+					:	null}
+				</div>
+			</div>
+
+			{b.notes ?
+				<div className={styles.panelCard}>
+					<h2 className={styles.panelTitle}>Комментарий к записи</h2>
+					<div className={`${styles.bookingRow} ${styles.notesBlock}`.trim()}>{b.notes}</div>
+				</div>
+			:	null}
 		</>
 	);
 }

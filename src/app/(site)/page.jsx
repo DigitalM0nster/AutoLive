@@ -14,7 +14,7 @@ export async function generateMetadata() {
 // ✅ Главная страница
 export default function Home() {
 	return (
-		<div className={`screen ${styles.screen}`}>
+		<div className={`screen ${styles.screen} ${styles.homeScreen}`}>
 			<div className="screenContent">
 				<HomePageClient />
 			</div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import DatePicker from "./DatePicker";
 import styles from "./DatePickerField.module.scss";
 
@@ -16,6 +16,7 @@ interface DatePickerFieldProps {
 
 export default function DatePickerField({ label, value, onChange, placeholder = "Выберите дату", className = "", disabled = false, onFocus }: DatePickerFieldProps) {
 	const [isOpen, setIsOpen] = useState(false);
+	const anchorRef = useRef<HTMLDivElement>(null);
 
 	// Функция для форматирования даты для отображения
 	const formatDisplayDate = (dateString: string): string => {
@@ -49,14 +50,14 @@ export default function DatePickerField({ label, value, onChange, placeholder = 
 	};
 
 	return (
-		<div className={`${styles.datePickerField} ${className}`} data-field-invalid={className.trim() ? true : undefined}>
+		<div ref={anchorRef} className={`${styles.datePickerField} ${className}`} data-field-invalid={className.trim() ? true : undefined}>
 			{label && <label className={styles.label}>{label}</label>}
 			<div className={`${styles.dateInput} ${disabled ? styles.disabled : ""}`} onClick={handleTogglePicker}>
 				<span className={value ? styles.hasValue : styles.placeholder}>{value ? formatDisplayDate(value) : placeholder}</span>
 				<div className={styles.calendarIcon}>📅</div>
 			</div>
 
-			<DatePicker isOpen={isOpen} onClose={handleClosePicker} onDateChange={handleDateChange} value={value} placeholder={placeholder} />
+			<DatePicker isOpen={isOpen} onClose={handleClosePicker} onDateChange={handleDateChange} value={value} anchorRef={anchorRef} />
 		</div>
 	);
 }

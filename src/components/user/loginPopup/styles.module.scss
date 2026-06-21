@@ -82,7 +82,7 @@
 			}
 
 			.phonePrefix {
-				font-family: Montserrat;
+				font-family: inherit;
 				font-size: 20px;
 				font-weight: 600;
 				flex-shrink: 0;
@@ -96,7 +96,7 @@
 
 			input {
 				width: calc(100% - 40px);
-				font-family: Montserrat;
+				font-family: inherit;
 				height: 20px;
 				line-height: 1;
 				font-size: 20px;
@@ -213,6 +213,17 @@
 }
 
 .orderPopup {
+	.popupHeading {
+		width: 100%;
+		max-width: 300px;
+		margin: 0 0 12px;
+		font-size: 16px;
+		font-weight: 600;
+		line-height: 1.35;
+		text-align: center;
+		color: #222;
+	}
+
 	.fieldWrap {
 		width: 100%;
 		max-width: 300px;

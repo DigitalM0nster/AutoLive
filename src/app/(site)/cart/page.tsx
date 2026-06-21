@@ -6,11 +6,12 @@ import styles from "./styles.module.scss";
 
 export default function CartPage() {
 	return (
-		<div className={`screen ${styles.screen}`}>
+		<div className="screen">
 			<div className="screenContent">
 				<NavigationMenu />
+				<h1 className="pageTitle">Корзина</h1>
+				<p className="pageLead">Проверьте состав заказа, укажите контакты и оформите заявку.</p>
 
-				{/* Секция с контентом корзины с использованием Suspense для скелетона */}
 				<Suspense fallback={<CartSkeleton />}>
 					<CartContent />
 				</Suspense>

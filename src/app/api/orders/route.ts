@@ -7,6 +7,7 @@ import { OrderResponse, CreateOrderRequest, OrderStatus } from "@/lib/types";
 import { validateOrderMergedStateForStatus } from "@/lib/orderStatusValidation";
 import { withDbRetry } from "@/lib/utils";
 import { mergeOrderCommentsOnCreate } from "@/lib/orderComments";
+import { buildOrderStatusFieldsForCreate } from "@/lib/orderStatusFields";
 
 // Получение списка заказов с фильтрацией по ролям
 async function getOrdersHandler(req: NextRequest, { user, scope }: { user: any; scope: "all" | "department" | "own" }) {
@@ -512,6 +513,27 @@ async function createOrderHandler(req: NextRequest, { user, scope }: { user: any
 			}
 		}
 
+		// Связь с записью: проверяем до создания заказа (как при редактировании)
+		if (body.bookingId != null) {
+			const bookingRow = await prisma.booking.findUnique({
+				where: { id: body.bookingId },
+				select: { id: true },
+			});
+			if (!bookingRow) {
+				return NextResponse.json({ error: "Запись с таким ID не найдена" }, { status: 400 });
+			}
+			const conflictOrder = await prisma.order.findFirst({
+				where: { bookingId: body.bookingId },
+				select: { id: true },
+			});
+			if (conflictOrder) {
+				return NextResponse.json(
+					{ error: `Эта запись уже привязана к заказу №${conflictOrder.id}` },
+					{ status: 400 },
+				);
+			}
+		}
+
 		const targetCreateStatus = (body.status ?? "created") as OrderStatus;
 		const mergedDeptForValidation = isSuperadminSelf ? null : (departmentId ?? null);
 		const createStatusIssues = validateOrderMergedStateForStatus({
@@ -570,6 +592,7 @@ async function createOrderHandler(req: NextRequest, { user, scope }: { user: any
 			bookingId: body.bookingId ?? null, // Связь с заявкой
 			bookingDepartmentId: deliveryPp != null ? null : deliveryBd,
 			deliveryPickupPointId: deliveryBd != null ? null : deliveryPp,
+			...buildOrderStatusFieldsForCreate(body),
 			// Поле assignedAt остается null для свободных заказов
 		};
 
@@ -654,6 +677,14 @@ async function createOrderHandler(req: NextRequest, { user, scope }: { user: any
 					vinCode: item.vinCode || null,
 				})),
 			});
+
+			// Дублирующее поле booking.order_id — для экрана записи и логов
+			if (body.bookingId != null) {
+				await tx.booking.update({
+					where: { id: body.bookingId },
+					data: { orderId: newOrder.id },
+				});
+			}
 
 			// Получаем полный снапшот заказа для логирования
 			const orderSnapshotForLog = {

@@ -1,42 +1,95 @@
-// Страница контактов — блок контента
-
-.screen {
-	// При необходимости переопределения глобального .screen
+.pageHeader {
+	flex-direction: column;
+	gap: 8px;
+	width: 100%;
+	margin-bottom: 24px;
 }
 
-.screenBlock {
+.pageLead {
+	max-width: 560px;
+}
+
+.contactsLayout {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 360px;
+	column-gap: 32px;
+	align-items: start;
+	width: 100%;
+
+	&.withoutMap {
+		grid-template-columns: 1fr;
+		max-width: 880px;
+	}
+}
+
+.contactsMain {
 	display: flex;
 	flex-direction: column;
-	gap: 24px;
-	max-width: 800px;
+	gap: 20px;
+	min-width: 0;
+}
+
+.contactsSide {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	position: sticky;
+	top: 20px;
+	width: 100%;
+	max-width: 360px;
+	min-width: 0;
+	overflow: hidden;
+}
+
+.contactsPanel {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	background: #fff;
+	border: 1px solid #e8e4de;
+	border-radius: 16px;
+	overflow: hidden;
 }
 
 .contactsSection {
 	display: flex;
 	flex-direction: column;
-	gap: 12px;
+	gap: 14px;
+	padding: 22px 24px;
+	border-bottom: 1px solid #f0ece6;
+
+	&:last-child {
+		border-bottom: none;
+	}
 }
 
 .contactsSectionTitle {
 	margin: 0;
-	font-size: 18px;
+	font-size: 16px;
 	font-weight: 600;
+	line-height: 1.3;
+	color: #1a1a1a;
 }
 
-// Цвет иконок (адрес, телефон, почта, часы) — меняйте под стиль сайта
 .contactsIconColor {
-	color: #2c5aa0;
+	color: var(--site-color-accent, #b0cb1f);
 }
 
 .contactsMainBlock {
 	display: flex;
 	flex-direction: column;
-	gap: 14px;
+	gap: 12px;
 }
 
 .contactsText {
 	margin: 0;
-	line-height: 1.5;
+	padding: 22px 24px;
+	font-size: 15px;
+	line-height: 1.55;
+	color: #666;
+	background: #fff;
+	border: 1px solid #e8e4de;
+	border-radius: 16px;
 }
 
 .contactsAddressList {
@@ -45,26 +98,149 @@
 	list-style: none;
 	display: flex;
 	flex-direction: column;
-	gap: 16px;
+	gap: 10px;
 }
 
 .contactsAddressItem {
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
-	padding: 14px 16px;
-	background: var(--light-grey-color, #f5f5f5);
-	border-radius: 8px;
+	gap: 10px;
+	padding: 16px 18px;
+	background: #faf9f7;
+	border: 1px solid #ece8e0;
+	border-radius: 12px;
 }
 
 .contactsAddressName {
 	font-weight: 600;
 	font-size: 15px;
+	color: #1a1a1a;
 }
 
-.contactsAddressLine {
+.mapBlock {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	width: 100%;
+	max-width: 100%;
+	padding: 18px;
+	background: #fff;
+	border: 1px solid #e8e4de;
+	border-radius: 16px;
+	box-sizing: border-box;
+	overflow: hidden;
+}
+
+.mapTitle {
+	margin: 0;
+	font-size: 16px;
+	font-weight: 600;
+	line-height: 1.3;
+	color: #1a1a1a;
+}
+
+.mapNote {
+	margin: 0;
+	font-size: 13px;
+	line-height: 1.5;
+	color: #888;
+}
+
+.contactsActions {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	gap: 10px;
+	width: 100%;
+	max-width: 100%;
+	padding: 18px;
+	background: #fff;
+	border: 1px solid #e8e4de;
+	border-radius: 16px;
+	box-sizing: border-box;
+	overflow: hidden;
+
+	// Сброс глобальных стилей button / .button с index.scss (width: fit-content, padding, border-radius)
+	button,
+	a {
+		width: 100%;
+		max-width: 100%;
+		min-width: 0;
+		box-sizing: border-box;
+	}
+}
+
+.contactsActionPrimary,
+.contactsActionSecondary {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	align-self: stretch;
+	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+	min-height: 44px;
+	padding: 12px 18px;
+	border-radius: 12px;
+	box-sizing: border-box;
+	font-family: inherit;
 	font-size: 14px;
-	line-height: 1.4;
-	color: #555;
+	font-weight: 600;
+	line-height: 1.2;
+	text-align: center;
+	text-decoration: none;
+	cursor: pointer;
+	transition:
+		background-color 0.2s ease,
+		border-color 0.2s ease,
+		color 0.2s ease;
 }
 
+.contactsActionPrimary {
+	border: 1px solid var(--site-color-accent, #b0cb1f);
+	background: var(--site-color-accent, #b0cb1f);
+	color: #1a1a1a;
+
+	&:hover {
+		background: color-mix(in srgb, var(--site-color-accent, #b0cb1f) 88%, #000);
+		border-color: color-mix(in srgb, var(--site-color-accent, #b0cb1f) 88%, #000);
+	}
+}
+
+.contactsActionSecondary {
+	border: 1px solid #e8e4de;
+	background: #fff;
+	color: #333;
+
+	&:hover {
+		border-color: color-mix(in srgb, var(--site-color-accent, #b0cb1f) 45%, #e8e4de);
+		background: color-mix(in srgb, var(--site-color-accent, #b0cb1f) 6%, #fff);
+	}
+}
+
+@media (max-width: 1024px) {
+	.contactsLayout {
+		grid-template-columns: 1fr;
+		row-gap: 24px;
+	}
+
+	.contactsSide {
+		position: static;
+		max-width: none;
+	}
+}
+
+@media (max-width: 640px) {
+	.contactsSection {
+		padding: 18px 16px;
+	}
+
+	.contactsAddressItem {
+		padding: 14px 16px;
+	}
+
+	.mapBlock,
+	.contactsActions {
+		padding: 14px;
+	}
+}

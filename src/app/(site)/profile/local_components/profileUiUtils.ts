@@ -29,3 +29,12 @@ export function formatDateRu(isoDate: string): string {
 		return isoDate;
 	}
 }
+
+export function displayProfileName(user: {
+	first_name?: string | null;
+	last_name?: string | null;
+	middle_name?: string | null;
+}): string {
+	const parts = [user.last_name, user.first_name, user.middle_name].filter(Boolean);
+	return parts.length ? parts.join(" ") : "Клиент";
+}

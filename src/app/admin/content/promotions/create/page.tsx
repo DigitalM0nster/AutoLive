@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import ImageUploader from "../imageUploader";
+import PromotionButtonsEditor from "../PromotionButtonsEditor";
 import FixedActionButtons from "@/components/ui/fixedActionButtons/FixedActionButtons";
 import styles from "../../local_components/styles.module.scss";
+import { type PromotionButton, validatePromotionButtons } from "@/lib/promotionButtons";
 
 export default function CreatePromotionPage() {
 	const router = useRouter();
@@ -13,8 +15,7 @@ export default function CreatePromotionPage() {
 	const [title, setTitle] = useState("");
 	const [description, setDescription] = useState("");
 	const [imageUrl, setImageUrl] = useState("");
-	const [buttonText, setButtonText] = useState("");
-	const [buttonLink, setButtonLink] = useState("");
+	const [buttons, setButtons] = useState<PromotionButton[]>([]);
 	const [startDate, setStartDate] = useState("");
 	const [endDate, setEndDate] = useState("");
 
@@ -25,14 +26,22 @@ export default function CreatePromotionPage() {
 		!!title.trim() ||
 		!!description.trim() ||
 		!!imageUrl ||
-		!!buttonText.trim() ||
-		!!buttonLink.trim() ||
+		buttons.length > 0 ||
 		!!startDate ||
 		!!endDate;
 
 	const handleSave = async () => {
 		if (!title.trim()) {
 			alert("Укажите название акции");
+			return;
+		}
+		if (startDate && endDate && endDate < startDate) {
+			alert("Дата окончания не может быть раньше даты начала");
+			return;
+		}
+		const buttonsError = validatePromotionButtons(buttons);
+		if (buttonsError) {
+			alert(buttonsError);
 			return;
 		}
 
@@ -46,8 +55,7 @@ export default function CreatePromotionPage() {
 					title: title.trim(),
 					description: description.trim() || null,
 					imageUrl: imageUrl || null,
-					buttonText: buttonText.trim() || null,
-					buttonLink: buttonLink.trim() || null,
+					buttons,
 					startDate: startDate || null,
 					endDate: endDate || null,
 				}),
@@ -79,11 +87,11 @@ export default function CreatePromotionPage() {
 		<div className="screenContent">
 			<div className="tableContainer">
 				<div className="tabsContainer column">
-					<Link href="/admin/content" className={styles.backToContentLink}>
+					<Link href="/admin/dashboard" className={styles.backToContentLink}>
 						<span className={styles.backToContentLinkArrow} aria-hidden>
 							←
 						</span>
-						Редактор контента
+						На панель
 					</Link>
 					<div className="rowBlock">
 						<Link href="/admin/content/promotions" className="tabButton">
@@ -134,52 +142,53 @@ export default function CreatePromotionPage() {
 
 						<div className="formSection borderBlock">
 							<h3 className="formSectionTitle">Даты акции</h3>
+							<p className={styles.sectionNote}>
+								Даты необязательны. Можно указать только начало, только окончание, обе или не указывать вовсе — на баннере
+								отобразится только то, что заполнено.
+							</p>
 							<div className="formRow">
 								<div className="formField">
-									<label htmlFor="promo-startDate">Дата начала</label>
-									<input
-										id="promo-startDate"
-										type="date"
-										value={startDate}
-										onChange={(e) => setStartDate(e.target.value)}
-									/>
+									<label htmlFor="promo-startDate">
+										Дата начала <span className={styles.labelHint}>(необязательно)</span>
+									</label>
+									<div className={styles.dateFieldRow}>
+										<input
+											id="promo-startDate"
+											type="date"
+											value={startDate}
+											onChange={(e) => setStartDate(e.target.value)}
+										/>
+										{startDate ? (
+											<button type="button" className={styles.clearDateButton} onClick={() => setStartDate("")}>
+												Очистить
+											</button>
+										) : null}
+									</div>
 								</div>
 								<div className="formField">
-									<label htmlFor="promo-endDate">Дата окончания</label>
-									<input
-										id="promo-endDate"
-										type="date"
-										value={endDate}
-										onChange={(e) => setEndDate(e.target.value)}
-									/>
+									<label htmlFor="promo-endDate">
+										Дата окончания <span className={styles.labelHint}>(необязательно)</span>
+									</label>
+									<div className={styles.dateFieldRow}>
+										<input
+											id="promo-endDate"
+											type="date"
+											value={endDate}
+											onChange={(e) => setEndDate(e.target.value)}
+										/>
+										{endDate ? (
+											<button type="button" className={styles.clearDateButton} onClick={() => setEndDate("")}>
+												Очистить
+											</button>
+										) : null}
+									</div>
 								</div>
 							</div>
 						</div>
 
 						<div className="formSection borderBlock">
-							<h3 className="formSectionTitle">Кнопка</h3>
-							<div className="formRow">
-								<div className="formField">
-									<label htmlFor="promo-buttonText">Текст кнопки</label>
-									<input
-										id="promo-buttonText"
-										type="text"
-										placeholder="Текст кнопки"
-										value={buttonText}
-										onChange={(e) => setButtonText(e.target.value)}
-									/>
-								</div>
-								<div className="formField">
-									<label htmlFor="promo-buttonLink">Ссылка кнопки</label>
-									<input
-										id="promo-buttonLink"
-										type="text"
-										placeholder="Ссылка кнопки"
-										value={buttonLink}
-										onChange={(e) => setButtonLink(e.target.value)}
-									/>
-								</div>
-							</div>
+							<h3 className="formSectionTitle">Кнопки на баннере</h3>
+							<PromotionButtonsEditor buttons={buttons} onChange={setButtons} />
 						</div>
 					</div>
 				</div>

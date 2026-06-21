@@ -41,8 +41,10 @@ export default function PhoneInput({
 				localStorage.setItem("phone", phone);
 				localStorage.setItem("isCodeSent", "true");
 				setPhoneError("");
-				if (data.devCode) {
-					alert(`Код подтверждения (режим разработки): ${data.devCode}`);
+				if (data.testCode) {
+					alert(
+						`SMS-сервис пока не подключён, поэтому код отображается здесь для теста.\n\nКод подтверждения: ${data.testCode}`,
+					);
 				}
 			} else {
 				setPhoneError(data.error || "Ошибка при отправке кода");

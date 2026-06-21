@@ -5,6 +5,7 @@ import Link from "next/link";
 import Loading from "@/components/ui/loading/Loading";
 import Pagination from "@/components/ui/pagination/Pagination";
 import { showErrorToast, showSuccessToast } from "@/components/ui/toast/ToastProvider";
+import { formatSiteFormRequestSource } from "@/lib/siteRequestSource";
 
 type PayloadRow = {
 	key: string;
@@ -20,6 +21,8 @@ type Row = {
 	createdAt: string;
 	status: "new" | "processed";
 	payload: unknown;
+	sourceType?: "homepage" | "promotion" | "contacts";
+	sourceLabel?: string | null;
 };
 
 function getStatusMeta(status: Row["status"]) {
@@ -122,6 +125,7 @@ export default function HomepageRequestsTable() {
 							<tr>
 								<th>ID</th>
 								<th>Дата</th>
+								<th>Источник</th>
 								<th>Телефон</th>
 								<th>Статус</th>
 								<th />
@@ -130,7 +134,7 @@ export default function HomepageRequestsTable() {
 						<tbody>
 							{rows.length === 0 ? (
 								<tr>
-									<td colSpan={5}>Нет заявок</td>
+									<td colSpan={6}>Нет заявок</td>
 								</tr>
 							) : (
 								rows.map((r) => {
@@ -139,6 +143,7 @@ export default function HomepageRequestsTable() {
 										<tr key={r.id}>
 											<td>{r.id}</td>
 											<td>{new Date(r.createdAt).toLocaleString("ru-RU")}</td>
+											<td>{formatSiteFormRequestSource(r.sourceType ?? "homepage", r.sourceLabel)}</td>
 											<td>{phoneFromPayload(r.payload)}</td>
 											<td>
 												<span className={`orderStatusBadge ${statusMeta.className}`}>{statusMeta.text}</span>

@@ -1,10 +1,30 @@
+import Link from "next/link";
 import styles from "./styles.module.scss";
-import AddToCartButton from "./AddToCartButton";
+import ProductPurchaseActions from "./local_components/ProductPurchaseActions";
+import ProductSupportNote from "./local_components/ProductSupportNote";
 import { prisma } from "@/lib/prisma";
 
-// Функция для загрузки данных товара напрямую из базы данных
-// Используем Prisma напрямую вместо HTTP-запроса к API
-// Это намного быстрее, так как нет лишнего HTTP-круга через сеть
+type ProductFilter = {
+	title: string;
+	type: string;
+	selected_values: { value: string }[];
+};
+
+function formatPrice(value: number): string {
+	return `${value.toLocaleString("ru-RU")} ₽`;
+}
+
+function normalizeBrand(brand?: string | null): string | null {
+	const value = brand?.trim();
+	if (!value || value.toLowerCase() === "unknown") return null;
+	return value;
+}
+
+function formatDescription(description?: string | null): string | null {
+	const clean = description?.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+	return clean || null;
+}
+
 async function loadProductData(productId: string) {
 	const id = parseInt(productId);
 
@@ -12,8 +32,6 @@ async function loadProductData(productId: string) {
 		throw new Error("Некорректный ID товара");
 	}
 
-	// Прямой запрос к базе данных с теми же include, что были в API
-	// Получаем товар со всеми связанными данными
 	const product = await prisma.product.findUnique({
 		where: { id },
 		include: {
@@ -35,21 +53,14 @@ async function loadProductData(productId: string) {
 		throw new Error("Товар не найден");
 	}
 
-	// Преобразуем фильтры в нужный формат (такая же логика, как в API)
-	// Группируем фильтры по названию для удобного отображения
 	const filters = product.productFilterValues.map((pfv) => ({
 		title: pfv.filterValue.filter.title,
 		type: pfv.filterValue.filter.type,
-		selected_values: [
-			{
-				value: pfv.filterValue.value,
-			},
-		],
+		selected_values: [{ value: pfv.filterValue.value }],
 	}));
 
-	// Группируем фильтры с одинаковыми названиями
-	const groupedFilters = filters.reduce((acc: any[], filter) => {
-		const existingFilter = acc.find((f) => f.title === filter.title);
+	const groupedFilters = filters.reduce<ProductFilter[]>((acc, filter) => {
+		const existingFilter = acc.find((item) => item.title === filter.title);
 		if (existingFilter) {
 			existingFilter.selected_values.push(...filter.selected_values);
 		} else {
@@ -58,8 +69,6 @@ async function loadProductData(productId: string) {
 		return acc;
 	}, []);
 
-	// Возвращаем товар в том же формате, что и API
-	// Удаляем supplierPrice (закупочная цена, не должна показываться клиентам)
 	const { supplierPrice, ...productWithoutSupplierPrice } = product;
 
 	return {
@@ -69,58 +78,98 @@ async function loadProductData(productId: string) {
 	};
 }
 
-// Компонент для отображения контента страницы товара
 export default async function ProductContent({ productId }: { productId: string }) {
-	// Загружаем данные напрямую из базы данных
 	const product = await loadProductData(productId);
+	const brand = normalizeBrand(product.brand);
+	const description = formatDescription(product.description);
+	const hasSpecs = product.filters.length > 0;
 
-	// Рендерим контент
 	return (
-		<div className={styles.productItem}>
-			<div className={styles.imageBlock}>
-				{product.image ? <img src={product.image} alt={product.title} /> : <img className={styles.noImage} src="/images/no-image.png" alt="" />}
-			</div>
+		<article className={styles.productPage}>
+			<div className={styles.productSheet}>
+				<div className={styles.productTop}>
+					<div className={styles.media}>
+						{product.image ?
+							<img src={product.image} alt={product.title} />
+						:	<span className={styles.mediaPlaceholder} aria-hidden="true" />}
+					</div>
 
-			{product.filters?.length > 0 && (
-				<div className={styles.filtersBlock}>
-					<div className={styles.filtersTitle}>Свойства:</div>
-					<div className={styles.filtersList}>
-						{product.filters.map((filter: any, filterIndex: number) => (
-							<div key={`filter${filterIndex}`} className={styles.filterItem}>
-								<div className={styles.name}>{filter.title}</div>
-								<div className={styles.values}>
-									{filter.selected_values.map((value: any, valueIndex: number) => (
-										<div key={`filter${filterIndex}-value${valueIndex}`} className={styles.value}>
-											{value.value}
-										</div>
-									))}
-								</div>
+					<div className={styles.summary}>
+						<div className={styles.summaryHead}>
+							{product.category ?
+								<Link href={`/categories/${product.category.id}`} className={styles.categoryLink}>
+									{product.category.title}
+								</Link>
+							:	null}
+
+							<h1 className={`pageTitle ${styles.productTitle}`}>{product.title}</h1>
+
+							{(product.sku || brand) ?
+								<dl className={styles.factsList}>
+									{product.sku ?
+										<>
+											<dt>Артикул</dt>
+											<dd>{product.sku}</dd>
+										</>
+									:	null}
+									{brand ?
+										<>
+											<dt>Бренд</dt>
+											<dd>{brand}</dd>
+										</>
+									:	null}
+								</dl>
+							:	null}
+						</div>
+
+						<div className={styles.summaryFoot}>
+							<div className={styles.priceWrap}>
+								<span className={styles.priceLabel}>Цена</span>
+								<span className={styles.priceValue}>{formatPrice(product.price)}</span>
 							</div>
-						))}
+
+							<ProductPurchaseActions product={product} />
+
+							<ProductSupportNote productTitle={product.title} />
+						</div>
 					</div>
 				</div>
-			)}
 
-			<div className={styles.descriptionBlock}>
-				<div className={styles.textBlock}>
-					<h1 className={`pageTitle ${styles.pageTitle}`}>{product.title}</h1>
-					<div className={styles.description}>{product.description || "Описание отсутствует."}</div>
-				</div>
+				{(description || hasSpecs) ?
+					<div className={styles.productDetails}>
+						{description ?
+							<section className={styles.detailSection} aria-labelledby="product-description-title">
+								<h2 id="product-description-title" className={styles.detailTitle}>
+									Описание
+								</h2>
+								<p className={styles.detailText}>{description}</p>
+							</section>
+						:	null}
 
-				<div className={styles.buttonBlock}>
-					<div className={styles.column}>
-						<div className={styles.price}>Цена: {product.price}₽</div>
-						<AddToCartButton product={product} />
+						{hasSpecs ?
+							<section className={styles.detailSection} aria-labelledby="product-specs-title">
+								<h2 id="product-specs-title" className={styles.detailTitle}>
+									Характеристики
+								</h2>
+								<table className={styles.specsTable}>
+									<tbody>
+										{product.filters.map((filter, filterIndex) => (
+											<tr key={`filter-${filterIndex}`}>
+												<th scope="row">{filter.title}</th>
+												<td>{filter.selected_values.map((value) => value.value).join(", ")}</td>
+											</tr>
+										))}
+									</tbody>
+								</table>
+							</section>
+						:	null}
 					</div>
-				</div>
+				:	<p className={styles.emptyNote}>
+						Подробное описание и характеристики скоро появятся. Если нужна консультация —{" "}
+						<Link href="/contacts">напишите нам</Link>.
+					</p>
+				}
 			</div>
-
-			<div className={`${styles.buttonBlock} ${styles.mobile}`}>
-				<div className={styles.column}>
-					<div className={styles.price}>Цена: {product.price}₽</div>
-					<AddToCartButton product={product} />
-				</div>
-			</div>
-		</div>
+		</article>
 	);
 }
