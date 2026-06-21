@@ -11,6 +11,8 @@ import statusStyles from "./StatusConfirmedSection.module.scss";
 import OrderStatusBlock, { OrderStatusFieldGroup } from "../OrderStatusBlock";
 import { ClientSearchResultsPanel, ClientSelectedSummary } from "@/components/admin/clientSearch/ClientSearchDropdownItems";
 import { ManagerSearchResultsPanel, ManagerSelectedSummary } from "@/components/admin/managerSearch/ManagerSearchDropdownItems";
+import type { ClientSearchListRow } from "@/lib/clientSearchDisplay";
+import type { ManagerSearchListRow } from "@/lib/managerSearchDisplay";
 import { OrderCompositionItem, OrderCompositionToolbar, orderCompositionStyles } from "../OrderCompositionItem";
 
 type StatusConfirmedSectionProps = {
@@ -65,11 +67,11 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 	statusDate,
 }) => {
 	const [clientSearch, setClientSearch] = useState("");
-	const [clientSearchResults, setClientSearchResults] = useState<User[]>([]);
+	const [clientSearchResults, setClientSearchResults] = useState<ClientSearchListRow[]>([]);
 	const [isSearchingClients, setIsSearchingClients] = useState(false);
 
 	const [managerSearch, setManagerSearch] = useState("");
-	const [managerSearchResults, setManagerSearchResults] = useState<User[]>([]);
+	const [managerSearchResults, setManagerSearchResults] = useState<ManagerSearchListRow[]>([]);
 	const [isSearchingManagers, setIsSearchingManagers] = useState(false);
 
 	const clientBlurTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -144,7 +146,7 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 
 			if (response.ok) {
 				const data = await response.json();
-				setClientSearchResults(data.users || []);
+				setClientSearchResults((data.users || []) as ClientSearchListRow[]);
 			}
 		} catch (error) {
 			console.error("Ошибка поиска клиентов:", error);
@@ -167,7 +169,7 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 
 			if (response.ok) {
 				const data = await response.json();
-				let filteredManagers: User[] = (data.users || []).filter((candidate: User) => {
+				let filteredManagers: ManagerSearchListRow[] = ((data.users || []) as ManagerSearchListRow[]).filter((candidate) => {
 					const candidateDepartmentId = candidate.department?.id ?? candidate.departmentId ?? null;
 					return ["admin", "manager"].includes(candidate.role) && Boolean(candidateDepartmentId);
 				});
@@ -191,10 +193,10 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 
 					const alreadyContainsAdmin = filteredManagers.some((candidate) => candidate.id === user.id);
 					if (!alreadyContainsAdmin) {
-						filteredManagers.push(user);
+						filteredManagers.push(user as ManagerSearchListRow);
 					}
 				} else if (userRole === "manager" && user) {
-					filteredManagers = [user];
+					filteredManagers = [user as ManagerSearchListRow];
 				}
 
 				setManagerSearchResults(filteredManagers);
@@ -206,18 +208,18 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 		}
 	};
 
-	const handleClientSelect = (client: User) => {
+	const handleClientSelect = (client: ClientSearchListRow) => {
 		if (!canEdit) {
 			return;
 		}
 
-		setSelectedClient(client);
+		setSelectedClient(client as User);
 		setClientSearch("");
 		setClientSearchResults([]);
 		setIsClientSearchFocused(false);
 	};
 
-	const handleManagerSelect = (manager: User) => {
+	const handleManagerSelect = (manager: ManagerSearchListRow) => {
 		if (!canEdit) {
 			return;
 		}
@@ -225,7 +227,7 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 		const managerDepartmentId = manager.department?.id ?? manager.departmentId ?? null;
 
 		const applyManager = (departmentIdValue: string) => {
-			setSelectedManager(manager);
+			setSelectedManager(manager as User);
 			setFormData((prev) => ({
 				...prev,
 				departmentId: departmentIdValue,
@@ -479,7 +481,7 @@ const StatusConfirmedSection: React.FC<StatusConfirmedSectionProps> = ({
 						)}
 						{userRole === "manager" && <p className="helpText">Менеджер всегда назначается ответственным автоматически.</p>}
 						{userRole === "superadmin" && user && (!selectedManager || selectedManager.id !== user.id) && canEdit && (
-							<button type="button" className={statusStyles.selfAssignButton} onClick={() => handleManagerSelect(user)}>
+							<button type="button" className={statusStyles.selfAssignButton} onClick={() => handleManagerSelect(user as ManagerSearchListRow)}>
 								Назначить себя ответственным
 							</button>
 						)}

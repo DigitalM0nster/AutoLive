@@ -106,8 +106,11 @@ export default function AllCategoriesTable() {
 		}
 	};
 
-	const requestDelete = (category: Category) => {
-		setCategoryToDelete(category);
+type CategoryDeleteTarget = Pick<Category, "id" | "title" | "image" | "filtersCount" | "visibleOnSite">;
+
+	const requestDelete = (category: CategoryDeleteTarget) => {
+		const full = categories.find((item) => item.id === category.id) ?? null;
+		setCategoryToDelete(full ?? ({ ...category, order: 0 } as Category));
 		setShowDeleteModal(true);
 	};
 

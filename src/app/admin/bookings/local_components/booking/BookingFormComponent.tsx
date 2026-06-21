@@ -14,6 +14,8 @@ import DatePickerField from "@/components/ui/datePicker/DatePickerField";
 import FixedActionButtons from "@/components/ui/fixedActionButtons/FixedActionButtons";
 import { ClientSearchResultsPanel, ClientSelectedSummary } from "@/components/admin/clientSearch/ClientSearchDropdownItems";
 import { ManagerSearchResultsPanel, ManagerSelectedSummary } from "@/components/admin/managerSearch/ManagerSearchDropdownItems";
+import type { ClientSearchListRow } from "@/lib/clientSearchDisplay";
+import type { ManagerSearchListRow } from "@/lib/managerSearchDisplay";
 import { ArrowLeft, Plus } from "lucide-react";
 import styles from "./BookingFormComponent.module.scss";
 
@@ -307,20 +309,20 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 
 	// Состояние для поиска клиента
 	const [clientSearch, setClientSearch] = useState("");
-	const [clientSearchResults, setClientSearchResults] = useState<User[]>([]);
+	const [clientSearchResults, setClientSearchResults] = useState<ClientSearchListRow[]>([]);
 	const [isSearchingClients, setIsSearchingClients] = useState(false);
 	const [isClientSearchFocused, setIsClientSearchFocused] = useState(false);
-	const [selectedClient, setSelectedClient] = useState<User | null>(null);
-	const [initialSelectedClient, setInitialSelectedClient] = useState<User | null>(null);
+	const [selectedClient, setSelectedClient] = useState<ClientSearchListRow | null>(null);
+	const [initialSelectedClient, setInitialSelectedClient] = useState<ClientSearchListRow | null>(null);
 	const clientBlurTimeout = useRef<NodeJS.Timeout | null>(null);
 
 	// Состояние для поиска менеджера
 	const [managerSearch, setManagerSearch] = useState("");
-	const [managerSearchResults, setManagerSearchResults] = useState<User[]>([]);
+	const [managerSearchResults, setManagerSearchResults] = useState<ManagerSearchListRow[]>([]);
 	const [isSearchingManagers, setIsSearchingManagers] = useState(false);
 	const [isManagerSearchFocused, setIsManagerSearchFocused] = useState(false);
-	const [selectedManager, setSelectedManager] = useState<User | null>(null);
-	const [initialSelectedManager, setInitialSelectedManager] = useState<User | null>(null);
+	const [selectedManager, setSelectedManager] = useState<ManagerSearchListRow | null>(null);
+	const [initialSelectedManager, setInitialSelectedManager] = useState<ManagerSearchListRow | null>(null);
 	const managerBlurTimeout = useRef<NodeJS.Timeout | null>(null);
 
 	// Связь с заказом (шапка + сохранение)
@@ -386,14 +388,14 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 
 						// Загружаем данные клиента, если он указан
 						if (booking.clientId && booking.client) {
-							const client = booking.client as User;
+							const client = booking.client as ClientSearchListRow;
 							setSelectedClient(client);
 							setInitialSelectedClient(client);
 						}
 
 						// Загружаем данные менеджера, если он указан
 						if (booking.managerId && booking.manager) {
-							const manager = booking.manager as User;
+							const manager = booking.manager as ManagerSearchListRow;
 							setSelectedManager(manager);
 							setInitialSelectedManager(manager);
 						}
@@ -660,7 +662,7 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 
 			if (response.ok) {
 				const data = await response.json();
-				setClientSearchResults(data.users || []);
+				setClientSearchResults((data.users || []) as ClientSearchListRow[]);
 			}
 		} catch (error) {
 			console.error("Ошибка поиска клиентов:", error);
@@ -669,7 +671,7 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 		}
 	};
 
-	const handleClientSelect = (client: User) => {
+	const handleClientSelect = (client: ClientSearchListRow) => {
 		setSelectedClient(client);
 		// При выборе клиента заполняем телефон из данных клиента, очищаем имя
 		setFormData({ ...formData, clientId: client.id, contactPhone: client.phone || "", clientName: "" });
@@ -716,12 +718,12 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 
 			if (response.ok) {
 				const data = await response.json();
-				let filteredManagers: User[] = data.users || [];
+				let filteredManagers: ManagerSearchListRow[] = (data.users || []) as ManagerSearchListRow[];
 
 				// Фильтруем в зависимости от роли пользователя
 				if (user?.role === "admin" && user?.departmentId) {
 					// Админ: только менеджеры своего отдела
-					filteredManagers = filteredManagers.filter((candidate: User) => {
+					filteredManagers = filteredManagers.filter((candidate) => {
 						const candidateDepartmentId = candidate.department?.id ?? candidate.departmentId ?? null;
 						return candidateDepartmentId === user.departmentId;
 					});
@@ -737,7 +739,7 @@ export default function BookingFormComponent({ isCreating = true, bookingId, use
 		}
 	};
 
-	const handleManagerSelect = (manager: User) => {
+	const handleManagerSelect = (manager: ManagerSearchListRow) => {
 		setSelectedManager(manager);
 		setFormData({ ...formData, managerId: manager.id });
 		setManagerSearch("");

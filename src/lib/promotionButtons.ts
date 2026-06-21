@@ -77,36 +77,33 @@ export function parsePromotionButtons(raw: string | null | undefined): Promotion
 }
 
 export function serializePromotionButtons(buttons: PromotionButton[]): string | null {
-	const normalized = buttons
-		.slice(0, PROMOTION_BUTTONS_MAX)
-		.map((button, index) => {
-			const base = {
-				id: button.id || createButtonId(index),
-				type: button.type,
-				label: normalizeLabel(button.label, button.type),
-			};
-			if (button.type === "link") {
-				return {
-					...base,
-					href: (button.href ?? "").trim(),
-					openInNewTab: Boolean(button.openInNewTab),
-				};
-			}
-			if (button.type === "internal") {
-				return {
-					...base,
-					internalPath: (button.internalPath ?? "").trim(),
-					openInNewTab: Boolean(button.openInNewTab),
-				};
-			}
-			return base;
-		})
-		.filter((button) => {
-			if (button.type === "link") return Boolean(button.href);
-			if (button.type === "internal") return Boolean(button.internalPath);
-			if (button.type === "phone") return isValidPhoneDigits(button.label);
-			return true;
-		});
+	const normalized: PromotionButton[] = [];
+
+	for (const [index, button] of buttons.slice(0, PROMOTION_BUTTONS_MAX).entries()) {
+		const base: PromotionButton = {
+			id: button.id || createButtonId(index),
+			type: button.type,
+			label: normalizeLabel(button.label, button.type),
+		};
+
+		if (button.type === "link") {
+			const href = (button.href ?? "").trim();
+			if (!href) continue;
+			normalized.push({ ...base, href, openInNewTab: Boolean(button.openInNewTab) });
+			continue;
+		}
+
+		if (button.type === "internal") {
+			const internalPath = (button.internalPath ?? "").trim();
+			if (!internalPath) continue;
+			normalized.push({ ...base, internalPath, openInNewTab: Boolean(button.openInNewTab) });
+			continue;
+		}
+
+		if (button.type === "phone" && !isValidPhoneDigits(base.label)) continue;
+
+		normalized.push(base);
+	}
 
 	return normalized.length > 0 ? JSON.stringify(normalized) : null;
 }

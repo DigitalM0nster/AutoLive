@@ -9,6 +9,7 @@ export type ManagerSearchListRow = {
 	phone: string;
 	role: string;
 	department?: { id: number; name: string | null } | null;
+	departmentId?: number | null;
 };
 
 export function managerFullName(row: Pick<ManagerSearchListRow, "first_name" | "last_name" | "middle_name">): string {
