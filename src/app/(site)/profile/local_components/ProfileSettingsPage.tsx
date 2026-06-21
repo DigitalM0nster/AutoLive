@@ -6,12 +6,13 @@ import { useAuthStore } from "@/store/authStore";
 import type { SiteLegalContentData } from "@/lib/siteLegalContent.shared";
 import { defaultSiteLegalContent } from "@/lib/siteLegalContent.shared";
 import { canAccessSiteProfile } from "@/lib/siteProfileAccess";
+import type { Role } from "@/lib/rolesConfig";
 import styles from "./profileArea.module.scss";
 
 type UserRow = {
 	id: number;
 	phone: string;
-	role: string;
+	role: Role;
 	status: string;
 	first_name: string;
 	last_name: string;

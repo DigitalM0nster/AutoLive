@@ -6,12 +6,13 @@ import { bookingStatusLabelRu, orderStatusLabelRu } from "@/lib/profileDisplayLa
 import { formatPhoneDisplay } from "@/lib/phoneUtils";
 import { displayProfileName, formatDateTime, formatMoney } from "./profileUiUtils";
 import { canAccessSiteProfile } from "@/lib/siteProfileAccess";
+import type { Role } from "@/lib/rolesConfig";
 import styles from "./profileArea.module.scss";
 
 type UserRow = {
 	id: number;
 	phone: string;
-	role: string;
+	role: Role;
 	status: string;
 	first_name: string;
 	last_name: string;
