@@ -5,6 +5,7 @@ import styles from "../styles.module.scss";
 import CONFIG from "@/lib/config";
 import { slugify } from "@/lib/slugify";
 import { formatPromotionPeriod } from "@/lib/promotionDisplay";
+import { resolvePromotionImageSrc } from "@/lib/promotionImage";
 import { parsePromotionButtons } from "@/lib/promotionButtons";
 import type { Promotion } from "@/lib/types";
 import { getInternalApiBaseUrl } from "@/lib/internalApiBaseUrl";
@@ -55,6 +56,7 @@ export default async function PromotionPage({ params }: Props) {
 
 	const period = formatPromotionPeriod(promotion.startDate, promotion.endDate);
 	const buttons = parsePromotionButtons(promotion.buttonsJson);
+	const imageSrc = resolvePromotionImageSrc(promotion.image);
 
 	return (
 		<div className="screen">
@@ -72,8 +74,8 @@ export default async function PromotionPage({ params }: Props) {
 
 				<article className={styles.promotionDetail}>
 					<div className={styles.detailHero}>
-						{promotion.image ? (
-							<img src={promotion.image} alt={promotion.title} />
+						{imageSrc ? (
+							<img src={imageSrc} alt={promotion.title} />
 						) : (
 							<img src="/images/no-image.png" alt="" />
 						)}

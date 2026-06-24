@@ -1,5 +1,6 @@
 // src\app\api\promotions\[id]\route.ts
 
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { NextResponse, NextRequest } from "next/server";
 import { Prisma } from "@prisma/client";
@@ -54,6 +55,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
 				endDate,
 			},
 		});
+		revalidatePath("/promotions", "layout");
 		return NextResponse.json(updated);
 	} catch (err) {
 		console.error("Ошибка при обновлении акции:", err);
@@ -80,6 +82,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
 
 	try {
 		await prisma.promotion.delete({ where: { id: Number(id) } });
+		revalidatePath("/promotions", "layout");
 		return new NextResponse(null, { status: 204 });
 	} catch (err) {
 		console.error("Ошибка при удалении акции:", err);

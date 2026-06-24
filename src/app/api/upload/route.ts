@@ -1,7 +1,7 @@
 // Загрузка файлов: изображения (как раньше) и документы для подвала (PDF/DOC/DOCX, только суперадмин)
 
 import { NextRequest, NextResponse } from "next/server";
-import { uploadFile, validateFile } from "@/lib/simpleFileUpload";
+import { uploadFile, validateFile, uploadErrorToJson } from "@/lib/simpleFileUpload";
 import { getUserFromRequest } from "@/middleware/permissionMiddleware";
 
 const DOCUMENT_MAX_BYTES = 15 * 1024 * 1024; // 15 МБ
@@ -62,7 +62,8 @@ export async function POST(req: NextRequest) {
 			});
 		} catch (error) {
 			console.error("Ошибка загрузки документа подвала:", error);
-			return NextResponse.json({ error: "Ошибка загрузки файла" }, { status: 500 });
+			const { message, status } = uploadErrorToJson(error);
+			return NextResponse.json({ error: message }, { status });
 		}
 	}
 
@@ -88,6 +89,7 @@ export async function POST(req: NextRequest) {
 		});
 	} catch (error) {
 		console.error("Ошибка загрузки изображения:", error);
-		return NextResponse.json({ error: "Ошибка загрузки файла" }, { status: 500 });
+		const { message, status } = uploadErrorToJson(error);
+		return NextResponse.json({ error: message }, { status });
 	}
 }

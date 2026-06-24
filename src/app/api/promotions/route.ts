@@ -1,5 +1,6 @@
 // src\app\api\promotions\route.ts
 
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { NextResponse, NextRequest } from "next/server";
 import { Prisma } from "@prisma/client";
@@ -56,6 +57,7 @@ export async function POST(req: NextRequest) {
 				endDate,
 			},
 		});
+		revalidatePath("/promotions", "layout");
 		return NextResponse.json(created);
 	} catch (err) {
 		console.error("Ошибка при создании акции:", err);

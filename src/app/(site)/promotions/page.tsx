@@ -3,6 +3,7 @@ import PromotionsHeroBanner, { type PromotionBannerSlide } from "./local_compone
 import styles from "./styles.module.scss";
 import CONFIG from "@/lib/config";
 import { formatPromotionPeriod } from "@/lib/promotionDisplay";
+import { resolvePromotionImageSrc } from "@/lib/promotionImage";
 import { parsePromotionButtons } from "@/lib/promotionButtons";
 import type { Promotion } from "@/lib/types";
 import { getInternalApiBaseUrl } from "@/lib/internalApiBaseUrl";
@@ -21,7 +22,7 @@ function mapPromotionToSlide(promotion: Promotion, formData?: HomepageContentDat
 		id: promotion.id,
 		title: promotion.title,
 		description: promotion.description,
-		image: promotion.image,
+		image: resolvePromotionImageSrc(promotion.image),
 		period: formatPromotionPeriod(promotion.startDate, promotion.endDate),
 		buttons: parsePromotionButtons(promotion.buttonsJson),
 		formData,
