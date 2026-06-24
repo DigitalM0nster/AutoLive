@@ -392,7 +392,7 @@ model Promotion {
     id          Int       @id @default(autoincrement())
     title       String    @db.VarChar(255)
     description String?   @db.Text
-    image       String?   @db.VarChar(255)
+    image       String?   @db.Text
     /**
      * JSON: до 2 кнопок [{ id, type, label, href?, openInNewTab?, internalPath? }]
      * type: phone | link | internal | request

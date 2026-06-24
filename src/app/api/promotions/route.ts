@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { NextResponse, NextRequest } from "next/server";
+import { Prisma } from "@prisma/client";
 import { getUserFromRequest } from "@/middleware/permissionMiddleware";
 import { parseOptionalPromotionDate, validatePromotionDates } from "@/lib/promotionDates";
 import { readPromotionButtonsFromBody, serializePromotionButtons, validatePromotionButtons } from "@/lib/promotionButtons";
@@ -58,6 +59,14 @@ export async function POST(req: NextRequest) {
 		return NextResponse.json(created);
 	} catch (err) {
 		console.error("Ошибка при создании акции:", err);
+
+		if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2000") {
+			return NextResponse.json(
+				{ error: "Не удалось сохранить изображение: файл слишком большой для текущей схемы БД. Обновите миграции на сервере или загрузите изображение меньшего размера." },
+				{ status: 400 },
+			);
+		}
+
 		return NextResponse.json({ error: "Ошибка сервера при создании акции" }, { status: 500 });
 	}
 }
